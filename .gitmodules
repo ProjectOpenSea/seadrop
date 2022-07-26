@@ -16,3 +16,6 @@
 [submodule "lib/ERC721A-Upgradeable"]
 	path = lib/ERC721A-Upgradeable
 	url = https://github.com/chiru-labs/ERC721A-Upgradeable
+[submodule "lib/murky"]
+	path = lib/murky
+	url = https://github.com/dmfxyz/murky
