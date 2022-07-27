@@ -11,7 +11,9 @@ contract SignatureDropTest is Test {
 
     function setUp() public {
         address signer = makeAddr("signer");
+        address badSigner = makeAddr("bad signer");
         vm.label(signer, "Signer");
+        vm.label(badSigner, "Bad Signer");
         test = new SignatureDrop("", "", 10, address(this), signer);
     }
 
@@ -96,6 +98,31 @@ contract SignatureDropTest is Test {
             mintData
         );
         bytes memory signature = abi.encodePacked(r, s, v);
+        test.mint(1, mintData, signature);
+    }
+
+    function testSignature_invalid() public {
+        SignatureDrop.MintData memory mintData = SignatureDrop.MintData(
+            true,
+            0,
+            10,
+            0,
+            type(uint256).max,
+            0
+        );
+        (bytes32 r, bytes32 s, uint8 v) = getSignatureComponents(
+            seedAddresses["bad signer"],
+            address(this),
+            mintData
+        );
+        bytes memory signature = abi.encodePacked(r, s, v);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SignatureDrop.InvalidSignature.selector,
+                seedAddresses["bad signer"],
+                seedAddresses["signer"]
+            )
+        );
         test.mint(1, mintData, signature);
     }
 }
