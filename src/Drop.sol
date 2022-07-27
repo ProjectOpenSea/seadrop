@@ -6,7 +6,6 @@ import {MaxMintable} from "utility-contracts/MaxMintable.sol";
 import {DropEventsAndErrors} from "./DropEventsAndErrors.sol";
 import {TwoStepAdministered, TwoStepOwnable} from "utility-contracts/TwoStepAdministered.sol";
 import {AllowList} from "utility-contracts/AllowList.sol";
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 contract Drop is
     ERC721A,
@@ -41,15 +40,6 @@ contract Drop is
 
     function setMerkleRoot(bytes32 newMerkleRoot) public onlyAdministrator {
         merkleRoot = newMerkleRoot;
-    }
-
-    function transferOwnership(address newOwner)
-        public
-        virtual
-        override(Ownable, TwoStepOwnable)
-        onlyOwner
-    {
-        TwoStepOwnable.transferOwnership(newOwner);
     }
 
     function _numberMinted(address minter)

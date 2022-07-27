@@ -22,3 +22,6 @@
 [submodule "lib/utility-contracts"]
 	path = lib/utility-contracts
 	url = https://github.com/jameswenzel/utility-contracts
+[submodule "lib/EIP712-whitelisting"]
+	path = lib/EIP712-whitelisting
+	url = https://github.com/msfeldstein/EIP712-whitelisting
