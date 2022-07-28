@@ -80,7 +80,7 @@ contract SignatureDropTest is Test {
             address(this),
             mintData
         );
-        bytes memory signature = abi.encodePacked(r, s, v);
+        abi.encodePacked(r, s, v);
     }
 
     function test_snapshotValidSignature() public {

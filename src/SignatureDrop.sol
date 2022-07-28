@@ -32,7 +32,6 @@ contract SignatureDrop is
     }
 
     address internal commissionAddress;
-    address internal payoutAddress;
     uint256 internal commissionPayout;
     address public signingAddress;
     bytes32 public immutable DOMAIN_SEPARATOR;
@@ -167,6 +166,17 @@ contract SignatureDrop is
 
     function isAllowListRedeemed(address minter) internal view returns (bool) {
         return _getAux(minter) & 1 == 1;
+    }
+
+    function setSigningAddress(address newSigner) public onlyAdministrator {
+        signingAddress = newSigner;
+    }
+
+    function setCommissionAddress(address newCommissionAddress)
+        public
+        onlyAdministrator
+    {
+        commissionAddress = newCommissionAddress;
     }
 
     function _numberMinted(address minter)
