@@ -83,4 +83,23 @@ jobs:
       - uses: VeryGoodOpenSource/very_good_coverage@v1
         with:
           path: "./coverage/lcov.info"
-          min_coverage: 100
+          min_coverage: 0
+
+  forge:
+    name: Run Forge Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install forge dependencies
+        run: forge install
+
+      - name: Run tests
+        run: forge test -vvv
