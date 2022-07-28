@@ -1,0 +1,76 @@
+{
+  "name": "shipyard",
+  "version": "0.0.1",
+  "description": "Shipyard is a template repo for OpenSea contract development",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "ethers": "^5.5.3",
+    "ethers-eip712": "^0.2.0",
+    "hardhat": "https://github.com/0age/hardhat/releases/download/viaIR-2.9.3/hardhat-v2.9.3.tgz"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.6",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@rari-capital/solmate": "^6.2.0",
+    "@typechain/ethers-v5": "^10.0.0",
+    "@typechain/hardhat": "^6.0.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^17.0.8",
+    "@typescript-eslint/eslint-plugin": "^5.9.1",
+    "@typescript-eslint/parser": "^5.9.1",
+    "chai": "^4.3.4",
+    "dotenv": "^16.0.0",
+    "eslint": "^8.6.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-n": "^15.2.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "ethereum-waffle": "^3.4.0",
+    "hardhat-gas-reporter": "^1.0.7",
+    "husky": ">=6",
+    "lint-staged": ">=10",
+    "prettier": "^2.5.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "scuffed-abi": "^1.0.4",
+    "solhint": "^3.3.6",
+    "solidity-coverage": "^0.7.0",
+    "ts-node": "^10.4.0",
+    "typechain": "^8.0.0",
+    "typescript": "^4.5.4"
+  },
+  "resolutions": {
+    "async": ">=2.6.4",
+    "cross-fetch": ">=3.1.5",
+    "lodash": ">=4.17.21",
+    "node-fetch": ">=2.6.7",
+    "underscore": ">=1.12.1",
+    "yargs-parser": ">=5.0.1"
+  },
+  "scripts": {
+    "build": "hardhat compile --config ./hardhat.config.ts",
+    "test": "hardhat test --config ./hardhat.config.ts",
+    "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",
+    "coverage": "hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js",
+    "lint:check": "yarn lint:check:format && yarn lint:check:solhint && yarn lint:check:eslint",
+    "lint:check:format": "prettier --check **.{sol,js,ts}",
+    "lint:check:solhint": "yarn build && solhint --config ./config/.solhint.json --ignore-path ./config/.solhintignore contracts/**/*.sol",
+    "lint:check:eslint": "eslint . --ext js,ts",
+    "lint:fix": "yarn lint:fix:format && yarn lint:fix:eslint",
+    "lint:fix:format": "prettier --write **.{sol,js,ts}",
+    "lint:fix:eslint": "eslint --fix . --ext js,ts",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "*.sol": "prettier --write",
+    "*.js": "prettier --write",
+    "*.ts": "prettier --write"
+  }
+}
