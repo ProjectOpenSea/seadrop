@@ -1,40 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import {ERC721A} from "./token/ERC721A.sol";
-import {MaxMintable} from "utility-contracts/MaxMintable.sol";
-import {DropEventsAndErrors} from "./DropEventsAndErrors.sol";
-import {TwoStepAdministered, TwoStepOwnable} from "utility-contracts/TwoStepAdministered.sol";
-import {AllowList} from "utility-contracts/AllowList.sol";
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import {ECDSA} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
-import {ConstructorInitializable} from "utility-contracts/ConstructorInitializable.sol";
+import { ERC721A } from "./token/ERC721A.sol";
+import { DropEventsAndErrors } from "./DropEventsAndErrors.sol";
+import {
+    ECDSA
+} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import {
+    IERC721ServerSideSignedDrop
+} from "./interfaces/IERC721ServerSideSignedDrop.sol";
+import { ERC721Drop, IERC721ContractMetadata } from "./ERC721Drop.sol";
+import { MaxMintable } from "utility-contracts/MaxMintable.sol";
+import { DropEventsAndErrors } from "./DropEventsAndErrors.sol";
 
-contract SignatureDrop is
-    ERC721A,
-    TwoStepAdministered,
-    MaxMintable,
-    DropEventsAndErrors
-{
+contract ERC721ServerSideSignedDrop is ERC721Drop, IERC721ServerSideSignedDrop {
     using ECDSA for bytes32;
 
     error SigningNotEnabled();
-    error InvalidSignature(address got, address want);
+    error InvalidSignature(address got);
     error CallerIsNotMinter(address got, address want);
-
-    struct MintData {
-        bool allowList;
-        uint256 mintPrice;
-        uint256 maxNumberMinted;
-        uint256 startTimestamp;
-        uint256 endTimestamp;
-        uint256 feeBps;
-    }
 
     address internal commissionAddress;
     uint256 internal commissionPayout;
-    address public signingAddress;
     bytes32 public immutable DOMAIN_SEPARATOR;
+
+    address[] signers;
+    mapping(address => bool) public isSigner;
 
     bytes32 public constant MINT_DATA_TYPEHASH =
         keccak256(
@@ -46,7 +37,7 @@ contract SignatureDrop is
         bytes calldata signature
     ) {
         {
-            if (signingAddress == address(0)) {
+            if (signers.length == 0) {
                 revert SigningNotEnabled();
             }
             // Verify EIP-712 signature by recreating the data structure
@@ -75,24 +66,34 @@ contract SignatureDrop is
             // Note that if the digest doesn't exactly match what was signed we'll
             // get a random recovered address.
             address recoveredAddress = digest.recover(signature);
-            if (recoveredAddress != signingAddress) {
-                revert InvalidSignature(recoveredAddress, signingAddress);
+            if (!isSigner[recoveredAddress]) {
+                revert InvalidSignature(recoveredAddress);
             }
         }
         _;
     }
 
-    modifier isActive(uint256 startTimestamp, uint256 endTimestamp) {
-        {
-            if (
-                block.timestamp < startTimestamp ||
-                block.timestamp > endTimestamp
-            ) {
-                revert NotActive(block.timestamp, startTimestamp, endTimestamp);
-            }
-        }
-
-        _;
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 maxNumMintable,
+        address administrator,
+        address signer
+    ) ERC721Drop(name, symbol, administrator, maxNumMintable) {
+        // TODO: work this into immutable
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes("SignatureDrop")),
+                keccak256(bytes("1")),
+                block.chainid,
+                address(this)
+            )
+        );
+        _addSigner(signer);
+        // signingAddress = signer;
     }
 
     modifier allowListNotRedeemed(bool allowList) {
@@ -106,41 +107,6 @@ contract SignatureDrop is
         _;
     }
 
-    modifier includesCorrectPayment(uint256 numberToMint, uint256 mintPrice) {
-        {
-            if (numberToMint * mintPrice != msg.value) {
-                revert IncorrectPayment(msg.value, numberToMint * mintPrice);
-            }
-        }
-        _;
-    }
-
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint256 maxNumMintable,
-        address administrator,
-        address signer
-    )
-        ERC721A(name, symbol)
-        MaxMintable(maxNumMintable)
-        TwoStepAdministered(administrator)
-    {
-        // TODO: work this into immutable
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256(bytes("SignatureDrop")),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this)
-            )
-        );
-        signingAddress = signer;
-    }
-
     function mint(
         uint256 numberToMint,
         MintData calldata mintData,
@@ -148,6 +114,7 @@ contract SignatureDrop is
     )
         public
         payable
+        override
         requiresValidSigner(mintData, signature)
         isActive(mintData.startTimestamp, mintData.endTimestamp)
         allowListNotRedeemed(mintData.allowList)
@@ -160,6 +127,45 @@ contract SignatureDrop is
         _mint(msg.sender, numberToMint);
     }
 
+    function setSigners(address[] memory newSigners)
+        external
+        override
+        onlyAdministrator
+    {
+        address[] memory oldSigners = signers;
+        delete signers;
+        for (uint256 i = 0; i < oldSigners.length; i++) {
+            isSigner[oldSigners[i]] = false;
+        }
+        for (uint256 i = 0; i < newSigners.length; i++) {
+            isSigner[newSigners[i]] = true;
+            signers.push(newSigners[i]);
+        }
+        emit SignersUpdated(oldSigners, newSigners);
+    }
+
+    function addSigner(address newSigner) external override onlyAdministrator {
+        _addSigner(newSigner);
+    }
+
+    function _addSigner(address newSigner) internal {
+        address[] memory oldSigners = signers;
+        address[] memory newSigners = new address[](oldSigners.length + 1);
+        for (uint256 i = 0; i < oldSigners.length; i++) {
+            newSigners[i] = oldSigners[i];
+        }
+        newSigners[oldSigners.length] = newSigner;
+        signers.push(newSigner);
+        isSigner[newSigner] = true;
+        emit SignersUpdated(oldSigners, newSigners);
+    }
+
+    function getSigners() external view override returns (address[] memory) {
+        return signers;
+    }
+
+    function removeSigner(address signer) external override {}
+
     function setAllowListRedeemed(address minter) internal {
         _setAux(minter, 1);
     }
@@ -168,24 +174,13 @@ contract SignatureDrop is
         return _getAux(minter) & 1 == 1;
     }
 
-    function setSigningAddress(address newSigner) public onlyAdministrator {
-        signingAddress = newSigner;
-    }
-
-    function setCommissionAddress(address newCommissionAddress)
+    function totalSupply()
         public
-        onlyAdministrator
-    {
-        commissionAddress = newCommissionAddress;
-    }
-
-    function _numberMinted(address minter)
-        internal
         view
         virtual
-        override(MaxMintable, ERC721A)
+        override(ERC721Drop, IERC721ContractMetadata)
         returns (uint256)
     {
-        return ERC721A._numberMinted(minter);
+        return ERC721A.totalSupply();
     }
 }
