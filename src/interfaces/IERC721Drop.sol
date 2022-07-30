@@ -23,6 +23,9 @@ interface IERC721Drop is IERC721ContractMetadata {
         uint16 feeBps; // 248/256 bits
     }
 
+    /// @notice Returns the address of the token used for the sale; returns address(0) if native token
+    function saleToken() external view returns (address);
+
     function getPublicDrop() external view returns (PublicDrop memory);
 
     function setPublicDrop(PublicDrop calldata newPublicDrop) external;

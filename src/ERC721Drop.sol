@@ -19,6 +19,7 @@ contract ERC721Drop is
     string public dropURI;
     address feeRecipient;
     PublicDrop publicDrop;
+    address public immutable saleToken;
 
     modifier isActive(uint256 startTimestamp, uint256 endTimestamp) {
         {
@@ -46,11 +47,14 @@ contract ERC721Drop is
         string memory name,
         string memory symbol,
         address administrator,
-        uint256 maxNumMintable
+        uint256 maxNumMintable,
+        address _saleToken
     )
         ERC721ContractMetadata(name, symbol, administrator)
         MaxMintable(maxNumMintable)
-    {}
+    {
+        saleToken = _saleToken;
+    }
 
     function mint(uint256 numToMint) external payable {
         PublicDrop memory _publicDrop = publicDrop;

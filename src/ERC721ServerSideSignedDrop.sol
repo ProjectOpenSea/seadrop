@@ -78,8 +78,9 @@ contract ERC721ServerSideSignedDrop is ERC721Drop, IERC721ServerSideSignedDrop {
         string memory symbol,
         uint256 maxNumMintable,
         address administrator,
+        address saleToken,
         address signer
-    ) ERC721Drop(name, symbol, administrator, maxNumMintable) {
+    ) ERC721Drop(name, symbol, administrator, maxNumMintable, saleToken) {
         // TODO: work this into immutable
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
