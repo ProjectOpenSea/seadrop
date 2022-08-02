@@ -69,4 +69,14 @@ contract ERC721AllowListedDropTest is Test, DropEventsAndErrors {
         test.mintAllowList{ value: 2 ether }(_mintData, EMPTY_BYTES32_ARRAY);
         assertEq(test.balanceOf(address(this)), 2);
     }
+
+    function testMintAllowList_incorrectProof() public {
+        IERC721AllowListedDrop.AllowListMint memory _mintData = mintData;
+        _mintData.feeBps = 1;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC721AllowListedDrop.InvalidProof.selector)
+        );
+        test.mintAllowList{ value: 2 ether }(_mintData, EMPTY_BYTES32_ARRAY);
+    }
 }
