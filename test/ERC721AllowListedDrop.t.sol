@@ -10,7 +10,7 @@ import {
 } from "primary-drops/interfaces/IERC721AllowListedDrop.sol";
 import { DropEventsAndErrors } from "primary-drops/DropEventsAndErrors.sol";
 
-contract SignatureDropTest is Test, DropEventsAndErrors {
+contract ERC721AllowListedDropTest is Test, DropEventsAndErrors {
     ERC721AllowListedDrop test;
     mapping(address => uint256) privateKeys;
     mapping(bytes => address) seedAddresses;
