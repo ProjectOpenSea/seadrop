@@ -56,7 +56,15 @@ contract ERC721Drop is
         saleToken = _saleToken;
     }
 
-    function mint(uint256 numToMint) external payable {
+    function publicMint(uint256 numToMint) public payable {
+        _publicMint(numToMint);
+    }
+
+    function publicMint(uint256, uint256 numToMint) public payable {
+        _publicMint(numToMint);
+    }
+
+    function _publicMint(uint256 numToMint) internal {
         PublicDrop memory _publicDrop = publicDrop;
         require(block.timestamp >= _publicDrop.startTime, "Drop not started");
         require(block.timestamp <= _publicDrop.endTime, "Drop has ended");
@@ -65,7 +73,7 @@ contract ERC721Drop is
             "Incorrect Payment"
         );
         require(
-            numToMint <= _publicDrop.maxNumberMinted,
+            numToMint <= _publicDrop.maxMintsPerWallet,
             "Exceeds max number mintable"
         );
 

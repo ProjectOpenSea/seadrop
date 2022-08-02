@@ -24,6 +24,7 @@ contract SignatureDropTest is Test {
             "",
             10,
             address(this),
+            address(0),
             signer
         );
     }

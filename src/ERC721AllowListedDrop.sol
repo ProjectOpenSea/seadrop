@@ -29,11 +29,12 @@ contract ERC721AllowlistedDrop is ERC721Drop, IERC721AllowlistedDrop {
         string memory name,
         string memory symbol,
         uint256 maxNumMintable,
+        address saleToken,
         address administrator,
         bytes32 _merkleRoot,
         address leavesEncryptionPublicKey,
         string memory leavesURI
-    ) ERC721Drop(name, symbol, administrator, maxNumMintable) {
+    ) ERC721Drop(name, symbol, administrator, maxNumMintable, saleToken) {
         merkleRoot = _merkleRoot;
         emit MerkleRootUpdated(
             _merkleRoot,
