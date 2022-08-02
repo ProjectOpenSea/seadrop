@@ -48,16 +48,7 @@ contract ERC721ServerSideSignedDrop is ERC721Drop, IERC721ServerSideSignedDrop {
                     bytes2(0x1901),
                     DOMAIN_SEPARATOR,
                     keccak256(
-                        abi.encode(
-                            MINT_DATA_TYPEHASH,
-                            msg.sender,
-                            mintData.allowList,
-                            mintData.mintPrice,
-                            mintData.maxNumberMinted,
-                            mintData.startTimestamp,
-                            mintData.endTimestamp,
-                            mintData.feeBps
-                        )
+                        abi.encode(MINT_DATA_TYPEHASH, msg.sender, mintData)
                     )
                 )
             );
@@ -76,11 +67,11 @@ contract ERC721ServerSideSignedDrop is ERC721Drop, IERC721ServerSideSignedDrop {
     constructor(
         string memory name,
         string memory symbol,
-        uint256 maxNumMintable,
+        PublicDrop memory publicDrop,
         address administrator,
         address saleToken,
         address signer
-    ) ERC721Drop(name, symbol, administrator, maxNumMintable, saleToken) {
+    ) ERC721Drop(name, symbol, administrator, publicDrop, saleToken) {
         // TODO: work this into immutable
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -119,12 +110,12 @@ contract ERC721ServerSideSignedDrop is ERC721Drop, IERC721ServerSideSignedDrop {
         requiresValidSigner(mintData, signature)
         isActive(mintData.startTimestamp, mintData.endTimestamp)
         allowListNotRedeemed(mintData.allowList)
-        checkMaxMintedForWallet(numberToMint)
+        // checkMaxMintedForWallet(numberToMint, 0)
         includesCorrectPayment(numberToMint, mintData.mintPrice)
     {
-        if (numberToMint > mintData.maxNumberMinted) {
-            revert AmountExceedsAllowed(numberToMint, mintData.maxNumberMinted);
-        }
+        // if (numberToMint > mintData.maxNumberMinted) {
+        //     revert AmountExceedsAllowed(numberToMint, mintData.maxNumberMinted);
+        // }
         _mint(msg.sender, numberToMint);
     }
 

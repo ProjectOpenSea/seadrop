@@ -10,6 +10,20 @@ interface IERC721AllowlistedDrop is IERC721Drop {
         string leavesURI
     );
 
+    // Struct to hold AllowListMint params.
+    // Note: When calculating allowlist root, the values should not be "packed"
+    // according to abi.encodePacked.
+    struct AllowListMint {
+        uint256 option;
+        uint256 numToMint;
+        uint256 mintPrice;
+        uint256 maxNumberMinted;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 allowListIndex;
+        uint256 feeBps;
+    }
+
     function setMerkleRoot(
         bytes32 newMerkleRoot,
         address leavesEncryptionPublicKey,
@@ -17,12 +31,7 @@ interface IERC721AllowlistedDrop is IERC721Drop {
     ) external;
 
     function mintAllowList(
-        uint256 numToMint,
-        uint256 mintPrice,
-        uint256 maxMintable,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 feeBps,
+        AllowListMint calldata mintParams,
         bytes32[] calldata proof
     ) external payable;
 }

@@ -14,12 +14,19 @@ contract ERC721AllowlistedDrop is ERC721Drop, IERC721AllowlistedDrop {
 
     error InvalidProof();
 
-    modifier allowListNotRedeemed(bool allowList) {
+    modifier allowListNotRedeemed(uint256 allowListIndex) {
         {
-            if (allowList) {
-                if (isAllowListRedeemed(msg.sender)) {
-                    revert AllowListRedeemed();
-                }
+            if (isAllowListRedeemed(msg.sender, allowListIndex)) {
+                revert AllowListRedeemed();
+            }
+        }
+        _;
+    }
+
+    modifier isAllowListed(bytes32 leaf, bytes32[] calldata proof) {
+        {
+            if (!MerkleProofLib.verify(proof, merkleRoot, leaf)) {
+                revert InvalidProof();
             }
         }
         _;
@@ -28,13 +35,13 @@ contract ERC721AllowlistedDrop is ERC721Drop, IERC721AllowlistedDrop {
     constructor(
         string memory name,
         string memory symbol,
-        uint256 maxNumMintable,
+        PublicDrop memory publicDrop,
         address saleToken,
         address administrator,
         bytes32 _merkleRoot,
         address leavesEncryptionPublicKey,
         string memory leavesURI
-    ) ERC721Drop(name, symbol, administrator, maxNumMintable, saleToken) {
+    ) ERC721Drop(name, symbol, administrator, publicDrop, saleToken) {
         merkleRoot = _merkleRoot;
         emit MerkleRootUpdated(
             _merkleRoot,
@@ -57,41 +64,32 @@ contract ERC721AllowlistedDrop is ERC721Drop, IERC721AllowlistedDrop {
     }
 
     function mintAllowList(
-        uint256 numToMint,
-        uint256 mintPrice,
-        uint256 maxNumberMinted,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 feeBps,
+        AllowListMint calldata mintParams,
         bytes32[] calldata proof
-    ) public payable {
-        require(block.timestamp >= startTime, "Drop not started");
-        require(block.timestamp <= endTime, "Drop has ended");
-        require(numToMint * mintPrice == msg.value, "Incorrect Payment");
-        require(numToMint <= maxNumberMinted, "Exceeds max number mintable");
-        bytes32 computedHash = keccak256(
-            abi.encode(
-                msg.sender,
-                mintPrice,
-                maxNumberMinted,
-                startTime,
-                endTime,
-                feeBps
-            )
-        );
-        if (!MerkleProofLib.verify(proof, merkleRoot, computedHash)) {
-            revert InvalidProof();
-        }
-
-        _mint(msg.sender, numToMint);
+    )
+        public
+        payable
+        isAllowListed(keccak256(abi.encode(msg.sender, mintParams)), proof)
+        isActive(mintParams.startTime, mintParams.endTime)
+        includesCorrectPayment(mintParams.numToMint, mintParams.mintPrice)
+        checkNumberToMint(mintParams.numToMint, mintParams.maxNumberMinted)
+        allowListNotRedeemed(mintParams.allowListIndex)
+    {
+        _mint(msg.sender, mintParams.numToMint);
     }
 
-    function setAllowListRedeemed(address minter) internal {
-        _setAux(minter, 1);
+    function setAllowListRedeemed(address minter, uint256 allowListIndex)
+        internal
+    {
+        _setAux(minter, uint64(_getAux(minter) | (1 << allowListIndex)));
     }
 
-    function isAllowListRedeemed(address minter) internal view returns (bool) {
-        return _getAux(minter) & 1 == 1;
+    function isAllowListRedeemed(address minter, uint256 allowListIndex)
+        internal
+        view
+        returns (bool)
+    {
+        return (_getAux(minter) >> allowListIndex) & 1 == 1;
     }
 
     function totalSupply()

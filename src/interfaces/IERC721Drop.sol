@@ -7,7 +7,7 @@ interface IERC721Drop is IERC721ContractMetadata {
     event PublicDropUpdated(PublicDrop indexed newPublicDrop);
     event DropURIUpdated(string newDropURI);
 
-    // designed to take up 1 storage slot - 248 bits total
+    // designed to take up 1 storage slot - 256 bits total
     struct PublicDrop {
         // up to 1.2m of native token, eg: ETH, MATIC
         uint80 mintPrice; //80/256 bits
@@ -18,7 +18,7 @@ interface IERC721Drop is IERC721ContractMetadata {
         // maximum number of mints for the public drop
         uint16 maxMintsPerWallet; // 224/256 bits
         // maxmium number of mints per transaction for the public drop
-        uint16 maxMintsPerTransation; // 240/256 bits
+        uint16 maxMintsPerTransaction; // 240/256 bits
         // fee out of 10,000 basis points that we will collect - TBD?
         uint16 feeBps; // 256/256 bits
     }
@@ -35,7 +35,14 @@ interface IERC721Drop is IERC721ContractMetadata {
 
     function setDropURI(string memory dropURI) external;
 
+    /**
+     * @notice During the public mint window, mint a number of tokens to the caller
+     */
     function publicMint(uint256 amount) external payable;
 
+    /**
+     * @notice During the public mint window, mint a number of tokens to the caller according to a certain "option",
+     *         which may use different logic. Option param may be unused.
+     */
     function publicMint(uint256 option, uint256 amount) external payable;
 }

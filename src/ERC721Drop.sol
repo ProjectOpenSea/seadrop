@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import { MaxMintable } from "utility-contracts/MaxMintable.sol";
 import { DropEventsAndErrors } from "./DropEventsAndErrors.sol";
 import { IERC721Drop } from "./interfaces/IERC721Drop.sol";
 import {
@@ -12,7 +11,6 @@ import { ERC721A } from "./token/ERC721A.sol";
 
 contract ERC721Drop is
     ERC721ContractMetadata,
-    MaxMintable,
     DropEventsAndErrors,
     IERC721Drop
 {
@@ -43,17 +41,42 @@ contract ERC721Drop is
         _;
     }
 
+    /**
+     * @notice Modifier that checks numberToMint against maxPerTransaction and publicDrop.maxMintsPerWallet
+     */
+    modifier checkNumberToMint(
+        uint256 numberToMint,
+        uint256 maxPerTransaction
+    ) {
+        {
+            if (numberToMint > maxPerTransaction) {
+                revert AmountExceedsMaxPerTransaction(
+                    numberToMint,
+                    maxPerTransaction
+                );
+            }
+            uint256 maxMintsPerWallet = publicDrop.maxMintsPerWallet;
+            if (
+                (numberToMint + _numberMinted(msg.sender) > maxMintsPerWallet)
+            ) {
+                revert AmountExceedsMaxPerWallet(
+                    numberToMint + _numberMinted(msg.sender),
+                    maxMintsPerWallet
+                );
+            }
+        }
+        _;
+    }
+
     constructor(
         string memory name,
         string memory symbol,
         address administrator,
-        uint256 maxNumMintable,
+        PublicDrop memory _publicDrop,
         address _saleToken
-    )
-        ERC721ContractMetadata(name, symbol, administrator)
-        MaxMintable(maxNumMintable)
-    {
+    ) ERC721ContractMetadata(name, symbol, administrator) {
         saleToken = _saleToken;
+        publicDrop = _publicDrop;
     }
 
     function publicMint(uint256 numToMint) public payable {
@@ -64,19 +87,14 @@ contract ERC721Drop is
         _publicMint(numToMint);
     }
 
-    function _publicMint(uint256 numToMint) internal {
-        PublicDrop memory _publicDrop = publicDrop;
-        require(block.timestamp >= _publicDrop.startTime, "Drop not started");
-        require(block.timestamp <= _publicDrop.endTime, "Drop has ended");
-        require(
-            numToMint * _publicDrop.mintPrice == msg.value,
-            "Incorrect Payment"
-        );
-        require(
-            numToMint <= _publicDrop.maxMintsPerWallet,
-            "Exceeds max number mintable"
-        );
-
+    // todo: see if solidity optimizes these SLOADs
+    // todo: support ERC20
+    function _publicMint(uint256 numToMint)
+        internal
+        isActive(publicDrop.startTime, publicDrop.endTime)
+        checkNumberToMint(numToMint, publicDrop.maxMintsPerTransaction)
+        includesCorrectPayment(numToMint, publicDrop.mintPrice)
+    {
         _mint(msg.sender, numToMint);
     }
 
@@ -92,16 +110,6 @@ contract ERC721Drop is
 
     function setFeeRecipient(address newFeeRecipient) public onlyAdministrator {
         feeRecipient = newFeeRecipient;
-    }
-
-    function _numberMinted(address minter)
-        internal
-        view
-        virtual
-        override(MaxMintable, ERC721A)
-        returns (uint256)
-    {
-        return ERC721A._numberMinted(minter);
     }
 
     function totalSupply()

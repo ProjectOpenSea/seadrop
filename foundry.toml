@@ -6,5 +6,6 @@ solc_version = '0.8.15'
 remappings = [
     'openzeppelin-contracts/=lib/openzeppelin-contracts/',
 ]
+# via_ir = true
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

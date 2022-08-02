@@ -8,6 +8,7 @@ import {
 import {
     IERC721ServerSideSignedDrop
 } from "primary-drops/interfaces/IERC721ServerSideSignedDrop.sol";
+import { IERC721Drop } from "primary-drops/interfaces/IERC721Drop.sol";
 
 contract SignatureDropTest is Test {
     ERC721ServerSideSignedDrop test;
@@ -22,7 +23,14 @@ contract SignatureDropTest is Test {
         test = new ERC721ServerSideSignedDrop(
             "",
             "",
-            10,
+            IERC721Drop.PublicDrop({
+                mintPrice: 1 ether,
+                startTime: 0,
+                endTime: type(uint64).max,
+                maxMintsPerWallet: 10,
+                maxMintsPerTransaction: 10,
+                feeBps: 250
+            }),
             address(this),
             address(0),
             signer
