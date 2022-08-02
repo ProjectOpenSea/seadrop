@@ -48,4 +48,6 @@ contract ERC721DropTest is Test, DropEventsAndErrors {
         );
         test.publicMint{ value: 1 wei }(2);
     }
+
+    receive() external payable {}
 }

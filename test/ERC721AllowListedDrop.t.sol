@@ -79,4 +79,6 @@ contract ERC721AllowListedDropTest is Test, DropEventsAndErrors {
         );
         test.mintAllowList{ value: 2 ether }(_mintData, EMPTY_BYTES32_ARRAY);
     }
+
+    receive() external payable {}
 }

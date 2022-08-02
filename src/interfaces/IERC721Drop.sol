@@ -17,6 +17,7 @@ interface IERC721Drop is IERC721ContractMetadata {
         uint64 endTime; // 208/256 bits
         // maximum number of mints for the public drop
         uint16 maxMintsPerWallet; // 224/256 bits
+        // TODO: do we need this?
         // maxmium number of mints per transaction for the public drop
         uint16 maxMintsPerTransaction; // 240/256 bits
         // fee out of 10,000 basis points that we will collect - TBD?
@@ -40,9 +41,9 @@ interface IERC721Drop is IERC721ContractMetadata {
      */
     function publicMint(uint256 amount) external payable;
 
-    /**
-     * @notice During the public mint window, mint a number of tokens to the caller according to a certain "option",
-     *         which may use different logic. Option param may be unused.
-     */
-    function publicMint(uint256 option, uint256 amount) external payable;
+    // /**
+    //  * @notice During the public mint window, mint a number of tokens to the caller according to a certain "option",
+    //  *         which may use different logic. Option param may be unused.
+    //  */
+    // function publicMint(uint256 option, uint256 amount) external payable;
 }

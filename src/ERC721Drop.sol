@@ -8,6 +8,7 @@ import {
     IERC721ContractMetadata
 } from "./ERC721ContractMetadata.sol";
 import { ERC721A } from "./token/ERC721A.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 contract ERC721Drop is
     ERC721ContractMetadata,
@@ -45,16 +46,15 @@ contract ERC721Drop is
      * @notice Modifier that checks numberToMint against maxPerTransaction and publicDrop.maxMintsPerWallet
      */
     modifier checkNumberToMint(
-        uint256 numberToMint,
-        uint256 maxPerTransaction
+        uint256 numberToMint // , // uint256 maxPerTransaction
     ) {
         {
-            if (numberToMint > maxPerTransaction) {
-                revert AmountExceedsMaxPerTransaction(
-                    numberToMint,
-                    maxPerTransaction
-                );
-            }
+            // if (numberToMint > maxPerTransaction) {
+            //     revert AmountExceedsMaxPerTransaction(
+            //         numberToMint,
+            //         maxPerTransaction
+            //     );
+            // }
             uint256 maxMintsPerWallet = publicDrop.maxMintsPerWallet;
             if (
                 (numberToMint + _numberMinted(msg.sender) > maxMintsPerWallet)
@@ -83,18 +83,28 @@ contract ERC721Drop is
         _publicMint(numToMint);
     }
 
-    function publicMint(uint256, uint256 numToMint) public payable {
-        _publicMint(numToMint);
-    }
+    // function publicMint(uint256, uint256 numToMint) public payable {
+    //     _publicMint(numToMint);
+    // }
 
     // todo: see if solidity optimizes these SLOADs
     // todo: support ERC20
     function _publicMint(uint256 numToMint)
         internal
         isActive(publicDrop.startTime, publicDrop.endTime)
-        checkNumberToMint(numToMint, publicDrop.maxMintsPerTransaction)
+        checkNumberToMint(numToMint)
         includesCorrectPayment(numToMint, publicDrop.mintPrice)
     {
+        _mint(numToMint, publicDrop.feeBps);
+    }
+
+    function _mint(uint256 numToMint, uint256 feeBps) internal {
+        // todo: extra checks/restrictions to ensure this never overflows
+        uint256 fee = (numToMint * publicDrop.mintPrice * feeBps) / 10000;
+        uint256 netPrimarySale = numToMint * publicDrop.mintPrice - fee;
+        SafeTransferLib.safeTransferETH(administrator, fee);
+        SafeTransferLib.safeTransferETH(owner, netPrimarySale);
+
         _mint(msg.sender, numToMint);
     }
 
