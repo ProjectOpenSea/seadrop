@@ -72,10 +72,10 @@ contract ERC721AllowListedDrop is ERC721Drop, IERC721AllowListedDrop {
         isAllowListed(keccak256(abi.encode(msg.sender, mintParams)), proof)
         isActive(mintParams.startTime, mintParams.endTime)
         includesCorrectPayment(mintParams.numToMint, mintParams.mintPrice)
-        checkNumberToMint(mintParams.numToMint, mintParams.maxNumberMinted)
+        checkNumberToMint(mintParams.numToMint)
         allowListNotRedeemed(mintParams.allowListIndex)
     {
-        _mint(msg.sender, mintParams.numToMint);
+        _mint(mintParams.numToMint, mintParams.feeBps);
     }
 
     function setAllowListRedeemed(address minter, uint256 allowListIndex)
