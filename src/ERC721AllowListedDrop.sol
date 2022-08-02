@@ -2,14 +2,14 @@
 pragma solidity ^0.8.11;
 
 import {
-    IERC721AllowlistedDrop
-} from "./interfaces/IERC721AllowlistedDrop.sol";
+    IERC721AllowListedDrop
+} from "./interfaces/IERC721AllowListedDrop.sol";
 import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
 import { ERC721Drop } from "./ERC721Drop.sol";
 import { ERC721A } from "./token/ERC721A.sol";
 import { IERC721ContractMetadata } from "./interfaces/IContractMetadata.sol";
 
-contract ERC721AllowlistedDrop is ERC721Drop, IERC721AllowlistedDrop {
+contract ERC721AllowListedDrop is ERC721Drop, IERC721AllowListedDrop {
     bytes32 merkleRoot;
 
     error InvalidProof();

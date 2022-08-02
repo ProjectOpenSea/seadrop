@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { IERC721Drop } from "./IERC721Drop.sol";
 
-interface IERC721AllowlistedDrop is IERC721Drop {
+interface IERC721AllowListedDrop is IERC721Drop {
     event MerkleRootUpdated(
         bytes32 indexed newMerkleRoot,
         address indexed encryptionPublicKey,
