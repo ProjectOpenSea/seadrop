@@ -75,29 +75,82 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
 
     function mintPublic(
         address nftContract,
-        uint256 feeRecipient,
+        address feeRecipient,
         uint256 amount
-    ) external payable override {}
+    )
+        external
+        payable
+        override
+        isActive(publicDrops[nftContract])
+        includesCorrectPayment(amount, publicDrops[nftContract].mintPrice)
+        checkNumberToMint(
+            IERC721SeaDrop(nftContract),
+            amount,
+            publicDrops[nftContract]
+        )
+    {
+        payoutAddresses[msg.sender] = feeRecipient;
+        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, amount);
+    }
 
     function mintPublicOption(
         address nftContract,
-        uint256 feeRecipient,
+        address feeRecipient,
         uint256 amount,
         uint256 tokenOrOptionId
-    ) external payable override {}
+    )
+        external
+        payable
+        override
+        isActive(publicDrops[nftContract])
+        includesCorrectPayment(amount, publicDrops[nftContract].mintPrice)
+        checkNumberToMint(
+            IERC721SeaDrop(nftContract),
+            amount,
+            publicDrops[nftContract]
+        )
+    {}
 
     function mintAllowList(
         address nftContract,
         address feeRecipient,
         AllowListMint calldata mintParams
-    ) external payable override {}
+    )
+        external
+        payable
+        override
+        isActive(publicDrops[nftContract])
+        includesCorrectPayment(
+            mintParams.numToMint,
+            publicDrops[nftContract].mintPrice
+        )
+        checkNumberToMint(
+            IERC721SeaDrop(nftContract),
+            mintParams.numToMint,
+            publicDrops[nftContract]
+        )
+    {}
 
     function mintAllowListOption(
         address nftContract,
         address feeRecipient,
         uint256 tokenOrOptionId,
         AllowListMint calldata mintParams
-    ) external payable override {}
+    )
+        external
+        payable
+        override
+        isActive(publicDrops[nftContract])
+        includesCorrectPayment(
+            mintParams.numToMint,
+            publicDrops[nftContract].mintPrice
+        )
+        checkNumberToMint(
+            IERC721SeaDrop(nftContract),
+            mintParams.numToMint,
+            publicDrops[nftContract]
+        )
+    {}
 
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external

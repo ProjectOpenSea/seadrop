@@ -12,13 +12,13 @@ import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
 interface ISeaDrop is SeaDropErrorsAndEvents {
     function mintPublic(
         address nftContract,
-        uint256 feeRecipient,
+        address feeRecipient,
         uint256 amount
     ) external payable;
 
     function mintPublicOption(
         address nftContract,
-        uint256 feeRecipient,
+        address feeRecipient,
         uint256 amount,
         uint256 tokenOrOptionId
     ) external payable;

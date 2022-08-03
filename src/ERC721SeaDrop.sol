@@ -34,6 +34,7 @@ contract ERC721SeaDrop is ERC721A, TwoStepAdministered, IERC721SeaDrop {
     function mintSeaDrop(address minter, uint256 amount)
         external
         payable
+        override
         onlySeaDrop
     {
         _mint(minter, amount);
