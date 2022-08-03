@@ -6,7 +6,7 @@ import { PublicDrop, AllowListMint, AllowListData } from "./SeaDropStructs.sol";
 
 interface IERC721SeaDrop is IERC721ContractMetadata {
     // doing `maxMintsPerWallet` check here may be cheaper
-    function mintSeaDrop(uint256 minter, uint256 amount) external payable;
+    function mintSeaDrop(address minter, uint256 amount) external payable;
 
     // These methods can all consist of a single line: seaDrop.updateFunction(params);
 

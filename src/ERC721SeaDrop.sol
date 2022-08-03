@@ -28,13 +28,16 @@ contract ERC721SeaDrop is ERC721A, TwoStepAdministered, IERC721SeaDrop {
         if (msg.sender != address(_SEADROP)) {
             revert OnlySeaDrop();
         }
+        _;
     }
 
-    function mintSeaDrop(uint256 minter, uint256 amount)
+    function mintSeaDrop(address minter, uint256 amount)
         external
         payable
         onlySeaDrop
-    {}
+    {
+        _mint(minter, amount);
+    }
 
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external
