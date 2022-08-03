@@ -59,7 +59,7 @@ contract ERC721SeaDrop is
         override
         onlyOwner
     {
-        PublicDrop memory retrieved = _SEADROP.publicDrops(address(this));
+        PublicDrop memory retrieved = _SEADROP.getPublicDrop(address(this));
         PublicDrop memory supplied = publicDrop;
         supplied.feeBps = retrieved.feeBps;
         _SEADROP.updatePublicDrop(supplied);
@@ -70,7 +70,7 @@ contract ERC721SeaDrop is
         virtual
         onlyAdministrator
     {
-        PublicDrop memory retrieved = _SEADROP.publicDrops(address(this));
+        PublicDrop memory retrieved = _SEADROP.getPublicDrop(address(this));
         retrieved.feeBps = feeBps;
         _SEADROP.updatePublicDrop(retrieved);
     }

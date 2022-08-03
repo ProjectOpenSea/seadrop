@@ -197,11 +197,11 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         return _publicDrops[nftContract];
     }
 
-    function saleTokens(address nftContract) external view returns (address) {
+    function getSaleToken(address nftContract) external view returns (address) {
         return address(_saleTokens[nftContract]);
     }
 
-    function creatorPayoutAddresses(address nftContract)
+    function getCreatorPayoutAddress(address nftContract)
         external
         view
         returns (address)
@@ -209,11 +209,15 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         return _creatorPayoutAddresses[nftContract];
     }
 
-    function merkleRoots(address nftContract) external view returns (bytes32) {
+    function getMerkleRoot(address nftContract)
+        external
+        view
+        returns (bytes32)
+    {
         return _merkleRoots[nftContract];
     }
 
-    function userData(address nftContract, address user)
+    function getUserData(address nftContract, address user)
         external
         view
         returns (UserData memory)

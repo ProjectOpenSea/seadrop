@@ -5,21 +5,32 @@ import { IERC721ContractMetadata } from "../interfaces/IContractMetadata.sol";
 import { PublicDrop, AllowListMint, AllowListData } from "./SeaDropStructs.sol";
 
 interface IERC721SeaDrop is IERC721ContractMetadata {
-    function getSeaDrop() external view returns (address);
-
     // doing `maxMintsPerWallet` check here may be cheaper
     function mintSeaDrop(address minter, uint256 amount) external payable;
 
-    // These methods can all consist of a single line: seaDrop.updateFunction(params);
+    // to enforce maxMintsPerWallet checks - should SeaDrop track this?
+    function numberMinted(address seaDropImpl, address minter)
+        external
+        view
+        returns (uint256);
 
-    function updatePublicDrop(PublicDrop calldata publicDrop) external;
+    // These methods can all consist of a single line: seaDropImpl.updateFunction(params);
 
-    function updateAllowList(AllowListData calldata allowListData) external;
+    function updatePublicDrop(
+        address seaDropImpl,
+        PublicDrop calldata publicDrop
+    ) external;
 
-    function updateSaleToken(address saleToken) external;
+    function updateAllowList(
+        address seaDropImpl,
+        AllowListData calldata allowListData
+    ) external;
 
-    function updateDropURI(string calldata dropURI) external;
+    function updateDropURI(address seaDropImpl, string calldata dropURI)
+        external;
 
-    // if SeaDrop should verify `maxNumberMinted`, it will probably need this
-    function numberMinted(address minter) external view returns (uint256);
+    function updateCreatorPayoutAddress(address payoutAddress) external;
+
+    function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
+        external;
 }
