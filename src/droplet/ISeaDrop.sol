@@ -39,16 +39,16 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     // the following methods assume msg.sender is an nft contract; should check ERC165 when ingesting events
 
     /// @notice update public drop and emit PublicDropUpdated event
-    function updatePublicDrop(PublicDrop calldata publicDrop) external;
+    function updatePublicDrop(PublicDrop calldata publicDrop) external; // onlyOwnerOrAdministrator - doesn't update fee
 
     /// @notice update merkle root and emit MerkleRootUpdated event
-    function updateAllowList(AllowListData calldata allowListData) external;
+    function updateAllowList(AllowListData calldata allowListData) external; // onlyOwnerOrAdministrator
 
     /// @notice update sale token for nftContract and emit AllowListUpdated event
-    function updateSaleToken(address saleToken) external;
+    function updateSaleToken(address saleToken) external; // onlyOwnerOrAdministrator - backend should filter on acceptable tokens
 
     /// @notice emit DropURIUpdated event
-    function updateDropURI(string calldata dropURI) external;
+    function updateDropURI(string calldata dropURI) external; // onlyOwnerOrAdministrator
 
-    function updatePayoutAddress(address payoutAddress) external;
+    function updateCreatorPayoutAddress(address payoutAddress) external; // onlyOwner - primary sale payout address
 }

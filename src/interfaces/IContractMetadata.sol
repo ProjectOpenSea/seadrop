@@ -29,4 +29,6 @@ interface IERC721ContractMetadata is IContractMetadata {
     function maxSupply() external view returns (uint256);
 
     function totalSupply() external view returns (uint256);
+
+    function provenanceHash() external view returns (bytes32);
 }

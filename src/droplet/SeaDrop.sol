@@ -10,13 +10,68 @@ import {
     UserData
 } from "./SeaDropStructs.sol";
 import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { DropEventsAndErrors } from "../DropEventsAndErrors.sol";
+import { IERC721SeaDrop } from "./IERC721SeaDrop.sol";
 
-contract SeaDrop is ISeaDrop {
+contract SeaDrop is ISeaDrop, DropEventsAndErrors {
     mapping(address => PublicDrop) public publicDrops;
     mapping(address => ERC20) public saleTokens;
     mapping(address => address) public payoutAddresses;
     mapping(address => bytes32) public merkleRoots;
     mapping(address => mapping(address => UserData)) public userData;
+
+    modifier isActive(PublicDrop memory publicDrop) {
+        {
+            if (
+                block.timestamp < publicDrop.startTime ||
+                block.timestamp > publicDrop.endTime
+            ) {
+                revert NotActive(
+                    block.timestamp,
+                    publicDrop.startTime,
+                    publicDrop.endTime
+                );
+            }
+        }
+        _;
+    }
+
+    modifier includesCorrectPayment(uint256 numberToMint, uint256 mintPrice) {
+        {
+            if (numberToMint * mintPrice != msg.value) {
+                revert IncorrectPayment(msg.value, numberToMint * mintPrice);
+            }
+        }
+        _;
+    }
+
+    /**
+     * @notice Modifier that checks numberToMint against maxPerTransaction and publicDrop.maxMintsPerWallet
+     */
+    modifier checkNumberToMint(
+        IERC721SeaDrop saleToken,
+        uint256 numberToMint,
+        PublicDrop memory publicDrop
+    ) {
+        {
+            if (numberToMint > publicDrop.maxMintsPerTransaction) {
+                revert AmountExceedsMaxPerTransaction(
+                    numberToMint,
+                    publicDrop.maxMintsPerTransaction
+                );
+            }
+            if (
+                (numberToMint + saleToken.numberMinted(msg.sender) >
+                    publicDrop.maxMintsPerWallet)
+            ) {
+                revert AmountExceedsMaxPerWallet(
+                    numberToMint + saleToken.numberMinted(msg.sender),
+                    publicDrop.maxMintsPerWallet
+                );
+            }
+        }
+        _;
+    }
 
     function mintPublic(
         address nftContract,
