@@ -5,6 +5,8 @@ import { PublicDrop } from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     // todo: don't think publicdrop benefits from indexed
+    error OnlySeaDrop();
+
     event PublicDropUpdated(
         address indexed nftContract,
         PublicDrop indexed newPublicDrop
