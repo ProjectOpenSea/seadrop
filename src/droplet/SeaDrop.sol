@@ -14,11 +14,11 @@ import { DropEventsAndErrors } from "../DropEventsAndErrors.sol";
 import { IERC721SeaDrop } from "./IERC721SeaDrop.sol";
 
 contract SeaDrop is ISeaDrop, DropEventsAndErrors {
-    mapping(address => PublicDrop) public publicDrops;
-    mapping(address => ERC20) public saleTokens;
-    mapping(address => address) public payoutAddresses;
-    mapping(address => bytes32) public merkleRoots;
-    mapping(address => mapping(address => UserData)) public userData;
+    mapping(address => PublicDrop) public _publicDrops;
+    mapping(address => ERC20) public _saleTokens;
+    mapping(address => address) public _creatorPayoutAddresses;
+    mapping(address => bytes32) public _merkleRoots;
+    mapping(address => mapping(address => UserData)) public _userData;
 
     modifier isActive(PublicDrop memory publicDrop) {
         {
@@ -49,7 +49,7 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
      * @notice Modifier that checks numberToMint against maxPerTransaction and publicDrop.maxMintsPerWallet
      */
     modifier checkNumberToMint(
-        IERC721SeaDrop saleToken,
+        IERC721SeaDrop nftToken,
         uint256 numberToMint,
         PublicDrop memory publicDrop
     ) {
@@ -61,11 +61,11 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
                 );
             }
             if (
-                (numberToMint + saleToken.numberMinted(msg.sender) >
+                (numberToMint + nftToken.numberMinted(msg.sender) >
                     publicDrop.maxMintsPerWallet)
             ) {
                 revert AmountExceedsMaxPerWallet(
-                    numberToMint + saleToken.numberMinted(msg.sender),
+                    numberToMint + nftToken.numberMinted(msg.sender),
                     publicDrop.maxMintsPerWallet
                 );
             }
@@ -81,15 +81,16 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         external
         payable
         override
-        isActive(publicDrops[nftContract])
-        includesCorrectPayment(amount, publicDrops[nftContract].mintPrice)
+        isActive(_publicDrops[nftContract])
+        includesCorrectPayment(amount, _publicDrops[nftContract].mintPrice)
         checkNumberToMint(
             IERC721SeaDrop(nftContract),
             amount,
-            publicDrops[nftContract]
+            _publicDrops[nftContract]
         )
     {
-        payoutAddresses[msg.sender] = feeRecipient;
+        PublicDrop memory publicDrop = _publicDrops[nftContract];
+        _splitPayout(nftContract, feeRecipient, publicDrop.feeBps);
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, amount);
     }
 
@@ -102,12 +103,12 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         external
         payable
         override
-        isActive(publicDrops[nftContract])
-        includesCorrectPayment(amount, publicDrops[nftContract].mintPrice)
+        isActive(_publicDrops[nftContract])
+        includesCorrectPayment(amount, _publicDrops[nftContract].mintPrice)
         checkNumberToMint(
             IERC721SeaDrop(nftContract),
             amount,
-            publicDrops[nftContract]
+            _publicDrops[nftContract]
         )
     {}
 
@@ -119,17 +120,53 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         external
         payable
         override
-        isActive(publicDrops[nftContract])
+        isActive(_publicDrops[nftContract])
         includesCorrectPayment(
             mintParams.numToMint,
-            publicDrops[nftContract].mintPrice
+            _publicDrops[nftContract].mintPrice
         )
         checkNumberToMint(
             IERC721SeaDrop(nftContract),
             mintParams.numToMint,
-            publicDrops[nftContract]
+            _publicDrops[nftContract]
         )
-    {}
+    {
+        _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+        IERC721SeaDrop(nftContract).mintSeaDrop(
+            msg.sender,
+            mintParams.numToMint
+        );
+    }
+
+    function _splitPayout(
+        address nftContract,
+        address feeRecipient,
+        uint256 feeBps
+    ) internal {
+        uint256 feeAmount = (msg.value * feeBps) / 10000;
+        uint256 payoutAmount = msg.value - feeAmount;
+        ERC20 saleToken = _saleTokens[nftContract];
+        if (address(saleToken) == address(0)) {
+            SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
+            SafeTransferLib.safeTransferETH(
+                _creatorPayoutAddresses[nftContract],
+                payoutAmount
+            );
+        } else {
+            SafeTransferLib.safeTransferFrom(
+                saleToken,
+                msg.sender,
+                feeRecipient,
+                feeAmount
+            );
+            SafeTransferLib.safeTransferFrom(
+                saleToken,
+                msg.sender,
+                _creatorPayoutAddresses[nftContract],
+                payoutAmount
+            );
+        }
+    }
 
     function mintAllowListOption(
         address nftContract,
@@ -140,23 +177,55 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         external
         payable
         override
-        isActive(publicDrops[nftContract])
+        isActive(_publicDrops[nftContract])
         includesCorrectPayment(
             mintParams.numToMint,
-            publicDrops[nftContract].mintPrice
+            _publicDrops[nftContract].mintPrice
         )
         checkNumberToMint(
             IERC721SeaDrop(nftContract),
             mintParams.numToMint,
-            publicDrops[nftContract]
+            _publicDrops[nftContract]
         )
     {}
+
+    function publicDrops(address nftContract)
+        external
+        view
+        returns (PublicDrop memory)
+    {
+        return _publicDrops[nftContract];
+    }
+
+    function saleTokens(address nftContract) external view returns (address) {
+        return address(_saleTokens[nftContract]);
+    }
+
+    function creatorPayoutAddresses(address nftContract)
+        external
+        view
+        returns (address)
+    {
+        return _creatorPayoutAddresses[nftContract];
+    }
+
+    function merkleRoots(address nftContract) external view returns (bytes32) {
+        return _merkleRoots[nftContract];
+    }
+
+    function userData(address nftContract, address user)
+        external
+        view
+        returns (UserData memory)
+    {
+        return _userData[nftContract][user];
+    }
 
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external
         override
     {
-        publicDrops[msg.sender] = publicDrop;
+        _publicDrops[msg.sender] = publicDrop;
         emit PublicDropUpdated(msg.sender, publicDrop);
     }
 
@@ -164,7 +233,7 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         external
         override
     {
-        merkleRoots[msg.sender] = allowListData.merkleRoot;
+        _merkleRoots[msg.sender] = allowListData.merkleRoot;
         emit AllowListUpdated(
             msg.sender,
             allowListData.leavesEncryptionPublicKey,
@@ -176,7 +245,7 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
 
     /// @notice update sale token for nftContract and emit AllowListUpdated event
     function updateSaleToken(address saleToken) external {
-        saleTokens[msg.sender] = ERC20(saleToken);
+        _saleTokens[msg.sender] = ERC20(saleToken);
         emit SaleTokenUpdated(msg.sender, saleToken);
     }
 
@@ -185,8 +254,8 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         emit DropURIUpdated(msg.sender, dropURI);
     }
 
-    function updatePayoutAddress(address _payoutAddress) external {
-        payoutAddresses[msg.sender] = _payoutAddress;
+    function updateCreatorPayoutAddress(address _payoutAddress) external {
+        _creatorPayoutAddresses[msg.sender] = _payoutAddress;
         emit PayoutAddressUpdated(msg.sender, _payoutAddress);
     }
 }

@@ -5,9 +5,11 @@ import {
     PublicDrop,
     AllowListMint,
     AllowListMintOption,
-    AllowListData
+    AllowListData,
+    UserData
 } from "./SeaDropStructs.sol";
 import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 interface ISeaDrop is SeaDropErrorsAndEvents {
     function mintPublic(
@@ -36,6 +38,25 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         AllowListMint calldata mintParams
     ) external payable;
 
+    function publicDrops(address nftContract)
+        external
+        view
+        returns (PublicDrop memory);
+
+    function saleTokens(address nftContract) external view returns (address);
+
+    function creatorPayoutAddresses(address nftContract)
+        external
+        view
+        returns (address);
+
+    function merkleRoots(address nftContract) external view returns (bytes32);
+
+    function userData(address nftContract, address user)
+        external
+        view
+        returns (UserData memory);
+
     // the following methods assume msg.sender is an nft contract; should check ERC165 when ingesting events
 
     /// @notice update public drop and emit PublicDropUpdated event
@@ -50,5 +71,6 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /// @notice emit DropURIUpdated event
     function updateDropURI(string calldata dropURI) external; // onlyOwnerOrAdministrator
 
-    function updateCreatorPayoutAddress(address payoutAddress) external; // onlyOwner - primary sale payout address
+    function updateCreatorPayoutAddress(address payoutAddress) external;
+    // onlyOwner - primary sale payout address
 }

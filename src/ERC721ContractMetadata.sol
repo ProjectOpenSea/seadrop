@@ -25,6 +25,7 @@ contract ERC721ContractMetadata is
 {
     uint256 _maxSupply;
     string baseURI;
+    bytes32 _provenanceHash;
 
     constructor(
         string memory name,
@@ -70,5 +71,9 @@ contract ERC721ContractMetadata is
         returns (uint256)
     {
         return ERC721A.totalSupply();
+    }
+
+    function provenanceHash() external view override returns (bytes32) {
+        return _provenanceHash;
     }
 }

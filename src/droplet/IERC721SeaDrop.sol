@@ -5,6 +5,8 @@ import { IERC721ContractMetadata } from "../interfaces/IContractMetadata.sol";
 import { PublicDrop, AllowListMint, AllowListData } from "./SeaDropStructs.sol";
 
 interface IERC721SeaDrop is IERC721ContractMetadata {
+    function getSeaDrop() external view returns (address);
+
     // doing `maxMintsPerWallet` check here may be cheaper
     function mintSeaDrop(address minter, uint256 amount) external payable;
 
