@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import { ISeaDrop } from "./ISeaDrop.sol";
+import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
 import {
     PublicDrop,
     MintParams,
     AllowListData,
     UserData
-} from "./SeaDropStructs.sol";
+} from "./lib/SeaDropStructs.sol";
 import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-import { DropEventsAndErrors } from "../DropEventsAndErrors.sol";
-import { IERC721SeaDrop } from "./IERC721SeaDrop.sol";
+import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
 import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
 
 import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
-contract SeaDrop is ISeaDrop, DropEventsAndErrors {
+contract SeaDrop is ISeaDrop {
     using ECDSA for bytes32;
 
     mapping(address => PublicDrop) private _publicDrops;

@@ -3,7 +3,6 @@ pragma solidity ^0.8.11;
 
 import { ERC721A } from "./token/ERC721A.sol";
 import { MaxMintable } from "utility-contracts/MaxMintable.sol";
-import { DropEventsAndErrors } from "./DropEventsAndErrors.sol";
 import {
     TwoStepAdministered,
     TwoStepOwnable

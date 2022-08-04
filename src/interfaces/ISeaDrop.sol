@@ -6,8 +6,8 @@ import {
     MintParams,
     AllowListData,
     UserData
-} from "./SeaDropStructs.sol";
-import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
+} from "../lib/SeaDropStructs.sol";
+import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
 
 interface ISeaDrop is SeaDropErrorsAndEvents {
     // emitted as part of mint for analytics purposes

@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import {
     IERC721SeaDrop,
     IERC721ContractMetadata
-} from "./droplet/IERC721SeaDrop.sol";
+} from "./interfaces/IERC721SeaDrop.sol";
 import {
     ERC721ContractMetadata,
     IERC721ContractMetadata
@@ -14,12 +14,12 @@ import { ERC721A } from "./token/ERC721A.sol";
 
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
-import { SeaDrop } from "./droplet/SeaDrop.sol";
+import { SeaDrop } from "./SeaDrop.sol";
 
-import { ISeaDrop } from "./droplet/ISeaDrop.sol";
+import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
-import { SeaDropErrorsAndEvents } from "./droplet/SeaDropErrorsAndEvents.sol";
-import { PublicDrop, AllowListData } from "./droplet/SeaDropStructs.sol";
+import { SeaDropErrorsAndEvents } from "./lib/SeaDropErrorsAndEvents.sol";
+import { PublicDrop, AllowListData } from "./lib/SeaDropStructs.sol";
 
 contract ERC721SeaDrop is
     ERC721ContractMetadata,
