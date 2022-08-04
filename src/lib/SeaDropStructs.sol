@@ -41,6 +41,8 @@ struct MintParams {
     uint256 endTime;
     uint256 dropStage; // non-zero
     uint256 feeBps;
+    // do we want to offload here to avoid additional SLOAD?
+    // uint256 restrictFeeRecipients;
 }
 
 struct AllowListData {
