@@ -31,7 +31,16 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         address nftContract,
         address feeRecipient,
         uint256 numToMint,
-        MintParams calldata mintParams
+        MintParams calldata mintParams,
+        bytes32[] calldata proof
+    ) external payable;
+
+    function mintSigned(
+        address nftContract,
+        address feeRecipient,
+        uint256 numToMint,
+        MintParams calldata mintParams,
+        bytes calldata signature
     ) external payable;
 
     function getPublicDrop(address nftContract)
@@ -45,6 +54,11 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (address);
 
     function getMerkleRoot(address nftContract) external view returns (bytes32);
+
+    function getAllowedFeeRecipient(address nftContract, address feeRecipient)
+        external
+        view
+        returns (bool);
 
     function getSigners(address nftContract)
         external

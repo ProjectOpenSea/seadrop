@@ -109,6 +109,15 @@ contract ERC721SeaDrop is
         _SEADROP.updateAllowedFeeRecipient(feeRecipient, allowed);
     }
 
+    function updateSigners(address, address[] calldata newSigners)
+        external
+        virtual
+        override
+        onlyOwner
+    {
+        _SEADROP.updateSigners(newSigners);
+    }
+
     function numberMinted(address minter) external view returns (uint256) {
         return _numberMinted(minter);
     }

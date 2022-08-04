@@ -40,4 +40,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata {
         address feeRecipient,
         bool allowed
     ) external;
+
+    function updateSigners(address seaDropImpl, address[] calldata signers)
+        external;
 }

@@ -5,6 +5,7 @@ import { PublicDrop } from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     error InvalidProof();
+    error InvalidSignature(address recoveredSigner);
 
     event PublicDropUpdated(address indexed nftContract, PublicDrop publicDrop);
 
