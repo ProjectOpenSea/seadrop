@@ -14,10 +14,11 @@ struct PublicDrop {
     bool restrictFeeRecipients; // 208/256 bits
 }
 
-// // Used to define parameters of a DropStage
-// // Stages are strictly for front-end consumption, and are trusted to match
-// // information in the AllowLists
-// // (we may want to surface discrepancies on the front-end)
+// Stages from dropURI are strictly for front-end consumption,
+// and are trusted to match information in the
+// PublicDrop, AllowLists or TokenGatedDropStage
+// (we may want to surface discrepancies on the front-end)
+
 struct TokenGatedDropStage {
     uint80 mintPrice;
     uint16 maxTotalMintableByWallet;
@@ -42,6 +43,11 @@ struct MintParams {
     uint256 feeBps;
     // do we want to offload here to avoid additional SLOAD?
     bool restrictFeeRecipients;
+}
+
+struct TokenGatedMintParams {
+	address allowedNftToken;
+	uint256[] allowedNftTokenIds;
 }
 
 struct AllowListData {

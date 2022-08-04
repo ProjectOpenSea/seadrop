@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {
     IERC721ContractMetadata
 } from "../interfaces/IERC721ContractMetadata.sol";
-import { PublicDrop, AllowListData } from "../lib/SeaDropStructs.sol";
+import { PublicDrop, AllowListData, TokenGatedDropStage } from "../lib/SeaDropStructs.sol";
 
 interface IERC721SeaDrop is IERC721ContractMetadata {
     error OnlySeaDrop();
@@ -25,6 +25,17 @@ interface IERC721SeaDrop is IERC721ContractMetadata {
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
+    ) external;
+
+    function updateTokenGatedDropStage(
+        address nftContract,
+        address allowedNftToken,
+        TokenGatedDropStage calldata dropStage
+    ) external;
+
+    function removeTokenGatedDropStage(
+        address nftContract,
+        address allowedNftTokenToRemove
     ) external;
 
     function updateDropURI(address seaDropImpl, string calldata dropURI)

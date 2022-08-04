@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import { PublicDrop } from "./SeaDropStructs.sol";
+import { PublicDrop, TokenGatedDropStage } from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     error NotActive(
@@ -16,6 +16,10 @@ interface SeaDropErrorsAndEvents {
     error IncorrectPayment(uint256 got, uint256 want);
     error InvalidProof();
     error InvalidSignature(address recoveredSigner);
+    error OnlyNftContract(address nftContract);
+
+    error TokenGatedNotTokenOwner(address nftContract, address allowedNftContract, uint256 tokenId);
+    error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);
 
     // emitted as part of mint for analytics purposes
     event SeaDropMint(
@@ -29,6 +33,17 @@ interface SeaDropErrorsAndEvents {
     );
 
     event PublicDropUpdated(address indexed nftContract, PublicDrop publicDrop);
+
+    event TokenGatedDropStageUpdated(
+        address indexed nftContract,
+        address indexed allowedNftToken,
+        TokenGatedDropStage dropStage
+    );
+
+    event TokenGatedDropStageRemoved(
+        address indexed nftContract,
+        address indexed allowedNftToken
+    );
 
     event AllowListUpdated(
         address indexed nftContract,
