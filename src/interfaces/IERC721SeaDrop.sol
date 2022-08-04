@@ -10,7 +10,11 @@ import {
     TokenGatedDropStage
 } from "../lib/SeaDropStructs.sol";
 
-interface IERC721SeaDrop is IERC721ContractMetadata {
+import {
+    IERC165
+} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+
+interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     error OnlySeaDrop();
 
     // doing `maxMintsPerWallet` check here may be cheaper

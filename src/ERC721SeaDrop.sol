@@ -14,6 +14,10 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
+import {
+    IERC165
+} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+
 import { SeaDrop } from "./SeaDrop.sol";
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
@@ -156,5 +160,18 @@ contract ERC721SeaDrop is
         returns (uint256)
     {
         return ERC721A.totalSupply();
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(IERC165, ERC721A)
+        returns (bool)
+    {
+        return
+            interfaceId == this.supportsInterface.selector || // ERC165
+            interfaceId == type(IERC721ContractMetadata).interfaceId || // IERC721ContractMetadata
+            interfaceId == type(IERC721SeaDrop).interfaceId; // IERC721SeaDrop
     }
 }
