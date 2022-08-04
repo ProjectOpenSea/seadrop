@@ -46,8 +46,8 @@ struct MintParams {
 }
 
 struct TokenGatedMintParams {
-	address allowedNftToken;
-	uint256[] allowedNftTokenIds;
+    address allowedNftToken;
+    uint256[] allowedNftTokenIds;
 }
 
 struct AllowListData {

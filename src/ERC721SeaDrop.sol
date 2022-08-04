@@ -19,7 +19,11 @@ import { SeaDrop } from "./SeaDrop.sol";
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
 import { SeaDropErrorsAndEvents } from "./lib/SeaDropErrorsAndEvents.sol";
-import { PublicDrop, AllowListData, TokenGatedDropStage } from "./lib/SeaDropStructs.sol";
+import {
+    PublicDrop,
+    AllowListData,
+    TokenGatedDropStage
+} from "./lib/SeaDropStructs.sol";
 
 contract ERC721SeaDrop is
     ERC721ContractMetadata,
@@ -101,7 +105,10 @@ contract ERC721SeaDrop is
         address nftContract,
         address allowedNftTokenToRemove
     ) external virtual override onlyOwnerOrAdministrator {
-        _SEADROP.removeTokenGatedDropStage(nftContract, allowedNftTokenToRemove);
+        _SEADROP.removeTokenGatedDropStage(
+            nftContract,
+            allowedNftTokenToRemove
+        );
     }
 
     function updateDropURI(address, string calldata dropURI)

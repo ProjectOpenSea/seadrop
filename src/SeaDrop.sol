@@ -223,9 +223,9 @@ contract SeaDrop is ISeaDrop {
                         tokenId
                     );
                 }
-                bool redeemed = _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
-                    tokenId
-                ];
+                bool redeemed = _tokenGatedRedeemed[nftContract][
+                    mintParams.allowedNftToken
+                ][tokenId];
                 if (redeemed == true) {
                     revert TokenGatedTokenIdAlreadyRedeemed(
                         nftContract,
@@ -393,7 +393,11 @@ contract SeaDrop is ISeaDrop {
         TokenGatedDropStage calldata dropStage
     ) external override onlyNftContract(msg.sender) {
         _tokenGatedDropStages[nftContract][allowedNftToken] = dropStage;
-        emit TokenGatedDropStageUpdated(nftContract, allowedNftToken, dropStage);
+        emit TokenGatedDropStageUpdated(
+            nftContract,
+            allowedNftToken,
+            dropStage
+        );
     }
 
     function removeTokenGatedDropStage(
