@@ -99,13 +99,20 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
     {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
         if (block.timestamp < publicDrop.startTime) {
-            revert NotActive(block.timestamp, startTime, endTime);
+            revert NotActive(
+                block.timestamp,
+                publicDrop.startTime,
+                type(uint64).max
+            );
         }
-
-        _checkCorrectPayment(numToMint, _publicDrops[nftContract].mintPrice);
-        _checkNumberToMint(numToMint, nftContract);
-        _splitPayout(nftContract, feeRecipient, publicDrop.feeBps);
+        _checkCorrectPayment(numToMint, publicDrop.mintPrice);
+        _checkNumberToMint(
+            numToMint,
+            publicDrop.maxMintsPerWallet,
+            nftContract
+        );
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+        _splitPayout(nftContract, feeRecipient, publicDrop.feeBps);
     }
 
     function mintAllowList(
@@ -115,6 +122,14 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         MintParams calldata mintParams,
         bytes32[] calldata proof
     ) external payable override {
+        _checkActive(mintParams.startTime, mintParams.endTime);
+        _checkCorrectPayment(numToMint, mintParams.mintPrice);
+        _checkNumberToMint(
+            numToMint,
+            mintParams.maxTotalMintableByWallet,
+            nftContract
+        );
+
         if (
             !MerkleProofLib.verify(
                 proof,
@@ -124,8 +139,9 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         ) {
             revert InvalidProof();
         }
-        _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+        _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
     }
 
     function mintSigned(
@@ -134,19 +150,14 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         uint256 numToMint,
         MintParams calldata mintParams,
         bytes calldata signature
-    )
-        external
-        payable
-        override
-        checkNumberToMint(
-            IERC721SeaDrop(nftContract),
-            numToMint,
-            _publicDrops[nftContract]
-        )
-    {
+    ) external payable override {
         _checkActive(mintParams.startTime, mintParams.endTime);
         _checkCorrectPayment(numToMint, mintParams.mintPrice);
-        _checkNumberToMint(numToMint, nftContract);
+        _checkNumberToMint(
+            numToMint,
+            mintParams.maxTotalMintableByWallet,
+            nftContract
+        );
         // Verify EIP-712 signature by recreating the data structure
         // that we signed on the client side, and then using that to recover
         // the address that signed the signature for this data.
@@ -167,21 +178,25 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         if (!_signers[nftContract][recoveredAddress]) {
             revert InvalidSignature(recoveredAddress);
         }
+
+        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+        _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
     }
 
-    function _checkNumberToMint(uint256 numberToMint, address nftContract)
-        internal
-        view
-    {
+    function _checkNumberToMint(
+        uint256 numberToMint,
+        uint256 maxMintsPerWallet,
+        address nftContract
+    ) internal view {
         if (
             (numberToMint +
                 IERC721SeaDrop(nftContract).numberMinted(msg.sender) >
-                publicDrop.maxMintsPerWallet)
+                maxMintsPerWallet)
         ) {
             revert AmountExceedsMaxPerWallet(
                 numberToMint +
                     IERC721SeaDrop(nftContract).numberMinted(msg.sender),
-                publicDrop.maxMintsPerWallet
+                maxMintsPerWallet
             );
         }
     }
