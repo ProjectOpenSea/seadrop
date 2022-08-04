@@ -5,7 +5,7 @@ import { ISeaDrop } from "./ISeaDrop.sol";
 
 import {
     PublicDrop,
-    AllowListMint,
+    MintParams,
     AllowListData,
     UserData
 } from "./SeaDropStructs.sol";
@@ -15,11 +15,13 @@ import { IERC721SeaDrop } from "./IERC721SeaDrop.sol";
 import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
 
 contract SeaDrop is ISeaDrop, DropEventsAndErrors {
-    mapping(address => PublicDrop) public _publicDrops;
-    mapping(address => ERC20) public _saleTokens;
-    mapping(address => address) public _creatorPayoutAddresses;
-    mapping(address => bytes32) public _merkleRoots;
-    mapping(address => mapping(address => bool)) public _allowedFeeRecipients;
+    mapping(address => PublicDrop) private _publicDrops;
+    mapping(address => ERC20) private _saleTokens;
+    mapping(address => address) private _creatorPayoutAddresses;
+    mapping(address => bytes32) private _merkleRoots;
+    mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
+    mapping(address => mapping(address => bool)) private _signers;
+    mapping(address => address[]) private _enumeratedSigners;
     // mapping(address => mapping(address => UserData)) public _userData;
 
     modifier isActive(PublicDrop memory publicDrop) {
@@ -88,48 +90,43 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        uint256 amount
+        uint256 numToMint
     )
         external
         payable
         override
         isActive(_publicDrops[nftContract])
-        includesCorrectPayment(amount, _publicDrops[nftContract].mintPrice)
+        includesCorrectPayment(numToMint, _publicDrops[nftContract].mintPrice)
         checkNumberToMint(
             IERC721SeaDrop(nftContract),
-            amount,
+            numToMint,
             _publicDrops[nftContract]
         )
     {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
         _splitPayout(nftContract, feeRecipient, publicDrop.feeBps);
-        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, amount);
+        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
     }
 
     function mintAllowList(
         address nftContract,
         address feeRecipient,
-        AllowListMint calldata mintParams
+        uint256 numToMint,
+        MintParams calldata mintParams
     )
         external
         payable
         override
         isActive(_publicDrops[nftContract])
-        includesCorrectPayment(
-            mintParams.numToMint,
-            _publicDrops[nftContract].mintPrice
-        )
+        includesCorrectPayment(numToMint, _publicDrops[nftContract].mintPrice)
         checkNumberToMint(
             IERC721SeaDrop(nftContract),
-            mintParams.numToMint,
+            numToMint,
             _publicDrops[nftContract]
         )
     {
         _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
-        IERC721SeaDrop(nftContract).mintSeaDrop(
-            msg.sender,
-            mintParams.numToMint
-        );
+        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
     }
 
     function _splitPayout(
@@ -190,6 +187,14 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         return _merkleRoots[nftContract];
     }
 
+    function getSigners(address nftContract)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _enumeratedSigners[nftContract];
+    }
+
     // function getUserData(address nftContract, address user)
     //     external
     //     view
@@ -240,5 +245,37 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
             allowedFeeRecipient,
             allowed
         );
+    }
+
+    function updateSigners(address[] calldata newSigners) external {
+        address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
+        address[] memory oldSigners = enumeratedStorage;
+        // delete old enumeration
+        delete _enumeratedSigners[msg.sender];
+
+        // add new enumeration
+        for (uint256 i = 0; i < newSigners.length; ) {
+            enumeratedStorage.push(newSigners[i]);
+            unchecked {
+                ++i;
+            }
+        }
+
+        mapping(address => bool) storage signersMap = _signers[msg.sender];
+        // delete old signers
+        for (uint256 i = 0; i < oldSigners.length; ) {
+            signersMap[oldSigners[i]] = false;
+            unchecked {
+                ++i;
+            }
+        }
+        // add new signers
+        for (uint256 i = 0; i < newSigners.length; ) {
+            signersMap[newSigners[i]] = true;
+            unchecked {
+                ++i;
+            }
+        }
+        emit SignersUpdated(msg.sender, oldSigners, newSigners);
     }
 }

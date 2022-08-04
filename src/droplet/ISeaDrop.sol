@@ -3,7 +3,7 @@ pragma solidity ^0.8.11;
 
 import {
     PublicDrop,
-    AllowListMint,
+    MintParams,
     AllowListData,
     UserData
 } from "./SeaDropStructs.sol";
@@ -24,13 +24,14 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        uint256 amount
+        uint256 numToMint
     ) external payable;
 
     function mintAllowList(
         address nftContract,
         address feeRecipient,
-        AllowListMint calldata mintParams
+        uint256 numToMint,
+        MintParams calldata mintParams
     ) external payable;
 
     function getPublicDrop(address nftContract)
@@ -44,6 +45,11 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (address);
 
     function getMerkleRoot(address nftContract) external view returns (bytes32);
+
+    function getSigners(address nftContract)
+        external
+        view
+        returns (address[] memory);
 
     // the following methods assume msg.sender is an nft contract; should check ERC165 of sender when ingesting events
 
@@ -62,4 +68,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /// @notice set allowed for fee recipient and emit AllowedFeeRecipientUpdated event
     function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
         external;
+
+    /// @notice set signers and emit SignersUpdated event
+    function updateSigners(address[] calldata signers) external;
 }

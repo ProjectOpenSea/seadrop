@@ -94,15 +94,15 @@ contract ERC721SeaDrop is
         _SEADROP.updateDropURI(dropURI);
     }
 
-    function updateCreatorPayoutAddress(
-        address seaDropImpl,
-        address payoutAddress
-    ) external onlyOwner {
+    function updateCreatorPayoutAddress(address, address payoutAddress)
+        external
+        onlyOwner
+    {
         _SEADROP.updateCreatorPayoutAddress(payoutAddress);
     }
 
     function updateAllowedFeeRecipient(
-        address seaDropImpl,
+        address,
         address feeRecipient,
         bool allowed
     ) external onlyAdministrator {

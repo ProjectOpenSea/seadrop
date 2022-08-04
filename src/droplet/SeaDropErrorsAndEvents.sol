@@ -29,4 +29,10 @@ interface SeaDropErrorsAndEvents {
         address indexed newFeeRecipient,
         bool indexed allowed
     );
+
+    event SignersUpdated(
+        address indexed nftContract,
+        address[] previousSigners,
+        address[] newSigners
+    );
 }

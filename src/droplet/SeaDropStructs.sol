@@ -34,8 +34,7 @@ struct PublicDrop {
 // an allow list leaf will be composed of msg.sender and the following params
 // note: since feeBps is encoded in the leaf, backend should ensure that feeBps is
 // acceptable before generating a proof
-struct AllowListMint {
-    uint256 numToMint;
+struct MintParams {
     uint256 mintPrice;
     uint256 maxTotalMintableByWallet;
     uint256 startTime;
