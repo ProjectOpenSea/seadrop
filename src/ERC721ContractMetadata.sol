@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import { ERC721A } from "./token/ERC721A.sol";
+import { ERC721A } from "ERC721A/ERC721A.sol";
 import { MaxMintable } from "utility-contracts/MaxMintable.sol";
 import {
     TwoStepAdministered,

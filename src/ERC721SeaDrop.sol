@@ -10,7 +10,7 @@ import {
     IERC721ContractMetadata
 } from "./ERC721ContractMetadata.sol";
 
-import { ERC721A } from "./token/ERC721A.sol";
+import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
