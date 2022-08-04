@@ -10,16 +10,7 @@ import {
 import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
 
 interface ISeaDrop is SeaDropErrorsAndEvents {
-    // emitted as part of mint for analytics purposes
-    event SeaDropMint(
-        address indexed nftContract,
-        address indexed minter,
-        address indexed feeRecipient,
-        uint256 numberMinted,
-        uint256 unitMintPrice,
-        uint256 feeBps,
-        uint256 dropStageIndex // non-zero is an allow-list tier
-    );
+
 
     function mintPublic(
         address nftContract,

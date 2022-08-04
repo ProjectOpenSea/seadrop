@@ -50,52 +50,11 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
-    /**
-     * @notice Modifier that checks numberToMint against maxPerTransaction and publicDrop.maxMintsPerWallet
-     */
-    modifier checkNumberToMint(
-        IERC721SeaDrop nftToken,
-        uint256 numberToMint,
-        PublicDrop memory publicDrop // todo: we may be able to trust AllowListMint's maxTotalMintsForWallet - but we might not want to
-    ) {
-        {
-            // if (numberToMint > publicDrop.maxMintsPerTransaction) {
-            //     revert AmountExceedsMaxPerTransaction(
-            //         numberToMint,
-            //         publicDrop.maxMintsPerTransaction
-            //     );
-            // }
-        }
-        _;
-    }
-
-    modifier isAllowListed(
-        bytes32 leaf,
-        bytes32 merkleRoot,
-        bytes32[] calldata proof
-    ) {
-        {
-            if (!MerkleProofLib.verify(proof, merkleRoot, leaf)) {
-                revert InvalidProof();
-            }
-        }
-        _;
-    }
-
     function mintPublic(
         address nftContract,
         address feeRecipient,
         uint256 numToMint
-    )
-        external
-        payable
-        override
-        checkNumberToMint(
-            IERC721SeaDrop(nftContract),
-            numToMint,
-            _publicDrops[nftContract]
-        )
-    {
+    ) external payable override {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
         if (block.timestamp < publicDrop.startTime) {
             revert NotActive(
@@ -112,6 +71,15 @@ contract SeaDrop is ISeaDrop {
         );
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
         _splitPayout(nftContract, feeRecipient, publicDrop.feeBps);
+        emit SeaDropMint(
+            nftContract,
+            msg.sender,
+            feeRecipient,
+            numToMint,
+            publicDrop.mintPrice,
+            publicDrop.feeBps,
+            0
+        );
     }
 
     function mintAllowList(
@@ -141,6 +109,15 @@ contract SeaDrop is ISeaDrop {
 
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
         _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+        emit SeaDropMint(
+            nftContract,
+            msg.sender,
+            feeRecipient,
+            numToMint,
+            mintParams.mintPrice,
+            mintParams.feeBps,
+            mintParams.dropStage
+        );
     }
 
     function mintSigned(
@@ -180,6 +157,15 @@ contract SeaDrop is ISeaDrop {
 
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
         _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+        emit SeaDropMint(
+            nftContract,
+            msg.sender,
+            feeRecipient,
+            numToMint,
+            mintParams.mintPrice,
+            mintParams.feeBps,
+            mintParams.dropStage
+        );
     }
 
     function _checkNumberToMint(
@@ -289,14 +275,6 @@ contract SeaDrop is ISeaDrop {
     {
         return _enumeratedSigners[nftContract];
     }
-
-    // function getUserData(address nftContract, address user)
-    //     external
-    //     view
-    //     returns (UserData memory)
-    // {
-    //     return _userData[nftContract][user];
-    // }
 
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external

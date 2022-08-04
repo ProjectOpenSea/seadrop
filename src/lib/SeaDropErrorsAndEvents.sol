@@ -17,6 +17,17 @@ interface SeaDropErrorsAndEvents {
     error InvalidProof();
     error InvalidSignature(address recoveredSigner);
 
+    // emitted as part of mint for analytics purposes
+    event SeaDropMint(
+        address indexed nftContract,
+        address indexed minter,
+        address indexed feeRecipient,
+        uint256 numberMinted,
+        uint256 unitMintPrice,
+        uint256 feeBps,
+        uint256 dropStageIndex // non-zero is an allow-list tier
+    );
+
     event PublicDropUpdated(address indexed nftContract, PublicDrop publicDrop);
 
     event AllowListUpdated(
