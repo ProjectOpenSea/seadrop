@@ -16,7 +16,7 @@ interface SeaDropErrorsAndEvents {
     error IncorrectPayment(uint256 got, uint256 want);
     error InvalidProof();
     error InvalidSignature(address recoveredSigner);
-    error OnlyNftContract(address nftContract);
+    error OnlyIERC721SeaDrop(address sender);
 
     error TokenGatedNotTokenOwner(address nftContract, address allowedNftContract, uint256 tokenId);
     error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);

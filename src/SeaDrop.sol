@@ -20,6 +20,10 @@ import {
 } from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 import {
+    IERC165
+} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+
+import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
@@ -42,9 +46,13 @@ contract SeaDrop is ISeaDrop {
     bytes32 public immutable DOMAIN_SEPARATOR;
     bytes32 public immutable MINT_DATA_TYPEHASH;
 
-    modifier onlyNftContract(address nftContract) virtual {
-        if (msg.sender != nftContract) {
-            revert OnlyNftContract(nftContract);
+    modifier onlyIERC721SeaDrop() virtual {
+        if (
+            !IERC165(msg.sender).supportsInterface(
+                type(IERC721SeaDrop).interfaceId
+            )
+        ) {
+            revert OnlyIERC721SeaDrop(msg.sender);
         }
         _;
     }
@@ -197,13 +205,7 @@ contract SeaDrop is ISeaDrop {
             ][mintParams.allowedNftToken];
             uint256 numToMint = mintParams.allowedNftTokenIds.length;
 
-            if (block.timestamp < dropStage.startTime) {
-                revert NotActive(
-                    block.timestamp,
-                    dropStage.startTime,
-                    type(uint64).max
-                );
-            }
+            _checkActive(dropStage.startTime, dropStage.endTime);
             _checkCorrectPayment(numToMint, dropStage.mintPrice);
             _checkNumberToMint(
                 numToMint,
@@ -366,7 +368,7 @@ contract SeaDrop is ISeaDrop {
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external
         override
-        onlyNftContract(msg.sender)
+        onlyIERC721SeaDrop
     {
         _publicDrops[msg.sender] = publicDrop;
         emit PublicDropUpdated(msg.sender, publicDrop);
@@ -375,7 +377,7 @@ contract SeaDrop is ISeaDrop {
     function updateAllowList(AllowListData calldata allowListData)
         external
         override
-        onlyNftContract(msg.sender)
+        onlyIERC721SeaDrop
     {
         _merkleRoots[msg.sender] = allowListData.merkleRoot;
         emit AllowListUpdated(
@@ -391,7 +393,7 @@ contract SeaDrop is ISeaDrop {
         address nftContract,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external override onlyNftContract(msg.sender) {
+    ) external override onlyIERC721SeaDrop {
         _tokenGatedDropStages[nftContract][allowedNftToken] = dropStage;
         emit TokenGatedDropStageUpdated(
             nftContract,
@@ -403,7 +405,7 @@ contract SeaDrop is ISeaDrop {
     function removeTokenGatedDropStage(
         address nftContract,
         address allowedNftTokenToRemove
-    ) external override onlyNftContract(msg.sender) {
+    ) external override onlyIERC721SeaDrop {
         delete _tokenGatedDropStages[nftContract][allowedNftTokenToRemove];
         emit TokenGatedDropStageRemoved(nftContract, allowedNftTokenToRemove);
     }
@@ -419,14 +421,14 @@ contract SeaDrop is ISeaDrop {
     /// @notice emit DropURIUpdated event
     function updateDropURI(string calldata dropURI)
         external
-        onlyNftContract(msg.sender)
+        onlyIERC721SeaDrop
     {
         emit DropURIUpdated(msg.sender, dropURI);
     }
 
     function updateCreatorPayoutAddress(address _payoutAddress)
         external
-        onlyNftContract(msg.sender)
+        onlyIERC721SeaDrop
     {
         _creatorPayoutAddresses[msg.sender] = _payoutAddress;
         emit CreatorPayoutAddressUpdated(msg.sender, _payoutAddress);
@@ -435,7 +437,7 @@ contract SeaDrop is ISeaDrop {
     function updateAllowedFeeRecipient(
         address allowedFeeRecipient,
         bool allowed
-    ) external onlyNftContract(msg.sender) {
+    ) external onlyIERC721SeaDrop {
         _allowedFeeRecipients[msg.sender][allowedFeeRecipient] = allowed;
         emit AllowedFeeRecipientUpdated(
             msg.sender,
@@ -446,7 +448,7 @@ contract SeaDrop is ISeaDrop {
 
     function updateSigners(address[] calldata newSigners)
         external
-        onlyNftContract(msg.sender)
+        onlyIERC721SeaDrop
     {
         address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
         address[] memory oldSigners = enumeratedStorage;
