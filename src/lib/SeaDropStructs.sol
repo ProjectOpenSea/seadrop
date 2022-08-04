@@ -18,18 +18,16 @@ struct PublicDrop {
 // // Stages are strictly for front-end consumption, and are trusted to match
 // // information in the AllowLists
 // // (we may want to surface discrepancies on the front-end)
-// struct DropStage {
-//     // up to 1.2m of native token, eg: ETH, MATIC
-//     uint80 mintPrice; //80/256 bits
-//     // check this is not zero
-//     uint64 startTime; // 144/256 bits
-//     // when drop stage stops being active
-//     uint64 endTime; // 208/256 bits
-//     // maximum total number of mints a user is allowed at this stage
-//     uint40 maxMintableByWallet; // 240/256 bits
-//     // fee out of 10,000 basis points that we will collect - TBD?
-//     uint16 feeBps; // 256/256 bits
-// }
+struct TokenGatedDropStage {
+    uint80 mintPrice;
+    uint16 maxTotalMintableByWallet;
+    uint48 startTime;
+    uint48 endTime;
+    uint8 dropStage;
+    uint40 maxTokenSupplyForStage;
+    uint16 feeBps;
+    bool restrictFeeRecipients;
+}
 
 // an allow list leaf will be composed of msg.sender and the following params
 // note: since feeBps is encoded in the leaf, backend should ensure that feeBps is
@@ -40,9 +38,10 @@ struct MintParams {
     uint256 startTime;
     uint256 endTime;
     uint256 dropStage; // non-zero
+    uint256 maxTokenSupplyForStage;
     uint256 feeBps;
     // do we want to offload here to avoid additional SLOAD?
-    // uint256 restrictFeeRecipients;
+    bool restrictFeeRecipients;
 }
 
 struct AllowListData {
