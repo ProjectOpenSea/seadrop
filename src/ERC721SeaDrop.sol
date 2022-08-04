@@ -53,7 +53,7 @@ contract ERC721SeaDrop is
         _mint(minter, amount);
     }
 
-    function updatePublicDrop(PublicDrop calldata publicDrop)
+    function updatePublicDrop(address, PublicDrop calldata publicDrop)
         external
         virtual
         override
@@ -72,10 +72,11 @@ contract ERC721SeaDrop is
     {
         PublicDrop memory retrieved = _SEADROP.getPublicDrop(address(this));
         retrieved.feeBps = feeBps;
+        retrieved.restrictFeeRecipients = true;
         _SEADROP.updatePublicDrop(retrieved);
     }
 
-    function updateAllowList(AllowListData calldata allowListData)
+    function updateAllowList(address, AllowListData calldata allowListData)
         external
         virtual
         override
@@ -84,22 +85,28 @@ contract ERC721SeaDrop is
         _SEADROP.updateAllowList(allowListData);
     }
 
-    function updateSaleToken(address saleToken)
-        external
-        virtual
-        override
-        onlyOwnerOrAdministrator
-    {
-        _SEADROP.updateSaleToken(saleToken);
-    }
-
-    function updateDropURI(string calldata dropURI)
+    function updateDropURI(address, string calldata dropURI)
         external
         virtual
         override
         onlyOwnerOrAdministrator
     {
         _SEADROP.updateDropURI(dropURI);
+    }
+
+    function updateCreatorPayoutAddress(
+        address seaDropImpl,
+        address payoutAddress
+    ) external onlyOwner {
+        _SEADROP.updateCreatorPayoutAddress(payoutAddress);
+    }
+
+    function updateAllowedFeeRecipient(
+        address seaDropImpl,
+        address feeRecipient,
+        bool allowed
+    ) external onlyAdministrator {
+        _SEADROP.updateAllowedFeeRecipient(feeRecipient, allowed);
     }
 
     function numberMinted(address minter) external view returns (uint256) {
@@ -114,9 +121,5 @@ contract ERC721SeaDrop is
         returns (uint256)
     {
         return ERC721A.totalSupply();
-    }
-
-    function getSeaDrop() external view override returns (address) {
-        return address(_SEADROP);
     }
 }

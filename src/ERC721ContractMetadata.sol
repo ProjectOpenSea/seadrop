@@ -16,7 +16,9 @@ import {
 import {
     ConstructorInitializable
 } from "utility-contracts/ConstructorInitializable.sol";
-import { IERC721ContractMetadata } from "./interfaces/IContractMetadata.sol";
+import {
+    IERC721ContractMetadata
+} from "./interfaces/IERC721ContractMetadata.sol";
 
 contract ERC721ContractMetadata is
     ERC721A,
@@ -46,7 +48,7 @@ contract ERC721ContractMetadata is
         uint256 startTokenId,
         uint256 endTokenId,
         string calldata
-    ) external override {
+    ) external {
         emit TokenURIUpdated(startTokenId, endTokenId);
     }
 

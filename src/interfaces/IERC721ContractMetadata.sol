@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IContractMetadata {}
-
-interface IERC721ContractMetadata is IContractMetadata {
+interface IERC721ContractMetadata {
     // just in case?
     event MaxSupplyUpdated(uint256 newMaxSupply);
 

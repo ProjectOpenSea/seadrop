@@ -4,6 +4,8 @@ pragma solidity ^0.8.11;
 import { PublicDrop } from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
+    error InvalidProof();
+
     event PublicDropUpdated(address indexed nftContract, PublicDrop publicDrop);
 
     event AllowListUpdated(

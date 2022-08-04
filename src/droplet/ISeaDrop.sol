@@ -3,7 +3,6 @@ pragma solidity ^0.8.11;
 
 import {
     PublicDrop,
-    DropStage,
     AllowListMint,
     AllowListData,
     UserData

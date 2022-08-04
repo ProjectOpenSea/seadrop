@@ -3,13 +3,13 @@ pragma solidity ^0.8.11;
 
 struct PublicDrop {
     // up to 1.2m of native token, eg: ETH, MATIC
-    uint80 publicMintPrice; //80/256 bits
+    uint80 mintPrice; //80/256 bits
     // check this is not zero
-    uint64 publicStartTime; // 144/256 bits
+    uint64 startTime; // 144/256 bits
     // maximum total number of mints a user is allowed
     uint40 maxMintsPerWallet; // 184/256 bits
     // fee out of 10,000 basis points to be collected
-    uint16 publicFeeBps; // 200/256 bits
+    uint16 feeBps; // 200/256 bits
     // if false, allow any fee recipient; if true, check fee recipient is allowed
     bool restrictFeeRecipients; // 208/256 bits
 }
