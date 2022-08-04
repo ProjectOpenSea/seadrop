@@ -188,6 +188,7 @@ contract SeaDrop is ISeaDrop, DropEventsAndErrors {
         uint256 maxMintsPerWallet,
         address nftContract
     ) internal view {
+        // TODO: should SeaDrop track mints per wallet per contract?
         if (
             (numberToMint +
                 IERC721SeaDrop(nftContract).numberMinted(msg.sender) >
