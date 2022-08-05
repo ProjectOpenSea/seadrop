@@ -214,6 +214,18 @@ contract SeaDrop is ISeaDrop {
             // Put the number of items to mint on the stack.
             uint256 numToMint = mintParams.allowedNftTokenIds.length;
 
+            // Validate correct payment.
+            // TODO to use the method below, would need to
+            //      support an array of [numToMint, mintPrice]
+            // _checkCorrectPayment(numToMint, dropStage.mintPrice);
+
+            // Validate number to mint.
+            _checkNumberToMint(
+                numToMint,
+                dropStage.maxTotalMintableByWallet,
+                nftContract
+            );
+
             // Iterate through each allowedNftTokenId
             // to ensure it is not already reedemed.
             for (uint256 j = 0; j < numToMint; ) {
