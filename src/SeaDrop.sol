@@ -219,7 +219,7 @@ contract SeaDrop is ISeaDrop {
         // Put the total number of tokenGatedMintParams on the stack.
         uint256 totalTokenGatedMintParams = tokenGatedMintParams.length;
 
-        // Keep track of total payments to validate sent amount.
+        // Track total mint cost to compare against value sent with tx.
         PaymentValidation[] memory totalPayments = new PaymentValidation[](
             totalTokenGatedMintParams
         );
@@ -293,9 +293,6 @@ contract SeaDrop is ISeaDrop {
                 }
             }
 
-            // Validate total cost.
-            _checkCorrectPayment(totalPayments);
-
             // Mint the tokens.
             IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
 
@@ -317,6 +314,9 @@ contract SeaDrop is ISeaDrop {
                 ++i;
             }
         }
+
+        // Validate the tx's value matches the total cost.
+        _checkCorrectPayment(totalPayments);
     }
 
     function _checkNumberToMint(
