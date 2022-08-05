@@ -122,6 +122,20 @@ contract ERC721SeaDrop is
         return _numberMinted(minter);
     }
 
+    function getMintStats(address minter)
+        external
+        view
+        returns (
+            uint256 minterNumMinted,
+            uint256 currentTotalSupply,
+            uint256 maxSupply_
+        )
+    {
+        minterNumMinted = _numberMinted(minter);
+        currentTotalSupply = totalSupply();
+        maxSupply_ = _maxSupply;
+    }
+
     function totalSupply()
         public
         view
