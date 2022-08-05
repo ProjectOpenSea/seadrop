@@ -220,7 +220,9 @@ contract SeaDrop is ISeaDrop {
         uint256 totalTokenGatedMintParams = tokenGatedMintParams.length;
 
         // Keep track of total payments to validate sent amount.
-        PaymentValidation[] memory totalPayments = new PaymentValidation[](totalTokenGatedMintParams);
+        PaymentValidation[] memory totalPayments = new PaymentValidation[](
+            totalTokenGatedMintParams
+        );
 
         // Iterate through each allowedNftToken.
         for (uint256 i = 0; i < totalTokenGatedMintParams; ) {
@@ -239,7 +241,10 @@ contract SeaDrop is ISeaDrop {
             uint256 numToMint = mintParams.allowedNftTokenIds.length;
 
             // Add to totalPayments.
-            totalPayments[i] = PaymentValidation(numToMint, dropStage.mintPrice);
+            totalPayments[i] = PaymentValidation(
+                numToMint,
+                dropStage.mintPrice
+            );
 
             // Validate number to mint.
             _checkNumberToMint(
@@ -333,22 +338,22 @@ contract SeaDrop is ISeaDrop {
         }
     }
 
-
     function _checkCorrectPayment(PaymentValidation[] memory payments)
         internal
         view
     {
-        // Keep track of the total number to mint.
-        uint256 totalNumberToMint;
-        // Keep track of the total cost.
+        // Keep track of the total cost of payments.
         uint256 totalCost;
+
+        // Iterate through the payments and add to total cost.
         for (uint256 i = 0; i < payments.length; ) {
-            totalNumberToMint += payments[i].numberToMint;
             totalCost += payments[i].numberToMint * payments[i].mintPrice;
             unchecked {
                 ++i;
             }
         }
+
+        // Revert if the tx's value doesn't match the total cost.
         if (totalCost != msg.value) {
             revert IncorrectPayment(msg.value, totalCost);
         }
