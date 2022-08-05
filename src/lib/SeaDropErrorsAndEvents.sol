@@ -32,10 +32,9 @@ interface SeaDropErrorsAndEvents {
 
     event AllowListUpdated(
         address indexed nftContract,
-        bytes32 indexed encryptionPublicKey,
+        bytes32 indexed previousMerkleRoot,
         bytes32 indexed newMerkleRoot,
-        // for verifying retrieved leaves
-        bytes32 allowListHash,
+        string[] publicKeyURI, // empty if unencrypted
         string allowListURI
     );
 
