@@ -64,8 +64,12 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
 
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
-        vm.prank(address(seadrop));
-        test.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
+        vm.prank(args.minter);
+        seadrop.mintPublic{ value: mintValue }(
+            address(test),
+            args.feeRecipient,
+            args.numMints
+        );
         assertEq(test.balanceOf(args.minter), args.numMints);
     }
 
