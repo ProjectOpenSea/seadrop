@@ -105,16 +105,6 @@ contract ERC721SeaDrop is
         );
     }
 
-    function removeTokenGatedDropStage(
-        address nftContract,
-        address allowedNftTokenToRemove
-    ) external virtual override onlyOwnerOrAdministrator {
-        _SEADROP.removeTokenGatedDropStage(
-            nftContract,
-            allowedNftTokenToRemove
-        );
-    }
-
     function updateDropURI(address, string calldata dropURI)
         external
         virtual

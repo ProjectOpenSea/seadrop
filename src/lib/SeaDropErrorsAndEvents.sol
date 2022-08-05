@@ -40,11 +40,6 @@ interface SeaDropErrorsAndEvents {
         TokenGatedDropStage dropStage
     );
 
-    event TokenGatedDropStageRemoved(
-        address indexed nftContract,
-        address indexed allowedNftToken
-    );
-
     event AllowListUpdated(
         address indexed nftContract,
         bytes32 indexed encryptionPublicKey,

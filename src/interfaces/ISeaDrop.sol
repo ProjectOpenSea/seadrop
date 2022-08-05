@@ -90,12 +90,6 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         TokenGatedDropStage calldata dropStage
     ) external;
 
-    /// @notice remove a token gated drop stage
-    function removeTokenGatedDropStage(
-        address nftContract,
-        address allowedNftTokenToRemove
-    ) external;
-
     function getTokenGatedDrop(address nftContract, address allowedNftToken)
         external
         view

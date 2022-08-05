@@ -434,14 +434,6 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
-    function removeTokenGatedDropStage(
-        address nftContract,
-        address allowedNftTokenToRemove
-    ) external override onlyIERC721SeaDrop {
-        delete _tokenGatedDropStages[nftContract][allowedNftTokenToRemove];
-        emit TokenGatedDropStageRemoved(nftContract, allowedNftTokenToRemove);
-    }
-
     function getTokenGatedDrop(address nftContract, address allowedNftToken)
         external
         view

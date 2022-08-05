@@ -41,11 +41,6 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
         TokenGatedDropStage calldata dropStage
     ) external;
 
-    function removeTokenGatedDropStage(
-        address nftContract,
-        address allowedNftTokenToRemove
-    ) external;
-
     function updateDropURI(address seaDropImpl, string calldata dropURI)
         external;
 
