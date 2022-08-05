@@ -193,28 +193,34 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
-    function mintApprovedTokenHolder(
+    function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
         TokenGatedMintParams[] calldata tokenGatedMintParams
     ) external payable override {
+        // Iterate through each allowedNftToken.
         for (uint256 i = 0; i < tokenGatedMintParams.length; ) {
+            // Set the mintParams to a variable.
             TokenGatedMintParams calldata mintParams = tokenGatedMintParams[i];
+
+            // Set the dropStage to a variable.
             TokenGatedDropStage storage dropStage = _tokenGatedDropStages[
                 nftContract
             ][mintParams.allowedNftToken];
+
+            // Validate that the dropStage is active.
+            _checkActive(dropStage.startTime, dropStage.endTime);
+
+            // Put the number of items to mint on the stack.
             uint256 numToMint = mintParams.allowedNftTokenIds.length;
 
-            _checkActive(dropStage.startTime, dropStage.endTime);
-            _checkCorrectPayment(numToMint, dropStage.mintPrice);
-            _checkNumberToMint(
-                numToMint,
-                dropStage.maxTotalMintableByWallet,
-                nftContract
-            );
-
+            // Iterate through each allowedNftTokenId
+            // to ensure it is not already reedemed.
             for (uint256 j = 0; j < numToMint; ) {
+                // Put the tokenId on the stack.
                 uint256 tokenId = mintParams.allowedNftTokenIds[j];
+
+                // Check that the sender is the owner of the allowedNftTokenId.
                 if (
                     IERC721(mintParams.allowedNftToken).ownerOf(tokenId) !=
                     msg.sender
@@ -225,9 +231,13 @@ contract SeaDrop is ISeaDrop {
                         tokenId
                     );
                 }
+
+                // Check that the token id has not already
+                // been used to be redeemed.
                 bool redeemed = _tokenGatedRedeemed[nftContract][
                     mintParams.allowedNftToken
                 ][tokenId];
+
                 if (redeemed == true) {
                     revert TokenGatedTokenIdAlreadyRedeemed(
                         nftContract,
@@ -235,22 +245,32 @@ contract SeaDrop is ISeaDrop {
                         tokenId
                     );
                 }
+
+                // Mark the token id as reedemed.
                 redeemed = true;
-                IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
-                _splitPayout(nftContract, feeRecipient, dropStage.feeBps);
-                emit SeaDropMint(
-                    nftContract,
-                    msg.sender,
-                    feeRecipient,
-                    numToMint,
-                    dropStage.mintPrice,
-                    dropStage.feeBps,
-                    0
-                );
+
                 unchecked {
                     ++j;
                 }
             }
+
+            // Mint the tokens.
+            IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+
+            // Split the payout.
+            _splitPayout(nftContract, feeRecipient, dropStage.feeBps);
+
+            // Emit an event for the mint.
+            emit SeaDropMint(
+                nftContract,
+                msg.sender,
+                feeRecipient,
+                numToMint,
+                dropStage.mintPrice,
+                dropStage.feeBps,
+                0
+            );
+
             unchecked {
                 ++i;
             }

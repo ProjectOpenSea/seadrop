@@ -34,7 +34,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         bytes calldata signature
     ) external payable;
 
-    function mintApprovedTokenHolder(
+    function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
         TokenGatedMintParams[] calldata tokenGatedMintParams
