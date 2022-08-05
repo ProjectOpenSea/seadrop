@@ -45,7 +45,7 @@ struct MintParams {
 
 struct AllowListData {
     bytes32 merkleRoot;
-    string[] publicKeyURI;
+    string[] publicKeyURIs;
     string leavesURI;
 }
 
