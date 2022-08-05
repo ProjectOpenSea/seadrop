@@ -61,3 +61,8 @@ struct UserData {
     uint128 numMinted;
     uint128 allowListRedemptions;
 }
+
+struct PaymentValidation {
+    uint256 numberToMint;
+    uint256 mintPrice;
+}

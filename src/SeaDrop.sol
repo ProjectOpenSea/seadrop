@@ -9,7 +9,8 @@ import {
     AllowListData,
     UserData,
     TokenGatedDropStage,
-    TokenGatedMintParams
+    TokenGatedMintParams,
+    PaymentValidation
 } from "./lib/SeaDropStructs.sol";
 import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
@@ -81,6 +82,8 @@ contract SeaDrop is ISeaDrop {
         uint256 numToMint
     ) external payable override {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
+
+        // Validate drop has started.
         if (block.timestamp < publicDrop.startTime) {
             revert NotActive(
                 block.timestamp,
@@ -88,7 +91,12 @@ contract SeaDrop is ISeaDrop {
                 type(uint64).max
             );
         }
-        _checkCorrectPayment(numToMint, publicDrop.mintPrice);
+
+        // Validate payment.
+        PaymentValidation[] memory payments = new PaymentValidation[](1);
+        payments[0] = PaymentValidation(numToMint, publicDrop.mintPrice);
+        _checkCorrectPayment(payments);
+
         _checkNumberToMint(
             numToMint,
             publicDrop.maxMintsPerWallet,
@@ -115,7 +123,12 @@ contract SeaDrop is ISeaDrop {
         bytes32[] calldata proof
     ) external payable override {
         _checkActive(mintParams.startTime, mintParams.endTime);
-        _checkCorrectPayment(numToMint, mintParams.mintPrice);
+
+        // Validate payment.
+        PaymentValidation[] memory payments = new PaymentValidation[](1);
+        payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
+        _checkCorrectPayment(payments);
+
         _checkNumberToMint(
             numToMint,
             mintParams.maxTotalMintableByWallet,
@@ -153,7 +166,12 @@ contract SeaDrop is ISeaDrop {
         bytes calldata signature
     ) external payable override {
         _checkActive(mintParams.startTime, mintParams.endTime);
-        _checkCorrectPayment(numToMint, mintParams.mintPrice);
+
+        // Validate payment.
+        PaymentValidation[] memory payments = new PaymentValidation[](1);
+        payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
+        _checkCorrectPayment(payments);
+
         _checkNumberToMint(
             numToMint,
             mintParams.maxTotalMintableByWallet,
@@ -198,8 +216,14 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient,
         TokenGatedMintParams[] calldata tokenGatedMintParams
     ) external payable override {
+        // Put the total number of tokenGatedMintParams on the stack.
+        uint256 totalTokenGatedMintParams = tokenGatedMintParams.length;
+
+        // Keep track of total payments to validate sent amount.
+        PaymentValidation[] memory totalPayments = new PaymentValidation[](totalTokenGatedMintParams);
+
         // Iterate through each allowedNftToken.
-        for (uint256 i = 0; i < tokenGatedMintParams.length; ) {
+        for (uint256 i = 0; i < totalTokenGatedMintParams; ) {
             // Set the mintParams to a variable.
             TokenGatedMintParams calldata mintParams = tokenGatedMintParams[i];
 
@@ -214,10 +238,8 @@ contract SeaDrop is ISeaDrop {
             // Put the number of items to mint on the stack.
             uint256 numToMint = mintParams.allowedNftTokenIds.length;
 
-            // Validate correct payment.
-            // TODO to use the method below, would need to
-            //      support an array of [numToMint, mintPrice]
-            // _checkCorrectPayment(numToMint, dropStage.mintPrice);
+            // Add to totalPayments.
+            totalPayments[i] = PaymentValidation(numToMint, dropStage.mintPrice);
 
             // Validate number to mint.
             _checkNumberToMint(
@@ -266,6 +288,9 @@ contract SeaDrop is ISeaDrop {
                 }
             }
 
+            // Validate total cost.
+            _checkCorrectPayment(totalPayments);
+
             // Mint the tokens.
             IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
 
@@ -308,12 +333,24 @@ contract SeaDrop is ISeaDrop {
         }
     }
 
-    function _checkCorrectPayment(uint256 numberToMint, uint256 mintPrice)
+
+    function _checkCorrectPayment(PaymentValidation[] memory payments)
         internal
         view
     {
-        if (numberToMint * mintPrice != msg.value) {
-            revert IncorrectPayment(msg.value, numberToMint * mintPrice);
+        // Keep track of the total number to mint.
+        uint256 totalNumberToMint;
+        // Keep track of the total cost.
+        uint256 totalCost;
+        for (uint256 i = 0; i < payments.length; ) {
+            totalNumberToMint += payments[i].numberToMint;
+            totalCost += payments[i].numberToMint * payments[i].mintPrice;
+            unchecked {
+                ++i;
+            }
+        }
+        if (totalCost != msg.value) {
+            revert IncorrectPayment(msg.value, totalCost);
         }
     }
 
