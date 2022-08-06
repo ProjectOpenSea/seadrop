@@ -59,10 +59,12 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
         return derived;
     }
 
-    function testMintSeaDrop(FuzzInputs memory args) public validateArgs(args) {
+    function testMintPublic(FuzzInputs memory args) public validateArgs(args) {
         PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
 
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
+
+        vm.deal(args.minter, 100 ether);
 
         vm.prank(args.minter);
         seadrop.mintPublic{ value: mintValue }(
@@ -73,12 +75,38 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
         assertEq(test.balanceOf(args.minter), args.numMints);
     }
 
-    // function testPublicMint_incorrectPayment() public {
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(IncorrectPayment.selector, 1, 2 ether)
-    //     );
-    //     test.publicMint{ value: 1 wei }(2);
-    // }
+    function testMintPublic_incorrectPayment(FuzzInputs memory args)
+        public
+        validateArgs(args)
+    {
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+        uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
-    receive() external payable {}
+        vm.expectRevert(
+            abi.encodeWithSelector(IncorrectPayment.selector, 1, mintValue)
+        );
+
+        vm.deal(args.minter, 100 ether);
+
+        vm.prank(args.minter);
+        seadrop.mintPublic{ value: 1 wei }(
+            address(test),
+            args.feeRecipient,
+            args.numMints
+        );
+    }
+
+    function testMintSeaDrop_revertNonSeaDrop(FuzzInputs memory args)
+        public
+        validateArgs(args)
+    {
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        uint256 mintValue = args.numMints * publicDrop.mintPrice;
+
+        vm.deal(args.minter, 100 ether);
+
+        vm.expectRevert(IERC721SeaDrop.OnlySeaDrop.selector);
+        test.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
+    }
 }
