@@ -14,12 +14,20 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
+import {
+    IERC165
+} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+
 import { SeaDrop } from "./SeaDrop.sol";
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
 import { SeaDropErrorsAndEvents } from "./lib/SeaDropErrorsAndEvents.sol";
-import { PublicDrop, AllowListData } from "./lib/SeaDropStructs.sol";
+import {
+    PublicDrop,
+    AllowListData,
+    TokenGatedDropStage
+} from "./lib/SeaDropStructs.sol";
 
 contract ERC721SeaDrop is
     ERC721ContractMetadata,
@@ -88,6 +96,18 @@ contract ERC721SeaDrop is
         _SEADROP.updateAllowList(allowListData);
     }
 
+    function updateTokenGatedDropStage(
+        address nftContract,
+        address allowedNftToken,
+        TokenGatedDropStage calldata dropStage
+    ) external virtual override onlyOwnerOrAdministrator {
+        _SEADROP.updateTokenGatedDropStage(
+            nftContract,
+            allowedNftToken,
+            dropStage
+        );
+    }
+
     function updateDropURI(address, string calldata dropURI)
         external
         virtual
@@ -148,5 +168,18 @@ contract ERC721SeaDrop is
         returns (uint256)
     {
         return ERC721A.totalSupply();
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(IERC165, ERC721A)
+        returns (bool)
+    {
+        return
+            interfaceId == this.supportsInterface.selector || // ERC165
+            interfaceId == type(IERC721ContractMetadata).interfaceId || // IERC721ContractMetadata
+            interfaceId == type(IERC721SeaDrop).interfaceId; // IERC721SeaDrop
     }
 }

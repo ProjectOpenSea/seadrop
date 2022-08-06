@@ -4,4 +4,4 @@ artifacts
 cache
 constants
 coverage
-lib/murky
+lib

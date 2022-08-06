@@ -5,13 +5,13 @@ import {
     PublicDrop,
     MintParams,
     AllowListData,
-    UserData
+    UserData,
+    TokenGatedDropStage,
+    TokenGatedMintParams
 } from "../lib/SeaDropStructs.sol";
 import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
 
 interface ISeaDrop is SeaDropErrorsAndEvents {
-
-
     function mintPublic(
         address nftContract,
         address feeRecipient,
@@ -32,6 +32,12 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         uint256 numToMint,
         MintParams calldata mintParams,
         bytes calldata signature
+    ) external payable;
+
+    function mintAllowedTokenHolder(
+        address nftContract,
+        address feeRecipient,
+        TokenGatedMintParams[] calldata tokenGatedMintParams
     ) external payable;
 
     function getPublicDrop(address nftContract)
@@ -76,4 +82,16 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
 
     /// @notice set signers and emit SignersUpdated event
     function updateSigners(address[] calldata signers) external;
+
+    /// @notice update a token gated drop stage
+    function updateTokenGatedDropStage(
+        address nftContract,
+        address allowedNftToken,
+        TokenGatedDropStage calldata dropStage
+    ) external;
+
+    function getTokenGatedDrop(address nftContract, address allowedNftToken)
+        external
+        view
+        returns (TokenGatedDropStage memory);
 }

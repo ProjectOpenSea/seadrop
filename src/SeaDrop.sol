@@ -7,11 +7,22 @@ import {
     PublicDrop,
     MintParams,
     AllowListData,
-    UserData
+    UserData,
+    TokenGatedDropStage,
+    TokenGatedMintParams,
+    PaymentValidation
 } from "./lib/SeaDropStructs.sol";
 import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
 import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
+
+import {
+    IERC721
+} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+
+import {
+    IERC165
+} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
 import {
     ECDSA
@@ -28,9 +39,24 @@ contract SeaDrop is ISeaDrop {
     mapping(address => mapping(address => bool)) private _signers;
     mapping(address => address[]) private _enumeratedSigners;
     // mapping(address => mapping(address => UserData)) public _userData;
+    mapping(address => mapping(address => TokenGatedDropStage))
+        private _tokenGatedDropStages;
+    mapping(address => mapping(address => mapping(uint256 => bool)))
+        private _tokenGatedRedeemed;
 
     bytes32 public immutable DOMAIN_SEPARATOR;
     bytes32 public immutable MINT_DATA_TYPEHASH;
+
+    modifier onlyIERC721SeaDrop() virtual {
+        if (
+            !IERC165(msg.sender).supportsInterface(
+                type(IERC721SeaDrop).interfaceId
+            )
+        ) {
+            revert OnlyIERC721SeaDrop(msg.sender);
+        }
+        _;
+    }
 
     constructor() {
         DOMAIN_SEPARATOR = keccak256(
@@ -56,6 +82,8 @@ contract SeaDrop is ISeaDrop {
         uint256 numToMint
     ) external payable override {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
+
+        // Validate drop has started.
         if (block.timestamp < publicDrop.startTime) {
             revert NotActive(
                 block.timestamp,
@@ -63,7 +91,12 @@ contract SeaDrop is ISeaDrop {
                 type(uint64).max
             );
         }
-        _checkCorrectPayment(numToMint, publicDrop.mintPrice);
+
+        // Validate payment.
+        PaymentValidation[] memory payments = new PaymentValidation[](1);
+        payments[0] = PaymentValidation(numToMint, publicDrop.mintPrice);
+        _checkCorrectPayment(payments);
+
         _checkNumberToMint(
             numToMint,
             publicDrop.maxMintsPerWallet,
@@ -90,7 +123,12 @@ contract SeaDrop is ISeaDrop {
         bytes32[] calldata proof
     ) external payable override {
         _checkActive(mintParams.startTime, mintParams.endTime);
-        _checkCorrectPayment(numToMint, mintParams.mintPrice);
+
+        // Validate payment.
+        PaymentValidation[] memory payments = new PaymentValidation[](1);
+        payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
+        _checkCorrectPayment(payments);
+
         _checkNumberToMint(
             numToMint,
             mintParams.maxTotalMintableByWallet,
@@ -128,7 +166,12 @@ contract SeaDrop is ISeaDrop {
         bytes calldata signature
     ) external payable override {
         _checkActive(mintParams.startTime, mintParams.endTime);
-        _checkCorrectPayment(numToMint, mintParams.mintPrice);
+
+        // Validate payment.
+        PaymentValidation[] memory payments = new PaymentValidation[](1);
+        payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
+        _checkCorrectPayment(payments);
+
         _checkNumberToMint(
             numToMint,
             mintParams.maxTotalMintableByWallet,
@@ -168,6 +211,114 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    function mintAllowedTokenHolder(
+        address nftContract,
+        address feeRecipient,
+        TokenGatedMintParams[] calldata tokenGatedMintParams
+    ) external payable override {
+        // Put the total number of tokenGatedMintParams on the stack.
+        uint256 totalTokenGatedMintParams = tokenGatedMintParams.length;
+
+        // Track total mint cost to compare against value sent with tx.
+        PaymentValidation[] memory totalPayments = new PaymentValidation[](
+            totalTokenGatedMintParams
+        );
+
+        // Iterate through each allowedNftToken.
+        for (uint256 i = 0; i < totalTokenGatedMintParams; ) {
+            // Set the mintParams to a variable.
+            TokenGatedMintParams calldata mintParams = tokenGatedMintParams[i];
+
+            // Set the dropStage to a variable.
+            TokenGatedDropStage storage dropStage = _tokenGatedDropStages[
+                nftContract
+            ][mintParams.allowedNftToken];
+
+            // Validate that the dropStage is active.
+            _checkActive(dropStage.startTime, dropStage.endTime);
+
+            // Put the number of items to mint on the stack.
+            uint256 numToMint = mintParams.allowedNftTokenIds.length;
+
+            // Add to totalPayments.
+            totalPayments[i] = PaymentValidation(
+                numToMint,
+                dropStage.mintPrice
+            );
+
+            // Validate number to mint.
+            _checkNumberToMint(
+                numToMint,
+                dropStage.maxTotalMintableByWallet,
+                nftContract
+            );
+
+            // Iterate through each allowedNftTokenId
+            // to ensure it is not already reedemed.
+            for (uint256 j = 0; j < numToMint; ) {
+                // Put the tokenId on the stack.
+                uint256 tokenId = mintParams.allowedNftTokenIds[j];
+
+                // Check that the sender is the owner of the allowedNftTokenId.
+                if (
+                    IERC721(mintParams.allowedNftToken).ownerOf(tokenId) !=
+                    msg.sender
+                ) {
+                    revert TokenGatedNotTokenOwner(
+                        nftContract,
+                        mintParams.allowedNftToken,
+                        tokenId
+                    );
+                }
+
+                // Check that the token id has not already
+                // been used to be redeemed.
+                bool redeemed = _tokenGatedRedeemed[nftContract][
+                    mintParams.allowedNftToken
+                ][tokenId];
+
+                if (redeemed == true) {
+                    revert TokenGatedTokenIdAlreadyRedeemed(
+                        nftContract,
+                        mintParams.allowedNftToken,
+                        tokenId
+                    );
+                }
+
+                // Mark the token id as reedemed.
+                redeemed = true;
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            // Mint the tokens.
+            IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+
+            // Split the payout.
+            _splitPayout(nftContract, feeRecipient, dropStage.feeBps);
+
+            // Emit an event for the mint.
+            emit SeaDropMint(
+                nftContract,
+                msg.sender,
+                feeRecipient,
+                numToMint,
+                dropStage.mintPrice,
+                dropStage.feeBps,
+                0
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Validate the tx's value matches the total cost.
+        _checkCorrectPayment(totalPayments);
+    }
+
     function _checkNumberToMint(
         uint256 numberToMint,
         uint256 maxMintsPerWallet,
@@ -187,12 +338,24 @@ contract SeaDrop is ISeaDrop {
         }
     }
 
-    function _checkCorrectPayment(uint256 numberToMint, uint256 mintPrice)
+    function _checkCorrectPayment(PaymentValidation[] memory payments)
         internal
         view
     {
-        if (numberToMint * mintPrice != msg.value) {
-            revert IncorrectPayment(msg.value, numberToMint * mintPrice);
+        // Keep track of the total cost of payments.
+        uint256 totalCost;
+
+        // Iterate through the payments and add to total cost.
+        for (uint256 i = 0; i < payments.length; ) {
+            totalCost += payments[i].numberToMint * payments[i].mintPrice;
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Revert if the tx's value doesn't match the total cost.
+        if (totalCost != msg.value) {
+            revert IncorrectPayment(msg.value, totalCost);
         }
     }
 
@@ -279,6 +442,7 @@ contract SeaDrop is ISeaDrop {
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external
         override
+        onlyIERC721SeaDrop
     {
         _publicDrops[msg.sender] = publicDrop;
         emit PublicDropUpdated(msg.sender, publicDrop);
@@ -287,6 +451,7 @@ contract SeaDrop is ISeaDrop {
     function updateAllowList(AllowListData calldata allowListData)
         external
         override
+        onlyIERC721SeaDrop
     {
         bytes32 prevRoot = _merkleRoots[msg.sender];
         _merkleRoots[msg.sender] = allowListData.merkleRoot;
@@ -299,12 +464,39 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    function updateTokenGatedDropStage(
+        address nftContract,
+        address allowedNftToken,
+        TokenGatedDropStage calldata dropStage
+    ) external override onlyIERC721SeaDrop {
+        _tokenGatedDropStages[nftContract][allowedNftToken] = dropStage;
+        emit TokenGatedDropStageUpdated(
+            nftContract,
+            allowedNftToken,
+            dropStage
+        );
+    }
+
+    function getTokenGatedDrop(address nftContract, address allowedNftToken)
+        external
+        view
+        returns (TokenGatedDropStage memory)
+    {
+        return _tokenGatedDropStages[nftContract][allowedNftToken];
+    }
+
     /// @notice emit DropURIUpdated event
-    function updateDropURI(string calldata dropURI) external {
+    function updateDropURI(string calldata dropURI)
+        external
+        onlyIERC721SeaDrop
+    {
         emit DropURIUpdated(msg.sender, dropURI);
     }
 
-    function updateCreatorPayoutAddress(address _payoutAddress) external {
+    function updateCreatorPayoutAddress(address _payoutAddress)
+        external
+        onlyIERC721SeaDrop
+    {
         _creatorPayoutAddresses[msg.sender] = _payoutAddress;
         emit CreatorPayoutAddressUpdated(msg.sender, _payoutAddress);
     }
@@ -312,7 +504,7 @@ contract SeaDrop is ISeaDrop {
     function updateAllowedFeeRecipient(
         address allowedFeeRecipient,
         bool allowed
-    ) external {
+    ) external onlyIERC721SeaDrop {
         _allowedFeeRecipients[msg.sender][allowedFeeRecipient] = allowed;
         emit AllowedFeeRecipientUpdated(
             msg.sender,
@@ -321,7 +513,10 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
-    function updateSigners(address[] calldata newSigners) external {
+    function updateSigners(address[] calldata newSigners)
+        external
+        onlyIERC721SeaDrop
+    {
         address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
         address[] memory oldSigners = enumeratedStorage;
         // delete old enumeration
