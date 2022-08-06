@@ -50,7 +50,8 @@ contract ERC721SeaDrop is
         override
         onlySeaDrop
     {
-        _mint(minter, amount);
+        // use ConsecutiveTransfer event
+        _mintERC2309(minter, amount);
     }
 
     function updatePublicDrop(address, PublicDrop calldata publicDrop)
@@ -61,7 +62,9 @@ contract ERC721SeaDrop is
     {
         PublicDrop memory retrieved = _SEADROP.getPublicDrop(address(this));
         PublicDrop memory supplied = publicDrop;
+        // only administrator (OpenSea) should be able to set feeBps
         supplied.feeBps = retrieved.feeBps;
+        retrieved.restrictFeeRecipients = true;
         _SEADROP.updatePublicDrop(supplied);
     }
 
@@ -94,6 +97,7 @@ contract ERC721SeaDrop is
         _SEADROP.updateDropURI(dropURI);
     }
 
+    /// @notice only owner should be able to set payout address
     function updateCreatorPayoutAddress(address, address payoutAddress)
         external
         onlyOwner
@@ -120,6 +124,20 @@ contract ERC721SeaDrop is
 
     function numberMinted(address minter) external view returns (uint256) {
         return _numberMinted(minter);
+    }
+
+    function getMintStats(address minter)
+        external
+        view
+        returns (
+            uint256 minterNumMinted,
+            uint256 currentTotalSupply,
+            uint256 maxSupply_
+        )
+    {
+        minterNumMinted = _numberMinted(minter);
+        currentTotalSupply = totalSupply();
+        maxSupply_ = _maxSupply;
     }
 
     function totalSupply()

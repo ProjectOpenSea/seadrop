@@ -288,12 +288,13 @@ contract SeaDrop is ISeaDrop {
         external
         override
     {
+        bytes32 prevRoot = _merkleRoots[msg.sender];
         _merkleRoots[msg.sender] = allowListData.merkleRoot;
         emit AllowListUpdated(
             msg.sender,
-            allowListData.leavesEncryptionPublicKey,
+            prevRoot,
             allowListData.merkleRoot,
-            allowListData.leavesHash,
+            allowListData.publicKeyURIs,
             allowListData.leavesURI
         );
     }

@@ -40,14 +40,12 @@ struct MintParams {
     uint256 dropStage; // non-zero
     uint256 maxTokenSupplyForStage;
     uint256 feeBps;
-    // do we want to offload here to avoid additional SLOAD?
     bool restrictFeeRecipients;
 }
 
 struct AllowListData {
     bytes32 merkleRoot;
-    bytes32 leavesHash;
-    bytes32 leavesEncryptionPublicKey;
+    string[] publicKeyURIs;
     string leavesURI;
 }
 

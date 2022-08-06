@@ -51,17 +51,8 @@ contract ERC721ContractMetadata is
         emit TokenURIUpdated(startTokenId, endTokenId);
     }
 
-    function maxSupply() external view returns (uint256) {
+    function maxSupply() public view returns (uint256) {
         return _maxSupply;
-    }
-
-    function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
-        _maxSupply = newMaxSupply;
-    }
-
-    function setBaseURI(string calldata newBaseURI) external override {
-        baseURI = newBaseURI;
-        emit BaseURIUpdated(newBaseURI);
     }
 
     function totalSupply()
@@ -76,5 +67,14 @@ contract ERC721ContractMetadata is
 
     function provenanceHash() external view override returns (bytes32) {
         return _provenanceHash;
+    }
+
+    function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
+        _maxSupply = newMaxSupply;
+    }
+
+    function setBaseURI(string calldata newBaseURI) external override {
+        baseURI = newBaseURI;
+        emit BaseURIUpdated(newBaseURI);
     }
 }

@@ -9,11 +9,21 @@ import { PublicDrop, AllowListData } from "../lib/SeaDropStructs.sol";
 interface IERC721SeaDrop is IERC721ContractMetadata {
     error OnlySeaDrop();
 
-    // doing `maxMintsPerWallet` check here may be cheaper
     function mintSeaDrop(address minter, uint256 amount) external payable;
 
     // to enforce maxMintsPerWallet checks - should SeaDrop track this?
     function numberMinted(address minter) external view returns (uint256);
+
+    // SeaDrop will enforce maxSupply and maxMintsPerWallet checks, and in the case of allowlist, max for stage
+    // add a single getter method for all
+    function getMintStats(address minter)
+        external
+        view
+        returns (
+            uint256 minterNumMinted,
+            uint256 currentTotalSupply,
+            uint256 maxSupply
+        );
 
     // These methods can all consist of a single line: seaDropImpl.updateFunction(params);
 
