@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IERC721ContractMetadata {
     /**
-     * @dev Emit an event when the max supply is updated.
+     * @dev Emit an event when the max token supply is updated.
      */
     event MaxSupplyUpdated(uint256 newMaxSupply);
 
@@ -32,7 +32,7 @@ interface IERC721ContractMetadata {
     );
 
     /**
-     * @dev Emit an event for full reveals/updates.
+     * @dev Emit an event for full token metadata reveals/updates.
      *
      * @param baseURI The base URI.
      */
@@ -44,26 +44,26 @@ interface IERC721ContractMetadata {
     function contractURI() external view returns (string memory);
 
     /**
-     * @notice Sets the contract URI.
+     * @notice Sets the contract URI for contract metadata.
      *
      * @param newContractURI The new contract URI.
      */
     function setContractURI(string calldata newContractURI) external;
 
     /**
-     * @notice Returns the base URI.
+     * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view returns (string memory);
 
     /**
-     * @notice Sets the base URI and emits an event.
+     * @notice Sets the base URI for the token metadata and emits an event.
      *
      * @param tokenURI The new base URI to set.
      */
     function setBaseURI(string calldata tokenURI) external;
 
     /**
-     * @notice Returns the max supply.
+     * @notice Returns the max token supply.
      */
     function maxSupply() external view returns (uint256);
 
@@ -75,7 +75,7 @@ interface IERC721ContractMetadata {
     function setMaxSupply(uint256 newMaxSupply) external;
 
     /**
-     * @notice Returns the total supply.
+     * @notice Returns the total token supply.
      */
     function totalSupply() external view returns (uint256);
 

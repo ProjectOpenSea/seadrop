@@ -18,10 +18,12 @@ struct PublicDrop {
     bool restrictFeeRecipients; // 208/256 bits
 }
 
-// Stages from dropURI are strictly for front-end consumption,
-// and are trusted to match information in the
-// PublicDrop, AllowLists or TokenGatedDropStage
-// (we may want to surface discrepancies on the front-end)
+/**
+ * @notice Stages from dropURI are strictly for front-end consumption,
+ *         and are trusted to match information in the
+ *         PublicDrop, AllowLists or TokenGatedDropStage
+ *         (we may want to surface discrepancies on the front-end)
+ */
 
 /**
  * @notice A struct defining token gated drop stage data.
@@ -32,7 +34,7 @@ struct TokenGatedDropStage {
     uint16 maxTotalMintableByWallet;
     uint48 startTime;
     uint48 endTime;
-    uint8 dropStage;
+    uint8 dropStageIndex;
     uint40 maxTokenSupplyForStage;
     uint16 feeBps;
     bool restrictFeeRecipients;
@@ -51,7 +53,7 @@ struct MintParams {
     uint256 maxTotalMintableByWallet;
     uint256 startTime;
     uint256 endTime;
-    uint256 dropStage; // non-zero
+    uint256 dropStageIndex; // non-zero
     uint256 maxTokenSupplyForStage;
     uint256 feeBps;
     bool restrictFeeRecipients;

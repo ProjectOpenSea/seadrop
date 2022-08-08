@@ -48,21 +48,21 @@ contract ERC721ContractMetadata is
     ) ERC721A(name, symbol) TwoStepAdministered(administrator) {}
 
     /**
-     * @notice Returns the base URI.
+     * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view override returns (string memory) {
         return _theBaseURI;
     }
 
     /**
-     * @notice Returns the contract URI.
+     * @notice Returns the contract URI for contract metadata.
      */
     function contractURI() external view override returns (string memory) {
         return _contractURI;
     }
 
     /**
-     * @notice Sets the contract URI.
+     * @notice Sets the contract URI for contract metadata.
      *
      * @param newContractURI The new contract URI.
      */
@@ -75,7 +75,8 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Emit an event notifying updates for a range of token ids.
+     * @notice Emit an event notifying metadata updates for
+     *         a range of token ids.
      *
      * @param startTokenId The start token id.
      * @param endTokenId The end token id.
@@ -85,18 +86,19 @@ contract ERC721ContractMetadata is
         uint256 endTokenId,
         string calldata
     ) external {
+        // Emit an event with the update.
         emit TokenURIUpdated(startTokenId, endTokenId);
     }
 
     /**
-     * @notice Returns the max supply.
+     * @notice Returns the max token supply.
      */
     function maxSupply() public view returns (uint256) {
         return _maxSupply;
     }
 
     /**
-     * @notice Returns the total supply.
+     * @notice Returns the total token supply.
      */
     function totalSupply()
         public
@@ -139,16 +141,17 @@ contract ERC721ContractMetadata is
         // Set the new provenance hash.
         _provenanceHash = newProvenanceHash;
 
-        // Emit an evit for the update.
+        // Emit an event with the update.
         emit ProvenanceHashUpdated(oldProvenanceHash, newProvenanceHash);
     }
 
     /**
-     * @notice Sets the max supply and emits an event.
+     * @notice Sets the max token supply and emits an event.
      *
      * @param newMaxSupply The new max supply to set.
      */
     function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
+        // Set the new max supply.
         _maxSupply = newMaxSupply;
 
         // Emit an event with the update.
@@ -156,7 +159,7 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Sets the base URI and emits an event.
+     * @notice Sets the base URI for the token metadata and emits an event.
      *
      * @param newBaseURI The new base URI to set.
      */

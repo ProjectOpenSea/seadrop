@@ -187,6 +187,16 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     ) external;
 
     /**
+     * @notice Returns the allowed token gated drop tokens for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getTokenGatedAllowedTokens(address nftContract)
+        external
+        view
+        returns (address[] memory);
+
+    /**
      * @notice Returns the token gated drop data for the nft contract
      *         and token gated nft.
      *

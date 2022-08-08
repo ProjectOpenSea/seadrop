@@ -16,10 +16,22 @@ import {
 
 interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
-     * @dev Revert with an error if a contract other than
-     *      SeaDrop calls an update function.
+     * @dev Revert with an error if a contract other than an allowed
+     *      SeaDrop address calls an update function.
      */
     error OnlySeaDrop();
+
+    /**
+     * @dev Emit an event when allowed SeaDrop contracts are updated.
+     */
+    event AllowedSeaDropUpdated(address[] allowedSeaDrop);
+
+    /**
+     * @notice Update the allowed SeaDrop contracts.
+     *
+     * @param allowedSeaDrop The allowed SeaDrop addresses.
+     */
+    function updateAllowedSeaDrop(address[] calldata allowedSeaDrop) external;
 
     /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
@@ -57,26 +69,35 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      * @notice Update public drop data for this nft contract on SeaDrop.
      *         Use `updatePublicDropFee` to update the fee recipient or feeBps.
      *
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop The public drop data.
      */
-    function updatePublicDrop(PublicDrop calldata publicDrop) external;
+    function updatePublicDrop(
+        address seaDropImpl,
+        PublicDrop calldata publicDrop
+    ) external;
 
     /**
      * @notice Update allow list data for this nft contract on SeaDrop.
      *
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param allowListData The allow list data.
      */
-    function updateAllowList(AllowListData calldata allowListData) external;
+    function updateAllowList(
+        address seaDropImpl,
+        AllowListData calldata allowListData
+    ) external;
 
     /**
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop.
      *
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage The token gated drop stage data.
      */
     function updateTokenGatedDropStage(
-        address nftContract,
+        address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external;
@@ -84,34 +105,46 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
      *
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param dropURI The new drop URI.
      */
-    function updateDropURI(string calldata dropURI) external;
+    function updateDropURI(address seaDropImpl, string calldata dropURI)
+        external;
 
     /**
      * @notice Update the creator payout address for this nft contract on SeaDrop.
      *         Only the owner can set the creator payout address.
      *
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
      */
-    function updateCreatorPayoutAddress(address payoutAddress) external;
+    function updateCreatorPayoutAddress(
+        address seaDropImpl,
+        address payoutAddress
+    ) external;
 
     /**
      * @notice Update the allowed fee recipient for this nft contract
      *         on SeaDrop.
      *         Only the administrator can set the allowed fee recipient.
      *
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
      */
-    function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
-        external;
+    function updateAllowedFeeRecipient(
+        address seaDropImpl,
+        address feeRecipient,
+        bool allowed
+    ) external;
 
     /**
      * @notice Update the server side signers for this nft contract
      *         on SeaDrop.
      *         Only the owner or administrator can update the signers.
      *
+     * @param seaDropImpl The allowed SeaDrop contract.
      * @param newSigners The new signers.
      */
-    function updateSigners(address[] calldata newSigners) external;
+    function updateSigners(address seaDropImpl, address[] calldata newSigners)
+        external;
 }

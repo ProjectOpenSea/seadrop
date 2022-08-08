@@ -214,7 +214,7 @@ contract SeaDrop is ISeaDrop {
             numToMint,
             mintParams.mintPrice,
             mintParams.feeBps,
-            mintParams.dropStage
+            mintParams.dropStageIndex
         );
     }
 
@@ -285,7 +285,7 @@ contract SeaDrop is ISeaDrop {
             numToMint,
             mintParams.mintPrice,
             mintParams.feeBps,
-            mintParams.dropStage
+            mintParams.dropStageIndex
         );
     }
 
@@ -582,19 +582,6 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Returns the token gated drops for the nft contract.
-     *
-     * @param nftContract The nft contract.
-     */
-    function getTokenGatedDrop(address nftContract)
-        external
-        view
-        returns (address[] memory)
-    {
-        return _enumeratedTokenGatedTokens[nftContract];
-    }
-
-    /**
      * @notice Updates the public drop for the nft contract and emits an event.
      *
      * @param publicDrop The public drop data.
@@ -654,8 +641,35 @@ contract SeaDrop is ISeaDrop {
         // Set the drop stage.
         _tokenGatedDropStages[nftContract][allowedNftToken] = dropStage;
 
-        // TODO Add allowedNftToken to _enumeratedTokenGatedTokens
-        //      if not already present.
+        // If the maxTotalMintableByWallet is greater than zero
+        // then we are setting a drop stage.
+        if (dropStage.maxTotalMintableByWallet > 0) {
+            // Add allowedNftToken to enumerated list if not present.
+            bool allowedNftTokenExistsInEnumeration = false;
+
+            // Iterate through enumerated token gated tokens for nft contract.
+            for (
+                uint256 i = 0;
+                i < _enumeratedTokenGatedTokens[nftContract].length;
+
+            ) {
+                if (
+                    _enumeratedTokenGatedTokens[nftContract][i] ==
+                    allowedNftToken
+                ) {
+                    // Set the bool to true if found.
+                    allowedNftTokenExistsInEnumeration = true;
+                }
+                unchecked {
+                    ++i;
+                }
+            }
+
+            // Add allowedNftToken to enumerated list if not present.
+            if (allowedNftTokenExistsInEnumeration == false) {
+                _enumeratedTokenGatedTokens[nftContract].push(allowedNftToken);
+            }
+        }
 
         // Emit an event with the update.
         emit TokenGatedDropStageUpdated(
@@ -663,6 +677,19 @@ contract SeaDrop is ISeaDrop {
             allowedNftToken,
             dropStage
         );
+    }
+
+    /**
+     * @notice Returns the allowed token gated drop tokens for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getTokenGatedAllowedTokens(address nftContract)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _enumeratedTokenGatedTokens[nftContract];
     }
 
     /**
