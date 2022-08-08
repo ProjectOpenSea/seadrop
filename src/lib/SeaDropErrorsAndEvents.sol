@@ -65,6 +65,18 @@ interface SeaDropErrorsAndEvents {
     error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);
 
     /**
+     * @dev Revert with an error if sender has insufficient
+     *      sale token balance.
+     */
+    error InsufficientSaleTokenBalance(address saleToken, uint256 balance, uint256 totalCost);
+
+    /**
+     * @dev Revert with an error if sender has insufficient
+     *      sale token allowance.
+     */
+    error InsufficientSaleTokenAllowance(address saleToken, uint256 allowance, uint256 totalCost);
+
+    /**
      * @dev An event with details of a SeaDrop mint, for analytics purposes.
      */
     event SeaDropMint(
@@ -133,5 +145,13 @@ interface SeaDropErrorsAndEvents {
         address indexed nftContract,
         address[] previousSigners,
         address[] newSigners
+    );
+
+    /**
+     * @dev An event with the updated sale token.
+     */
+    event SaleTokenUpdated(
+        address indexed nftContract,
+        address saleToken
     );
 }

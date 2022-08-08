@@ -36,7 +36,7 @@ contract SeaDrop is ISeaDrop {
     // Track the drop URI.
     mapping(address => string) private _dropURI;
 
-    // Track the payment tokens.
+    // Track the sale tokens.
     mapping(address => ERC20) private _saleTokens;
 
     // Track the creator payout addresses.
@@ -128,10 +128,10 @@ contract SeaDrop is ISeaDrop {
             );
         }
 
-        // Validate correct payment was sent with the tx.
+        // Validate correct payment.
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, publicDrop.mintPrice);
-        _checkCorrectPayment(payments);
+        _checkCorrectPayment(nftContract, payments);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -177,10 +177,10 @@ contract SeaDrop is ISeaDrop {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
-        // Validate correct payment was sent with the tx.
+        // Validate correct payment.
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(payments);
+        _checkCorrectPayment(nftContract, payments);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -237,10 +237,10 @@ contract SeaDrop is ISeaDrop {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
-        // Validate correct payment was sent with the tx.
+        // Validate correct payment.
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(payments);
+        _checkCorrectPayment(nftContract, payments);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -402,8 +402,8 @@ contract SeaDrop is ISeaDrop {
             }
         }
 
-        // Validate the tx's value matches the total cost.
-        _checkCorrectPayment(totalPayments);
+        // Validate correct payment.
+        _checkCorrectPayment(nftContract, totalPayments);
     }
 
     /**
@@ -432,14 +432,16 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Check that the correct payment was sent with the tx.
+     * @notice For native sale token, check that the correct payment
+     *         was sent with the tx. For ERC20 sale token, check
+     *         that the sender has sufficient balance and allowance.
      *
      * @param payments The payments to validate.
      */
-    function _checkCorrectPayment(PaymentValidation[] memory payments)
-        internal
-        view
-    {
+    function _checkCorrectPayment(
+        address nftContract,
+        PaymentValidation[] memory payments
+    ) internal view {
         // Keep track of the total cost of payments.
         uint256 totalCost;
 
@@ -451,9 +453,35 @@ contract SeaDrop is ISeaDrop {
             }
         }
 
-        // Revert if the tx's value doesn't match the total cost.
-        if (totalCost != msg.value) {
-            revert IncorrectPayment(msg.value, totalCost);
+        // Retrieve the sale token.
+        ERC20 saleToken = _saleTokens[nftContract];
+
+        // The zero address means the sale token is the native token.
+        if (address(saleToken) == address(0)) {
+            // Revert if the tx's value doesn't match the total cost.
+            if (totalCost != msg.value) {
+                revert IncorrectPayment(msg.value, totalCost);
+            }
+        } else {
+            // Revert if the sender does not have sufficient token balance.
+            uint256 balance = saleToken.balanceOf(msg.sender);
+            if (balance < totalCost) {
+                revert InsufficientSaleTokenBalance(
+                    address(saleToken),
+                    balance,
+                    totalCost
+                );
+            }
+
+            // Revert if the sender does not have sufficient token allowance.
+            uint256 allowance = saleToken.allowance(msg.sender, address(this));
+            if (allowance < totalCost) {
+                revert InsufficientSaleTokenAllowance(
+                    address(saleToken),
+                    allowance,
+                    totalCost
+                );
+            }
         }
     }
 
@@ -520,7 +548,25 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
+     * @notice Update the sale token for the nft contract
+     *         and emit an event.
+     *         A zero address means the sale token is denominated
+     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
+     *
+     * @param saleToken The ERC20 token address.
+     */
+    function updateSaleToken(address saleToken) external onlyIERC721SeaDrop {
+        // Set the sale token.
+        _saleTokens[msg.sender] = ERC20(saleToken);
+
+        // Emit an event with the update.
+        emit SaleTokenUpdated(msg.sender, saleToken);
+    }
+
+    /**
      * @notice Returns the sale token for the nft contract.
+     *         A zero address means the sale token is denominated
+     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
      *
      * @param nftContract The nft contract.
      */
@@ -560,7 +606,7 @@ contract SeaDrop is ISeaDrop {
      *
      * @param nftContract The nft contract.
      */
-    function getAllowedFeeRecipient(address nftContract, address feeRecipient)
+    function getFeeRecipientIsAllowed(address nftContract, address feeRecipient)
         external
         view
         returns (bool)

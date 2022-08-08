@@ -106,7 +106,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *
      * @param nftContract The nft contract.
      */
-    function getAllowedFeeRecipient(address nftContract, address feeRecipient)
+    function getFeeRecipientIsAllowed(address nftContract, address feeRecipient)
         external
         view
         returns (bool);
@@ -122,9 +122,9 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (address[] memory);
 
     /**
-     * The following methods assume msg.sender is an nft contract;
-     * The ERC165 of the sender is ingesting events
-     *.
+     * The following methods assume msg.sender is an nft contract
+     * and its ERC165 interface id matches IERC721SeaDrop.
+     */
 
     /**
      * @notice Updates the public drop data for the nft contract
@@ -207,4 +207,22 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         external
         view
         returns (TokenGatedDropStage memory);
+
+    /**
+     * @notice Update the sale token for the nft contract.
+     *         A zero address means the sale token is denominated
+     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
+     *
+     * @param saleToken The ERC20 token address.
+     */
+    function updateSaleToken(address saleToken) external;
+
+    /**
+     * @notice Returns the sale token for the nft contract.
+     *         A zero address means the sale token is denominated
+     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
+     *
+     * @param nftContract The nft contract.
+     */
+    function getSaleToken(address nftContract) external view returns (address);
 }
