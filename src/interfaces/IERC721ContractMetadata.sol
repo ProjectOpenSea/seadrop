@@ -2,34 +2,105 @@
 pragma solidity ^0.8.0;
 
 interface IERC721ContractMetadata {
-    // just in case?
+    /**
+     * @dev Emit an event when the max supply is updated.
+     */
     event MaxSupplyUpdated(uint256 newMaxSupply);
 
-    // just in case?
+    /**
+     * @dev Emit an event with the previous and new provenance hash after
+     *      being updated.
+     */
     event ProvenanceHashUpdated(bytes32 previousHash, bytes32 newHash);
 
-    // for collection-level metadata
+    /**
+     * @dev Emit an event when the URI for the collection-level metadata
+     *      is updated.
+     */
     event ContractURIUpdated(string newContractURI);
 
-    // for partial reveals/updates - batch update implementation should be left to contract
+    /**
+     * @dev Emit an event for partial reveals/updates.
+     *      Batch update implementation should be left to contract.
+     *
+     * @param startTokenId The start token id.
+     * @param endTokenId The end token id.
+     */
     event TokenURIUpdated(
         uint256 indexed startTokenId,
         uint256 indexed endTokenId
     );
 
-    // for full reveals/updates
+    /**
+     * @dev Emit an event for full reveals/updates.
+     *
+     * @param baseURI The base URI.
+     */
     event BaseURIUpdated(string baseURI);
 
+    /**
+     * @notice Returns the contract URI.
+     */
     function contractURI() external view returns (string memory);
 
+    /**
+     * @notice Sets the contract URI.
+     *
+     * @param newContractURI The new contract URI.
+     */
     function setContractURI(string calldata newContractURI) external;
 
+    /**
+     * @notice Returns the base URI.
+     */
+    function baseURI() external view returns (string memory);
+
+    /**
+     * @notice Sets the base URI and emits an event.
+     *
+     * @param tokenURI The new base URI to set.
+     */
     function setBaseURI(string calldata tokenURI) external;
 
+    /**
+     * @notice Returns the max supply.
+     */
     function maxSupply() external view returns (uint256);
 
+    /**
+     * @notice Sets the max supply and emits an event.
+     *
+     * @param newMaxSupply The new max supply to set.
+     */
+    function setMaxSupply(uint256 newMaxSupply) external;
+
+    /**
+     * @notice Returns the total supply.
+     */
     function totalSupply() external view returns (uint256);
 
-    // for random reveals, hash all metadata and store result here
+    /**
+     * @notice Returns the provenance hash.
+     *         The provenance hash is used for random reveals, which
+     *         is a hash of the ordered metadata to show it is unmodified
+     *         after mint has started.
+     */
     function provenanceHash() external view returns (bytes32);
+
+    /**
+     * @notice Sets the provenance hash and emits an event.
+     *         The provenance hash is used for random reveals, which
+     *         is a hash of the ordered metadata to show it is unmodified
+     *         after mint has started.
+     *         This function will revert after the first item has been minted.
+     *
+     * @param newProvenanceHash The new provenance hash to set.
+     */
+    function setProvenanceHash(bytes32 newProvenanceHash) external;
+
+    /**
+     * @dev Revert with an error when attempting to set the provenance
+     *      hash after the mint has started.
+     */
+    error ProvenanceHashCannotBeSetAfterMintStarted();
 }

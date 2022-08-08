@@ -5,19 +5,34 @@ import {
     PublicDrop,
     MintParams,
     AllowListData,
-    UserData,
     TokenGatedDropStage,
     TokenGatedMintParams
 } from "../lib/SeaDropStructs.sol";
 import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
 
 interface ISeaDrop is SeaDropErrorsAndEvents {
+    /**
+     * @notice Mint a public drop.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param numToMint The number of tokens to mint.
+     */
     function mintPublic(
         address nftContract,
         address feeRecipient,
         uint256 numToMint
     ) external payable;
 
+    /**
+     * @notice Mint from an allow list.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param numToMint The number of tokens to mint.
+     * @param mintParams The mint parameters.
+     * @param proof The proof for the leaf of the allow list.
+     */
     function mintAllowList(
         address nftContract,
         address feeRecipient,
@@ -26,6 +41,15 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         bytes32[] calldata proof
     ) external payable;
 
+    /**
+     * @notice Mint with a server side signature.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param numToMint The number of tokens to mint.
+     * @param mintParams The mint parameters.
+     * @param signature The server side signature, must be an allowed signer.
+     */
     function mintSigned(
         address nftContract,
         address feeRecipient,
@@ -34,62 +58,141 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         bytes calldata signature
     ) external payable;
 
+    /**
+     * @notice Mint as an allowed token holder.
+     *         This will mark the token id as reedemed and will revert if the
+     *         same token id is attempted to be redeemed twice.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param tokenGatedMintParams The token gated mint params.
+     */
     function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
         TokenGatedMintParams[] calldata tokenGatedMintParams
     ) external payable;
 
+    /**
+     * @notice Returns the public drop data for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getPublicDrop(address nftContract)
         external
         view
         returns (PublicDrop memory);
 
+    /**
+     * @notice Returns the creator payout address for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getCreatorPayoutAddress(address nftContract)
         external
         view
         returns (address);
 
+    /**
+     * @notice Returns the allow list merkle root for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getMerkleRoot(address nftContract) external view returns (bytes32);
 
+    /**
+     * @notice Returns if the specified fee recipient is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getAllowedFeeRecipient(address nftContract, address feeRecipient)
         external
         view
         returns (bool);
 
+    /**
+     * @notice Returns the server side signers for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getSigners(address nftContract)
         external
         view
         returns (address[] memory);
 
-    // the following methods assume msg.sender is an nft contract; should check ERC165 of sender when ingesting events
+    /**
+     * The following methods assume msg.sender is an nft contract;
+     * The ERC165 of the sender is ingesting events
+     *.
 
-    /// @notice update public drop and emit PublicDropUpdated event
-    function updatePublicDrop(PublicDrop calldata publicDrop) external; // onlyOwnerOrAdministrator - doesn't update fee
+    /**
+     * @notice Updates the public drop data for the nft contract
+     *         and emits an event.
+     *
+     * @param publicDrop The public drop data.
+     */
+    function updatePublicDrop(PublicDrop calldata publicDrop) external;
 
-    /// @notice update merkle root and emit AllowListUpdated event
-    function updateAllowList(AllowListData calldata allowListData) external; // onlyOwnerOrAdministrator
+    /**
+     * @notice Updates the allow list merkle root for the nft contract
+     *         and emits an event.
+     *
+     * @param allowListData The allow list data.
+     */
+    function updateAllowList(AllowListData calldata allowListData) external;
 
-    /// @notice emit DropURIUpdated event
+    /**
+     * @notice Updates the drop URI and emits an event.
+     *
+     * @param dropURI The new drop URI.
+     */
     function updateDropURI(string calldata dropURI) external;
 
-    /// @notice set creator payout address and emit CreatorPayoutAddressUpdated event
+    /**
+     * @notice Updates the creator payout address and emits an event.
+     *
+     * @param payoutAddress The creator payout address.
+     */
     function updateCreatorPayoutAddress(address payoutAddress) external;
 
-    /// @notice set allowed for fee recipient and emit AllowedFeeRecipientUpdated event
+    /**
+     * @notice Updates the allowed fee recipient and emits an event.
+     *
+     * @param feeRecipient The fee recipient.
+     * @param allowed If the fee recipient is allowed.
+     */
     function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
         external;
 
-    /// @notice set signers and emit SignersUpdated event
-    function updateSigners(address[] calldata signers) external;
+    /**
+     * @notice Updates the allowed server side signers and emits an event.
+     *
+     * @param newSigners The new list of signers.
+     */
+    function updateSigners(address[] calldata newSigners) external;
 
-    /// @notice update a token gated drop stage
+    /**
+     * @notice Updates the token gated drop stage for the nft contract
+     *         and emits an event.
+     *
+     * @param nftContract The nft contract.
+     * @param allowedNftToken The token gated nft token.
+     * @param dropStage The token gated drop stage data.
+     */
     function updateTokenGatedDropStage(
         address nftContract,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external;
 
+    /**
+     * @notice Returns the token gated drop data for the nft contract
+     *         and token gated nft.
+     *
+     * @param nftContract The nft contract.
+     * @param allowedNftToken The token gated nft token.
+     */
     function getTokenGatedDrop(address nftContract, address allowedNftToken)
         external
         view

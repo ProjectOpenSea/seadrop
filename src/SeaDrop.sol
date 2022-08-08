@@ -7,7 +7,6 @@ import {
     PublicDrop,
     MintParams,
     AllowListData,
-    UserData,
     TokenGatedDropStage,
     TokenGatedMintParams,
     PaymentValidation
@@ -31,22 +30,49 @@ import {
 contract SeaDrop is ISeaDrop {
     using ECDSA for bytes32;
 
+    // Track the public drops.
     mapping(address => PublicDrop) private _publicDrops;
+
+    // Track the drop URI.
+    mapping(address => string) private _dropURI;
+
+    // Track the payment tokens.
     mapping(address => ERC20) private _saleTokens;
+
+    // Track the creator payout addresses.
     mapping(address => address) private _creatorPayoutAddresses;
+
+    // Track the allow list merkle roots.
     mapping(address => bytes32) private _merkleRoots;
+
+    // Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
+
+    // Track the allowed signers for server side drops.
     mapping(address => mapping(address => bool)) private _signers;
+
+    // Track the signers for each server side drop.
     mapping(address => address[]) private _enumeratedSigners;
-    // mapping(address => mapping(address => UserData)) public _userData;
+
+    // Track token gated drop stages.
     mapping(address => mapping(address => TokenGatedDropStage))
         private _tokenGatedDropStages;
+
+    // Track the tokens for token gated drops.
+    mapping(address => address[]) private _enumeratedTokenGatedTokens;
+
+    // Track redeemed token IDs for token gated drop stages.
     mapping(address => mapping(address => mapping(uint256 => bool)))
         private _tokenGatedRedeemed;
 
+    // EIP-712: Typed structured data hashing and signing
     bytes32 public immutable DOMAIN_SEPARATOR;
     bytes32 public immutable MINT_DATA_TYPEHASH;
 
+    /**
+     * @notice Ensure only tokens implementing IERC721SeaDrop can
+     *         call the update methods.
+     */
     modifier onlyIERC721SeaDrop() virtual {
         if (
             !IERC165(msg.sender).supportsInterface(
@@ -58,6 +84,9 @@ contract SeaDrop is ISeaDrop {
         _;
     }
 
+    /**
+     * @notice Constructor for the contract deployment.
+     */
     constructor() {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -76,6 +105,13 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    /**
+     * @notice Mint a public drop.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param numToMint The number of tokens to mint.
+     */
     function mintPublic(
         address nftContract,
         address feeRecipient,
@@ -83,7 +119,7 @@ contract SeaDrop is ISeaDrop {
     ) external payable override {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
 
-        // Validate drop has started.
+        // Ensure that the drop has started.
         if (block.timestamp < publicDrop.startTime) {
             revert NotActive(
                 block.timestamp,
@@ -92,18 +128,25 @@ contract SeaDrop is ISeaDrop {
             );
         }
 
-        // Validate payment.
+        // Validate correct payment was sent with the tx.
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, publicDrop.mintPrice);
         _checkCorrectPayment(payments);
 
+        // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
             numToMint,
             publicDrop.maxMintsPerWallet,
             nftContract
         );
+
+        // Mint the token(s).
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+
+        // Split the payment between the creator and fee recipient.
         _splitPayout(nftContract, feeRecipient, publicDrop.feeBps);
+
+        // Emit an event for the mint.
         emit SeaDropMint(
             nftContract,
             msg.sender,
@@ -115,6 +158,15 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    /**
+     * @notice Mint from an allow list.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param numToMint The number of tokens to mint.
+     * @param mintParams The mint parameters.
+     * @param proof The proof for the leaf of the allow list.
+     */
     function mintAllowList(
         address nftContract,
         address feeRecipient,
@@ -122,19 +174,22 @@ contract SeaDrop is ISeaDrop {
         MintParams calldata mintParams,
         bytes32[] calldata proof
     ) external payable override {
+        // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
-        // Validate payment.
+        // Validate correct payment was sent with the tx.
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
         _checkCorrectPayment(payments);
 
+        // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
             numToMint,
             mintParams.maxTotalMintableByWallet,
             nftContract
         );
 
+        // Verify the proof.
         if (
             !MerkleProofLib.verify(
                 proof,
@@ -145,8 +200,13 @@ contract SeaDrop is ISeaDrop {
             revert InvalidProof();
         }
 
+        // Mint the token(s).
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+
+        // Split the payment between the creator and fee recipient.
         _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+
+        // Emit an event for the mint.
         emit SeaDropMint(
             nftContract,
             msg.sender,
@@ -158,6 +218,15 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    /**
+     * @notice Mint with a server side signature.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param numToMint The number of tokens to mint.
+     * @param mintParams The mint parameters.
+     * @param signature The server side signature, must be an allowed signer.
+     */
     function mintSigned(
         address nftContract,
         address feeRecipient,
@@ -165,18 +234,21 @@ contract SeaDrop is ISeaDrop {
         MintParams calldata mintParams,
         bytes calldata signature
     ) external payable override {
+        // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
-        // Validate payment.
+        // Validate correct payment was sent with the tx.
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
         _checkCorrectPayment(payments);
 
+        // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
             numToMint,
             mintParams.maxTotalMintableByWallet,
             nftContract
         );
+
         // Verify EIP-712 signature by recreating the data structure
         // that we signed on the client side, and then using that to recover
         // the address that signed the signature for this data.
@@ -189,6 +261,7 @@ contract SeaDrop is ISeaDrop {
                 )
             )
         );
+
         // Use the recover method to see what address was used to create
         // the signature on this data.
         // Note that if the digest doesn't exactly match what was signed we'll
@@ -198,8 +271,13 @@ contract SeaDrop is ISeaDrop {
             revert InvalidSignature(recoveredAddress);
         }
 
+        // Mint the token(s).
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+
+        // Split the payment between the creator and fee recipient.
         _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+
+        // Emit an event for the mint.
         emit SeaDropMint(
             nftContract,
             msg.sender,
@@ -211,6 +289,15 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    /**
+     * @notice Mint as an allowed token holder.
+     *         This will mark the token id as reedemed and will revert if the
+     *         same token id is attempted to be redeemed twice.
+     *
+     * @param nftContract The nft contract to mint.
+     * @param feeRecipient The fee recipient.
+     * @param tokenGatedMintParams The token gated mint params.
+     */
     function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
@@ -246,7 +333,7 @@ contract SeaDrop is ISeaDrop {
                 dropStage.mintPrice
             );
 
-            // Validate number to mint.
+            // Check that the wallet is allowed to mint the desired quantity.
             _checkNumberToMint(
                 numToMint,
                 dropStage.maxTotalMintableByWallet,
@@ -296,7 +383,7 @@ contract SeaDrop is ISeaDrop {
             // Mint the tokens.
             IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
 
-            // Split the payout.
+            // Split the payment between the creator and fee recipient.
             _splitPayout(nftContract, feeRecipient, dropStage.feeBps);
 
             // Emit an event for the mint.
@@ -319,12 +406,18 @@ contract SeaDrop is ISeaDrop {
         _checkCorrectPayment(totalPayments);
     }
 
+    /**
+     * @notice Check that the wallet is allowed to mint the desired quantity.
+     *
+     * @param numberToMint The number of tokens to mint.
+     * @param maxMintsPerWallet The allowed max mints per wallet.
+     * @param nftContract The nft contract.
+     */
     function _checkNumberToMint(
         uint256 numberToMint,
         uint256 maxMintsPerWallet,
         address nftContract
     ) internal view {
-        // TODO: should SeaDrop track mints per wallet per contract?
         if (
             (numberToMint +
                 IERC721SeaDrop(nftContract).numberMinted(msg.sender) >
@@ -338,6 +431,11 @@ contract SeaDrop is ISeaDrop {
         }
     }
 
+    /**
+     * @notice Check that the correct payment was sent with the tx.
+     *
+     * @param payments The payments to validate.
+     */
     function _checkCorrectPayment(PaymentValidation[] memory payments)
         internal
         view
@@ -359,12 +457,25 @@ contract SeaDrop is ISeaDrop {
         }
     }
 
+    /**
+     * @notice Check that the drop stage is active.
+     *
+     * @param startTime The drop stage start time.
+     * @param endTime The drop stage end time.
+     */
     function _checkActive(uint256 startTime, uint256 endTime) internal view {
         if (block.timestamp < startTime || block.timestamp > endTime) {
             revert NotActive(block.timestamp, startTime, endTime);
         }
     }
 
+    /**
+     * @notice Split the payment payout for the creator and fee recipient.
+     *
+     * @param nftContract The nft contract.
+     * @param feeRecipient The fee recipient.
+     * @param feeBps The fee basis points.
+     */
     function _splitPayout(
         address nftContract,
         address feeRecipient,
@@ -395,6 +506,11 @@ contract SeaDrop is ISeaDrop {
         }
     }
 
+    /**
+     * @notice Returns the public drop data for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getPublicDrop(address nftContract)
         external
         view
@@ -403,10 +519,20 @@ contract SeaDrop is ISeaDrop {
         return _publicDrops[nftContract];
     }
 
+    /**
+     * @notice Returns the sale token for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getSaleToken(address nftContract) external view returns (address) {
         return address(_saleTokens[nftContract]);
     }
 
+    /**
+     * @notice Returns the creator payout address for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getCreatorPayoutAddress(address nftContract)
         external
         view
@@ -415,6 +541,11 @@ contract SeaDrop is ISeaDrop {
         return _creatorPayoutAddresses[nftContract];
     }
 
+    /**
+     * @notice Returns the allow list merkle root for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getMerkleRoot(address nftContract)
         external
         view
@@ -423,6 +554,12 @@ contract SeaDrop is ISeaDrop {
         return _merkleRoots[nftContract];
     }
 
+    /**
+     * @notice Returns if the specified fee recipient is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getAllowedFeeRecipient(address nftContract, address feeRecipient)
         external
         view
@@ -431,6 +568,11 @@ contract SeaDrop is ISeaDrop {
         return _allowedFeeRecipients[nftContract][feeRecipient];
     }
 
+    /**
+     * @notice Returns the server side signers for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
     function getSigners(address nftContract)
         external
         view
@@ -439,22 +581,54 @@ contract SeaDrop is ISeaDrop {
         return _enumeratedSigners[nftContract];
     }
 
+    /**
+     * @notice Returns the token gated drops for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getTokenGatedDrop(address nftContract)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _enumeratedTokenGatedTokens[nftContract];
+    }
+
+    /**
+     * @notice Updates the public drop for the nft contract and emits an event.
+     *
+     * @param publicDrop The public drop data.
+     */
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external
         override
         onlyIERC721SeaDrop
     {
+        // Set the public drop data.
         _publicDrops[msg.sender] = publicDrop;
+
+        // Emit an event with the update.
         emit PublicDropUpdated(msg.sender, publicDrop);
     }
 
+    /**
+     * @notice Updates the allow list merkle root for the nft contract
+     *         and emits an event.
+     *
+     * @param allowListData The allow list data.
+     */
     function updateAllowList(AllowListData calldata allowListData)
         external
         override
         onlyIERC721SeaDrop
     {
+        // Track the previous root.
         bytes32 prevRoot = _merkleRoots[msg.sender];
+
+        // Update the merkle root.
         _merkleRoots[msg.sender] = allowListData.merkleRoot;
+
+        // Emit an event with the update.
         emit AllowListUpdated(
             msg.sender,
             prevRoot,
@@ -464,12 +638,26 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    /**
+     * @notice Updates the token gated drop stage for the nft contract
+     *         and emits an event.
+     *
+     * @param nftContract The nft contract.
+     * @param allowedNftToken The token gated nft token.
+     * @param dropStage The token gated drop stage data.
+     */
     function updateTokenGatedDropStage(
         address nftContract,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
+        // Set the drop stage.
         _tokenGatedDropStages[nftContract][allowedNftToken] = dropStage;
+
+        // TODO Add allowedNftToken to _enumeratedTokenGatedTokens
+        //      if not already present.
+
+        // Emit an event with the update.
         emit TokenGatedDropStageUpdated(
             nftContract,
             allowedNftToken,
@@ -477,6 +665,13 @@ contract SeaDrop is ISeaDrop {
         );
     }
 
+    /**
+     * @notice Returns the token gated drop data for the nft contract
+     *         and token gated nft.
+     *
+     * @param nftContract The nft contract.
+     * @param allowedNftToken The token gated nft token.
+     */
     function getTokenGatedDrop(address nftContract, address allowedNftToken)
         external
         view
@@ -485,44 +680,74 @@ contract SeaDrop is ISeaDrop {
         return _tokenGatedDropStages[nftContract][allowedNftToken];
     }
 
-    /// @notice emit DropURIUpdated event
-    function updateDropURI(string calldata dropURI)
+    /**
+     * @notice Updates the drop URI and emits an event.
+     *
+     * @param newDropURI The new drop URI.
+     */
+    function updateDropURI(string calldata newDropURI)
         external
         onlyIERC721SeaDrop
     {
-        emit DropURIUpdated(msg.sender, dropURI);
+        // Set the new drop URI.
+        _dropURI[msg.sender] = newDropURI;
+
+        // Emit an event with the update.
+        emit DropURIUpdated(msg.sender, newDropURI);
     }
 
+    /**
+     * @notice Updates the creator payout address and emits an event.
+     *
+     * @param _payoutAddress The creator payout address.
+     */
     function updateCreatorPayoutAddress(address _payoutAddress)
         external
         onlyIERC721SeaDrop
     {
+        // Set the creator payout address.
         _creatorPayoutAddresses[msg.sender] = _payoutAddress;
+
+        // Emit an event with the update.
         emit CreatorPayoutAddressUpdated(msg.sender, _payoutAddress);
     }
 
-    function updateAllowedFeeRecipient(
-        address allowedFeeRecipient,
-        bool allowed
-    ) external onlyIERC721SeaDrop {
-        _allowedFeeRecipients[msg.sender][allowedFeeRecipient] = allowed;
-        emit AllowedFeeRecipientUpdated(
-            msg.sender,
-            allowedFeeRecipient,
-            allowed
-        );
+    /**
+     * @notice Updates the allowed fee recipient and emits an event.
+     *
+     * @param feeRecipient The fee recipient.
+     * @param allowed If the fee recipient is allowed.
+     */
+    function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
+        external
+        onlyIERC721SeaDrop
+    {
+        // Set the allowed fee recipient.
+        _allowedFeeRecipients[msg.sender][feeRecipient] = allowed;
+
+        // Emit an event with the update.
+        emit AllowedFeeRecipientUpdated(msg.sender, feeRecipient, allowed);
     }
 
+    /**
+     * @notice Updates the allowed server side signers and emits an event.
+     *
+     * @param newSigners The new list of signers.
+     */
     function updateSigners(address[] calldata newSigners)
         external
         onlyIERC721SeaDrop
     {
+        // Track the enumerated storage.
         address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
+
+        // Track the old signers.
         address[] memory oldSigners = enumeratedStorage;
-        // delete old enumeration
+
+        // Delete old enumeration.
         delete _enumeratedSigners[msg.sender];
 
-        // add new enumeration
+        // Add new enumeration.
         for (uint256 i = 0; i < newSigners.length; ) {
             enumeratedStorage.push(newSigners[i]);
             unchecked {
@@ -530,21 +755,25 @@ contract SeaDrop is ISeaDrop {
             }
         }
 
+        // Create a mapping of the signers.
         mapping(address => bool) storage signersMap = _signers[msg.sender];
-        // delete old signers
+
+        // Delete old signers.
         for (uint256 i = 0; i < oldSigners.length; ) {
             signersMap[oldSigners[i]] = false;
             unchecked {
                 ++i;
             }
         }
-        // add new signers
+        // Add new signers.
         for (uint256 i = 0; i < newSigners.length; ) {
             signersMap[newSigners[i]] = true;
             unchecked {
                 ++i;
             }
         }
+
+        // Emit an event with the update.
         emit SignersUpdated(msg.sender, oldSigners, newSigners);
     }
 }
