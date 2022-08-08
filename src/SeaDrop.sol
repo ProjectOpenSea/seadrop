@@ -136,9 +136,10 @@ contract SeaDrop is ISeaDrop {
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
+            nftContract,
             numToMint,
             publicDrop.maxMintsPerWallet,
-            nftContract
+            0
         );
 
         // Mint the token(s).
@@ -185,9 +186,10 @@ contract SeaDrop is ISeaDrop {
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
+            nftContract,
             numToMint,
             mintParams.maxTotalMintableByWallet,
-            nftContract
+            mintParams.maxTokenSupplyForStage
         );
 
         // Verify the proof.
@@ -245,9 +247,10 @@ contract SeaDrop is ISeaDrop {
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
+            nftContract,
             numToMint,
             mintParams.maxTotalMintableByWallet,
-            nftContract
+            mintParams.maxTokenSupplyForStage
         );
 
         // Verify EIP-712 signature by recreating the data structure
@@ -336,9 +339,10 @@ contract SeaDrop is ISeaDrop {
 
             // Check that the wallet is allowed to mint the desired quantity.
             _checkNumberToMint(
+                nftContract,
                 numToMint,
                 dropStage.maxTotalMintableByWallet,
-                nftContract
+                dropStage.maxTokenSupplyForStage
             );
 
             // Iterate through each allowedNftTokenId
@@ -415,9 +419,10 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract The nft contract.
      */
     function _checkNumberToMint(
+        address nftContract,
         uint256 numberToMint,
         uint256 maxMintsPerWallet,
-        address nftContract
+        uint256 maxTokenSupplyForStage
     ) internal view {
         // Get the mint stats.
         (
@@ -440,6 +445,16 @@ contract SeaDrop is ISeaDrop {
                 numberToMint + currentTotalSupply,
                 maxSupply
             );
+        }
+
+        // Ensure amount doesn't exceed maxTokenSupplyForStage (if provided).
+        if (maxTokenSupplyForStage != 0) {
+            if (numberToMint + currentTotalSupply > maxTokenSupplyForStage) {
+                revert AmountExceedsMaxTokenSupplyForStage(
+                    numberToMint + currentTotalSupply,
+                    maxTokenSupplyForStage
+                );
+            }
         }
     }
 

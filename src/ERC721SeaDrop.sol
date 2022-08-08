@@ -314,9 +314,8 @@ contract ERC721SeaDrop is
 
     /**
      * @notice Returns a set of mint stats for the address.
-     *         This assists SeaDrop in enforcing maxSupply and
-     *         maxMintsPerWallet checks, and in the case of allowList,
-     *         max for stage.
+     *         This assists SeaDrop in enforcing maxSupply,
+     *         maxMintsPerWallet, and maxTokenSupplyForStage checks.
      *
      * @param minter The minter address.
      */

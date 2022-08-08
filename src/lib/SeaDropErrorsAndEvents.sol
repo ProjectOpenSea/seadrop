@@ -31,6 +31,11 @@ interface SeaDropErrorsAndEvents {
     error AmountExceedsMaxSupply(uint256 total, uint256 maxSupply);
 
     /**
+     * @dev Revert with an error if amount exceeds the max token supply for the stage.
+     */
+    error AmountExceedsMaxTokenSupplyForStage(uint256 total, uint256 maxTokenSupplyForStage);
+
+    /**
      * @dev Revert with an error if the allow list is already redeemed.
      *      TODO should you only be able to redeem from an allow list once?
      *           would otherwise be capped by maxTotalMintableByWallet
