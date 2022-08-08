@@ -117,6 +117,7 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient,
         uint256 numToMint
     ) external payable override {
+        // Get the public drop data.
         PublicDrop memory publicDrop = _publicDrops[nftContract];
 
         // Ensure that the drop has started.
@@ -418,15 +419,26 @@ contract SeaDrop is ISeaDrop {
         uint256 maxMintsPerWallet,
         address nftContract
     ) internal view {
-        if (
-            (numberToMint +
-                IERC721SeaDrop(nftContract).numberMinted(msg.sender) >
-                maxMintsPerWallet)
-        ) {
+        // Get the mint stats.
+        (
+            uint256 minterNumMinted,
+            uint256 currentTotalSupply,
+            uint256 maxSupply
+        ) = IERC721SeaDrop(nftContract).getMintStats(msg.sender);
+
+        // Ensure amount doesn't exceed maxMintsPerWallet.
+        if (numberToMint + minterNumMinted > maxMintsPerWallet) {
             revert AmountExceedsMaxPerWallet(
-                numberToMint +
-                    IERC721SeaDrop(nftContract).numberMinted(msg.sender),
+                numberToMint + minterNumMinted,
                 maxMintsPerWallet
+            );
+        }
+
+        // Ensure amount doesn't exceed maxSupply.
+        if (numberToMint + currentTotalSupply > maxSupply) {
+            revert AmountExceedsMaxSupply(
+                numberToMint + currentTotalSupply,
+                maxSupply
             );
         }
     }
@@ -493,6 +505,7 @@ contract SeaDrop is ISeaDrop {
      */
     function _checkActive(uint256 startTime, uint256 endTime) internal view {
         if (block.timestamp < startTime || block.timestamp > endTime) {
+            // Revert if the drop stage is not active.
             revert NotActive(block.timestamp, startTime, endTime);
         }
     }
@@ -509,22 +522,35 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient,
         uint256 feeBps
     ) internal {
+        // Get the fee amount.
         uint256 feeAmount = (msg.value * feeBps) / 10000;
+
+        // Get the creator payout amount.
         uint256 payoutAmount = msg.value - feeAmount;
+
+        // Get the sale token.
         ERC20 saleToken = _saleTokens[nftContract];
+
+        // If the saleToken is the zero address, transfer the native currency.
         if (address(saleToken) == address(0)) {
+            // Transfer native currency to the fee recipient.
             SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
+
+            // Transfer native currency to the creator.
             SafeTransferLib.safeTransferETH(
                 _creatorPayoutAddresses[nftContract],
                 payoutAmount
             );
         } else {
+            // Transfer ERC20 to the fee recipient.
             SafeTransferLib.safeTransferFrom(
                 saleToken,
                 msg.sender,
                 feeRecipient,
                 feeAmount
             );
+
+            // Transfer ERC20 to the creator.
             SafeTransferLib.safeTransferFrom(
                 saleToken,
                 msg.sender,

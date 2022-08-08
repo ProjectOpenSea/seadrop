@@ -26,6 +26,11 @@ interface SeaDropErrorsAndEvents {
     error AmountExceedsMaxPerWallet(uint256 total, uint256 allowed);
 
     /**
+     * @dev Revert with an error if amount exceeds the max token supply.
+     */
+    error AmountExceedsMaxSupply(uint256 total, uint256 maxSupply);
+
+    /**
      * @dev Revert with an error if the allow list is already redeemed.
      *      TODO should allowlist redemptions happen per-list?
      */
