@@ -73,7 +73,7 @@ struct TokenGatedMintParams {
 struct AllowListData {
     bytes32 merkleRoot;
     string[] publicKeyURIs;
-    string leavesURI;
+    string allowListURI;
 }
 
 /**

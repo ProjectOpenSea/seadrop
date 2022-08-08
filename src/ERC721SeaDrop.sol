@@ -313,18 +313,9 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Returns the number of tokens minted by the address.
-     *
-     * @param minter The minter address.
-     */
-    function numberMinted(address minter) external view returns (uint256) {
-        return _numberMinted(minter);
-    }
-
-    /**
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply and
-     *         maxMintsPerWallet checks, and in the case of allowlist,
+     *         maxMintsPerWallet checks, and in the case of allowList,
      *         max for stage.
      *
      * @param minter The minter address.

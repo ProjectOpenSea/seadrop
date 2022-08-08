@@ -33,7 +33,7 @@ contract SeaDrop is ISeaDrop {
     // Track the public drops.
     mapping(address => PublicDrop) private _publicDrops;
 
-    // Track the drop URI.
+    // Track the drop URIs.
     mapping(address => string) private _dropURI;
 
     // Track the sale tokens.
@@ -93,7 +93,7 @@ contract SeaDrop is ISeaDrop {
                 keccak256(
                     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                 ),
-                keccak256(bytes("SignatureDrop")),
+                keccak256(bytes("SeaDrop")),
                 keccak256(bytes("1")),
                 block.chainid,
                 address(this)
@@ -101,7 +101,7 @@ contract SeaDrop is ISeaDrop {
         );
 
         MINT_DATA_TYPEHASH = keccak256(
-            "MintParams(address minter, bool mintPrice, uint256 maxTotalMintableByWallet, uint256 startTime, uint256 endTime, uint256 dropStage, uint256 feeBps)"
+            "MintParams(address minter, uint256 mintPrice, uint256 maxTotalMintableByWallet, uint256 startTime, uint256 endTime, uint256 dropStageIndex, uint256 feeBps, bool restrictFeeRecipients)"
         );
     }
 
@@ -428,7 +428,7 @@ contract SeaDrop is ISeaDrop {
 
         // Ensure amount doesn't exceed maxMintsPerWallet.
         if (numberToMint + minterNumMinted > maxMintsPerWallet) {
-            revert AmountExceedsMaxPerWallet(
+            revert AmountExceedsMaxMintedPerWallet(
                 numberToMint + minterNumMinted,
                 maxMintsPerWallet
             );
@@ -693,7 +693,7 @@ contract SeaDrop is ISeaDrop {
             prevRoot,
             allowListData.merkleRoot,
             allowListData.publicKeyURIs,
-            allowListData.leavesURI
+            allowListData.allowListURI
         );
     }
 
@@ -714,7 +714,7 @@ contract SeaDrop is ISeaDrop {
         _tokenGatedDropStages[nftContract][allowedNftToken] = dropStage;
 
         // If the maxTotalMintableByWallet is greater than zero
-        // then we are setting a drop stage.
+        // then we are setting an active drop stage.
         if (dropStage.maxTotalMintableByWallet > 0) {
             // Add allowedNftToken to enumerated list if not present.
             bool allowedNftTokenExistsInEnumeration = false;

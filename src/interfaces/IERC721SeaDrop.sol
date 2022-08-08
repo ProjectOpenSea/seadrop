@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.11;
 
 import {
     IERC721ContractMetadata
@@ -42,16 +42,9 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     function mintSeaDrop(address minter, uint256 amount) external payable;
 
     /**
-     * @notice Returns the number of tokens minted by the address.
-     *
-     * @param minter The minter address.
-     */
-    function numberMinted(address minter) external view returns (uint256);
-
-    /**
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply and
-     *         maxMintsPerWallet checks, and in the case of allowlist,
+     *         maxMintsPerWallet checks, and in the case of allowList,
      *         max for stage.
      *
      * @param minter The minter address.

@@ -21,9 +21,9 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev Revert with an error if amount exceeds the max allowed
-     *      per wallet.
+     *      to be minted per wallet.
      */
-    error AmountExceedsMaxPerWallet(uint256 total, uint256 allowed);
+    error AmountExceedsMaxMintedPerWallet(uint256 total, uint256 allowed);
 
     /**
      * @dev Revert with an error if amount exceeds the max token supply.
@@ -32,7 +32,8 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev Revert with an error if the allow list is already redeemed.
-     *      TODO should allowlist redemptions happen per-list?
+     *      TODO should you only be able to redeem from an allow list once?
+     *           would otherwise be capped by maxTotalMintableByWallet
      */
     error AllowListRedeemed();
 
@@ -131,7 +132,7 @@ interface SeaDropErrorsAndEvents {
      */
     event CreatorPayoutAddressUpdated(
         address indexed nftContract,
-        address indexed creatorPayoutAddressUpdated
+        address indexed newPayoutAddress
     );
 
     /**
@@ -139,7 +140,7 @@ interface SeaDropErrorsAndEvents {
      */
     event AllowedFeeRecipientUpdated(
         address indexed nftContract,
-        address indexed newFeeRecipient,
+        address indexed feeRecipient,
         bool indexed allowed
     );
 
@@ -148,7 +149,7 @@ interface SeaDropErrorsAndEvents {
      */
     event SignersUpdated(
         address indexed nftContract,
-        address[] previousSigners,
+        address[] oldSigners,
         address[] newSigners
     );
 
