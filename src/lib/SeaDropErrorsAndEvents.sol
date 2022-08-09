@@ -40,7 +40,7 @@ interface SeaDropErrorsAndEvents {
      *      TODO should you only be able to redeem from an allow list once?
      *           would otherwise be capped by maxTotalMintableByWallet
      */
-    error AllowListRedeemed();
+    error AllowListRedeemed(address minter);
 
     /**
      * @dev Revert with an error if the received payment is incorrect.
@@ -88,6 +88,11 @@ interface SeaDropErrorsAndEvents {
     error InsufficientSaleTokenAllowance(address saleToken, uint256 allowance, uint256 totalCost);
 
     /**
+     * @dev Revert with an error if msg.value > 0 for ERC20 saleToken payment.
+     */
+    error MsgValueNonZeroForERC20SaleToken(uint256 msgValue);
+
+    /**
      * @dev An event with details of a SeaDrop mint, for analytics purposes.
      */
     event SeaDropMint(
@@ -96,10 +101,10 @@ interface SeaDropErrorsAndEvents {
         address indexed feeRecipient,
         uint256 numberMinted,
         uint256 unitMintPrice,
+        address saleToken,
         uint256 feeBps,
         uint256 dropStageIndex // non-zero is an allow-list tier
     );
-
 
     /**
      * @dev An event with updated public drop data for an nft contract.

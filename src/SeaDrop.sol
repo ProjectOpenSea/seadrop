@@ -4,15 +4,19 @@ pragma solidity ^0.8.11;
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
 import {
-    PublicDrop,
-    MintParams,
     AllowListData,
+    Conduit,
+    MintParams,
+    PaymentValidation,
+    PublicDrop,
     TokenGatedDropStage,
-    TokenGatedMintParams,
-    PaymentValidation
+    TokenGatedMintParams
 } from "./lib/SeaDropStructs.sol";
-import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+
 import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
+
+import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+
 import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
 
 import {
@@ -27,21 +31,15 @@ import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
-import {
-    ConduitTransfer
-} from "seaport/contracts/conduit/lib/ConduitStructs.sol";
+import { ConduitTransfer } from "seaport/conduit/lib/ConduitStructs.sol";
 
-import {
-    ConduitItemType
-} from "seaport/contracts/conduit/lib/ConduitEnums.sol";
+import { ConduitItemType } from "seaport/conduit/lib/ConduitEnums.sol";
 
 import {
     ConduitControllerInterface
-} from "seaport/contracts/interfaces/ConduitControllerInterface.sol";
+} from "seaport/interfaces/ConduitControllerInterface.sol";
 
-import {
-    ConduitInterface
-} from "seaport/contracts/interfaces/ConduitInterface.sol";
+import { ConduitInterface } from "seaport/interfaces/ConduitInterface.sol";
 
 contract SeaDrop is ISeaDrop {
     using ECDSA for bytes32;
@@ -50,7 +48,7 @@ contract SeaDrop is ISeaDrop {
     mapping(address => PublicDrop) private _publicDrops;
 
     // Track the drop URIs.
-    mapping(address => string) private _dropURI;
+    mapping(address => string) private _dropURIs;
 
     // Track the sale tokens.
     mapping(address => ERC20) private _saleTokens;
@@ -59,7 +57,7 @@ contract SeaDrop is ISeaDrop {
     mapping(address => address) private _creatorPayoutAddresses;
 
     // Track the allow list merkle roots.
-    mapping(address => bytes32) private _merkleRoots;
+    mapping(address => bytes32) private _allowListMerkleRoots;
 
     // Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
@@ -127,17 +125,14 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract The nft contract to mint.
      * @param feeRecipient The fee recipient.
      * @param numToMint The number of tokens to mint.
-     * @param conduitController If paying with an ERC20 token,
-     *                          optionally specify a conduit controller to use.
-     * @param conduitKey If paying with an ERC20 token,
-     *                   optionally specify a conduit key to use.
+     * @param conduit If paying with an ERC20 token,
+     *                optionally specify a conduit to use.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
         uint256 numToMint,
-        address conduitController,
-        bytes32 conduitKey
+        Conduit calldata conduit
     ) external payable override {
         // Get the public drop data.
         PublicDrop memory publicDrop = _publicDrops[nftContract];
@@ -152,14 +147,14 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Validate correct payment.
-        address conduit;
+        address conduitAddress;
         // Use the conduit if provided.
-        if (conduitController != address(0)) {
-            conduit = _getConduit(conduitController, conduitKey);
+        if (conduit.conduitController != address(0)) {
+            conduitAddress = _getConduit(conduit);
         }
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, publicDrop.mintPrice);
-        _checkCorrectPayment(nftContract, payments, conduit);
+        _checkCorrectPayment(nftContract, payments, conduitAddress);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -169,21 +164,15 @@ contract SeaDrop is ISeaDrop {
             0
         );
 
-        // Mint the token(s).
-        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
-
-        // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, feeRecipient, publicDrop.feeBps, conduit);
-
-        // Emit an event for the mint.
-        emit SeaDropMint(
+        // Split the payout, mint the token, emit an event.
+        _payAndMint(
             nftContract,
-            msg.sender,
-            feeRecipient,
             numToMint,
             publicDrop.mintPrice,
+            0,
             publicDrop.feeBps,
-            0
+            feeRecipient,
+            conduitAddress
         );
     }
 
@@ -195,10 +184,8 @@ contract SeaDrop is ISeaDrop {
      * @param numToMint The number of tokens to mint.
      * @param mintParams The mint parameters.
      * @param proof The proof for the leaf of the allow list.
-     * @param conduitController If paying with an ERC20 token,
-     *                          optionally specify a conduit controller to use.
-     * @param conduitKey If paying with an ERC20 token,
-     *                   optionally specify a conduit key to use.
+     * @param conduit If paying with an ERC20 token,
+     *                optionally specify a conduit to use.
      */
     function mintAllowList(
         address nftContract,
@@ -206,21 +193,20 @@ contract SeaDrop is ISeaDrop {
         uint256 numToMint,
         MintParams calldata mintParams,
         bytes32[] calldata proof,
-        address conduitController,
-        bytes32 conduitKey
+        Conduit calldata conduit
     ) external payable override {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
         // Validate correct payment.
-        address conduit;
+        address conduitAddress;
         // Use the conduit if provided.
-        if (conduitController != address(0)) {
-            conduit = _getConduit(conduitController, conduitKey);
+        if (conduit.conduitController != address(0)) {
+            conduitAddress = _getConduit(conduit);
         }
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(nftContract, payments, conduit);
+        _checkCorrectPayment(nftContract, payments, conduitAddress);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -234,28 +220,22 @@ contract SeaDrop is ISeaDrop {
         if (
             !MerkleProofLib.verify(
                 proof,
-                _merkleRoots[nftContract],
+                _allowListMerkleRoots[nftContract],
                 keccak256(abi.encode(msg.sender, mintParams))
             )
         ) {
             revert InvalidProof();
         }
 
-        // Mint the token(s).
-        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
-
-        // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, feeRecipient, mintParams.feeBps, conduit);
-
-        // Emit an event for the mint.
-        emit SeaDropMint(
+        // Split the payout, mint the token, emit an event.
+        _payAndMint(
             nftContract,
-            msg.sender,
-            feeRecipient,
             numToMint,
             mintParams.mintPrice,
+            mintParams.dropStageIndex,
             mintParams.feeBps,
-            mintParams.dropStageIndex
+            feeRecipient,
+            conduitAddress
         );
     }
 
@@ -267,10 +247,8 @@ contract SeaDrop is ISeaDrop {
      * @param numToMint The number of tokens to mint.
      * @param mintParams The mint parameters.
      * @param signature The server side signature, must be an allowed signer.
-     * @param conduitController If paying with an ERC20 token,
-     *                          optionally specify a conduit controller to use.
-     * @param conduitKey If paying with an ERC20 token,
-     *                   optionally specify a conduit key to use.
+     * @param conduit If paying with an ERC20 token,
+     *                optionally specify a conduit to use.
      */
     function mintSigned(
         address nftContract,
@@ -278,21 +256,20 @@ contract SeaDrop is ISeaDrop {
         uint256 numToMint,
         MintParams calldata mintParams,
         bytes calldata signature,
-        address conduitController,
-        bytes32 conduitKey
+        Conduit calldata conduit
     ) external payable override {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
         // Validate correct payment.
-        address conduit;
+        address conduitAddress;
         // Use the conduit if provided.
-        if (conduitController != address(0)) {
-            conduit = _getConduit(conduitController, conduitKey);
+        if (conduit.conduitController != address(0)) {
+            conduitAddress = _getConduit(conduit);
         }
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(nftContract, payments, conduit);
+        _checkCorrectPayment(nftContract, payments, conduitAddress);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -324,21 +301,15 @@ contract SeaDrop is ISeaDrop {
             revert InvalidSignature(recoveredAddress);
         }
 
-        // Mint the token(s).
-        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
-
-        // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, feeRecipient, mintParams.feeBps, conduit);
-
-        // Emit an event for the mint.
-        emit SeaDropMint(
+        // Split the payout, mint the token, emit an event.
+        _payAndMint(
             nftContract,
-            msg.sender,
-            feeRecipient,
             numToMint,
             mintParams.mintPrice,
+            mintParams.dropStageIndex,
             mintParams.feeBps,
-            mintParams.dropStageIndex
+            feeRecipient,
+            conduitAddress
         );
     }
 
@@ -350,34 +321,28 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract The nft contract to mint.
      * @param feeRecipient The fee recipient.
      * @param tokenGatedMintParams The token gated mint params.
-     * @param conduitController If paying with an ERC20 token,
-     *                          optionally specify a conduit controller to use.
-     * @param conduitKey If paying with an ERC20 token,
-     *                   optionally specify a conduit key to use.
+     * @param conduit If paying with an ERC20 token,
+     *                optionally specify a conduit to use.
      */
     function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
         TokenGatedMintParams[] calldata tokenGatedMintParams,
-        address conduitController,
-        bytes32 conduitKey
+        Conduit calldata conduit
     ) external payable override {
-        // Put the total number of tokenGatedMintParams on the stack.
-        uint256 totalTokenGatedMintParams = tokenGatedMintParams.length;
-
         // Track total mint cost to compare against value sent with tx.
         PaymentValidation[] memory totalPayments = new PaymentValidation[](
-            totalTokenGatedMintParams
+            tokenGatedMintParams.length
         );
 
-        address conduit;
+        address conduitAddress;
         // Use the conduit if provided.
-        if (conduitController != address(0)) {
-            conduit = _getConduit(conduitController, conduitKey);
+        if (conduit.conduitController != address(0)) {
+            conduitAddress = _getConduit(conduit);
         }
 
         // Iterate through each allowedNftToken.
-        for (uint256 i = 0; i < totalTokenGatedMintParams; ) {
+        for (uint256 i = 0; i < tokenGatedMintParams.length; ) {
             // Set the mintParams to a variable.
             TokenGatedMintParams calldata mintParams = tokenGatedMintParams[i];
 
@@ -426,9 +391,9 @@ contract SeaDrop is ISeaDrop {
 
                 // Check that the token id has not already
                 // been used to be redeemed.
-                bool redeemed; // = _tokenGatedRedeemed[nftContract][
-                //     mintParams.allowedNftToken
-                // ][tokenId];
+                bool redeemed = _tokenGatedRedeemed[nftContract][
+                    mintParams.allowedNftToken
+                ][tokenId];
 
                 if (redeemed == true) {
                     revert TokenGatedTokenIdAlreadyRedeemed(
@@ -446,21 +411,15 @@ contract SeaDrop is ISeaDrop {
                 }
             }
 
-            // Mint the tokens.
-            IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
-
-            // Split the payment between the creator and fee recipient.
-            _splitPayout(nftContract, feeRecipient, dropStage.feeBps, conduit);
-
-            // Emit an event for the mint.
-            emit SeaDropMint(
+            // Split the payout, mint the token, emit an event.
+            _payAndMint(
                 nftContract,
-                msg.sender,
-                feeRecipient,
                 numToMint,
                 dropStage.mintPrice,
+                dropStage.dropStageIndex,
                 dropStage.feeBps,
-                0
+                feeRecipient,
+                conduitAddress
             );
 
             unchecked {
@@ -469,23 +428,22 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Validate correct payment.
-        _checkCorrectPayment(nftContract, totalPayments, conduit);
+        _checkCorrectPayment(nftContract, totalPayments, conduitAddress);
     }
 
     /**
      * @notice Returns the conduit address from controller and key.
      *
-     * @param conduitController The conduit controller.
-     * @param conduitKey The conduit key.
+     * @param conduit The conduit.
      */
-    function _getConduit(address conduitController, bytes32 conduitKey)
+    function _getConduit(Conduit calldata conduit)
         internal
         view
-        returns (address conduit)
+        returns (address conduitAddress)
     {
-        (conduit, ) = ConduitControllerInterface(conduitController).getConduit(
-            conduitKey
-        );
+        (conduitAddress, ) = ConduitControllerInterface(
+            conduit.conduitController
+        ).getConduit(conduit.conduitKey);
     }
 
     /**
@@ -542,13 +500,13 @@ contract SeaDrop is ISeaDrop {
      *
      * @param nftContract The nft contract.
      * @param payments The payments to validate.
-     * @param conduit If paying with an ERC20 token,
-     *                optionally specify the conduit to use.
+     * @param conduitAddress If paying with an ERC20 token,
+     *                       optionally specify a conduit address to use.
      */
     function _checkCorrectPayment(
         address nftContract,
         PaymentValidation[] memory payments,
-        address conduit
+        address conduitAddress
     ) internal view {
         // Keep track of the total cost of payments.
         uint256 totalCost;
@@ -571,6 +529,11 @@ contract SeaDrop is ISeaDrop {
                 revert IncorrectPayment(msg.value, totalCost);
             }
         } else {
+            // Revert if msg.value > 0 when payment is in a saleToken.
+            if (msg.value > 0) {
+                revert MsgValueNonZeroForERC20SaleToken(msg.value);
+            }
+
             // Revert if the sender does not have sufficient token balance.
             uint256 balance = saleToken.balanceOf(msg.sender);
             if (balance < totalCost) {
@@ -583,8 +546,8 @@ contract SeaDrop is ISeaDrop {
 
             // Revert if the sender does not have sufficient token allowance.
             // Use the conduit if provided.
-            address allowanceFor = conduit != address(0)
-                ? conduit
+            address allowanceFor = conduitAddress != address(0)
+                ? conduitAddress
                 : address(this);
             uint256 allowance = saleToken.allowance(msg.sender, allowanceFor);
             if (allowance < totalCost) {
@@ -611,19 +574,71 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
+     * @notice Splits the payment, mints a number of tokens,
+     *         and emits an event.
+     *
+     * @param nftContract The nft contract.
+     * @param numToMint The number of tokens to mint.
+     * @param mintPrice The mint price.
+     * @param dropStageIndex The drop stage index.
+     * @param feeBps The fee basis points.
+     * @param feeRecipient The fee recipient.
+     * @param conduitAddress If paying with an ERC20 token,
+     *                       optionally specify a conduit address to use.
+     */
+    function _payAndMint(
+        address nftContract,
+        uint256 numToMint,
+        uint256 mintPrice,
+        uint256 dropStageIndex,
+        uint256 feeBps,
+        address feeRecipient,
+        address conduitAddress
+    ) internal {
+        // Get the sale token.
+        ERC20 saleToken = _saleTokens[nftContract];
+
+        // Split the payment between the creator and fee recipient.
+        _splitPayout(
+            nftContract,
+            feeRecipient,
+            feeBps,
+            address(saleToken),
+            conduitAddress
+        );
+
+        // Mint the token(s).
+        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+
+        // Emit an event for the mint.
+        emit SeaDropMint(
+            nftContract,
+            msg.sender,
+            feeRecipient,
+            numToMint,
+            mintPrice,
+            address(saleToken),
+            feeBps,
+            dropStageIndex
+        );
+    }
+
+    /**
      * @notice Split the payment payout for the creator and fee recipient.
      *
      * @param nftContract The nft contract.
      * @param feeRecipient The fee recipient.
      * @param feeBps The fee basis points.
-     * @param conduit If paying with an ERC20 token,
-     *                optionally specify a conduit to use.
+     * @param saleToken Optionally, the ERC20 sale token.
+     * @param conduitAddress If paying with an ERC20 token,
+     *                       optionally specify a conduit addressto use.
      */
     function _splitPayout(
         address nftContract,
         address feeRecipient,
         uint256 feeBps,
-        address conduit
+        address saleToken,
+        address conduitAddress
     ) internal {
         // Get the fee amount.
         uint256 feeAmount = (msg.value * feeBps) / 10000;
@@ -631,12 +646,9 @@ contract SeaDrop is ISeaDrop {
         // Get the creator payout amount.
         uint256 payoutAmount = msg.value - feeAmount;
 
-        // Get the sale token.
-        ERC20 saleToken = _saleTokens[nftContract];
-
         // If the saleToken is the zero address, transfer the
         // native chain currency.
-        if (address(saleToken) == address(0)) {
+        if (saleToken == address(0)) {
             // Transfer native currency to the fee recipient.
             SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
 
@@ -647,13 +659,13 @@ contract SeaDrop is ISeaDrop {
             );
         } else {
             // Use the conduit if specified.
-            if (conduit != address(0)) {
+            if (conduitAddress != address(0)) {
                 // Create conduit transfers for fee recipient and creator.
                 ConduitTransfer[]
                     memory conduitTransfers = new ConduitTransfer[](2);
                 conduitTransfers[0] = ConduitTransfer(
                     ConduitItemType.ERC20,
-                    address(saleToken),
+                    saleToken,
                     msg.sender,
                     feeRecipient,
                     0,
@@ -661,7 +673,7 @@ contract SeaDrop is ISeaDrop {
                 );
                 conduitTransfers[1] = ConduitTransfer(
                     ConduitItemType.ERC20,
-                    address(saleToken),
+                    saleToken,
                     msg.sender,
                     _creatorPayoutAddresses[nftContract],
                     0,
@@ -669,11 +681,11 @@ contract SeaDrop is ISeaDrop {
                 );
 
                 // Execute the conduit transfers.
-                ConduitInterface(conduit).execute(conduitTransfers);
+                ConduitInterface(conduitAddress).execute(conduitTransfers);
             } else {
                 // Transfer to the fee recipient.
                 SafeTransferLib.safeTransferFrom(
-                    saleToken,
+                    ERC20(saleToken),
                     msg.sender,
                     feeRecipient,
                     feeAmount
@@ -681,13 +693,26 @@ contract SeaDrop is ISeaDrop {
 
                 // Transfer to the creator.
                 SafeTransferLib.safeTransferFrom(
-                    saleToken,
+                    ERC20(saleToken),
                     msg.sender,
                     _creatorPayoutAddresses[nftContract],
                     payoutAmount
                 );
             }
         }
+    }
+
+    /**
+     * @notice Returns the drop URI for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getDropURI(address nftContract)
+        external
+        view
+        returns (string memory)
+    {
+        return _dropURIs[nftContract];
     }
 
     /**
@@ -748,12 +773,12 @@ contract SeaDrop is ISeaDrop {
      *
      * @param nftContract The nft contract.
      */
-    function getMerkleRoot(address nftContract)
+    function getAllowListMerkleRoot(address nftContract)
         external
         view
         returns (bytes32)
     {
-        return _merkleRoots[nftContract];
+        return _allowListMerkleRoots[nftContract];
     }
 
     /**
@@ -812,10 +837,10 @@ contract SeaDrop is ISeaDrop {
         onlyIERC721SeaDrop
     {
         // Track the previous root.
-        bytes32 prevRoot = _merkleRoots[msg.sender];
+        bytes32 prevRoot = _allowListMerkleRoots[msg.sender];
 
         // Update the merkle root.
-        _merkleRoots[msg.sender] = allowListData.merkleRoot;
+        _allowListMerkleRoots[msg.sender] = allowListData.merkleRoot;
 
         // Emit an event with the update.
         emit AllowListUpdated(
@@ -919,7 +944,7 @@ contract SeaDrop is ISeaDrop {
         onlyIERC721SeaDrop
     {
         // Set the new drop URI.
-        _dropURI[msg.sender] = newDropURI;
+        _dropURIs[msg.sender] = newDropURI;
 
         // Emit an event with the update.
         emit DropURIUpdated(msg.sender, newDropURI);

@@ -83,3 +83,11 @@ struct PaymentValidation {
     uint256 numberToMint;
     uint256 mintPrice;
 }
+
+/**
+ * @notice A struct for using a conduit when paying with an ERC20 sale token.
+ */
+struct Conduit {
+    address conduitController;
+    bytes32 conduitKey;
+}

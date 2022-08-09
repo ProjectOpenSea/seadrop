@@ -2,19 +2,26 @@
 pragma solidity ^0.8.11;
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
+
 import { MaxMintable } from "utility-contracts/MaxMintable.sol";
+
 import {
     TwoStepAdministered,
     TwoStepOwnable
 } from "utility-contracts/TwoStepAdministered.sol";
+
 import { AllowList } from "utility-contracts/AllowList.sol";
+
 import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
+
 import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+
 import {
     ConstructorInitializable
 } from "utility-contracts/ConstructorInitializable.sol";
+
 import {
     IERC721ContractMetadata
 } from "./interfaces/IERC721ContractMetadata.sol";

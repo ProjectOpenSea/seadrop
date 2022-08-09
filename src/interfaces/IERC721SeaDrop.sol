@@ -4,9 +4,10 @@ pragma solidity ^0.8.11;
 import {
     IERC721ContractMetadata
 } from "../interfaces/IERC721ContractMetadata.sol";
+
 import {
-    PublicDrop,
     AllowListData,
+    PublicDrop,
     TokenGatedDropStage
 } from "../lib/SeaDropStructs.sol";
 

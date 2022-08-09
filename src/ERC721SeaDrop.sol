@@ -5,6 +5,7 @@ import {
     IERC721SeaDrop,
     IERC721ContractMetadata
 } from "./interfaces/IERC721SeaDrop.sol";
+
 import {
     ERC721ContractMetadata,
     IERC721ContractMetadata
@@ -24,8 +25,8 @@ import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
 import { SeaDropErrorsAndEvents } from "./lib/SeaDropErrorsAndEvents.sol";
 import {
-    PublicDrop,
     AllowListData,
+    PublicDrop,
     TokenGatedDropStage
 } from "./lib/SeaDropStructs.sol";
 
