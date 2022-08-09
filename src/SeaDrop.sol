@@ -27,6 +27,22 @@ import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
+import {
+    ConduitTransfer
+} from "seaport/contracts/conduit/lib/ConduitStructs.sol";
+
+import {
+    ConduitItemType
+} from "seaport/contracts/conduit/lib/ConduitEnums.sol";
+
+import {
+    ConduitControllerInterface
+} from "seaport/contracts/interfaces/ConduitControllerInterface.sol";
+
+import {
+    ConduitInterface
+} from "seaport/contracts/interfaces/ConduitInterface.sol";
+
 contract SeaDrop is ISeaDrop {
     using ECDSA for bytes32;
 
@@ -111,11 +127,17 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract The nft contract to mint.
      * @param feeRecipient The fee recipient.
      * @param numToMint The number of tokens to mint.
+     * @param conduitController If paying with an ERC20 token,
+     *                          optionally specify a conduit controller to use.
+     * @param conduitKey If paying with an ERC20 token,
+     *                   optionally specify a conduit key to use.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint
+        uint256 numToMint,
+        address conduitController,
+        bytes32 conduitKey
     ) external payable override {
         // Get the public drop data.
         PublicDrop memory publicDrop = _publicDrops[nftContract];
@@ -130,9 +152,14 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Validate correct payment.
+        address conduit;
+        // Use the conduit if provided.
+        if (conduitController != address(0)) {
+            conduit = _getConduit(conduitController, conduitKey);
+        }
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, publicDrop.mintPrice);
-        _checkCorrectPayment(nftContract, payments);
+        _checkCorrectPayment(nftContract, payments, conduit);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -146,7 +173,7 @@ contract SeaDrop is ISeaDrop {
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
 
         // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, feeRecipient, publicDrop.feeBps);
+        _splitPayout(nftContract, feeRecipient, publicDrop.feeBps, conduit);
 
         // Emit an event for the mint.
         emit SeaDropMint(
@@ -168,21 +195,32 @@ contract SeaDrop is ISeaDrop {
      * @param numToMint The number of tokens to mint.
      * @param mintParams The mint parameters.
      * @param proof The proof for the leaf of the allow list.
+     * @param conduitController If paying with an ERC20 token,
+     *                          optionally specify a conduit controller to use.
+     * @param conduitKey If paying with an ERC20 token,
+     *                   optionally specify a conduit key to use.
      */
     function mintAllowList(
         address nftContract,
         address feeRecipient,
         uint256 numToMint,
         MintParams calldata mintParams,
-        bytes32[] calldata proof
+        bytes32[] calldata proof,
+        address conduitController,
+        bytes32 conduitKey
     ) external payable override {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
         // Validate correct payment.
+        address conduit;
+        // Use the conduit if provided.
+        if (conduitController != address(0)) {
+            conduit = _getConduit(conduitController, conduitKey);
+        }
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(nftContract, payments);
+        _checkCorrectPayment(nftContract, payments, conduit);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -207,7 +245,7 @@ contract SeaDrop is ISeaDrop {
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
 
         // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+        _splitPayout(nftContract, feeRecipient, mintParams.feeBps, conduit);
 
         // Emit an event for the mint.
         emit SeaDropMint(
@@ -229,21 +267,32 @@ contract SeaDrop is ISeaDrop {
      * @param numToMint The number of tokens to mint.
      * @param mintParams The mint parameters.
      * @param signature The server side signature, must be an allowed signer.
+     * @param conduitController If paying with an ERC20 token,
+     *                          optionally specify a conduit controller to use.
+     * @param conduitKey If paying with an ERC20 token,
+     *                   optionally specify a conduit key to use.
      */
     function mintSigned(
         address nftContract,
         address feeRecipient,
         uint256 numToMint,
         MintParams calldata mintParams,
-        bytes calldata signature
+        bytes calldata signature,
+        address conduitController,
+        bytes32 conduitKey
     ) external payable override {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
         // Validate correct payment.
+        address conduit;
+        // Use the conduit if provided.
+        if (conduitController != address(0)) {
+            conduit = _getConduit(conduitController, conduitKey);
+        }
         PaymentValidation[] memory payments = new PaymentValidation[](1);
         payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(nftContract, payments);
+        _checkCorrectPayment(nftContract, payments, conduit);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
@@ -279,7 +328,7 @@ contract SeaDrop is ISeaDrop {
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
 
         // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, feeRecipient, mintParams.feeBps);
+        _splitPayout(nftContract, feeRecipient, mintParams.feeBps, conduit);
 
         // Emit an event for the mint.
         emit SeaDropMint(
@@ -301,11 +350,17 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract The nft contract to mint.
      * @param feeRecipient The fee recipient.
      * @param tokenGatedMintParams The token gated mint params.
+     * @param conduitController If paying with an ERC20 token,
+     *                          optionally specify a conduit controller to use.
+     * @param conduitKey If paying with an ERC20 token,
+     *                   optionally specify a conduit key to use.
      */
     function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
-        TokenGatedMintParams[] calldata tokenGatedMintParams
+        TokenGatedMintParams[] calldata tokenGatedMintParams,
+        address conduitController,
+        bytes32 conduitKey
     ) external payable override {
         // Put the total number of tokenGatedMintParams on the stack.
         uint256 totalTokenGatedMintParams = tokenGatedMintParams.length;
@@ -314,6 +369,12 @@ contract SeaDrop is ISeaDrop {
         PaymentValidation[] memory totalPayments = new PaymentValidation[](
             totalTokenGatedMintParams
         );
+
+        address conduit;
+        // Use the conduit if provided.
+        if (conduitController != address(0)) {
+            conduit = _getConduit(conduitController, conduitKey);
+        }
 
         // Iterate through each allowedNftToken.
         for (uint256 i = 0; i < totalTokenGatedMintParams; ) {
@@ -365,9 +426,9 @@ contract SeaDrop is ISeaDrop {
 
                 // Check that the token id has not already
                 // been used to be redeemed.
-                bool redeemed = _tokenGatedRedeemed[nftContract][
-                    mintParams.allowedNftToken
-                ][tokenId];
+                bool redeemed; // = _tokenGatedRedeemed[nftContract][
+                //     mintParams.allowedNftToken
+                // ][tokenId];
 
                 if (redeemed == true) {
                     revert TokenGatedTokenIdAlreadyRedeemed(
@@ -389,7 +450,7 @@ contract SeaDrop is ISeaDrop {
             IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
 
             // Split the payment between the creator and fee recipient.
-            _splitPayout(nftContract, feeRecipient, dropStage.feeBps);
+            _splitPayout(nftContract, feeRecipient, dropStage.feeBps, conduit);
 
             // Emit an event for the mint.
             emit SeaDropMint(
@@ -408,7 +469,23 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Validate correct payment.
-        _checkCorrectPayment(nftContract, totalPayments);
+        _checkCorrectPayment(nftContract, totalPayments, conduit);
+    }
+
+    /**
+     * @notice Returns the conduit address from controller and key.
+     *
+     * @param conduitController The conduit controller.
+     * @param conduitKey The conduit key.
+     */
+    function _getConduit(address conduitController, bytes32 conduitKey)
+        internal
+        view
+        returns (address conduit)
+    {
+        (conduit, ) = ConduitControllerInterface(conduitController).getConduit(
+            conduitKey
+        );
     }
 
     /**
@@ -463,11 +540,15 @@ contract SeaDrop is ISeaDrop {
      *         was sent with the tx. For ERC20 sale token, check
      *         that the sender has sufficient balance and allowance.
      *
+     * @param nftContract The nft contract.
      * @param payments The payments to validate.
+     * @param conduit If paying with an ERC20 token,
+     *                optionally specify the conduit to use.
      */
     function _checkCorrectPayment(
         address nftContract,
-        PaymentValidation[] memory payments
+        PaymentValidation[] memory payments,
+        address conduit
     ) internal view {
         // Keep track of the total cost of payments.
         uint256 totalCost;
@@ -486,7 +567,7 @@ contract SeaDrop is ISeaDrop {
         // The zero address means the sale token is the native token.
         if (address(saleToken) == address(0)) {
             // Revert if the tx's value doesn't match the total cost.
-            if (totalCost != msg.value) {
+            if (msg.value != totalCost) {
                 revert IncorrectPayment(msg.value, totalCost);
             }
         } else {
@@ -501,7 +582,11 @@ contract SeaDrop is ISeaDrop {
             }
 
             // Revert if the sender does not have sufficient token allowance.
-            uint256 allowance = saleToken.allowance(msg.sender, address(this));
+            // Use the conduit if provided.
+            address allowanceFor = conduit != address(0)
+                ? conduit
+                : address(this);
+            uint256 allowance = saleToken.allowance(msg.sender, allowanceFor);
             if (allowance < totalCost) {
                 revert InsufficientSaleTokenAllowance(
                     address(saleToken),
@@ -531,11 +616,14 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract The nft contract.
      * @param feeRecipient The fee recipient.
      * @param feeBps The fee basis points.
+     * @param conduit If paying with an ERC20 token,
+     *                optionally specify a conduit to use.
      */
     function _splitPayout(
         address nftContract,
         address feeRecipient,
-        uint256 feeBps
+        uint256 feeBps,
+        address conduit
     ) internal {
         // Get the fee amount.
         uint256 feeAmount = (msg.value * feeBps) / 10000;
@@ -546,7 +634,8 @@ contract SeaDrop is ISeaDrop {
         // Get the sale token.
         ERC20 saleToken = _saleTokens[nftContract];
 
-        // If the saleToken is the zero address, transfer the native currency.
+        // If the saleToken is the zero address, transfer the
+        // native chain currency.
         if (address(saleToken) == address(0)) {
             // Transfer native currency to the fee recipient.
             SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
@@ -557,21 +646,47 @@ contract SeaDrop is ISeaDrop {
                 payoutAmount
             );
         } else {
-            // Transfer ERC20 to the fee recipient.
-            SafeTransferLib.safeTransferFrom(
-                saleToken,
-                msg.sender,
-                feeRecipient,
-                feeAmount
-            );
+            // Use the conduit if specified.
+            if (conduit != address(0)) {
+                // Create conduit transfers for fee recipient and creator.
+                ConduitTransfer[]
+                    memory conduitTransfers = new ConduitTransfer[](2);
+                conduitTransfers[0] = ConduitTransfer(
+                    ConduitItemType.ERC20,
+                    address(saleToken),
+                    msg.sender,
+                    feeRecipient,
+                    0,
+                    feeAmount
+                );
+                conduitTransfers[1] = ConduitTransfer(
+                    ConduitItemType.ERC20,
+                    address(saleToken),
+                    msg.sender,
+                    _creatorPayoutAddresses[nftContract],
+                    0,
+                    payoutAmount
+                );
 
-            // Transfer ERC20 to the creator.
-            SafeTransferLib.safeTransferFrom(
-                saleToken,
-                msg.sender,
-                _creatorPayoutAddresses[nftContract],
-                payoutAmount
-            );
+                // Execute the conduit transfers.
+                ConduitInterface(conduit).execute(conduitTransfers);
+            } else {
+                // Transfer to the fee recipient.
+                SafeTransferLib.safeTransferFrom(
+                    saleToken,
+                    msg.sender,
+                    feeRecipient,
+                    feeAmount
+                );
+
+                // Transfer to the creator.
+                SafeTransferLib.safeTransferFrom(
+                    saleToken,
+                    msg.sender,
+                    _creatorPayoutAddresses[nftContract],
+                    payoutAmount
+                );
+            }
         }
     }
 
