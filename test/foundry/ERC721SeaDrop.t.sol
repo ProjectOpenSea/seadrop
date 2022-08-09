@@ -1,53 +1,112 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
 
-// import "forge-std/Test.sol";
-// import { ERC721Drop } from "primary-drops/ERC721Drop.sol";
-// import { IERC721Drop } from "primary-drops/interfaces/IERC721Drop.sol";
-// import { DropEventsAndErrors } from "primary-drops/DropEventsAndErrors.sol";
+import "forge-std/Test.sol";
+import { SeaDrop } from "primary-drops/SeaDrop.sol";
+import { ERC721SeaDrop } from "primary-drops/ERC721SeaDrop.sol";
+import { IERC721SeaDrop } from "primary-drops/interfaces/IERC721SeaDrop.sol";
+import {
+    SeaDropErrorsAndEvents
+} from "primary-drops/lib/SeaDropErrorsAndEvents.sol";
+import { PublicDrop } from "primary-drops/lib/SeaDropStructs.sol";
 
-// contract ERC721DropTest is Test, DropEventsAndErrors {
-//     ERC721Drop test;
-//     mapping(address => uint256) privateKeys;
-//     mapping(bytes => address) seedAddresses;
+contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
+    SeaDrop seadrop;
+    ERC721SeaDrop test;
+    mapping(address => uint256) privateKeys;
+    mapping(bytes => address) seedAddresses;
 
-//     function setUp() public {
-//         test = new ERC721Drop(
-//             "",
-//             "",
-//             address(42),
-//             IERC721Drop.PublicDrop({
-//                 mintPrice: 1 ether,
-//                 startTime: 0,
-//                 endTime: type(uint64).max,
-//                 maxMintsPerWallet: 10,
-//                 maxMintsPerTransaction: 10,
-//                 feeBps: 250
-//             }),
-//             address(0)
-//         );
-//     }
+    struct FuzzInputs {
+        uint40 numMints;
+        address minter;
+        address feeRecipient;
+    }
 
-//     function makeAddr(bytes memory seed) public returns (address) {
-//         uint256 pk = uint256(keccak256(seed));
-//         address derived = vm.addr(pk);
-//         seedAddresses[seed] = derived;
-//         privateKeys[derived] = pk;
-//         return derived;
-//     }
+    modifier validateArgs(FuzzInputs memory args) {
+        vm.assume(args.numMints > 0 && args.numMints <= 10);
+        vm.assume(args.minter != address(0) && args.feeRecipient != address(0));
+        _;
+    }
 
-//     function testPublicMint() public {
-//         test.publicMint{ value: 1 ether }(1);
-//         assertEq(test.balanceOf(address(this)), 1);
-//         test.publicMint{ value: 2 ether }(2);
-//     }
+    function setUp() public {
+        // Deploy SeaDrop.
+        seadrop = new SeaDrop();
 
-//     function testPublicMint_incorrectPayment() public {
-//         vm.expectRevert(
-//             abi.encodeWithSelector(IncorrectPayment.selector, 1, 2 ether)
-//         );
-//         test.publicMint{ value: 1 wei }(2);
-//     }
+        // Deploy test ERC721SeaDrop.
+        test = new ERC721SeaDrop("", "", address(this), address(seadrop));
 
-//     receive() external payable {}
-// }
+        // Create public drop object.
+        PublicDrop memory publicDrop = PublicDrop(
+            0.1 ether, // mint price
+            uint64(block.timestamp), // start time
+            10, // max mints per wallet
+            100, // fee (1%)
+            false // if false, allow any fee recipient
+        );
+
+        // Impersonate test erc721 contract.
+        vm.prank(address(test));
+
+        // Update the public drop for the erc721 contract.
+        seadrop.updatePublicDrop(publicDrop);
+    }
+
+    function makeAddr(bytes memory seed) public returns (address) {
+        uint256 pk = uint256(keccak256(seed));
+        address derived = vm.addr(pk);
+        seedAddresses[seed] = derived;
+        privateKeys[derived] = pk;
+        return derived;
+    }
+
+    function testMintPublic(FuzzInputs memory args) public validateArgs(args) {
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        uint256 mintValue = args.numMints * publicDrop.mintPrice;
+
+        vm.deal(args.minter, 100 ether);
+
+        vm.prank(args.minter);
+        seadrop.mintPublic{ value: mintValue }(
+            address(test),
+            args.feeRecipient,
+            args.numMints
+        );
+        assertEq(test.balanceOf(args.minter), args.numMints);
+    }
+
+    function testMintPublic_incorrectPayment(FuzzInputs memory args)
+        public
+        validateArgs(args)
+    {
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+        uint256 mintValue = args.numMints * publicDrop.mintPrice;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IncorrectPayment.selector, 1, mintValue)
+        );
+
+        vm.deal(args.minter, 100 ether);
+
+        vm.prank(args.minter);
+        seadrop.mintPublic{ value: 1 wei }(
+            address(test),
+            args.feeRecipient,
+            args.numMints
+        );
+    }
+
+    function testMintSeaDrop_revertNonSeaDrop(FuzzInputs memory args)
+        public
+        validateArgs(args)
+    {
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        uint256 mintValue = args.numMints * publicDrop.mintPrice;
+
+        vm.deal(args.minter, 100 ether);
+
+        vm.expectRevert(IERC721SeaDrop.OnlySeaDrop.selector);
+        test.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
+    }
+}
