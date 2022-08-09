@@ -2,13 +2,16 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import { SeaDrop } from "primary-drops/SeaDrop.sol";
-import { ERC721SeaDrop } from "primary-drops/ERC721SeaDrop.sol";
-import { IERC721SeaDrop } from "primary-drops/interfaces/IERC721SeaDrop.sol";
-import {
-    SeaDropErrorsAndEvents
-} from "primary-drops/lib/SeaDropErrorsAndEvents.sol";
-import { PublicDrop } from "primary-drops/lib/SeaDropStructs.sol";
+
+import { SeaDrop } from "seadrop/SeaDrop.sol";
+
+import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+
+import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+
+import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
+
+import { Conduit, PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
 
 contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
     SeaDrop seadrop;
@@ -25,6 +28,9 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
     modifier validateArgs(FuzzInputs memory args) {
         vm.assume(args.numMints > 0 && args.numMints <= 10);
         vm.assume(args.minter != address(0) && args.feeRecipient != address(0));
+        vm.assume(
+            args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
+        );
         _;
     }
 
@@ -33,7 +39,16 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
         seadrop = new SeaDrop();
 
         // Deploy test ERC721SeaDrop.
-        test = new ERC721SeaDrop("", "", address(this), address(seadrop));
+        address[] memory allowedSeaDrop = new address[](1);
+        allowedSeaDrop[0] = address(seadrop);
+        test = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+
+        // Set maxSupply to 1000.
+        test.setMaxSupply(1000);
+
+        // Set creator payout address.
+        address creator = address(0xABCD);
+        test.updateCreatorPayoutAddress(address(seadrop), creator);
 
         // Create public drop object.
         PublicDrop memory publicDrop = PublicDrop(
@@ -65,13 +80,17 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
         vm.deal(args.minter, 100 ether);
-
         vm.prank(args.minter);
-        seadrop.mintPublic{ value: mintValue }(
+
+        Conduit memory conduit = Conduit(address(0), bytes32(0));
+
+        seadrop.mintPublic{ gas: 10000000000000000000, value: mintValue }(
             address(test),
             args.feeRecipient,
-            args.numMints
+            args.numMints,
+            conduit
         );
+
         assertEq(test.balanceOf(args.minter), args.numMints);
     }
 
@@ -87,12 +106,15 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
         );
 
         vm.deal(args.minter, 100 ether);
-
         vm.prank(args.minter);
+
+        Conduit memory conduit = Conduit(address(0), bytes32(0));
+
         seadrop.mintPublic{ value: 1 wei }(
             address(test),
             args.feeRecipient,
-            args.numMints
+            args.numMints,
+            conduit
         );
     }
 
@@ -107,6 +129,7 @@ contract ERC721DropTest is Test, SeaDropErrorsAndEvents {
         vm.deal(args.minter, 100 ether);
 
         vm.expectRevert(IERC721SeaDrop.OnlySeaDrop.selector);
+
         test.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }
 }

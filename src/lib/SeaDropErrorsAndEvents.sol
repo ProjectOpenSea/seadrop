@@ -34,6 +34,21 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert with an error if amount exceeds the max token supply for the stage.
      */
     error AmountExceedsMaxTokenSupplyForStage(uint256 total, uint256 maxTokenSupplyForStage);
+    
+    /**
+     * @dev Revert if the fee recipient is the zero address.
+     */
+    error FeeRecipientCannotBeZeroAddress();
+
+    /**
+     * @dev Revert if the fee recipient is restricted and not allowe.
+     */
+    error FeeRecipientNotAllowed();
+
+    /**
+     * @dev Revert if the creator payout address is the zero address.
+     */
+    error CreatorPayoutAddressCannotBeZeroAddress();
 
     /**
      * @dev Revert with an error if the allow list is already redeemed.

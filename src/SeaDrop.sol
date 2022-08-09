@@ -164,6 +164,13 @@ contract SeaDrop is ISeaDrop {
             0
         );
 
+        // Check that the fee recipient is allowed if restricted.
+        _checkFeeRecipientIsAllowed(
+            nftContract,
+            feeRecipient,
+            publicDrop.restrictFeeRecipients
+        );
+
         // Split the payout, mint the token, emit an event.
         _payAndMint(
             nftContract,
@@ -214,6 +221,13 @@ contract SeaDrop is ISeaDrop {
             numToMint,
             mintParams.maxTotalMintableByWallet,
             mintParams.maxTokenSupplyForStage
+        );
+
+        // Check that the fee recipient is allowed if restricted.
+        _checkFeeRecipientIsAllowed(
+            nftContract,
+            feeRecipient,
+            mintParams.restrictFeeRecipients
         );
 
         // Verify the proof.
@@ -277,6 +291,13 @@ contract SeaDrop is ISeaDrop {
             numToMint,
             mintParams.maxTotalMintableByWallet,
             mintParams.maxTokenSupplyForStage
+        );
+
+        // Check that the fee recipient is allowed if restricted.
+        _checkFeeRecipientIsAllowed(
+            nftContract,
+            feeRecipient,
+            mintParams.restrictFeeRecipients
         );
 
         // Verify EIP-712 signature by recreating the data structure
@@ -369,6 +390,13 @@ contract SeaDrop is ISeaDrop {
                 numToMint,
                 dropStage.maxTotalMintableByWallet,
                 dropStage.maxTokenSupplyForStage
+            );
+
+            // Check that the fee recipient is allowed if restricted.
+            _checkFeeRecipientIsAllowed(
+                nftContract,
+                feeRecipient,
+                dropStage.restrictFeeRecipients
             );
 
             // Iterate through each allowedNftTokenId
@@ -490,6 +518,32 @@ contract SeaDrop is ISeaDrop {
                     maxTokenSupplyForStage
                 );
             }
+        }
+    }
+
+    /**
+     * @notice Check that the fee recipient is allowed.
+     *
+     * @param nftContract The nft contract.
+     * @param feeRecipient The fee recipient.
+     * @param restrictFeeRecipients If the fee recipients are restricted.
+     */
+    function _checkFeeRecipientIsAllowed(
+        address nftContract,
+        address feeRecipient,
+        bool restrictFeeRecipients
+    ) internal view {
+        // Ensure the fee recipient is not the zero address.
+        if (feeRecipient == address(0)) {
+            revert FeeRecipientCannotBeZeroAddress();
+        }
+
+        // Revert if the fee recipient is restricted and not allowed.
+        if (
+            restrictFeeRecipients == true &&
+            _allowedFeeRecipients[nftContract][feeRecipient] == false
+        ) {
+            revert FeeRecipientNotAllowed();
         }
     }
 
@@ -640,6 +694,14 @@ contract SeaDrop is ISeaDrop {
         address saleToken,
         address conduitAddress
     ) internal {
+        // Get the creator payout address.
+        address creatorPayoutAddress = _creatorPayoutAddresses[nftContract];
+
+        // Ensure the creator payout address is not the zero address.
+        if (creatorPayoutAddress == address(0)) {
+            revert CreatorPayoutAddressCannotBeZeroAddress();
+        }
+
         // Get the fee amount.
         uint256 feeAmount = (msg.value * feeBps) / 10000;
 
@@ -653,16 +715,15 @@ contract SeaDrop is ISeaDrop {
             SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
 
             // Transfer native currency to the creator.
-            SafeTransferLib.safeTransferETH(
-                _creatorPayoutAddresses[nftContract],
-                payoutAmount
-            );
+            SafeTransferLib.safeTransferETH(creatorPayoutAddress, payoutAmount);
         } else {
             // Use the conduit if specified.
             if (conduitAddress != address(0)) {
-                // Create conduit transfers for fee recipient and creator.
+                // Initialize an array for the conduit transfers.
                 ConduitTransfer[]
                     memory conduitTransfers = new ConduitTransfer[](2);
+
+                // Set ERC20 conduit transfer for the fee recipient.
                 conduitTransfers[0] = ConduitTransfer(
                     ConduitItemType.ERC20,
                     saleToken,
@@ -671,11 +732,13 @@ contract SeaDrop is ISeaDrop {
                     0,
                     feeAmount
                 );
+
+                // Set ERC20 conduit transfer for the creator.
                 conduitTransfers[1] = ConduitTransfer(
                     ConduitItemType.ERC20,
                     saleToken,
                     msg.sender,
-                    _creatorPayoutAddresses[nftContract],
+                    creatorPayoutAddress,
                     0,
                     payoutAmount
                 );
@@ -683,7 +746,7 @@ contract SeaDrop is ISeaDrop {
                 // Execute the conduit transfers.
                 ConduitInterface(conduitAddress).execute(conduitTransfers);
             } else {
-                // Transfer to the fee recipient.
+                // Transfer ERC20 to the fee recipient.
                 SafeTransferLib.safeTransferFrom(
                     ERC20(saleToken),
                     msg.sender,
@@ -691,11 +754,11 @@ contract SeaDrop is ISeaDrop {
                     feeAmount
                 );
 
-                // Transfer to the creator.
+                // Transfer ERC20 to the creator.
                 SafeTransferLib.safeTransferFrom(
                     ERC20(saleToken),
                     msg.sender,
-                    _creatorPayoutAddresses[nftContract],
+                    creatorPayoutAddress,
                     payoutAmount
                 );
             }
