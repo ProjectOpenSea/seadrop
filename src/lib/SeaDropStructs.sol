@@ -53,7 +53,7 @@ struct MintParams {
     uint256 maxTotalMintableByWallet;
     uint256 startTime;
     uint256 endTime;
-    uint256 dropStageIndex; // non-zero
+    uint256 dropStageIndex;
     uint256 maxTokenSupplyForStage;
     uint256 feeBps;
     bool restrictFeeRecipients;

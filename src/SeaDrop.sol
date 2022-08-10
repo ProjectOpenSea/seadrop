@@ -70,7 +70,7 @@ contract SeaDrop is ISeaDrop {
 
     // Track token gated drop stages.
     mapping(address => mapping(address => TokenGatedDropStage))
-        private _tokenGatedDropStages;
+        private _tokenGatedDrops;
 
     // Track the tokens for token gated drops.
     mapping(address => address[]) private _enumeratedTokenGatedTokens;
@@ -368,7 +368,7 @@ contract SeaDrop is ISeaDrop {
             TokenGatedMintParams calldata mintParams = tokenGatedMintParams[i];
 
             // Set the dropStage to a variable.
-            TokenGatedDropStage storage dropStage = _tokenGatedDropStages[
+            TokenGatedDropStage storage dropStage = _tokenGatedDrops[
                 nftContract
             ][mintParams.allowedNftToken];
 
@@ -585,7 +585,7 @@ contract SeaDrop is ISeaDrop {
         } else {
             // Revert if msg.value > 0 when payment is in a saleToken.
             if (msg.value > 0) {
-                revert MsgValueNonZeroForERC20SaleToken(msg.value);
+                revert MsgValueNonZeroForERC20SaleToken();
             }
 
             // Revert if the sender does not have sufficient token balance.
@@ -923,13 +923,13 @@ contract SeaDrop is ISeaDrop {
      * @param allowedNftToken The token gated nft token.
      * @param dropStage The token gated drop stage data.
      */
-    function updateTokenGatedDropStage(
+    function updateTokenGatedDrop(
         address nftContract,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
         // Set the drop stage.
-        _tokenGatedDropStages[nftContract][allowedNftToken] = dropStage;
+        _tokenGatedDrops[nftContract][allowedNftToken] = dropStage;
 
         // If the maxTotalMintableByWallet is greater than zero
         // then we are setting an active drop stage.
@@ -994,7 +994,7 @@ contract SeaDrop is ISeaDrop {
         view
         returns (TokenGatedDropStage memory)
     {
-        return _tokenGatedDropStages[nftContract][allowedNftToken];
+        return _tokenGatedDrops[nftContract][allowedNftToken];
     }
 
     /**

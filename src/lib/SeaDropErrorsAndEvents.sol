@@ -105,10 +105,10 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev Revert with an error if msg.value > 0 for ERC20 saleToken payment.
      */
-    error MsgValueNonZeroForERC20SaleToken(uint256 msgValue);
+    error MsgValueNonZeroForERC20SaleToken();
 
     /**
-     * @dev An event with details of a SeaDrop mint, for analytics purposes.
+     * @dev An event with details of a SeaDrop mint, for analytical purposes.
      */
     event SeaDropMint(
         address indexed nftContract,
@@ -118,7 +118,7 @@ interface SeaDropErrorsAndEvents {
         uint256 unitMintPrice,
         address saleToken,
         uint256 feeBps,
-        uint256 dropStageIndex // non-zero is an allow-list tier
+        uint256 dropStageIndex
     );
 
     /**

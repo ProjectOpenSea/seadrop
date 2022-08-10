@@ -89,7 +89,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      * @param allowedNftToken The allowed nft token.
      * @param dropStage The token gated drop stage data.
      */
-    function updateTokenGatedDropStage(
+    function updateTokenGatedDrop(
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
