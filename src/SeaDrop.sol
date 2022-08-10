@@ -417,8 +417,7 @@ contract SeaDrop is ISeaDrop {
                     );
                 }
 
-                // Check that the token id has not already
-                // been used to be redeemed.
+                // Check that the token id has not already been redeemed.
                 bool redeemed = _tokenGatedRedeemed[nftContract][
                     mintParams.allowedNftToken
                 ][tokenId];
@@ -685,7 +684,7 @@ contract SeaDrop is ISeaDrop {
      * @param feeBps The fee basis points.
      * @param saleToken Optionally, the ERC20 sale token.
      * @param conduitAddress If paying with an ERC20 token,
-     *                       optionally specify a conduit addressto use.
+     *                       optionally specify a conduit address to use.
      */
     function _splitPayout(
         address nftContract,
@@ -703,7 +702,7 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Get the fee amount.
-        uint256 feeAmount = (msg.value * feeBps) / 10000;
+        uint256 feeAmount = (msg.value * feeBps) / 10_000;
 
         // Get the creator payout amount.
         uint256 payoutAmount = msg.value - feeAmount;

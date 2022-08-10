@@ -16,6 +16,10 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
 import {
+    IERC721
+} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+
+import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
@@ -131,7 +135,7 @@ contract ERC721SeaDrop is
         onlySeaDrop
     {
         // Emit a ConsecutiveTransfer event.
-        _mintERC2309(minter, amount);
+        _mint(minter, amount);
     }
 
     /**
@@ -361,6 +365,7 @@ contract ERC721SeaDrop is
     {
         return
             interfaceId == this.supportsInterface.selector || // ERC165
+            interfaceId == type(IERC721).interfaceId || // IERC721
             interfaceId == type(IERC721ContractMetadata).interfaceId || // IERC721ContractMetadata
             interfaceId == type(IERC721SeaDrop).interfaceId; // IERC721SeaDrop
     }

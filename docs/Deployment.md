@@ -15,5 +15,8 @@
 
 1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()` before mint starts
 1. Set an allow list drop stage with `token.setAllowListURI()`
-1. Set a public drop stage with `token.updatePublicDrop()`
 1. Set a token gated drop stage with `token.updateTokenGatedDrop()`
+1. Set a public drop stage with `token.updatePublicDrop()`
+   1. Required to be sent by token `administrator`:
+      1. Set allowed fee recipient with `token.updateAllowedFeeRecipient()`
+      1. Update public drop fee with `token.updatePublicDropFee()`

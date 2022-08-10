@@ -107,7 +107,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         assertEq(preMinterBalance - mintValue, args.minter.balance);
 
         // Check fee recipient ether balance increased.
-        uint256 feeAmount = (mintValue * 100) / 10000;
+        uint256 feeAmount = (mintValue * 100) / 10_000;
         assertEq(preFeeRecipientBalance + feeAmount, args.feeRecipient.balance);
 
         // Check creator ether balance increased.

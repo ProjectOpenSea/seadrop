@@ -177,4 +177,12 @@ contract ERC721ContractMetadata is
         // Emit an event with the update.
         emit BaseURIUpdated(newBaseURI);
     }
+
+    /**
+     * @notice Returns the base URI for the contract, which ERC721A uses
+     *         to return tokenURI.
+     */
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _theBaseURI;
+    }
 }

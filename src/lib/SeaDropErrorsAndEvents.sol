@@ -109,6 +109,11 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
+     * @param saleToken The ERC20 sale token for the mint. If zero address,
+     *                  means the native chain currency (e.g. ETH, MATIC, etc.)
+     * @param feeBps The fee out of 10_000 basis points to be collected.
+     * @param dropStageIndex Items minted through mintPublicDrop() have
+     *                       dropStageIndex of 0.
      */
     event SeaDropMint(
         address indexed nftContract,
@@ -138,12 +143,14 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev An event with updated allow list data for an nft contract.
+     * @param publicKeyURI If the allow list is encrypted, the public key URIs
+     *                     that can decrypt the list. Empty if unencrypted.
      */
     event AllowListUpdated(
         address indexed nftContract,
         bytes32 indexed previousMerkleRoot,
         bytes32 indexed newMerkleRoot,
-        string[] publicKeyURI, // empty if unencrypted
+        string[] publicKeyURI,
         string allowListURI
     );
 

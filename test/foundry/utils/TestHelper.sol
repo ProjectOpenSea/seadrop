@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 contract TestHelper is Test {
-      function makeAddrAndKey(string memory name)
+    function makeAddrAndKey(string memory name)
         internal
         returns (address addr, uint256 privateKey)
     {
