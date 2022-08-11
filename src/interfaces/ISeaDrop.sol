@@ -18,13 +18,13 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param nftContract   The nft contract to mint.
      * @param feeRecipient  The fee recipient.
      * @param minter        The mint recipient.
-     * @param numberToMint  The number of tokens to mint.
+     * @param quantity      The number of tokens to mint.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
         address minter,
-        uint256 numberToMint
+        uint256 quantity
     ) external payable;
 
     /**
@@ -33,7 +33,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param nftContract   The nft contract to mint.
      * @param feeRecipient  The fee recipient.
      * @param minter        The mint recipient.
-     * @param numberToMint  The number of tokens to mint.
+     * @param quantity      The number of tokens to mint.
      * @param mintParams    The mint parameters.
      * @param proof         The proof for the leaf of the allow list.
      */
@@ -41,7 +41,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         address nftContract,
         address feeRecipient,
         address minter,
-        uint256 numberToMint,
+        uint256 quantity,
         MintParams calldata mintParams,
         bytes32[] calldata proof
     ) external payable;
@@ -52,7 +52,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param nftContract   The nft contract to mint.
      * @param feeRecipient  The fee recipient.
      * @param minter        The mint recipient.
-     * @param numberToMint  The number of tokens to mint.
+     * @param quantity      The number of tokens to mint.
      * @param mintParams    The mint parameters.
      * @param signature     The server side signature, must be an allowed signer.
      */
@@ -60,7 +60,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         address nftContract,
         address feeRecipient,
         address minter,
-        uint256 numberToMint,
+        uint256 quantity,
         MintParams calldata mintParams,
         bytes calldata signature
     ) external payable;
