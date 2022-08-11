@@ -557,7 +557,7 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract    The nft contract.
      * @param minter         The mint recipient.
      * @param quantity       The number of tokens to mint.
-     * @param mintPrice      The mint price.
+     * @param mintPrice      The mint price per token.
      * @param dropStageIndex The drop stage index.
      * @param feeBps         The fee basis points.
      * @param feeRecipient   The fee recipient.

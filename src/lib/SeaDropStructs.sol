@@ -5,7 +5,8 @@ pragma solidity ^0.8.11;
  * @notice A struct defining public drop data.
  *         Designed to fit efficiently in one storage slot.
  * 
- * @param mintPrice             Up to 1.2m of native token, e.g.: ETH, MATIC
+ * @param mintPrice             The mint price per token.
+ *                              (Up to 1.2m of native token, e.g.: ETH, MATIC)
  * @param startTime             The start time, ensure this is not zero.
  * @param maxMintsPerWallet     Maximum total number of mints a user is
  *                              allowed.
@@ -32,7 +33,8 @@ struct PublicDrop {
  * @notice A struct defining token gated drop stage data.
  *         Designed to fit efficiently in one storage slot.
  * 
- * @param mintPrice                Up to 1.2m of native token, e.g.: ETH, MATIC
+ * @param mintPrice                The mint price per token.
+ *                                 (Up to 1.2m of native token, e.g.: ETH, MATIC)
  * @param maxTotalMintableByWallet The limit of items this wallet can mint.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
@@ -66,7 +68,7 @@ struct TokenGatedDropStage {
  *         Note: Since feeBps is encoded in the leaf, backend should ensure
  *         that feeBps is acceptable before generating a proof.
  * 
- * @param mintPrice                Up to 1.2m of native token, e.g.: ETH, MATIC
+ * @param mintPrice                The mint price per token.
  * @param maxTotalMintableByWallet The limit of items this wallet can mint.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
