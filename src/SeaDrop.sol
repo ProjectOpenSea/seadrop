@@ -487,9 +487,10 @@ contract SeaDrop is ISeaDrop {
      *
      * @param payments The payments to validate.
      */
-    function _checkCorrectPayment(
-        PaymentValidation[] memory payments
-    ) internal view {
+    function _checkCorrectPayment(PaymentValidation[] memory payments)
+        internal
+        view
+    {
         // Keep track of the total cost of payments.
         uint256 totalCost;
 
@@ -540,11 +541,7 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient
     ) internal {
         // Split the payment between the creator and fee recipient.
-        _splitPayout(
-            nftContract,
-            feeRecipient,
-            feeBps
-        );
+        _splitPayout(nftContract, feeRecipient, feeBps);
 
         // Mint the token(s).
         IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
@@ -620,8 +617,6 @@ contract SeaDrop is ISeaDrop {
     {
         return _publicDrops[nftContract];
     }
-
-
 
     /**
      * @notice Returns the creator payout address for the nft contract.

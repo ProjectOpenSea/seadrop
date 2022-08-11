@@ -101,10 +101,10 @@ struct TokenGatedMintParams {
 /**
  * @notice A struct defining allow list data (for minting an allow list).
  * 
- * @param merkleRoot The merkle root for the allow list.
+ * @param merkleRoot    The merkle root for the allow list.
  * @param publicKeyURIs If the allowListURI is encrypted, a list of URIs
- *                      pointing to the public keys.
- * @param allowListURI The URI for the allow list.
+ *                      pointing to the public keys. Empty if unencrypted.
+ * @param allowListURI  The URI for the allow list.
  */
 struct AllowListData {
     bytes32 merkleRoot;
