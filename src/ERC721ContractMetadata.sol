@@ -73,7 +73,11 @@ contract ERC721ContractMetadata is
      *
      * @param newContractURI The new contract URI.
      */
-    function setContractURI(string calldata newContractURI) external override {
+    function setContractURI(string calldata newContractURI)
+        external
+        override
+        onlyOwner
+    {
         // Set the new contract URI.
         _contractURI = newContractURI;
 
@@ -92,7 +96,7 @@ contract ERC721ContractMetadata is
         uint256 startTokenId,
         uint256 endTokenId,
         string calldata
-    ) external {
+    ) external onlyOwner {
         // Emit an event with the update.
         emit TokenURIUpdated(startTokenId, endTokenId);
     }
@@ -136,7 +140,7 @@ contract ERC721ContractMetadata is
      *
      * @param newProvenanceHash The new provenance hash to set.
      */
-    function setProvenanceHash(bytes32 newProvenanceHash) external {
+    function setProvenanceHash(bytes32 newProvenanceHash) external onlyOwner {
         // Revert if any items have been minted.
         if (totalSupply() > 0) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
@@ -170,7 +174,11 @@ contract ERC721ContractMetadata is
      *
      * @param newBaseURI The new base URI to set.
      */
-    function setBaseURI(string calldata newBaseURI) external override {
+    function setBaseURI(string calldata newBaseURI)
+        external
+        override
+        onlyOwner
+    {
         // Set the new base URI.
         _theBaseURI = newBaseURI;
 

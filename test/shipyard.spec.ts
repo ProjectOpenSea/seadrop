@@ -1,3 +1,4 @@
+/*
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
@@ -25,3 +26,4 @@ describe(`Sample tests (Shipyard v${VERSION})`, function () {
     expect(greeting).to.equal("Ahoy");
   });
 });
+*/

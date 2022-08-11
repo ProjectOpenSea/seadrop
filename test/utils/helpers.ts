@@ -1,1 +1,1 @@
-export const VERSION = `0.0.1${process.env.REFERENCE ? "-reference" : ""}`;
+export const VERSION = `1.0.0${process.env.REFERENCE ? "-reference" : ""}`;
