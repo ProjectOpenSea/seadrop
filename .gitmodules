@@ -13,18 +13,9 @@
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
-[submodule "lib/ERC721A-Upgradeable"]
-	path = lib/ERC721A-Upgradeable
-	url = https://github.com/chiru-labs/ERC721A-Upgradeable
 [submodule "lib/murky"]
 	path = lib/murky
 	url = https://github.com/dmfxyz/murky
 [submodule "lib/utility-contracts"]
 	path = lib/utility-contracts
 	url = https://github.com/jameswenzel/utility-contracts
-[submodule "lib/EIP712-whitelisting"]
-	path = lib/EIP712-whitelisting
-	url = https://github.com/msfeldstein/EIP712-whitelisting
-[submodule "lib/seaport"]
-	path = lib/seaport
-	url = https://github.com/ProjectOpenSea/seaport

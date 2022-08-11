@@ -299,25 +299,6 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Update the sale token for the nft contract.
-     *         A zero address means the sale token is denominated
-     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
-     *         Only the owner or administrator can update the sale token.
-     *
-     * @param saleToken The ERC20 token address.
-     */
-    function updateSaleToken(address seaDropImpl, address saleToken)
-        external
-        virtual
-        override
-        onlyOwnerOrAdministrator
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
-        // Update the sale token.
-        ISeaDrop(seaDropImpl).updateSaleToken(saleToken);
-    }
-
-    /**
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply,
      *         maxMintsPerWallet, and maxTokenSupplyForStage checks.

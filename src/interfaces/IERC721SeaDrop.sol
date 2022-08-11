@@ -140,14 +140,4 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      */
     function updateSigners(address seaDropImpl, address[] calldata newSigners)
         external;
-
-    /**
-     * @notice Update the sale token for the nft contract.
-     *         A zero address means the sale token is denominated
-     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
-     *         Only the owner or administrator can update the sale token.
-     *
-     * @param saleToken The ERC20 token address.
-     */
-    function updateSaleToken(address seaDropImpl, address saleToken) external;
 }

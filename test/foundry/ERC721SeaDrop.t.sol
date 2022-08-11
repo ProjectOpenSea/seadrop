@@ -13,7 +13,7 @@ import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
-import { Conduit, PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
+import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
 
 contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
     SeaDrop seadrop;
@@ -72,13 +72,13 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         seadrop.updatePublicDrop(publicDrop);
         /**
         // Set the allow list merkle root.
-        seaport.updateAllowList(allowList);
+        seadrop.updateAllowList(allowList);
 
         // Set the token gated drop stage.
-        seaport.updateTokenGatedDrop(tokenGatedDropStage);
+        seadrop.updateTokenGatedDrop(tokenGatedDropStage);
 
         // Set the signers for server signed drops.
-        seaport.updateSigners(signers);
+        seadrop.updateSigners(signers);
         */
     }
 
@@ -96,8 +96,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         seadrop.mintPublic{ value: mintValue }(
             address(test),
             args.feeRecipient,
-            args.numMints,
-            Conduit(address(0), bytes32(0))
+            args.numMints
         );
 
         // Check minter token balance increased.
@@ -132,8 +131,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         seadrop.mintPublic{ value: 1 wei }(
             address(test),
             args.feeRecipient,
-            args.numMints,
-            Conduit(address(0), bytes32(0))
+            args.numMints
         );
     }
 
@@ -164,8 +162,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             address(test),
             args.feeRecipient,
             args.numMints,
-            mintParams,
-            Conduit(address(0), bytes32(0))
+            mintParams
         );
 
         assertEq(test.balanceOf(args.minter), args.numMints);
@@ -179,8 +176,5 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
     // testMintAllowedTokenHolder
     // testMintAllowedTokenHolder_alreadyRedeemed
     // testMintAllowedTokenHolder_notOwner
-    // set saleToken and test with and without conduit,
-    //     with and without balance and approvals
-    // reset saleToken and mint with ether
     */
 }

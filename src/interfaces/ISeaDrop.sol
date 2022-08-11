@@ -3,7 +3,6 @@ pragma solidity ^0.8.11;
 
 import {
     AllowListData,
-    Conduit,
     MintParams,
     PublicDrop,
     TokenGatedDropStage,
@@ -19,14 +18,11 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param nftContract The nft contract to mint.
      * @param feeRecipient The fee recipient.
      * @param numToMint The number of tokens to mint.
-     * @param conduit If paying with an ERC20 token,
-     *                optionally specify a conduit to use.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint,
-        Conduit calldata conduit
+        uint256 numToMint
     ) external payable;
 
     /**
@@ -37,16 +33,13 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param numToMint The number of tokens to mint.
      * @param mintParams The mint parameters.
      * @param proof The proof for the leaf of the allow list.
-     * @param conduit If paying with an ERC20 token,
-     *                optionally specify a conduit to use.
      */
     function mintAllowList(
         address nftContract,
         address feeRecipient,
         uint256 numToMint,
         MintParams calldata mintParams,
-        bytes32[] calldata proof,
-        Conduit calldata conduit
+        bytes32[] calldata proof
     ) external payable;
 
     /**
@@ -57,16 +50,13 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param numToMint The number of tokens to mint.
      * @param mintParams The mint parameters.
      * @param signature The server side signature, must be an allowed signer.
-     * @param conduit If paying with an ERC20 token,
-     *                optionally specify a conduit to use.
      */
     function mintSigned(
         address nftContract,
         address feeRecipient,
         uint256 numToMint,
         MintParams calldata mintParams,
-        bytes calldata signature,
-        Conduit calldata conduit
+        bytes calldata signature
     ) external payable;
 
     /**
@@ -77,14 +67,11 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param nftContract The nft contract to mint.
      * @param feeRecipient The fee recipient.
      * @param tokenGatedMintParams The token gated mint params.
-     * @param conduit If paying with an ERC20 token,
-     *                optionally specify a conduit to use.
      */
     function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
-        TokenGatedMintParams[] calldata tokenGatedMintParams,
-        Conduit calldata conduit
+        TokenGatedMintParams[] calldata tokenGatedMintParams
     ) external payable;
 
     /**
@@ -234,22 +221,4 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         external
         view
         returns (TokenGatedDropStage memory);
-
-    /**
-     * @notice Update the sale token for the nft contract.
-     *         A zero address means the sale token is denominated
-     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
-     *
-     * @param saleToken The ERC20 token address.
-     */
-    function updateSaleToken(address saleToken) external;
-
-    /**
-     * @notice Returns the sale token for the nft contract.
-     *         A zero address means the sale token is denominated
-     *         in the chain's native currency (e.g. ETH, MATIC, etc.)
-     *
-     * @param nftContract The nft contract.
-     */
-    function getSaleToken(address nftContract) external view returns (address);
 }

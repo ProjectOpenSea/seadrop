@@ -5,7 +5,6 @@ libs = ['lib']
 solc_version = '0.8.15'
 remappings = [
     'openzeppelin-contracts/=lib/openzeppelin-contracts/',
-    'seaport/=lib/seaport/contracts/',
     'ds-test/=lib/forge-std/lib/ds-test/src/',
     'seadrop/=src/',
 ]

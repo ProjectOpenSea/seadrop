@@ -90,29 +90,24 @@ interface SeaDropErrorsAndEvents {
      */
     error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);
 
-    /**
-     * @dev Revert with an error if sender has insufficient
-     *      sale token balance.
-     */
-    error InsufficientSaleTokenBalance(address saleToken, uint256 balance, uint256 totalCost);
 
-    /**
-     * @dev Revert with an error if sender has insufficient
-     *      sale token allowance.
-     */
-    error InsufficientSaleTokenAllowance(address saleToken, uint256 allowance, uint256 totalCost);
 
-    /**
-     * @dev Revert with an error if msg.value > 0 for ERC20 saleToken payment.
-     */
-    error MsgValueNonZeroForERC20SaleToken();
+
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
-     * @param saleToken The ERC20 sale token for the mint. If zero address,
-     *                  means the native chain currency (e.g. ETH, MATIC, etc.)
-     * @param feeBps The fee out of 10_000 basis points to be collected.
-     * @param dropStageIndex Items minted through mintPublicDrop() have
+     * 
+     * @param nftContract The nft contract.
+     * @param minter The minter.
+     * @param feeRecipient The fee recipient.
+     * @param numberMinted The number of tokens minted.
+     * @param unitMintPrice The price paid for each token.
+     * @param paymentToken The ERC20 payment token for the mint.
+     *                     If zero address, means the native chain currency
+     *                     (e.g. ETH, MATIC, etc.)
+     * @param feeBps The fee out of 10_000 basis points collected.
+     * @param dropStageIndex The drop stage index. Items minted
+     *                       through `mintPublicDrop()` have
      *                       dropStageIndex of 0.
      */
     event SeaDropMint(
@@ -121,7 +116,7 @@ interface SeaDropErrorsAndEvents {
         address indexed feeRecipient,
         uint256 numberMinted,
         uint256 unitMintPrice,
-        address saleToken,
+        address paymentToken,
         uint256 feeBps,
         uint256 dropStageIndex
     );
@@ -185,11 +180,5 @@ interface SeaDropErrorsAndEvents {
         address[] newSigners
     );
 
-    /**
-     * @dev An event with the updated sale token.
-     */
-    event SaleTokenUpdated(
-        address indexed nftContract,
-        address saleToken
-    );
+ 
 }
