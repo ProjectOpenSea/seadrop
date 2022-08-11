@@ -212,7 +212,7 @@ contract ERC721SeaDrop is
      *         on SeaDrop.
      *
      * @param allowedNftToken The allowed nft token.
-     * @param dropStage The token gated drop stage data.
+     * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
         address seaDropImpl,
@@ -269,7 +269,7 @@ contract ERC721SeaDrop is
      *         Only the administrator can set the allowed fee recipient.
      *
      * @param feeRecipient The new fee recipient.
-     * @param allowed If the fee recipient is allowed.
+     * @param allowed      If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(
         address seaDropImpl,

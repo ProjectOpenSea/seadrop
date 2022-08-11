@@ -15,9 +15,9 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Mint a public drop.
      *
-     * @param nftContract The nft contract to mint.
+     * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint The number of tokens to mint.
+     * @param numToMint    The number of tokens to mint.
      */
     function mintPublic(
         address nftContract,
@@ -28,11 +28,11 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Mint from an allow list.
      *
-     * @param nftContract The nft contract to mint.
+     * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint The number of tokens to mint.
-     * @param mintParams The mint parameters.
-     * @param proof The proof for the leaf of the allow list.
+     * @param numToMint    The number of tokens to mint.
+     * @param mintParams   The mint parameters.
+     * @param proof        The proof for the leaf of the allow list.
      */
     function mintAllowList(
         address nftContract,
@@ -45,11 +45,11 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Mint with a server side signature.
      *
-     * @param nftContract The nft contract to mint.
+     * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint The number of tokens to mint.
-     * @param mintParams The mint parameters.
-     * @param signature The server side signature, must be an allowed signer.
+     * @param numToMint    The number of tokens to mint.
+     * @param mintParams   The mint parameters.
+     * @param signature    The server side signature, must be an allowed signer.
      */
     function mintSigned(
         address nftContract,
@@ -64,8 +64,8 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *         This will mark the token id as reedemed and will revert if the
      *         same token id is attempted to be redeemed twice.
      *
-     * @param nftContract The nft contract to mint.
-     * @param feeRecipient The fee recipient.
+     * @param nftContract          The nft contract to mint.
+     * @param feeRecipient         The fee recipient.
      * @param tokenGatedMintParams The token gated mint params.
      */
     function mintAllowedTokenHolder(
@@ -174,7 +174,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the allowed fee recipient and emits an event.
      *
      * @param feeRecipient The fee recipient.
-     * @param allowed If the fee recipient is allowed.
+     * @param allowed      If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
         external;
@@ -190,9 +190,9 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     * @param nftContract The nft contract.
+     * @param nftContract     The nft contract.
      * @param allowedNftToken The token gated nft token.
-     * @param dropStage The token gated drop stage data.
+     * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
         address nftContract,
@@ -214,7 +214,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Returns the token gated drop data for the nft contract
      *         and token gated nft.
      *
-     * @param nftContract The nft contract.
+     * @param nftContract     The nft contract.
      * @param allowedNftToken The token gated nft token.
      */
     function getTokenGatedDrop(address nftContract, address allowedNftToken)

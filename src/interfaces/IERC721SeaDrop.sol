@@ -63,7 +63,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      *         Use `updatePublicDropFee` to update the fee recipient or feeBps.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param publicDrop The public drop data.
+     * @param publicDrop  The public drop data.
      */
     function updatePublicDrop(
         address seaDropImpl,
@@ -73,7 +73,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update allow list data for this nft contract on SeaDrop.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
@@ -85,9 +85,9 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
-     * @param dropStage The token gated drop stage data.
+     * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
         address seaDropImpl,
@@ -99,7 +99,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      * @notice Update the drop URI for this nft contract on SeaDrop.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param dropURI The new drop URI.
+     * @param dropURI     The new drop URI.
      */
     function updateDropURI(address seaDropImpl, string calldata dropURI)
         external;
@@ -108,7 +108,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      * @notice Update the creator payout address for this nft contract on SeaDrop.
      *         Only the owner can set the creator payout address.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl   The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
      */
     function updateCreatorPayoutAddress(
@@ -121,7 +121,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      *         on SeaDrop.
      *         Only the administrator can set the allowed fee recipient.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
      */
     function updateAllowedFeeRecipient(
@@ -136,7 +136,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      *         Only the owner or administrator can update the signers.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param newSigners The new signers.
+     * @param newSigners  The new signers.
      */
     function updateSigners(address seaDropImpl, address[] calldata newSigners)
         external;

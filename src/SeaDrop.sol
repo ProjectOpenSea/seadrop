@@ -108,9 +108,9 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Mint a public drop.
      *
-     * @param nftContract The nft contract to mint.
+     * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint The number of tokens to mint.
+     * @param numToMint    The number of tokens to mint.
      */
     function mintPublic(
         address nftContract,
@@ -163,11 +163,11 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Mint from an allow list.
      *
-     * @param nftContract The nft contract to mint.
+     * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint The number of tokens to mint.
-     * @param mintParams The mint parameters.
-     * @param proof The proof for the leaf of the allow list.
+     * @param numToMint    The number of tokens to mint.
+     * @param mintParams   The mint parameters.
+     * @param proof        The proof for the leaf of the allow list.
      */
     function mintAllowList(
         address nftContract,
@@ -224,11 +224,12 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Mint with a server side signature.
      *
-     * @param nftContract The nft contract to mint.
+     * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint The number of tokens to mint.
-     * @param mintParams The mint parameters.
-     * @param signature The server side signature, must be an allowed signer.
+     * @param numToMint    The number of tokens to mint.
+     * @param mintParams   The mint parameters.
+     * @param signature    The server side signature, must be an allowed
+     *                     signer.
      */
     function mintSigned(
         address nftContract,
@@ -298,8 +299,8 @@ contract SeaDrop is ISeaDrop {
      *         This will mark the token id as reedemed and will revert if the
      *         same token id is attempted to be redeemed twice.
      *
-     * @param nftContract The nft contract to mint.
-     * @param feeRecipient The fee recipient.
+     * @param nftContract          The nft contract to mint.
+     * @param feeRecipient         The fee recipient.
      * @param tokenGatedMintParams The token gated mint params.
      */
     function mintAllowedTokenHolder(
@@ -410,9 +411,9 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Check that the wallet is allowed to mint the desired quantity.
      *
-     * @param numberToMint The number of tokens to mint.
+     * @param numberToMint      The number of tokens to mint.
      * @param maxMintsPerWallet The allowed max mints per wallet.
-     * @param nftContract The nft contract.
+     * @param nftContract       The nft contract.
      */
     function _checkNumberToMint(
         address nftContract,
@@ -457,8 +458,8 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Check that the fee recipient is allowed.
      *
-     * @param nftContract The nft contract.
-     * @param feeRecipient The fee recipient.
+     * @param nftContract           The nft contract.
+     * @param feeRecipient          The fee recipient.
      * @param restrictFeeRecipients If the fee recipients are restricted.
      */
     function _checkFeeRecipientIsAllowed(
@@ -512,7 +513,7 @@ contract SeaDrop is ISeaDrop {
      * @notice Check that the drop stage is active.
      *
      * @param startTime The drop stage start time.
-     * @param endTime The drop stage end time.
+     * @param endTime   The drop stage end time.
      */
     function _checkActive(uint256 startTime, uint256 endTime) internal view {
         if (block.timestamp < startTime || block.timestamp > endTime) {
@@ -525,12 +526,12 @@ contract SeaDrop is ISeaDrop {
      * @notice Splits the payment, mints a number of tokens,
      *         and emits an event.
      *
-     * @param nftContract The nft contract.
-     * @param numToMint The number of tokens to mint.
-     * @param mintPrice The mint price.
+     * @param nftContract    The nft contract.
+     * @param numToMint      The number of tokens to mint.
+     * @param mintPrice      The mint price.
      * @param dropStageIndex The drop stage index.
-     * @param feeBps The fee basis points.
-     * @param feeRecipient The fee recipient.
+     * @param feeBps         The fee basis points.
+     * @param feeRecipient   The fee recipient.
      */
     function _payAndMint(
         address nftContract,
@@ -562,9 +563,9 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Split the payment payout for the creator and fee recipient.
      *
-     * @param nftContract The nft contract.
+     * @param nftContract  The nft contract.
      * @param feeRecipient The fee recipient.
-     * @param feeBps The fee basis points.
+     * @param feeBps       The fee basis points.
      */
     function _splitPayout(
         address nftContract,
@@ -719,9 +720,9 @@ contract SeaDrop is ISeaDrop {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     * @param nftContract The nft contract.
+     * @param nftContract     The nft contract.
      * @param allowedNftToken The token gated nft token.
-     * @param dropStage The token gated drop stage data.
+     * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
         address nftContract,
@@ -786,7 +787,7 @@ contract SeaDrop is ISeaDrop {
      * @notice Returns the token gated drop data for the nft contract
      *         and token gated nft.
      *
-     * @param nftContract The nft contract.
+     * @param nftContract     The nft contract.
      * @param allowedNftToken The token gated nft token.
      */
     function getTokenGatedDrop(address nftContract, address allowedNftToken)
@@ -833,7 +834,7 @@ contract SeaDrop is ISeaDrop {
      * @notice Updates the allowed fee recipient and emits an event.
      *
      * @param feeRecipient The fee recipient.
-     * @param allowed If the fee recipient is allowed.
+     * @param allowed      If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
         external

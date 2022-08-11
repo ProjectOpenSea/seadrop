@@ -86,7 +86,7 @@ contract ERC721ContractMetadata is
      *         a range of token ids.
      *
      * @param startTokenId The start token id.
-     * @param endTokenId The end token id.
+     * @param endTokenId   The end token id.
      */
     function setBatchTokenURIs(
         uint256 startTokenId,

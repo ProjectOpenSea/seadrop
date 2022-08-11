@@ -24,7 +24,7 @@ interface IERC721ContractMetadata {
      *      Batch update implementation should be left to contract.
      *
      * @param startTokenId The start token id.
-     * @param endTokenId The end token id.
+     * @param endTokenId   The end token id.
      */
     event TokenURIUpdated(
         uint256 indexed startTokenId,
