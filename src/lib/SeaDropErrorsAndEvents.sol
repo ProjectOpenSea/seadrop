@@ -14,26 +14,28 @@ interface SeaDropErrorsAndEvents {
     );
 
     /**
-     * @dev Revert with an error if amount exceeds the max allowed
+     * @dev Revert with an error if the mint quantity exceeds the max allowed
      *      per transaction.
      */
-    error AmountExceedsMaxPerTransaction(uint256 amount, uint256 allowed);
+    error MintQuantityExceedsMaxPerTransaction(uint256 quantity, uint256 allowed);
 
     /**
-     * @dev Revert with an error if amount exceeds the max allowed
+     * @dev Revert with an error if the mint quantity exceeds the max allowed
      *      to be minted per wallet.
      */
-    error AmountExceedsMaxMintedPerWallet(uint256 total, uint256 allowed);
+    error MintQuantityExceedsMaxMintedPerWallet(uint256 total, uint256 allowed);
 
     /**
-     * @dev Revert with an error if amount exceeds the max token supply.
+     * @dev Revert with an error if the mint quantity exceeds the max token
+     *      supply.
      */
-    error AmountExceedsMaxSupply(uint256 total, uint256 maxSupply);
+    error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
 
     /**
-     * @dev Revert with an error if amount exceeds the max token supply for the stage.
+     * @dev Revert with an error if the mint quantity exceeds the max token
+     *      supply for the stage.
      */
-    error AmountExceedsMaxTokenSupplyForStage(uint256 total, uint256 maxTokenSupplyForStage);
+    error MintQuantityExceedsMaxTokenSupplyForStage(uint256 total, uint256 maxTokenSupplyForStage);
     
     /**
      * @dev Revert if the fee recipient is the zero address.

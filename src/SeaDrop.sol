@@ -474,26 +474,27 @@ contract SeaDrop is ISeaDrop {
             uint256 maxSupply
         ) = IERC721SeaDrop(nftContract).getMintStats(minter);
 
-        // Ensure amount doesn't exceed maxMintsPerWallet.
+        // Ensure mint quantity doesn't exceed maxMintsPerWallet.
         if (quantity + minterNumMinted > maxMintsPerWallet) {
-            revert AmountExceedsMaxMintedPerWallet(
+            revert MintQuantityExceedsMaxMintedPerWallet(
                 quantity + minterNumMinted,
                 maxMintsPerWallet
             );
         }
 
-        // Ensure amount doesn't exceed maxSupply.
+        // Ensure mint quantity doesn't exceed maxSupply.
         if (quantity + currentTotalSupply > maxSupply) {
-            revert AmountExceedsMaxSupply(
+            revert MintQuantityExceedsMaxSupply(
                 quantity + currentTotalSupply,
                 maxSupply
             );
         }
 
-        // Ensure amount doesn't exceed maxTokenSupplyForStage (if provided).
+        // Ensure mint quantity doesn't exceed maxTokenSupplyForStage
+        // when provided.
         if (maxTokenSupplyForStage != 0) {
             if (quantity + currentTotalSupply > maxTokenSupplyForStage) {
-                revert AmountExceedsMaxTokenSupplyForStage(
+                revert MintQuantityExceedsMaxTokenSupplyForStage(
                     quantity + currentTotalSupply,
                     maxTokenSupplyForStage
                 );
