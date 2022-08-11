@@ -10,8 +10,6 @@ If you would like to deploy your own instance, you can do so with:
 
 ## Token deployment checklist
 
-### Required
-
 1. Deploy `src/ERC721SeaDrop.sol` with constructor args `string name, string symbol, address administrator, address[] allowedSeaDrop`
    1. e.g. `forge create --rpc-url [rpc_url] src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" [administrator_address] \[seadrop_address\] --private-key [priv_key] --etherscan-api-key [api_key] --verify`
 1. Required to be sent by token `owner`:
