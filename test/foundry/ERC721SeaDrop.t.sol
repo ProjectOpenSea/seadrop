@@ -96,6 +96,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         seadrop.mintPublic{ value: mintValue }(
             address(test),
             args.feeRecipient,
+            args.minter,
             args.numMints
         );
 
@@ -131,6 +132,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         seadrop.mintPublic{ value: 1 wei }(
             address(test),
             args.feeRecipient,
+            args.minter,
             args.numMints
         );
     }
@@ -168,13 +170,17 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         assertEq(test.balanceOf(args.minter), args.numMints);
     }
 
+    // testMintPublic_differentPayerThanMinter
     // testMintAllowList_unauthorizedMinter
     // testMintAllowList_unauthorizedFeeRecipient
     // testMintAllowList_exceedsMaxMintableByWallet
+    // testMintAllowList_differentPayerThanMinter
     // testMintSigned
     // testMintSigned_unknownSigner
+    // testMintSigned_differentPayerThanMinter
     // testMintAllowedTokenHolder
     // testMintAllowedTokenHolder_alreadyRedeemed
     // testMintAllowedTokenHolder_notOwner
+    // testMintAllowedTokenHolder_differentPayerThanMinter
     */
 }

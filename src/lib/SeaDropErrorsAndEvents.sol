@@ -94,8 +94,9 @@ interface SeaDropErrorsAndEvents {
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
      * 
      * @param nftContract    The nft contract.
-     * @param minter         The minter.
+     * @param minter         The mint recipient.
      * @param feeRecipient   The fee recipient.
+     * @param payer          The address who payed for the tx.
      * @param numberMinted   The number of tokens minted.
      * @param unitMintPrice  The amount paid for each token.
      * @param feeBps         The fee out of 10_000 basis points collected.
@@ -107,6 +108,7 @@ interface SeaDropErrorsAndEvents {
         address indexed nftContract,
         address indexed minter,
         address indexed feeRecipient,
+        address payer,
         uint256 numberMinted,
         uint256 unitMintPrice,
         uint256 feeBps,
