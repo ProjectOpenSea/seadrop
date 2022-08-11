@@ -125,17 +125,17 @@ contract ERC721SeaDrop is
     /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
      *
-     * @param minter The address to mint to.
-     * @param amount The number of tokens to mint.
+     * @param minter   The address to mint to.
+     * @param quantity The number of tokens to mint.
      */
-    function mintSeaDrop(address minter, uint256 amount)
+    function mintSeaDrop(address minter, uint256 quantity)
         external
         payable
         override
         onlySeaDrop
     {
-        // Emit a ConsecutiveTransfer event.
-        _mint(minter, amount);
+        // Mint the quantity of tokens to the minter.
+        _mint(minter, quantity);
     }
 
     /**

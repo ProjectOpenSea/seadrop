@@ -37,10 +37,10 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
      *
-     * @param minter The address to mint to.
-     * @param amount The number of tokens to mint.
+     * @param minter   The address to mint to.
+     * @param quantity The number of tokens to mint.
      */
-    function mintSeaDrop(address minter, uint256 amount) external payable;
+    function mintSeaDrop(address minter, uint256 quantity) external payable;
 
     /**
      * @notice Returns a set of mint stats for the address.
