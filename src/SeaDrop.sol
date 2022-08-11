@@ -317,10 +317,18 @@ contract SeaDrop is ISeaDrop {
             // Validate that the dropStage is active.
             _checkActive(dropStage.startTime, dropStage.endTime);
 
-            // Put the number of items to mint on the stack.
+            // Check that the fee recipient is allowed if restricted.
+            _checkFeeRecipientIsAllowed(
+                nftContract,
+                feeRecipient,
+                dropStage.restrictFeeRecipients
+            );
+
+            // Put the number of items to mint on the stack for more
+            // efficient access.
             uint256 numberToMint = mintParams.allowedNftTokenIds.length;
 
-            // Add to totalCost
+            // Add to total cost.
             totalCost += numberToMint * dropStage.mintPrice;
 
             // Check that the wallet is allowed to mint the desired quantity.
@@ -329,13 +337,6 @@ contract SeaDrop is ISeaDrop {
                 numberToMint,
                 dropStage.maxTotalMintableByWallet,
                 dropStage.maxTokenSupplyForStage
-            );
-
-            // Check that the fee recipient is allowed if restricted.
-            _checkFeeRecipientIsAllowed(
-                nftContract,
-                feeRecipient,
-                dropStage.restrictFeeRecipients
             );
 
             // Iterate through each allowedNftTokenId
@@ -399,6 +400,45 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
+     * @notice Check that the drop stage is active.
+     *
+     * @param startTime The drop stage start time.
+     * @param endTime   The drop stage end time.
+     */
+    function _checkActive(uint256 startTime, uint256 endTime) internal view {
+        if (block.timestamp < startTime || block.timestamp > endTime) {
+            // Revert if the drop stage is not active.
+            revert NotActive(block.timestamp, startTime, endTime);
+        }
+    }
+
+    /**
+     * @notice Check that the fee recipient is allowed.
+     *
+     * @param nftContract           The nft contract.
+     * @param feeRecipient          The fee recipient.
+     * @param restrictFeeRecipients If the fee recipients are restricted.
+     */
+    function _checkFeeRecipientIsAllowed(
+        address nftContract,
+        address feeRecipient,
+        bool restrictFeeRecipients
+    ) internal view {
+        // Ensure the fee recipient is not the zero address.
+        if (feeRecipient == address(0)) {
+            revert FeeRecipientCannotBeZeroAddress();
+        }
+
+        // Revert if the fee recipient is restricted and not allowed.
+        if (
+            restrictFeeRecipients == true &&
+            _allowedFeeRecipients[nftContract][feeRecipient] == false
+        ) {
+            revert FeeRecipientNotAllowed();
+        }
+    }
+
+    /**
      * @notice Check that the wallet is allowed to mint the desired quantity.
      *
      * @param numberToMint      The number of tokens to mint.
@@ -446,32 +486,6 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Check that the fee recipient is allowed.
-     *
-     * @param nftContract           The nft contract.
-     * @param feeRecipient          The fee recipient.
-     * @param restrictFeeRecipients If the fee recipients are restricted.
-     */
-    function _checkFeeRecipientIsAllowed(
-        address nftContract,
-        address feeRecipient,
-        bool restrictFeeRecipients
-    ) internal view {
-        // Ensure the fee recipient is not the zero address.
-        if (feeRecipient == address(0)) {
-            revert FeeRecipientCannotBeZeroAddress();
-        }
-
-        // Revert if the fee recipient is restricted and not allowed.
-        if (
-            restrictFeeRecipients == true &&
-            _allowedFeeRecipients[nftContract][feeRecipient] == false
-        ) {
-            revert FeeRecipientNotAllowed();
-        }
-    }
-
-    /**
      * @notice Revert if the payment is not the number of items times
      *         the mint price.
      *
@@ -489,16 +503,36 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Check that the drop stage is active.
+     * @notice Split the payment payout for the creator and fee recipient.
      *
-     * @param startTime The drop stage start time.
-     * @param endTime   The drop stage end time.
+     * @param nftContract  The nft contract.
+     * @param feeRecipient The fee recipient.
+     * @param feeBps       The fee basis points.
      */
-    function _checkActive(uint256 startTime, uint256 endTime) internal view {
-        if (block.timestamp < startTime || block.timestamp > endTime) {
-            // Revert if the drop stage is not active.
-            revert NotActive(block.timestamp, startTime, endTime);
+    function _splitPayout(
+        address nftContract,
+        address feeRecipient,
+        uint256 feeBps
+    ) internal {
+        // Get the creator payout address.
+        address creatorPayoutAddress = _creatorPayoutAddresses[nftContract];
+
+        // Ensure the creator payout address is not the zero address.
+        if (creatorPayoutAddress == address(0)) {
+            revert CreatorPayoutAddressCannotBeZeroAddress();
         }
+
+        // Get the fee amount.
+        uint256 feeAmount = (msg.value * feeBps) / 10_000;
+
+        // Get the creator payout amount.
+        uint256 payoutAmount = msg.value - feeAmount;
+
+        // Transfer to the fee recipient.
+        SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
+
+        // Transfer  to the creator.
+        SafeTransferLib.safeTransferETH(creatorPayoutAddress, payoutAmount);
     }
 
     /**
@@ -536,39 +570,6 @@ contract SeaDrop is ISeaDrop {
             feeBps,
             dropStageIndex
         );
-    }
-
-    /**
-     * @notice Split the payment payout for the creator and fee recipient.
-     *
-     * @param nftContract  The nft contract.
-     * @param feeRecipient The fee recipient.
-     * @param feeBps       The fee basis points.
-     */
-    function _splitPayout(
-        address nftContract,
-        address feeRecipient,
-        uint256 feeBps
-    ) internal {
-        // Get the creator payout address.
-        address creatorPayoutAddress = _creatorPayoutAddresses[nftContract];
-
-        // Ensure the creator payout address is not the zero address.
-        if (creatorPayoutAddress == address(0)) {
-            revert CreatorPayoutAddressCannotBeZeroAddress();
-        }
-
-        // Get the fee amount.
-        uint256 feeAmount = (msg.value * feeBps) / 10_000;
-
-        // Get the creator payout amount.
-        uint256 payoutAmount = msg.value - feeAmount;
-
-        // Transfer to the fee recipient.
-        SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
-
-        // Transfer  to the creator.
-        SafeTransferLib.safeTransferETH(creatorPayoutAddress, payoutAmount);
     }
 
     /**
@@ -648,6 +649,50 @@ contract SeaDrop is ISeaDrop {
         returns (address[] memory)
     {
         return _enumeratedSigners[nftContract];
+    }
+
+    /**
+     * @notice Returns the allowed token gated drop tokens for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getTokenGatedAllowedTokens(address nftContract)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _enumeratedTokenGatedTokens[nftContract];
+    }
+
+    /**
+     * @notice Returns the token gated drop data for the nft contract
+     *         and token gated nft.
+     *
+     * @param nftContract     The nft contract.
+     * @param allowedNftToken The token gated nft token.
+     */
+    function getTokenGatedDrop(address nftContract, address allowedNftToken)
+        external
+        view
+        returns (TokenGatedDropStage memory)
+    {
+        return _tokenGatedDrops[nftContract][allowedNftToken];
+    }
+
+    /**
+     * @notice Updates the drop URI and emits an event.
+     *
+     * @param newDropURI The new drop URI.
+     */
+    function updateDropURI(string calldata newDropURI)
+        external
+        onlyIERC721SeaDrop
+    {
+        // Set the new drop URI.
+        _dropURIs[msg.sender] = newDropURI;
+
+        // Emit an event with the update.
+        emit DropURIUpdated(msg.sender, newDropURI);
     }
 
     /**
@@ -746,50 +791,6 @@ contract SeaDrop is ISeaDrop {
             allowedNftToken,
             dropStage
         );
-    }
-
-    /**
-     * @notice Returns the allowed token gated drop tokens for the nft contract.
-     *
-     * @param nftContract The nft contract.
-     */
-    function getTokenGatedAllowedTokens(address nftContract)
-        external
-        view
-        returns (address[] memory)
-    {
-        return _enumeratedTokenGatedTokens[nftContract];
-    }
-
-    /**
-     * @notice Returns the token gated drop data for the nft contract
-     *         and token gated nft.
-     *
-     * @param nftContract     The nft contract.
-     * @param allowedNftToken The token gated nft token.
-     */
-    function getTokenGatedDrop(address nftContract, address allowedNftToken)
-        external
-        view
-        returns (TokenGatedDropStage memory)
-    {
-        return _tokenGatedDrops[nftContract][allowedNftToken];
-    }
-
-    /**
-     * @notice Updates the drop URI and emits an event.
-     *
-     * @param newDropURI The new drop URI.
-     */
-    function updateDropURI(string calldata newDropURI)
-        external
-        onlyIERC721SeaDrop
-    {
-        // Set the new drop URI.
-        _dropURIs[msg.sender] = newDropURI;
-
-        // Emit an event with the update.
-        emit DropURIUpdated(msg.sender, newDropURI);
     }
 
     /**

@@ -136,9 +136,38 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (address[] memory);
 
     /**
+     * @notice Returns the allowed token gated drop tokens for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getTokenGatedAllowedTokens(address nftContract)
+        external
+        view
+        returns (address[] memory);
+
+    /**
+     * @notice Returns the token gated drop data for the nft contract
+     *         and token gated nft.
+     *
+     * @param nftContract     The nft contract.
+     * @param allowedNftToken The token gated nft token.
+     */
+    function getTokenGatedDrop(address nftContract, address allowedNftToken)
+        external
+        view
+        returns (TokenGatedDropStage memory);
+
+    /**
      * The following methods assume msg.sender is an nft contract
      * and its ERC165 interface id matches IERC721SeaDrop.
      */
+
+    /**
+     * @notice Updates the drop URI and emits an event.
+     *
+     * @param dropURI The new drop URI.
+     */
+    function updateDropURI(string calldata dropURI) external;
 
     /**
      * @notice Updates the public drop data for the nft contract
@@ -157,11 +186,18 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     function updateAllowList(AllowListData calldata allowListData) external;
 
     /**
-     * @notice Updates the drop URI and emits an event.
+     * @notice Updates the token gated drop stage for the nft contract
+     *         and emits an event.
      *
-     * @param dropURI The new drop URI.
+     * @param nftContract     The nft contract.
+     * @param allowedNftToken The token gated nft token.
+     * @param dropStage       The token gated drop stage data.
      */
-    function updateDropURI(string calldata dropURI) external;
+    function updateTokenGatedDrop(
+        address nftContract,
+        address allowedNftToken,
+        TokenGatedDropStage calldata dropStage
+    ) external;
 
     /**
      * @notice Updates the creator payout address and emits an event.
@@ -185,40 +221,4 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param newSigners The new list of signers.
      */
     function updateSigners(address[] calldata newSigners) external;
-
-    /**
-     * @notice Updates the token gated drop stage for the nft contract
-     *         and emits an event.
-     *
-     * @param nftContract     The nft contract.
-     * @param allowedNftToken The token gated nft token.
-     * @param dropStage       The token gated drop stage data.
-     */
-    function updateTokenGatedDrop(
-        address nftContract,
-        address allowedNftToken,
-        TokenGatedDropStage calldata dropStage
-    ) external;
-
-    /**
-     * @notice Returns the allowed token gated drop tokens for the nft contract.
-     *
-     * @param nftContract The nft contract.
-     */
-    function getTokenGatedAllowedTokens(address nftContract)
-        external
-        view
-        returns (address[] memory);
-
-    /**
-     * @notice Returns the token gated drop data for the nft contract
-     *         and token gated nft.
-     *
-     * @param nftContract     The nft contract.
-     * @param allowedNftToken The token gated nft token.
-     */
-    function getTokenGatedDrop(address nftContract, address allowedNftToken)
-        external
-        view
-        returns (TokenGatedDropStage memory);
 }
