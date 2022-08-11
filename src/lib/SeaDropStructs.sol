@@ -116,14 +116,3 @@ struct AllowListData {
     string[] publicKeyURIs;
     string allowListURI;
 }
-
-/**
- * @notice A struct for validating payment for the mint.
- * 
- * @param numberToMint The number of items to mint.
- * @param mintPrice    The per unit mint price.
- */
-struct PaymentValidation {
-    uint256 numberToMint;
-    uint256 mintPrice;
-}

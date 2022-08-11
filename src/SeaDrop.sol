@@ -6,7 +6,6 @@ import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 import {
     AllowListData,
     MintParams,
-    PaymentValidation,
     PublicDrop,
     TokenGatedDropStage,
     TokenGatedMintParams
@@ -110,12 +109,12 @@ contract SeaDrop is ISeaDrop {
      *
      * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint    The number of tokens to mint.
+     * @param numberToMint The number of tokens to mint.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint
+        uint256 numberToMint
     ) external payable override {
         // Get the public drop data.
         PublicDrop memory publicDrop = _publicDrops[nftContract];
@@ -129,15 +128,13 @@ contract SeaDrop is ISeaDrop {
             );
         }
 
-        // Validate correct payment.
-        PaymentValidation[] memory payments = new PaymentValidation[](1);
-        payments[0] = PaymentValidation(numToMint, publicDrop.mintPrice);
-        _checkCorrectPayment(payments);
+        // Validate payment is correct for number minted.
+        _checkCorrectPayment(numberToMint, publicDrop.mintPrice);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
             nftContract,
-            numToMint,
+            numberToMint,
             publicDrop.maxMintsPerWallet,
             0
         );
@@ -152,7 +149,7 @@ contract SeaDrop is ISeaDrop {
         // Split the payout, mint the token, emit an event.
         _payAndMint(
             nftContract,
-            numToMint,
+            numberToMint,
             publicDrop.mintPrice,
             0,
             publicDrop.feeBps,
@@ -165,29 +162,27 @@ contract SeaDrop is ISeaDrop {
      *
      * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint    The number of tokens to mint.
+     * @param numberToMint The number of tokens to mint.
      * @param mintParams   The mint parameters.
      * @param proof        The proof for the leaf of the allow list.
      */
     function mintAllowList(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint,
+        uint256 numberToMint,
         MintParams calldata mintParams,
         bytes32[] calldata proof
     ) external payable override {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
-        // Validate correct payment.
-        PaymentValidation[] memory payments = new PaymentValidation[](1);
-        payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(payments);
+        // Validate payment is correct for number minted.
+        _checkCorrectPayment(numberToMint, mintParams.mintPrice);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
             nftContract,
-            numToMint,
+            numberToMint,
             mintParams.maxTotalMintableByWallet,
             mintParams.maxTokenSupplyForStage
         );
@@ -213,7 +208,7 @@ contract SeaDrop is ISeaDrop {
         // Split the payout, mint the token, emit an event.
         _payAndMint(
             nftContract,
-            numToMint,
+            numberToMint,
             mintParams.mintPrice,
             mintParams.dropStageIndex,
             mintParams.feeBps,
@@ -226,7 +221,7 @@ contract SeaDrop is ISeaDrop {
      *
      * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint    The number of tokens to mint.
+     * @param numberToMint The number of tokens to mint.
      * @param mintParams   The mint parameters.
      * @param signature    The server side signature, must be an allowed
      *                     signer.
@@ -234,22 +229,20 @@ contract SeaDrop is ISeaDrop {
     function mintSigned(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint,
+        uint256 numberToMint,
         MintParams calldata mintParams,
         bytes calldata signature
     ) external payable override {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
-        // Validate correct payment.
-        PaymentValidation[] memory payments = new PaymentValidation[](1);
-        payments[0] = PaymentValidation(numToMint, mintParams.mintPrice);
-        _checkCorrectPayment(payments);
+        // Validate payment is correct for number minted.
+        _checkCorrectPayment(numberToMint, mintParams.mintPrice);
 
         // Check that the wallet is allowed to mint the desired quantity.
         _checkNumberToMint(
             nftContract,
-            numToMint,
+            numberToMint,
             mintParams.maxTotalMintableByWallet,
             mintParams.maxTokenSupplyForStage
         );
@@ -286,7 +279,7 @@ contract SeaDrop is ISeaDrop {
         // Split the payout, mint the token, emit an event.
         _payAndMint(
             nftContract,
-            numToMint,
+            numberToMint,
             mintParams.mintPrice,
             mintParams.dropStageIndex,
             mintParams.feeBps,
@@ -308,10 +301,8 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient,
         TokenGatedMintParams[] calldata tokenGatedMintParams
     ) external payable override {
-        // Track total mint cost to compare against value sent with tx.
-        PaymentValidation[] memory totalPayments = new PaymentValidation[](
-            tokenGatedMintParams.length
-        );
+        // Track the total mint cost to compare against value sent with tx.
+        uint256 totalCost;
 
         // Iterate through each allowedNftToken.
         for (uint256 i = 0; i < tokenGatedMintParams.length; ) {
@@ -327,18 +318,15 @@ contract SeaDrop is ISeaDrop {
             _checkActive(dropStage.startTime, dropStage.endTime);
 
             // Put the number of items to mint on the stack.
-            uint256 numToMint = mintParams.allowedNftTokenIds.length;
+            uint256 numberToMint = mintParams.allowedNftTokenIds.length;
 
-            // Add to totalPayments.
-            totalPayments[i] = PaymentValidation(
-                numToMint,
-                dropStage.mintPrice
-            );
+            // Add to totalCost
+            totalCost += numberToMint * dropStage.mintPrice;
 
             // Check that the wallet is allowed to mint the desired quantity.
             _checkNumberToMint(
                 nftContract,
-                numToMint,
+                numberToMint,
                 dropStage.maxTotalMintableByWallet,
                 dropStage.maxTokenSupplyForStage
             );
@@ -352,7 +340,7 @@ contract SeaDrop is ISeaDrop {
 
             // Iterate through each allowedNftTokenId
             // to ensure it is not already reedemed.
-            for (uint256 j = 0; j < numToMint; ) {
+            for (uint256 j = 0; j < numberToMint; ) {
                 // Put the tokenId on the stack.
                 uint256 tokenId = mintParams.allowedNftTokenIds[j];
 
@@ -392,7 +380,7 @@ contract SeaDrop is ISeaDrop {
             // Split the payout, mint the token, emit an event.
             _payAndMint(
                 nftContract,
-                numToMint,
+                numberToMint,
                 dropStage.mintPrice,
                 dropStage.dropStageIndex,
                 dropStage.feeBps,
@@ -405,7 +393,9 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Validate correct payment.
-        _checkCorrectPayment(totalPayments);
+        if (msg.value != totalCost) {
+            revert IncorrectPayment(msg.value, totalCost);
+        }
     }
 
     /**
@@ -482,30 +472,19 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice For native sale token, check that the correct payment
-     *         was sent with the tx. For ERC20 sale token, check
-     *         that the sender has sufficient balance and allowance.
+     * @notice Revert if the payment is not the number of items times
+     *         the mint price.
      *
-     * @param payments The payments to validate.
+     * @param numberToMint The number of tokens to mint.
+     * @param mintPrice    The mint price per token.
      */
-    function _checkCorrectPayment(PaymentValidation[] memory payments)
+    function _checkCorrectPayment(uint256 numberToMint, uint256 mintPrice)
         internal
         view
     {
-        // Keep track of the total cost of payments.
-        uint256 totalCost;
-
-        // Iterate through the payments and add to total cost.
-        for (uint256 i = 0; i < payments.length; ) {
-            totalCost += payments[i].numberToMint * payments[i].mintPrice;
-            unchecked {
-                ++i;
-            }
-        }
-
         // Revert if the tx's value doesn't match the total cost.
-        if (msg.value != totalCost) {
-            revert IncorrectPayment(msg.value, totalCost);
+        if (msg.value != numberToMint * mintPrice) {
+            revert IncorrectPayment(msg.value, numberToMint * mintPrice);
         }
     }
 
@@ -527,7 +506,7 @@ contract SeaDrop is ISeaDrop {
      *         and emits an event.
      *
      * @param nftContract    The nft contract.
-     * @param numToMint      The number of tokens to mint.
+     * @param numberToMint   The number of tokens to mint.
      * @param mintPrice      The mint price.
      * @param dropStageIndex The drop stage index.
      * @param feeBps         The fee basis points.
@@ -535,7 +514,7 @@ contract SeaDrop is ISeaDrop {
      */
     function _payAndMint(
         address nftContract,
-        uint256 numToMint,
+        uint256 numberToMint,
         uint256 mintPrice,
         uint256 dropStageIndex,
         uint256 feeBps,
@@ -545,16 +524,15 @@ contract SeaDrop is ISeaDrop {
         _splitPayout(nftContract, feeRecipient, feeBps);
 
         // Mint the token(s).
-        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numToMint);
+        IERC721SeaDrop(nftContract).mintSeaDrop(msg.sender, numberToMint);
 
         // Emit an event for the mint.
         emit SeaDropMint(
             nftContract,
             msg.sender,
             feeRecipient,
-            numToMint,
+            numberToMint,
             mintPrice,
-            address(0),
             feeBps,
             dropStageIndex
         );

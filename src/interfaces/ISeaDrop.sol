@@ -17,12 +17,12 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *
      * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint    The number of tokens to mint.
+     * @param numberToMint The number of tokens to mint.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint
+        uint256 numberToMint
     ) external payable;
 
     /**
@@ -30,14 +30,14 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *
      * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint    The number of tokens to mint.
+     * @param numberToMint The number of tokens to mint.
      * @param mintParams   The mint parameters.
      * @param proof        The proof for the leaf of the allow list.
      */
     function mintAllowList(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint,
+        uint256 numberToMint,
         MintParams calldata mintParams,
         bytes32[] calldata proof
     ) external payable;
@@ -47,14 +47,14 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *
      * @param nftContract  The nft contract to mint.
      * @param feeRecipient The fee recipient.
-     * @param numToMint    The number of tokens to mint.
+     * @param numberToMint The number of tokens to mint.
      * @param mintParams   The mint parameters.
      * @param signature    The server side signature, must be an allowed signer.
      */
     function mintSigned(
         address nftContract,
         address feeRecipient,
-        uint256 numToMint,
+        uint256 numberToMint,
         MintParams calldata mintParams,
         bytes calldata signature
     ) external payable;

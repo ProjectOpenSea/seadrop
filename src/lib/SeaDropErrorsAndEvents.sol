@@ -97,13 +97,10 @@ interface SeaDropErrorsAndEvents {
      * @param minter         The minter.
      * @param feeRecipient   The fee recipient.
      * @param numberMinted   The number of tokens minted.
-     * @param unitMintPrice  The price paid for each token.
-     * @param paymentToken   The ERC20 payment token for the mint.
-     *                       If zero address, means the native chain currency
-     *                       (e.g. ETH, MATIC, etc.)
+     * @param unitMintPrice  The amount paid for each token.
      * @param feeBps         The fee out of 10_000 basis points collected.
      * @param dropStageIndex The drop stage index. Items minted
-     *                       through `mintPublicDrop()` have
+     *                       through mintPublic() have
      *                       dropStageIndex of 0.
      */
     event SeaDropMint(
@@ -112,7 +109,6 @@ interface SeaDropErrorsAndEvents {
         address indexed feeRecipient,
         uint256 numberMinted,
         uint256 unitMintPrice,
-        address paymentToken,
         uint256 feeBps,
         uint256 dropStageIndex
     );
