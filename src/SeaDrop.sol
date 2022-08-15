@@ -29,6 +29,13 @@ import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
+/**
+ * @title  SeaDrop
+ * @author jameswenzel, ryanio, stephankmin
+ * @notice SeaDrop is a contract to help facilitate ERC721 token drops
+ *         with functionality for public, allow list, server-side signed,
+ *         and token-gated drops.
+ */
 contract SeaDrop is ISeaDrop {
     using ECDSA for bytes32;
 
