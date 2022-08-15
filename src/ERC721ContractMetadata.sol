@@ -26,6 +26,12 @@ import {
     IERC721ContractMetadata
 } from "./interfaces/IERC721ContractMetadata.sol";
 
+/**
+ * @title  ERC721ContractMetadata
+ * @author jameswenzel, ryanio, stephankmin
+ * @notice ERC721ContractMetadata is a token contract that extends ERC721A
+ *         with additional metadata capabilities.
+ */
 contract ERC721ContractMetadata is
     ERC721A,
     TwoStepAdministered,
