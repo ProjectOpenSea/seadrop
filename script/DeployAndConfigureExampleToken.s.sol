@@ -13,8 +13,7 @@ import { PublicDrop } from "../src/lib/SeaDropStructs.sol";
 
 contract DeployAndConfigureExampleToken is Script {
     // Addresses
-    address seadrop = 0x18e55C1728c2CA06878b6b609a26c978596C27EB;
-    address deployer = 0xfBa662e1a8e91a350702cF3b87D0C2d2Fb4BA57F;
+    address seadrop = 0x2fb6FEB663c481E9854a251002C772FEad3974d6;
     address creator = 0x8252cAcDf4318A65Fb061B0AFe127afe770b8067;
     address feeRecipient = 0xf0E16c071E2cd421974dCb76d9af4DeDB578E059;
     address minter = 0x6C1C4f642ab5611A46ee6F3ED95Bbf2E3Caf4D1c;
@@ -36,7 +35,7 @@ contract DeployAndConfigureExampleToken is Script {
         ExampleToken token = new ExampleToken(
             "My Example Token",
             "ExTKN",
-            deployer,
+            msg.sender,
             allowedSeadrop
         );
 
