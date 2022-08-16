@@ -227,7 +227,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             publicDrop.restrictFeeRecipients
         );
 
-        bytes32[] memory allowListTuples;
+        bytes32[] memory allowListTuples = new bytes32[](10);
 
         // Create allowList tuples using allowList addresses and mintParams.
         for (uint256 i = 0; i < 10; i++) {
@@ -236,17 +236,23 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             );
         }
 
+        // Initialize Merkle.
         Merkle m = new Merkle();
 
+        // Get the merkle root of the allowlist tuples.
         bytes32 root = m.getRoot(allowListTuples);
 
+        // Get the merkle proof of the tuple at index 0.
         bytes32[] memory proof = m.getProof(allowListTuples, 0);
 
+        // Verify that the merkle root can be obtained from the proof.
         bool verified = m.verifyProof(root, proof, allowListTuples[0]);
         assertTrue(verified);
 
+        // Create an empty string array to pass into allowListData.
         string[] memory emptyStringArray;
 
+        // Create allowListData with the merkle root of the allowlist tuples.
         AllowListData memory allowListData = AllowListData(
             root,
             emptyStringArray,
@@ -254,6 +260,8 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         );
 
         vm.prank(address(test));
+
+        // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
@@ -261,6 +269,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         vm.deal(args.minter, 100 ether);
         vm.prank(args.minter);
 
+        // Call mintAllowList with the minter being the first address of the allowList.
         seadrop.mintAllowList{ value: mintValue }(
             address(test),
             args.feeRecipient,
@@ -273,11 +282,12 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         assertEq(test.balanceOf(args.allowList[0]), args.numMints);
     }
 
-    // testMintPublic_differentPayerThanMinter
     // testMintAllowList_unauthorizedMinter
     // testMintAllowList_unauthorizedFeeRecipient
     // testMintAllowList_exceedsMaxMintableByWallet
     // testMintAllowList_differentPayerThanMinter
+    // testMintAllowList_invalidProof
+    // testMintAllowList_
     // testMintSigned
     // testMintSigned_unknownSigner
     // testMintSigned_differentPayerThanMinter
