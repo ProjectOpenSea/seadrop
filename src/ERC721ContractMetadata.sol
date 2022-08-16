@@ -30,7 +30,7 @@ import {
  * @title  ERC721ContractMetadata
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721ContractMetadata is a token contract that extends ERC721A
- *         with additional metadata capabilities.
+ *         with additional metadata and administrator capabilities.
  */
 contract ERC721ContractMetadata is
     ERC721A,
