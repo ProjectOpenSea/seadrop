@@ -13,7 +13,15 @@ import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
-import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
+import {
+    AllowListData,
+    PublicDrop,
+    MintParams
+} from "seadrop/lib/SeaDropStructs.sol";
+
+import { AllowListTuple } from "./utils/TestStructs.sol";
+
+import { Merkle } from "lib/murky/src/Merkle.sol";
 
 contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
     SeaDrop seadrop;
@@ -25,6 +33,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         uint40 numMints;
         address minter;
         address feeRecipient;
+        address[10] allowList;
     }
 
     modifier validateArgs(FuzzInputs memory args) {
@@ -38,6 +47,17 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
                 args.minter != creator &&
                 args.feeRecipient != creator
         );
+        _;
+    }
+
+    modifier validateAllowList(FuzzInputs memory args) {
+        for (uint256 i = 0; i < 10; i++) {
+            vm.assume(
+                args.allowList[i] != address(0) &&
+                    args.allowList[i] != args.feeRecipient &&
+                    args.allowList[i] != creator
+            );
+        }
         _;
     }
 
@@ -137,6 +157,42 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         );
     }
 
+    function testMintPublic_differentPayerThanMinter(FuzzInputs memory args)
+        public
+        validateArgs(args)
+    {
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        hoax(args.allowList[1], 100 ether);
+
+        uint256 mintValue = args.numMints * publicDrop.mintPrice;
+
+        uint256 prePayerBalance = args.allowList[1].balance;
+        uint256 preFeeRecipientBalance = args.feeRecipient.balance;
+        uint256 preCreatorBalance = creator.balance;
+
+        seadrop.mintPublic{ value: mintValue }(
+            address(test),
+            args.feeRecipient,
+            args.minter,
+            args.numMints
+        );
+
+        // Check minter token balance increased.
+        assertEq(test.balanceOf(args.minter), args.numMints);
+
+        // Check payer ether balance decreased.
+        assertEq(prePayerBalance - mintValue, args.allowList[1].balance);
+
+        // Check fee recipient ether balance increased.
+        uint256 feeAmount = (mintValue * 100) / 10_000;
+        assertEq(preFeeRecipientBalance + feeAmount, args.feeRecipient.balance);
+
+        // Check creator ether balance increased.
+        uint256 payoutAmount = mintValue - feeAmount;
+        assertEq(preCreatorBalance + payoutAmount, creator.balance);
+    }
+
     function testMintSeaDrop_revertNonSeaDrop(FuzzInputs memory args)
         public
         validateArgs(args)
@@ -151,9 +207,54 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         test.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }
 
-    /**
-    function testMintAllowList(FuzzInputs memory args) public validateArgs(args) {
-        MintParams memory mintParams = seadrop.getPublicDrop(address(test));
+    function testMintAllowList(FuzzInputs memory args)
+        public
+        validateArgs(args)
+        validateAllowList(args)
+    {
+        // Get the PublicDrop data for the test ERC721SeaDrop.
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        // Create a MintParams object with the PublicDrop object.
+        MintParams memory mintParams = MintParams(
+            publicDrop.mintPrice,
+            publicDrop.maxMintsPerWallet,
+            publicDrop.startTime,
+            publicDrop.startTime + 1000,
+            1,
+            1000,
+            publicDrop.feeBps,
+            publicDrop.restrictFeeRecipients
+        );
+
+        bytes32[] memory allowListTuples;
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < 10; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(args.allowList[i], mintParams)
+            );
+        }
+
+        Merkle m = new Merkle();
+
+        bytes32 root = m.getRoot(allowListTuples);
+
+        bytes32[] memory proof = m.getProof(allowListTuples, 0);
+
+        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
+        assertTrue(verified);
+
+        string[] memory emptyStringArray;
+
+        AllowListData memory allowListData = AllowListData(
+            root,
+            emptyStringArray,
+            "test"
+        );
+
+        vm.prank(address(test));
+        seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
@@ -163,11 +264,13 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         seadrop.mintAllowList{ value: mintValue }(
             address(test),
             args.feeRecipient,
+            args.allowList[0],
             args.numMints,
-            mintParams
+            mintParams,
+            proof
         );
 
-        assertEq(test.balanceOf(args.minter), args.numMints);
+        assertEq(test.balanceOf(args.allowList[0]), args.numMints);
     }
 
     // testMintPublic_differentPayerThanMinter
@@ -182,5 +285,4 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
     // testMintAllowedTokenHolder_alreadyRedeemed
     // testMintAllowedTokenHolder_notOwner
     // testMintAllowedTokenHolder_differentPayerThanMinter
-    */
 }
