@@ -19,8 +19,6 @@ import {
     MintParams
 } from "seadrop/lib/SeaDropStructs.sol";
 
-import { AllowListTuple } from "./utils/TestStructs.sol";
-
 import { Merkle } from "lib/murky/src/Merkle.sol";
 
 contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
@@ -97,6 +95,37 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
 
         // // Set the signers for server signed drops.
         // seadrop.updateSigners(signers);
+    }
+
+    function _createMerkleRootAndProof(
+        address[10] memory allowList,
+        uint256 proofIndex,
+        MintParams memory mintParams
+    ) internal returns (bytes32 root, bytes32[] memory proof) {
+        require(proofIndex < allowList.length);
+
+        // Declare a bytes32 array for the allowlist tuples.
+        bytes32[] memory allowListTuples = new bytes32[](allowList.length);
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < allowList.length; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(allowList[i], mintParams)
+            );
+        }
+
+        // Initialize Merkle.
+        Merkle m = new Merkle();
+
+        // Get the merkle root of the allowlist tuples.
+        root = m.getRoot(allowListTuples);
+
+        // Get the merkle proof of the tuple at proofIndex.
+        proof = m.getProof(allowListTuples, proofIndex);
+
+        // Verify that the merkle root can be obtained from the proof.
+        bool verified = m.verifyProof(root, proof, allowListTuples[proofIndex]);
+        assertTrue(verified);
     }
 
     function testMintPublic(FuzzInputs memory args) public validateArgs(args) {
@@ -223,27 +252,11 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             publicDrop.restrictFeeRecipients
         );
 
-        bytes32[] memory allowListTuples = new bytes32[](10);
-
-        // Create allowList tuples using allowList addresses and mintParams.
-        for (uint256 i = 0; i < 10; i++) {
-            allowListTuples[i] = keccak256(
-                abi.encode(args.allowList[i], mintParams)
-            );
-        }
-
-        // Initialize Merkle.
-        Merkle m = new Merkle();
-
-        // Get the merkle root of the allowlist tuples.
-        bytes32 root = m.getRoot(allowListTuples);
-
-        // Get the merkle proof of the tuple at index 0.
-        bytes32[] memory proof = m.getProof(allowListTuples, 0);
-
-        // Verify that the merkle root can be obtained from the proof.
-        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
-        assertTrue(verified);
+        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
+            args.allowList,
+            0,
+            mintParams
+        );
 
         // Create an empty string array to pass into allowListData.
         string[] memory emptyStringArray;
@@ -306,18 +319,11 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             );
         }
 
-        // Initialize Merkle.
-        Merkle m = new Merkle();
-
-        // Get the merkle root of the allowlist tuples.
-        bytes32 root = m.getRoot(allowListTuples);
-
-        // Get the merkle proof of the tuple at index 0.
-        bytes32[] memory proof = m.getProof(allowListTuples, 0);
-
-        // Verify that the merkle root can be obtained from the proof.
-        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
-        assertTrue(verified);
+        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
+            args.allowList,
+            0,
+            mintParams
+        );
 
         // Create an empty string array to pass into allowListData.
         string[] memory emptyStringArray;
@@ -380,18 +386,11 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             );
         }
 
-        // Initialize Merkle.
-        Merkle m = new Merkle();
-
-        // Get the merkle root of the allowlist tuples.
-        bytes32 root = m.getRoot(allowListTuples);
-
-        // Get the merkle proof of the tuple at index 0.
-        bytes32[] memory proof = m.getProof(allowListTuples, 0);
-
-        // Verify that the merkle root can be obtained from the proof.
-        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
-        assertTrue(verified);
+        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
+            args.allowList,
+            0,
+            mintParams
+        );
 
         // Create an empty string array to pass into allowListData.
         string[] memory emptyStringArray;
@@ -454,18 +453,11 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             );
         }
 
-        // Initialize Merkle.
-        Merkle m = new Merkle();
-
-        // Get the merkle root of the allowlist tuples.
-        bytes32 root = m.getRoot(allowListTuples);
-
-        // Get the merkle proof of the tuple at index 0.
-        bytes32[] memory proof = m.getProof(allowListTuples, 0);
-
-        // Verify that the merkle root can be obtained from the proof.
-        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
-        assertTrue(verified);
+        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
+            args.allowList,
+            0,
+            mintParams
+        );
 
         // Create an empty string array to pass into allowListData.
         string[] memory emptyStringArray;
@@ -530,18 +522,11 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             );
         }
 
-        // Initialize Merkle.
-        Merkle m = new Merkle();
-
-        // Get the merkle root of the allowlist tuples.
-        bytes32 root = m.getRoot(allowListTuples);
-
-        // Get the merkle proof of the tuple at index 0.
-        bytes32[] memory proof = m.getProof(allowListTuples, 0);
-
-        // Verify that the merkle root can be obtained from the proof.
-        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
-        assertTrue(verified);
+        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
+            args.allowList,
+            0,
+            mintParams
+        );
 
         // Create an empty string array to pass into allowListData.
         string[] memory emptyStringArray;
@@ -579,9 +564,155 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         );
     }
 
-    // testMintAllowList_exceedsMaxMintableByWallet
-    // testMintAllowList_differentPayerThanMinter
-    // testMintAllowList_
+    function testMintAllowList_revertMintQuantityExceedsMaxMintedPerWallet(
+        FuzzInputs memory args
+    ) public validateArgs(args) validateAllowList(args) {
+        // Get the PublicDrop data for the test ERC721SeaDrop.
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        // Create a MintParams object with the PublicDrop object.
+        MintParams memory mintParams = MintParams(
+            publicDrop.mintPrice,
+            publicDrop.maxMintsPerWallet,
+            publicDrop.startTime,
+            publicDrop.startTime + 1000,
+            1,
+            1000,
+            publicDrop.feeBps,
+            true // restrictFeeRecipients
+        );
+
+        bytes32[] memory allowListTuples = new bytes32[](10);
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < 10; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(args.allowList[i], mintParams)
+            );
+        }
+
+        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
+            args.allowList,
+            0,
+            mintParams
+        );
+
+        // Create an empty string array to pass into allowListData.
+        string[] memory emptyStringArray;
+
+        // Create allowListData with the merkle root of the allowlist tuples.
+        AllowListData memory allowListData = AllowListData(
+            root,
+            emptyStringArray,
+            "test"
+        );
+
+        vm.prank(address(test));
+
+        // Set the allowList of the test erc721 contract.
+        seadrop.updateAllowList(allowListData);
+
+        uint256 mintValue = 100 * mintParams.mintPrice;
+
+        hoax(args.minter, 100 ether);
+
+        // Expect the subsequent call to mintAllowList to revert with error
+        // MintQuantityExceedsMaxMintedPerWallet
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MintQuantityExceedsMaxMintedPerWallet.selector,
+                100,
+                mintParams.maxTotalMintableByWallet
+            )
+        );
+
+        // Attempt to mint more than the maxMintsPerWallet.
+        seadrop.mintAllowList{ value: mintValue }(
+            address(test),
+            args.feeRecipient,
+            args.allowList[0],
+            100,
+            mintParams,
+            proof
+        );
+    }
+
+    function testMintAllowList_freeMint(FuzzInputs memory args)
+        public
+        validateArgs(args)
+        validateAllowList(args)
+    {
+        // Create public drop object with free mint.
+        PublicDrop memory publicDrop = PublicDrop(
+            0 ether, // mint price
+            uint64(block.timestamp), // start time
+            10, // max mints per wallet
+            100, // fee (1%)
+            false // if false, allow any fee recipient
+        );
+
+        // Set the public drop for the erc721 contract.
+        test.updatePublicDrop(address(seadrop), publicDrop);
+
+        // Create a MintParams object with the PublicDrop object.
+        MintParams memory mintParams = MintParams(
+            publicDrop.mintPrice,
+            publicDrop.maxMintsPerWallet,
+            publicDrop.startTime,
+            publicDrop.startTime + 1000,
+            1,
+            1000,
+            publicDrop.feeBps,
+            publicDrop.restrictFeeRecipients
+        );
+
+        bytes32[] memory allowListTuples = new bytes32[](10);
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < 10; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(args.allowList[i], mintParams)
+            );
+        }
+
+        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
+            args.allowList,
+            0,
+            mintParams
+        );
+
+        // Create an empty string array to pass into allowListData.
+        string[] memory emptyStringArray;
+
+        // Create allowListData with the merkle root of the allowlist tuples.
+        AllowListData memory allowListData = AllowListData(
+            root,
+            emptyStringArray,
+            "test"
+        );
+
+        vm.prank(address(test));
+
+        // Set the allowList of the test erc721 contract.
+        seadrop.updateAllowList(allowListData);
+
+        hoax(args.allowList[0], 100 ether);
+
+        // Attempt to mint more than the maxMintsPerWallet.
+        seadrop.mintAllowList(
+            address(test),
+            args.feeRecipient,
+            args.allowList[0],
+            args.numMints,
+            mintParams,
+            proof
+        );
+
+        // Check minter token balance increased.
+        assertEq(test.balanceOf(args.allowList[0]), args.numMints);
+    }
+
+    // testMintPublic_free
     // testMintSigned
     // testMintSigned_unknownSigner
     // testMintSigned_differentPayerThanMinter
