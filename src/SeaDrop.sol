@@ -74,7 +74,7 @@ contract SeaDrop is ISeaDrop {
     // EIP-712: Typed structured data hashing and signing
     bytes32 internal constant _MINT_DATA_TYPEHASH =
         keccak256(
-            "MintParams(address minter, uint256 mintPrice, uint256 maxTotalMintableByWallet, uint256 startTime, uint256 endTime, uint256 dropStageIndex, uint256 feeBps, bool restrictFeeRecipients)"
+            "MintParams(address minter,uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
         );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
         keccak256(
