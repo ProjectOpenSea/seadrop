@@ -1,0 +1,6 @@
+forge-std/=lib/forge-std/src/
+utility-contracts/=lib/utility-contracts/src
+solmate/=lib/solmate/src
+primary-drops/=src
+ERC721A/=lib/ERC721A/contracts
+seadrop/=src
