@@ -274,6 +274,7 @@ contract SeaDrop is ISeaDrop {
         // the address that signed the signature for this data.
         bytes32 digest = keccak256(
             abi.encodePacked(
+                // EIP-191: `0x19` as set prefix, `0x01` as version byte
                 bytes2(0x1901),
                 _domainSeparator(),
                 keccak256(abi.encode(_MINT_DATA_TYPEHASH, minter, mintParams))
