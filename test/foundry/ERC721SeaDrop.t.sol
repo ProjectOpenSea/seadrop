@@ -182,6 +182,35 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         );
     }
 
+    function testMintPublic_freeMint(FuzzInputs memory args)
+        public
+        validateArgs(args)
+    {
+        // Create public drop object with free mint.
+        PublicDrop memory publicDrop = PublicDrop(
+            0 ether, // mint price
+            uint64(block.timestamp), // start time
+            10, // max mints per wallet
+            100, // fee (1%)
+            false // if false, allow any fee recipient
+        );
+
+        // Set the public drop for the erc721 contract.
+        test.updatePublicDrop(address(seadrop), publicDrop);
+
+        vm.prank(args.minter);
+
+        seadrop.mintPublic(
+            address(test),
+            args.feeRecipient,
+            args.minter,
+            args.numMints
+        );
+
+        // Check minter token balance increased.
+        assertEq(test.balanceOf(args.minter), args.numMints);
+    }
+
     function testMintPublic_differentPayerThanMinter(FuzzInputs memory args)
         public
         validateArgs(args)
@@ -712,7 +741,6 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         assertEq(test.balanceOf(args.allowList[0]), args.numMints);
     }
 
-    // testMintPublic_free
     // testMintSigned
     // testMintSigned_unknownSigner
     // testMintSigned_differentPayerThanMinter
