@@ -72,8 +72,18 @@ contract SeaDrop is ISeaDrop {
         private _tokenGatedRedeemed;
 
     // EIP-712: Typed structured data hashing and signing
-    bytes32 public immutable DOMAIN_SEPARATOR;
-    bytes32 public immutable MINT_DATA_TYPEHASH;
+    bytes32 internal constant _MINT_DATA_TYPEHASH =
+        keccak256(
+            "MintParams(address minter, uint256 mintPrice, uint256 maxTotalMintableByWallet, uint256 startTime, uint256 endTime, uint256 dropStageIndex, uint256 feeBps, bool restrictFeeRecipients)"
+        );
+    bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
+    bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
+    bytes32 internal constant _VERSION_HASH = keccak256("1.0");
+    uint256 internal immutable _CHAIN_ID = block.chainid;
+    bytes32 internal immutable _DOMAIN_SEPARATOR;
 
     /**
      * @notice Ensure only tokens implementing IERC721SeaDrop can
@@ -94,21 +104,8 @@ contract SeaDrop is ISeaDrop {
      * @notice Constructor for the contract deployment.
      */
     constructor() {
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256(bytes("SeaDrop")),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this)
-            )
-        );
-
-        MINT_DATA_TYPEHASH = keccak256(
-            "MintParams(address minter, uint256 mintPrice, uint256 maxTotalMintableByWallet, uint256 startTime, uint256 endTime, uint256 dropStageIndex, uint256 feeBps, bool restrictFeeRecipients)"
-        );
+        // Derive the domain separator.
+        _DOMAIN_SEPARATOR = _deriveDomainSeparator();
     }
 
     /**
@@ -278,8 +275,8 @@ contract SeaDrop is ISeaDrop {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 bytes2(0x1901),
-                DOMAIN_SEPARATOR,
-                keccak256(abi.encode(MINT_DATA_TYPEHASH, minter, mintParams))
+                _domainSeparator(),
+                keccak256(abi.encode(_MINT_DATA_TYPEHASH, minter, mintParams))
             )
         );
 
@@ -595,6 +592,39 @@ contract SeaDrop is ISeaDrop {
             mintPrice,
             feeBps,
             dropStageIndex
+        );
+    }
+
+    /**
+     * @dev Internal view function to get the EIP-712 domain separator. If the
+     *      chainId matches the chainId set on deployment, the cached domain
+     *      separator will be returned; otherwise, it will be derived from
+     *      scratch.
+     *
+     * @return The domain separator.
+     */
+    function _domainSeparator() internal view returns (bytes32) {
+        // prettier-ignore
+        return block.chainid == _CHAIN_ID
+            ? _DOMAIN_SEPARATOR
+            : _deriveDomainSeparator();
+    }
+
+    /**
+     * @dev Internal view function to derive the EIP-712 domain separator.
+     *
+     * @return The derived domain separator.
+     */
+    function _deriveDomainSeparator() internal view returns (bytes32) {
+        // prettier-ignore
+        return keccak256(
+            abi.encode(
+                _EIP_712_DOMAIN_TYPEHASH,
+                _NAME_HASH,
+                _VERSION_HASH,
+                block.chainid,
+                address(this)
+            )
         );
     }
 
