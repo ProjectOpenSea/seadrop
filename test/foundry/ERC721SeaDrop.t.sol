@@ -55,7 +55,8 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             vm.assume(
                 args.allowList[i] != address(0) &&
                     args.allowList[i] != args.feeRecipient &&
-                    args.allowList[i] != creator
+                    args.allowList[i] != creator &&
+                    args.allowList[i] != args.minter
             );
         }
         _;
@@ -90,16 +91,12 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
 
         // Set the public drop for the erc721 contract.
         seadrop.updatePublicDrop(publicDrop);
-        /**
-        // Set the allow list merkle root.
-        seadrop.updateAllowList(allowList);
 
-        // Set the token gated drop stage.
-        seadrop.updateTokenGatedDrop(tokenGatedDropStage);
+        // // Set the token gated drop stage.
+        // seadrop.updateTokenGatedDrop(tokenGatedDropStage);
 
-        // Set the signers for server signed drops.
-        seadrop.updateSigners(signers);
-        */
+        // // Set the signers for server signed drops.
+        // seadrop.updateSigners(signers);
     }
 
     function testMintPublic(FuzzInputs memory args) public validateArgs(args) {
@@ -146,8 +143,7 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
             abi.encodeWithSelector(IncorrectPayment.selector, 1, mintValue)
         );
 
-        vm.deal(args.minter, 100 ether);
-        vm.prank(args.minter);
+        hoax(args.minter, 100 ether);
 
         seadrop.mintPublic{ value: 1 wei }(
             address(test),
@@ -266,10 +262,9 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        vm.deal(args.minter, 100 ether);
-        vm.prank(args.minter);
+        hoax(args.minter, 100 ether);
 
-        // Call mintAllowList with the minter being the first address of the allowList.
+        // Mint a token to the first address of the allowList.
         seadrop.mintAllowList{ value: mintValue }(
             address(test),
             args.feeRecipient,
@@ -282,11 +277,310 @@ contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
         assertEq(test.balanceOf(args.allowList[0]), args.numMints);
     }
 
-    // testMintAllowList_unauthorizedMinter
-    // testMintAllowList_unauthorizedFeeRecipient
+    function testMintAllowList_revertUnauthorizedMinter(FuzzInputs memory args)
+        public
+        validateArgs(args)
+        validateAllowList(args)
+    {
+        // Get the PublicDrop data for the test ERC721SeaDrop.
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        // Create a MintParams object with the PublicDrop object.
+        MintParams memory mintParams = MintParams(
+            publicDrop.mintPrice,
+            publicDrop.maxMintsPerWallet,
+            publicDrop.startTime,
+            publicDrop.startTime + 1000,
+            1,
+            1000,
+            publicDrop.feeBps,
+            publicDrop.restrictFeeRecipients
+        );
+
+        bytes32[] memory allowListTuples = new bytes32[](10);
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < 10; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(args.allowList[i], mintParams)
+            );
+        }
+
+        // Initialize Merkle.
+        Merkle m = new Merkle();
+
+        // Get the merkle root of the allowlist tuples.
+        bytes32 root = m.getRoot(allowListTuples);
+
+        // Get the merkle proof of the tuple at index 0.
+        bytes32[] memory proof = m.getProof(allowListTuples, 0);
+
+        // Verify that the merkle root can be obtained from the proof.
+        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
+        assertTrue(verified);
+
+        // Create an empty string array to pass into allowListData.
+        string[] memory emptyStringArray;
+
+        // Create allowListData with the merkle root of the allowlist tuples.
+        AllowListData memory allowListData = AllowListData(
+            root,
+            emptyStringArray,
+            "test"
+        );
+
+        vm.prank(address(test));
+
+        // Set the allowList of the test erc721 contract.
+        seadrop.updateAllowList(allowListData);
+
+        uint256 mintValue = args.numMints * mintParams.mintPrice;
+
+        hoax(args.minter, 100 ether);
+
+        vm.expectRevert(abi.encodeWithSelector(InvalidProof.selector));
+
+        // Attempt to mint a token to a non-allowlist address.
+        seadrop.mintAllowList{ value: mintValue }(
+            address(test),
+            args.feeRecipient,
+            args.minter, // fuzzed minter is not on allowList
+            args.numMints,
+            mintParams,
+            proof
+        );
+    }
+
+    function testMintAllowList_revertInvalidProof(FuzzInputs memory args)
+        public
+        validateArgs(args)
+        validateAllowList(args)
+    {
+        // Get the PublicDrop data for the test ERC721SeaDrop.
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        // Create a MintParams object with the PublicDrop object.
+        MintParams memory mintParams = MintParams(
+            publicDrop.mintPrice,
+            publicDrop.maxMintsPerWallet,
+            publicDrop.startTime,
+            publicDrop.startTime + 1000,
+            1,
+            1000,
+            publicDrop.feeBps,
+            publicDrop.restrictFeeRecipients
+        );
+
+        bytes32[] memory allowListTuples = new bytes32[](10);
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < 10; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(args.allowList[i], mintParams)
+            );
+        }
+
+        // Initialize Merkle.
+        Merkle m = new Merkle();
+
+        // Get the merkle root of the allowlist tuples.
+        bytes32 root = m.getRoot(allowListTuples);
+
+        // Get the merkle proof of the tuple at index 0.
+        bytes32[] memory proof = m.getProof(allowListTuples, 0);
+
+        // Verify that the merkle root can be obtained from the proof.
+        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
+        assertTrue(verified);
+
+        // Create an empty string array to pass into allowListData.
+        string[] memory emptyStringArray;
+
+        // Create allowListData with the merkle root of the allowlist tuples.
+        AllowListData memory allowListData = AllowListData(
+            root,
+            emptyStringArray,
+            "test"
+        );
+
+        vm.prank(address(test));
+
+        // Set the allowList of the test erc721 contract.
+        seadrop.updateAllowList(allowListData);
+
+        uint256 mintValue = args.numMints * mintParams.mintPrice;
+
+        hoax(args.minter, 100 ether);
+
+        // Expect the subsequent call to mintAllowList to revert with error
+        // InvalidProof
+        vm.expectRevert(abi.encodeWithSelector(InvalidProof.selector));
+
+        // Attempt to mint a token to a non-allowlist address.
+        seadrop.mintAllowList{ value: mintValue }(
+            address(test),
+            args.feeRecipient,
+            args.allowList[4], // proof refers to address at allowlist index 0.
+            args.numMints,
+            mintParams,
+            proof
+        );
+    }
+
+    function testMintAllowList_revertFeeRecipientCannotBeZeroAddress(
+        FuzzInputs memory args
+    ) public validateArgs(args) validateAllowList(args) {
+        // Get the PublicDrop data for the test ERC721SeaDrop.
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        // Create a MintParams object with the PublicDrop object.
+        MintParams memory mintParams = MintParams(
+            publicDrop.mintPrice,
+            publicDrop.maxMintsPerWallet,
+            publicDrop.startTime,
+            publicDrop.startTime + 1000,
+            1,
+            1000,
+            publicDrop.feeBps,
+            publicDrop.restrictFeeRecipients
+        );
+
+        bytes32[] memory allowListTuples = new bytes32[](10);
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < 10; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(args.allowList[i], mintParams)
+            );
+        }
+
+        // Initialize Merkle.
+        Merkle m = new Merkle();
+
+        // Get the merkle root of the allowlist tuples.
+        bytes32 root = m.getRoot(allowListTuples);
+
+        // Get the merkle proof of the tuple at index 0.
+        bytes32[] memory proof = m.getProof(allowListTuples, 0);
+
+        // Verify that the merkle root can be obtained from the proof.
+        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
+        assertTrue(verified);
+
+        // Create an empty string array to pass into allowListData.
+        string[] memory emptyStringArray;
+
+        // Create allowListData with the merkle root of the allowlist tuples.
+        AllowListData memory allowListData = AllowListData(
+            root,
+            emptyStringArray,
+            "test"
+        );
+
+        vm.prank(address(test));
+
+        // Set the allowList of the test erc721 contract.
+        seadrop.updateAllowList(allowListData);
+
+        uint256 mintValue = args.numMints * mintParams.mintPrice;
+
+        hoax(args.minter, 100 ether);
+
+        // Expect the subsequent call to mintAllowList to revert with error
+        // FeeRecipientCannotBeZeroAddress
+        vm.expectRevert(
+            abi.encodeWithSelector(FeeRecipientCannotBeZeroAddress.selector)
+        );
+
+        // Attempt to call mintAllowList with the zero address as the fee recipient.
+        seadrop.mintAllowList{ value: mintValue }(
+            address(test),
+            address(0),
+            args.allowList[0],
+            args.numMints,
+            mintParams,
+            proof
+        );
+    }
+
+    function testMintAllowList_revertFeeRecipientNotAllowed(
+        FuzzInputs memory args
+    ) public validateArgs(args) validateAllowList(args) {
+        // Get the PublicDrop data for the test ERC721SeaDrop.
+        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
+
+        // Create a MintParams object with the PublicDrop object.
+        MintParams memory mintParams = MintParams(
+            publicDrop.mintPrice,
+            publicDrop.maxMintsPerWallet,
+            publicDrop.startTime,
+            publicDrop.startTime + 1000,
+            1,
+            1000,
+            publicDrop.feeBps,
+            true // restrictFeeRecipients
+        );
+
+        bytes32[] memory allowListTuples = new bytes32[](10);
+
+        // Create allowList tuples using allowList addresses and mintParams.
+        for (uint256 i = 0; i < 10; i++) {
+            allowListTuples[i] = keccak256(
+                abi.encode(args.allowList[i], mintParams)
+            );
+        }
+
+        // Initialize Merkle.
+        Merkle m = new Merkle();
+
+        // Get the merkle root of the allowlist tuples.
+        bytes32 root = m.getRoot(allowListTuples);
+
+        // Get the merkle proof of the tuple at index 0.
+        bytes32[] memory proof = m.getProof(allowListTuples, 0);
+
+        // Verify that the merkle root can be obtained from the proof.
+        bool verified = m.verifyProof(root, proof, allowListTuples[0]);
+        assertTrue(verified);
+
+        // Create an empty string array to pass into allowListData.
+        string[] memory emptyStringArray;
+
+        // Create allowListData with the merkle root of the allowlist tuples.
+        AllowListData memory allowListData = AllowListData(
+            root,
+            emptyStringArray,
+            "test"
+        );
+
+        vm.prank(address(test));
+
+        // Set the allowList of the test erc721 contract.
+        seadrop.updateAllowList(allowListData);
+
+        uint256 mintValue = args.numMints * mintParams.mintPrice;
+
+        hoax(args.minter, 100 ether);
+
+        // Expect the subsequent call to mintAllowList to revert with error
+        // FeeRecipientNotAllowed
+        vm.expectRevert(
+            abi.encodeWithSelector(FeeRecipientNotAllowed.selector)
+        );
+
+        // Attempt to call mintAllowList with an unauthorized fee recipient.
+        seadrop.mintAllowList{ value: mintValue }(
+            address(test),
+            args.feeRecipient,
+            args.allowList[0],
+            args.numMints,
+            mintParams,
+            proof
+        );
+    }
+
     // testMintAllowList_exceedsMaxMintableByWallet
     // testMintAllowList_differentPayerThanMinter
-    // testMintAllowList_invalidProof
     // testMintAllowList_
     // testMintSigned
     // testMintSigned_unknownSigner
