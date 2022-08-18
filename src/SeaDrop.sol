@@ -376,11 +376,11 @@ contract SeaDrop is ISeaDrop {
                 }
 
                 // Check that the token id has not already been redeemed.
-                bool redeemed = _tokenGatedRedeemed[nftContract][
-                    mintParams.allowedNftToken
-                ][tokenId];
-
-                if (redeemed == true) {
+                if (
+                    _tokenGatedRedeemed[nftContract][
+                        mintParams.allowedNftToken
+                    ][tokenId] == true
+                ) {
                     revert TokenGatedTokenIdAlreadyRedeemed(
                         nftContract,
                         mintParams.allowedNftToken,
@@ -389,9 +389,9 @@ contract SeaDrop is ISeaDrop {
                 }
 
                 // Mark the token id as redeemed.
-                _tokenGatedRedeemed[nftContract][
-                    mintParams.allowedNftToken
-                ][tokenId] = true;
+                _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
+                    tokenId
+                ] = true;
 
                 unchecked {
                     ++j;
