@@ -460,11 +460,11 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Check that the wallet is allowed to mint the desired quantity.
      *
-     * @param nftContract       The nft contract.
-     * @param minter            The mint recipient.
-     * @param quantity          The number of tokens to mint.
-     * @param maxMintsPerWallet The allowed max mints per wallet.
-     * @param nftContract       The nft contract.
+     * @param nftContract            The nft contract.
+     * @param minter                 The mint recipient.
+     * @param quantity               The number of tokens to mint.
+     * @param maxMintsPerWallet      The max allowed mints per wallet.
+     * @param maxTokenSupplyForStage The max token supply for the drop stage.
      */
     function _checkMintQuantity(
         address nftContract,
