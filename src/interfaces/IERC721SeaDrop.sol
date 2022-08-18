@@ -71,6 +71,13 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     ) external;
 
     /**
+     * @notice Update public drop fee for this nft contract on SeaDrop.
+     *
+     * @param feeBps The public drop fee basis points.
+     */
+    function updatePublicDropFee(address seaDropImpl, uint16 feeBps) external;
+
+    /**
      * @notice Update allow list data for this nft contract on SeaDrop.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
