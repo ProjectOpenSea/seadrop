@@ -39,39 +39,40 @@ import {
 contract SeaDrop is ISeaDrop {
     using ECDSA for bytes32;
 
-    // Track the public drops.
+    /// @notice Track the public drops.
     mapping(address => PublicDrop) private _publicDrops;
 
-    // Track the drop URIs.
+    /// @notice Track the drop URIs.
     mapping(address => string) private _dropURIs;
 
-    // Track the creator payout addresses.
+    /// @notice Track the creator payout addresses.
     mapping(address => address) private _creatorPayoutAddresses;
 
-    // Track the allow list merkle roots.
+    /// @notice Track the allow list merkle roots.
     mapping(address => bytes32) private _allowListMerkleRoots;
 
-    // Track the allowed fee recipients.
+    /// @notice Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
 
-    // Track the allowed signers for server side drops.
+    /// @notice Track the allowed signers for server side drops.
     mapping(address => mapping(address => bool)) private _signers;
 
-    // Track the signers for each server side drop.
+    /// @notice Track the signers for each server side drop.
     mapping(address => address[]) private _enumeratedSigners;
 
-    // Track token gated drop stages.
+    /// @notice Track token gated drop stages.
     mapping(address => mapping(address => TokenGatedDropStage))
         private _tokenGatedDrops;
 
-    // Track the tokens for token gated drops.
+    /// @notice Track the tokens for token gated drops.
     mapping(address => address[]) private _enumeratedTokenGatedTokens;
 
-    // Track redeemed token IDs for token gated drop stages.
+    /// @notice Track redeemed token IDs for token gated drop stages.
     mapping(address => mapping(address => mapping(uint256 => bool)))
         private _tokenGatedRedeemed;
 
-    // EIP-712: Typed structured data hashing and signing
+    /// @notice Internal constants for EIP-712: Typed structured
+    ///         data hashing and signing
     bytes32 internal constant _MINT_DATA_TYPEHASH =
         keccak256(
             "MintParams(address minter,uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"

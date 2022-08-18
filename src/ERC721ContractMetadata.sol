@@ -37,17 +37,17 @@ contract ERC721ContractMetadata is
     TwoStepAdministered,
     IERC721ContractMetadata
 {
-    // Track the max supply.
+    /// @notice Track the max supply.
     uint256 _maxSupply;
 
-    // Track the base URI for token metadata.
+    /// @notice Track the base URI for token metadata.
     string _theBaseURI;
 
-    // Track the contract URI for contract metadata.
+    /// @notice Track the contract URI for contract metadata.
     string _contractURI;
 
-    // Track the provenance hash for guaranteeing metadata order
-    // for random reveals.
+    /// @notice Track the provenance hash for guaranteeing metadata order
+    ///         for random reveals.
     bytes32 _provenanceHash;
 
     /**

@@ -45,10 +45,10 @@ contract ERC721SeaDrop is
     IERC721SeaDrop,
     SeaDropErrorsAndEvents
 {
-    // Track the allowed SeaDrop addresses.
+    /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) private _allowedSeaDrop;
 
-    // Track the enumrated allowed SeaDrop addresses.
+    /// @notice Track the enumrated allowed SeaDrop addresses.
     address[] internal _enumeratedAllowedSeaDrop;
 
     /**
