@@ -91,6 +91,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop.
+     *         Use `updateTokenGatedDropFee` to update the fee basis points.
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -100,6 +101,20 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
+    ) external;
+
+    /**
+     * @notice Update token gated drop stage fee basis points for this nft
+     *         contract on SeaDrop.
+     *
+     * @param seaDropImpl     The allowed SeaDrop contract.
+     * @param allowedNftToken The allowed nft token.
+     * @param feeBps          The token gated drop fee basis points.
+     */
+    function updateTokenGatedDropFee(
+        address seaDropImpl,
+        address allowedNftToken,
+        uint16 feeBps
     ) external;
 
     /**

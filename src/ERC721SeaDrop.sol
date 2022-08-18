@@ -148,7 +148,8 @@ contract ERC721SeaDrop is
      * @notice Update public drop data for this nft contract on SeaDrop.
      *         Use `updatePublicDropFee` to update the fee recipient or feeBps.
      *
-     * @param publicDrop The public drop data.
+     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param publicDrop  The public drop data.
      */
     function updatePublicDrop(
         address seaDropImpl,
@@ -164,7 +165,7 @@ contract ERC721SeaDrop is
 
         // Only the administrator (OpenSea) should be able to set feeBps.
         supplied.feeBps = retrieved.feeBps;
-        retrieved.restrictFeeRecipients = true;
+        supplied.restrictFeeRecipients = true;
 
         // Update the public drop data on SeaDrop.
         ISeaDrop(seaDropImpl).updatePublicDrop(supplied);
@@ -173,7 +174,8 @@ contract ERC721SeaDrop is
     /**
      * @notice Update public drop fee for this nft contract on SeaDrop.
      *
-     * @param feeBps The public drop fee basis points.
+     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param feeBps      The public drop fee basis points.
      */
     function updatePublicDropFee(address seaDropImpl, uint16 feeBps)
         external
@@ -197,6 +199,7 @@ contract ERC721SeaDrop is
     /**
      * @notice Update allow list data for this nft contract on SeaDrop.
      *
+     * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
@@ -216,7 +219,9 @@ contract ERC721SeaDrop is
     /**
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop.
+     *         Use `updateTokenGatedDropFee` to update the fee basis points.
      *
+     * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
@@ -224,21 +229,58 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
+    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+        // Track the previous drop stage data.
+        TokenGatedDropStage memory retrieved = ISeaDrop(seaDropImpl)
+            .getTokenGatedDrop(address(this), allowedNftToken);
+
+        // Track the newly supplied drop data.
+        TokenGatedDropStage memory supplied = dropStage;
+
+        // Only the administrator (OpenSea) should be able to set feeBps.
+        supplied.feeBps = retrieved.feeBps;
+        supplied.restrictFeeRecipients = true;
+
+        // Update the token gated drop stage.
+        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, supplied);
+    }
+
+    /**
+     * @notice Update token gated drop stage fee basis points for this nft
+     *         contract on SeaDrop.
+     *
+     * @param seaDropImpl     The allowed SeaDrop contract.
+     * @param allowedNftToken The allowed nft token.
+     * @param feeBps          The token gated drop fee basis points.
+     */
+    function updateTokenGatedDropFee(
+        address seaDropImpl,
+        address allowedNftToken,
+        uint16 feeBps
     )
         external
         virtual
         override
-        onlyOwnerOrAdministrator
+        onlyAdministrator
         onlyAllowedSeaDrop(seaDropImpl)
     {
+        // Track the previous drop stage data.
+        TokenGatedDropStage memory retrieved = ISeaDrop(seaDropImpl)
+            .getTokenGatedDrop(address(this), allowedNftToken);
+
+        // Only the administrator (OpenSea) should be able to set feeBps.
+        retrieved.feeBps = feeBps;
+        retrieved.restrictFeeRecipients = true;
+
         // Update the token gated drop stage.
-        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
+        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, retrieved);
     }
 
     /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
      *
-     * @param dropURI The new drop URI.
+     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param dropURI     The new drop URI.
      */
     function updateDropURI(address seaDropImpl, string calldata dropURI)
         external
@@ -255,6 +297,7 @@ contract ERC721SeaDrop is
      * @notice Update the creator payout address for this nft contract on SeaDrop.
      *         Only the owner can set the creator payout address.
      *
+     * @param seaDropImpl   The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
      */
     function updateCreatorPayoutAddress(
@@ -270,6 +313,7 @@ contract ERC721SeaDrop is
      *         on SeaDrop.
      *         Only the administrator can set the allowed fee recipient.
      *
+     * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
@@ -287,7 +331,8 @@ contract ERC721SeaDrop is
      *         on SeaDrop.
      *         Only the owner or administrator can update the signers.
      *
-     * @param newSigners The new signers.
+     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param newSigners  The new signers.
      */
     function updateSigners(address seaDropImpl, address[] calldata newSigners)
         external
@@ -335,7 +380,7 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Returns if the interface is supported.
+     * @notice Returns whether the interface is supported.
      *
      * @param interfaceId The interface id to check against.
      */

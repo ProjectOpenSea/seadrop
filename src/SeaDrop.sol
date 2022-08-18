@@ -278,7 +278,19 @@ contract SeaDrop is ISeaDrop {
                 // EIP-191: `0x19` as set prefix, `0x01` as version byte
                 bytes2(0x1901),
                 _domainSeparator(),
-                keccak256(abi.encode(_MINT_DATA_TYPEHASH, minter, mintParams))
+                keccak256(
+                    abi.encode(
+                        _MINT_DATA_TYPEHASH,
+                        minter,
+                        mintParams.mintPrice,
+                        mintParams.maxTotalMintableByWallet,
+                        mintParams.startTime,
+                        mintParams.endTime,
+                        mintParams.dropStageIndex,
+                        mintParams.feeBps,
+                        mintParams.restrictFeeRecipients
+                    )
+                )
             )
         );
 
@@ -906,7 +918,7 @@ contract SeaDrop is ISeaDrop {
             }
         }
 
-        // Create a mapping of the signers.
+        // Get the mapping of signers.
         mapping(address => bool) storage signersMap = _signers[msg.sender];
 
         // Delete old signers.
