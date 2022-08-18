@@ -803,17 +803,15 @@ contract SeaDrop is ISeaDrop {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     * @param nftContract     The nft contract.
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
-        address nftContract,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
         // Set the drop stage.
-        _tokenGatedDrops[nftContract][allowedNftToken] = dropStage;
+        _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
 
         // If the maxTotalMintableByWallet is greater than zero
         // then we are setting an active drop stage.
@@ -824,11 +822,11 @@ contract SeaDrop is ISeaDrop {
             // Iterate through enumerated token gated tokens for nft contract.
             for (
                 uint256 i = 0;
-                i < _enumeratedTokenGatedTokens[nftContract].length;
+                i < _enumeratedTokenGatedTokens[msg.sender].length;
 
             ) {
                 if (
-                    _enumeratedTokenGatedTokens[nftContract][i] ==
+                    _enumeratedTokenGatedTokens[msg.sender][i] ==
                     allowedNftToken
                 ) {
                     // Set the bool to true if found.
@@ -841,16 +839,12 @@ contract SeaDrop is ISeaDrop {
 
             // Add allowedNftToken to enumerated list if not present.
             if (allowedNftTokenExistsInEnumeration == false) {
-                _enumeratedTokenGatedTokens[nftContract].push(allowedNftToken);
+                _enumeratedTokenGatedTokens[msg.sender].push(allowedNftToken);
             }
         }
 
         // Emit an event with the update.
-        emit TokenGatedDropStageUpdated(
-            nftContract,
-            allowedNftToken,
-            dropStage
-        );
+        emit TokenGatedDropStageUpdated(msg.sender, allowedNftToken, dropStage);
     }
 
     /**

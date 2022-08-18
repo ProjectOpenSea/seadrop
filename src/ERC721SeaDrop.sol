@@ -232,11 +232,7 @@ contract ERC721SeaDrop is
         onlyAllowedSeaDrop(seaDropImpl)
     {
         // Update the token gated drop stage.
-        ISeaDrop(seaDropImpl).updateTokenGatedDrop(
-            address(this),
-            allowedNftToken,
-            dropStage
-        );
+        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
     }
 
     /**
