@@ -30,24 +30,24 @@ import {
  * @title  ERC721ContractMetadata
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721ContractMetadata is a token contract that extends ERC721A
- *         with additional metadata capabilities.
+ *         with additional metadata and administrator capabilities.
  */
 contract ERC721ContractMetadata is
     ERC721A,
     TwoStepAdministered,
     IERC721ContractMetadata
 {
-    // Track the max supply.
+    /// @notice Track the max supply.
     uint256 _maxSupply;
 
-    // Track the base URI for token metadata.
+    /// @notice Track the base URI for token metadata.
     string _theBaseURI;
 
-    // Track the contract URI for contract metadata.
+    /// @notice Track the contract URI for contract metadata.
     string _contractURI;
 
-    // Track the provenance hash for guaranteeing metadata order
-    // for random reveals.
+    /// @notice Track the provenance hash for guaranteeing metadata order
+    ///         for random reveals.
     bytes32 _provenanceHash;
 
     /**

@@ -197,12 +197,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     * @param nftContract     The nft contract.
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
-        address nftContract,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external;

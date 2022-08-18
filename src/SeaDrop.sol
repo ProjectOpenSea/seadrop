@@ -39,41 +39,52 @@ import {
 contract SeaDrop is ISeaDrop {
     using ECDSA for bytes32;
 
-    // Track the public drops.
+    /// @notice Track the public drops.
     mapping(address => PublicDrop) private _publicDrops;
 
-    // Track the drop URIs.
+    /// @notice Track the drop URIs.
     mapping(address => string) private _dropURIs;
 
-    // Track the creator payout addresses.
+    /// @notice Track the creator payout addresses.
     mapping(address => address) private _creatorPayoutAddresses;
 
-    // Track the allow list merkle roots.
+    /// @notice Track the allow list merkle roots.
     mapping(address => bytes32) private _allowListMerkleRoots;
 
-    // Track the allowed fee recipients.
+    /// @notice Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
 
-    // Track the allowed signers for server side drops.
+    /// @notice Track the allowed signers for server side drops.
     mapping(address => mapping(address => bool)) private _signers;
 
-    // Track the signers for each server side drop.
+    /// @notice Track the signers for each server side drop.
     mapping(address => address[]) private _enumeratedSigners;
 
-    // Track token gated drop stages.
+    /// @notice Track token gated drop stages.
     mapping(address => mapping(address => TokenGatedDropStage))
         private _tokenGatedDrops;
 
-    // Track the tokens for token gated drops.
+    /// @notice Track the tokens for token gated drops.
     mapping(address => address[]) private _enumeratedTokenGatedTokens;
 
-    // Track redeemed token IDs for token gated drop stages.
+    /// @notice Track redeemed token IDs for token gated drop stages.
     mapping(address => mapping(address => mapping(uint256 => bool)))
         private _tokenGatedRedeemed;
 
-    // EIP-712: Typed structured data hashing and signing
-    bytes32 public immutable DOMAIN_SEPARATOR;
-    bytes32 public immutable MINT_DATA_TYPEHASH;
+    /// @notice Internal constants for EIP-712: Typed structured
+    ///         data hashing and signing
+    bytes32 internal constant _MINT_DATA_TYPEHASH =
+        keccak256(
+            "MintParams(address minter,uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
+        );
+    bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
+    bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
+    bytes32 internal constant _VERSION_HASH = keccak256("1.0");
+    uint256 internal immutable _CHAIN_ID = block.chainid;
+    bytes32 internal immutable _DOMAIN_SEPARATOR;
 
     /**
      * @notice Ensure only tokens implementing IERC721SeaDrop can
@@ -94,21 +105,8 @@ contract SeaDrop is ISeaDrop {
      * @notice Constructor for the contract deployment.
      */
     constructor() {
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256(bytes("SeaDrop")),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this)
-            )
-        );
-
-        MINT_DATA_TYPEHASH = keccak256(
-            "MintParams(address minter, uint256 mintPrice, uint256 maxTotalMintableByWallet, uint256 startTime, uint256 endTime, uint256 dropStageIndex, uint256 feeBps, bool restrictFeeRecipients)"
-        );
+        // Derive the domain separator.
+        _DOMAIN_SEPARATOR = _deriveDomainSeparator();
     }
 
     /**
@@ -277,9 +275,22 @@ contract SeaDrop is ISeaDrop {
         // the address that signed the signature for this data.
         bytes32 digest = keccak256(
             abi.encodePacked(
+                // EIP-191: `0x19` as set prefix, `0x01` as version byte
                 bytes2(0x1901),
-                DOMAIN_SEPARATOR,
-                keccak256(abi.encode(MINT_DATA_TYPEHASH, minter, mintParams))
+                _domainSeparator(),
+                keccak256(
+                    abi.encode(
+                        _MINT_DATA_TYPEHASH,
+                        minter,
+                        mintParams.mintPrice,
+                        mintParams.maxTotalMintableByWallet,
+                        mintParams.startTime,
+                        mintParams.endTime,
+                        mintParams.dropStageIndex,
+                        mintParams.feeBps,
+                        mintParams.restrictFeeRecipients
+                    )
+                )
             )
         );
 
@@ -306,7 +317,7 @@ contract SeaDrop is ISeaDrop {
 
     /**
      * @notice Mint as an allowed token holder.
-     *         This will mark the token id as reedemed and will revert if the
+     *         This will mark the token id as redeemed and will revert if the
      *         same token id is attempted to be redeemed twice.
      *
      * @param nftContract          The nft contract to mint.
@@ -359,7 +370,7 @@ contract SeaDrop is ISeaDrop {
             );
 
             // Iterate through each allowedNftTokenId
-            // to ensure it is not already reedemed.
+            // to ensure it is not already redeemed.
             for (uint256 j = 0; j < mintQuantity; ) {
                 // Put the tokenId on the stack.
                 uint256 tokenId = mintParams.allowedNftTokenIds[j];
@@ -377,11 +388,11 @@ contract SeaDrop is ISeaDrop {
                 }
 
                 // Check that the token id has not already been redeemed.
-                bool redeemed = _tokenGatedRedeemed[nftContract][
-                    mintParams.allowedNftToken
-                ][tokenId];
-
-                if (redeemed == true) {
+                if (
+                    _tokenGatedRedeemed[nftContract][
+                        mintParams.allowedNftToken
+                    ][tokenId] == true
+                ) {
                     revert TokenGatedTokenIdAlreadyRedeemed(
                         nftContract,
                         mintParams.allowedNftToken,
@@ -389,8 +400,10 @@ contract SeaDrop is ISeaDrop {
                     );
                 }
 
-                // Mark the token id as reedemed.
-                redeemed = true;
+                // Mark the token id as redeemed.
+                _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
+                    tokenId
+                ] = true;
 
                 unchecked {
                     ++j;
@@ -461,11 +474,11 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Check that the wallet is allowed to mint the desired quantity.
      *
-     * @param nftContract       The nft contract.
-     * @param minter            The mint recipient.
-     * @param quantity          The number of tokens to mint.
-     * @param maxMintsPerWallet The allowed max mints per wallet.
-     * @param nftContract       The nft contract.
+     * @param nftContract            The nft contract.
+     * @param minter                 The mint recipient.
+     * @param quantity               The number of tokens to mint.
+     * @param maxMintsPerWallet      The max allowed mints per wallet.
+     * @param maxTokenSupplyForStage The max token supply for the drop stage.
      */
     function _checkMintQuantity(
         address nftContract,
@@ -595,6 +608,39 @@ contract SeaDrop is ISeaDrop {
             mintPrice,
             feeBps,
             dropStageIndex
+        );
+    }
+
+    /**
+     * @dev Internal view function to get the EIP-712 domain separator. If the
+     *      chainId matches the chainId set on deployment, the cached domain
+     *      separator will be returned; otherwise, it will be derived from
+     *      scratch.
+     *
+     * @return The domain separator.
+     */
+    function _domainSeparator() internal view returns (bytes32) {
+        // prettier-ignore
+        return block.chainid == _CHAIN_ID
+            ? _DOMAIN_SEPARATOR
+            : _deriveDomainSeparator();
+    }
+
+    /**
+     * @dev Internal view function to derive the EIP-712 domain separator.
+     *
+     * @return The derived domain separator.
+     */
+    function _deriveDomainSeparator() internal view returns (bytes32) {
+        // prettier-ignore
+        return keccak256(
+            abi.encode(
+                _EIP_712_DOMAIN_TYPEHASH,
+                _NAME_HASH,
+                _VERSION_HASH,
+                block.chainid,
+                address(this)
+            )
         );
     }
 
@@ -769,17 +815,15 @@ contract SeaDrop is ISeaDrop {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     * @param nftContract     The nft contract.
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
-        address nftContract,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
         // Set the drop stage.
-        _tokenGatedDrops[nftContract][allowedNftToken] = dropStage;
+        _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
 
         // If the maxTotalMintableByWallet is greater than zero
         // then we are setting an active drop stage.
@@ -790,11 +834,11 @@ contract SeaDrop is ISeaDrop {
             // Iterate through enumerated token gated tokens for nft contract.
             for (
                 uint256 i = 0;
-                i < _enumeratedTokenGatedTokens[nftContract].length;
+                i < _enumeratedTokenGatedTokens[msg.sender].length;
 
             ) {
                 if (
-                    _enumeratedTokenGatedTokens[nftContract][i] ==
+                    _enumeratedTokenGatedTokens[msg.sender][i] ==
                     allowedNftToken
                 ) {
                     // Set the bool to true if found.
@@ -807,16 +851,12 @@ contract SeaDrop is ISeaDrop {
 
             // Add allowedNftToken to enumerated list if not present.
             if (allowedNftTokenExistsInEnumeration == false) {
-                _enumeratedTokenGatedTokens[nftContract].push(allowedNftToken);
+                _enumeratedTokenGatedTokens[msg.sender].push(allowedNftToken);
             }
         }
 
         // Emit an event with the update.
-        emit TokenGatedDropStageUpdated(
-            nftContract,
-            allowedNftToken,
-            dropStage
-        );
+        emit TokenGatedDropStageUpdated(msg.sender, allowedNftToken, dropStage);
     }
 
     /**
@@ -878,7 +918,7 @@ contract SeaDrop is ISeaDrop {
             }
         }
 
-        // Create a mapping of the signers.
+        // Get the mapping of signers.
         mapping(address => bool) storage signersMap = _signers[msg.sender];
 
         // Delete old signers.
