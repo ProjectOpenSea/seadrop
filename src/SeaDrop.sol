@@ -305,7 +305,7 @@ contract SeaDrop is ISeaDrop {
 
     /**
      * @notice Mint as an allowed token holder.
-     *         This will mark the token id as reedemed and will revert if the
+     *         This will mark the token id as redeemed and will revert if the
      *         same token id is attempted to be redeemed twice.
      *
      * @param nftContract          The nft contract to mint.
@@ -358,7 +358,7 @@ contract SeaDrop is ISeaDrop {
             );
 
             // Iterate through each allowedNftTokenId
-            // to ensure it is not already reedemed.
+            // to ensure it is not already redeemed.
             for (uint256 j = 0; j < mintQuantity; ) {
                 // Put the tokenId on the stack.
                 uint256 tokenId = mintParams.allowedNftTokenIds[j];
@@ -388,8 +388,10 @@ contract SeaDrop is ISeaDrop {
                     );
                 }
 
-                // Mark the token id as reedemed.
-                redeemed = true;
+                // Mark the token id as redeemed.
+                _tokenGatedRedeemed[nftContract][
+                    mintParams.allowedNftToken
+                ][tokenId] = true;
 
                 unchecked {
                     ++j;
