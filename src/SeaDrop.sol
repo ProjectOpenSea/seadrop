@@ -554,6 +554,9 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient,
         uint256 feeBps
     ) internal {
+        // Return if the mint price is zero.
+        if (mintPrice == 0) return;
+
         // Get the creator payout address.
         address creatorPayoutAddress = _creatorPayoutAddresses[nftContract];
 
@@ -571,10 +574,12 @@ contract SeaDrop is ISeaDrop {
         // Get the creator payout amount.
         uint256 payoutAmount = total - feeAmount;
 
-        // Transfer to the fee recipient.
-        SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
+        // Transfer the fee amount to the fee recipient.
+        if (feeAmount > 0) {
+            SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
+        }
 
-        // Transfer  to the creator.
+        // Transfer the creator payout amount to the creator.
         SafeTransferLib.safeTransferETH(creatorPayoutAddress, payoutAmount);
     }
 
