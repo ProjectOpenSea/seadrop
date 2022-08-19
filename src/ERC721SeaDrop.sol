@@ -48,7 +48,7 @@ contract ERC721SeaDrop is
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) private _allowedSeaDrop;
 
-    /// @notice Track the enumrated allowed SeaDrop addresses.
+    /// @notice Track the enumerated allowed SeaDrop addresses.
     address[] internal _enumeratedAllowedSeaDrop;
 
     /**
