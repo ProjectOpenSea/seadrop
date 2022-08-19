@@ -542,11 +542,15 @@ contract SeaDrop is ISeaDrop {
      * @notice Split the payment payout for the creator and fee recipient.
      *
      * @param nftContract  The nft contract.
+     * @param quantity     The number of tokens to mint.
+     * @param mintPrice    The mint price per token.
      * @param feeRecipient The fee recipient.
      * @param feeBps       The fee basis points.
      */
     function _splitPayout(
         address nftContract,
+        uint256 quantity,
+        uint256 mintPrice,
         address feeRecipient,
         uint256 feeBps
     ) internal {
@@ -558,11 +562,14 @@ contract SeaDrop is ISeaDrop {
             revert CreatorPayoutAddressCannotBeZeroAddress();
         }
 
+        // Get the total amount to pay.
+        uint256 total = quantity * mintPrice;
+
         // Get the fee amount.
-        uint256 feeAmount = (msg.value * feeBps) / 10_000;
+        uint256 feeAmount = (total * feeBps) / 10_000;
 
         // Get the creator payout amount.
-        uint256 payoutAmount = msg.value - feeAmount;
+        uint256 payoutAmount = total - feeAmount;
 
         // Transfer to the fee recipient.
         SafeTransferLib.safeTransferETH(feeRecipient, feeAmount);
@@ -593,7 +600,7 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient
     ) internal {
         // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, feeRecipient, feeBps);
+        _splitPayout(nftContract, quantity, mintPrice, feeRecipient, feeBps);
 
         // Mint the token(s).
         IERC721SeaDrop(nftContract).mintSeaDrop(minter, quantity);
