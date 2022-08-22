@@ -3,7 +3,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-contract TestHelper is Test {
+import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
+
+contract TestHelper is Test, SeaDropErrorsAndEvents {
     address creator = makeAddr("creator");
 
     struct FuzzInputs {

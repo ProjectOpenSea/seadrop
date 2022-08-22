@@ -1,19 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
-
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
-
-import { TestERC721 } from "test/foundry/utils/TestERC721.sol";
 
 import { SeaDrop } from "seadrop/SeaDrop.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
-
-import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
-
-import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
 import {
     AllowListData,
@@ -22,7 +14,7 @@ import {
 
 import { Merkle } from "murky/Merkle.sol";
 
-contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
+contract ERC721DropTest is TestHelper {
     SeaDrop seadrop;
     ERC721SeaDrop test;
 
