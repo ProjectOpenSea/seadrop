@@ -112,15 +112,15 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Mint a public drop.
      *
-     * @param nftContract   The nft contract to mint.
-     * @param feeRecipient  The fee recipient.
-     * @param minter        The mint recipient.
-     * @param quantity      The number of tokens to mint.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
+     * @param quantity         The number of tokens to mint.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        address minter,
+        address minterIfNotPayer,
         uint256 quantity
     ) external payable override {
         // Get the public drop data.
@@ -137,6 +137,11 @@ contract SeaDrop is ISeaDrop {
 
         // Validate payment is correct for number minted.
         _checkCorrectPayment(quantity, publicDrop.mintPrice);
+
+        // Get the minter address.
+        address minter = minterIfNotPayer != address(0)
+            ? minterIfNotPayer
+            : msg.sender;
 
         // Check that the minter is allowed to mint the desired quantity.
         _checkMintQuantity(
@@ -169,17 +174,17 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Mint from an allow list.
      *
-     * @param nftContract  The nft contract to mint.
-     * @param feeRecipient The fee recipient.
-     * @param minter       The mint recipient.
-     * @param quantity     The number of tokens to mint.
-     * @param mintParams   The mint parameters.
-     * @param proof        The proof for the leaf of the allow list.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
+     * @param quantity         The number of tokens to mint.
+     * @param mintParams       The mint parameters.
+     * @param proof            The proof for the leaf of the allow list.
      */
     function mintAllowList(
         address nftContract,
         address feeRecipient,
-        address minter,
+        address minterIfNotPayer,
         uint256 quantity,
         MintParams calldata mintParams,
         bytes32[] calldata proof
@@ -189,6 +194,11 @@ contract SeaDrop is ISeaDrop {
 
         // Validate payment is correct for number minted.
         _checkCorrectPayment(quantity, mintParams.mintPrice);
+
+        // Get the minter address.
+        address minter = minterIfNotPayer != address(0)
+            ? minterIfNotPayer
+            : msg.sender;
 
         // Check that the minter is allowed to mint the desired quantity.
         _checkMintQuantity(
@@ -232,18 +242,18 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Mint with a server side signature.
      *
-     * @param nftContract   The nft contract to mint.
-     * @param feeRecipient  The fee recipient.
-     * @param minter        The mint recipient.
-     * @param quantity      The number of tokens to mint.
-     * @param mintParams    The mint parameters.
-     * @param signature     The server side signature, must be an allowed
-     *                      signer.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
+     * @param quantity         The number of tokens to mint.
+     * @param mintParams       The mint parameters.
+     * @param signature        The server side signature, must be an allowed
+     *                         signer.
      */
     function mintSigned(
         address nftContract,
         address feeRecipient,
-        address minter,
+        address minterIfNotPayer,
         uint256 quantity,
         MintParams calldata mintParams,
         bytes calldata signature
@@ -253,6 +263,11 @@ contract SeaDrop is ISeaDrop {
 
         // Validate payment is correct for number minted.
         _checkCorrectPayment(quantity, mintParams.mintPrice);
+
+        // Get the minter address.
+        address minter = minterIfNotPayer != address(0)
+            ? minterIfNotPayer
+            : msg.sender;
 
         // Check that the minter is allowed to mint the desired quantity.
         _checkMintQuantity(
@@ -317,119 +332,105 @@ contract SeaDrop is ISeaDrop {
 
     /**
      * @notice Mint as an allowed token holder.
-     *         This will mark the token id as redeemed and will revert if the
+     *         This will mark the token ids as redeemed and will revert if the
      *         same token id is attempted to be redeemed twice.
      *
-     * @param nftContract          The nft contract to mint.
-     * @param feeRecipient         The fee recipient.
-     * @param minter               The mint recipient.
-     * @param tokenGatedMintParams The token gated mint params.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
+     * @param mintParams       The token gated mint params.
      */
     function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
-        address minter,
-        TokenGatedMintParams[] calldata tokenGatedMintParams
+        address minterIfNotPayer,
+        TokenGatedMintParams calldata mintParams
     ) external payable override {
-        // Track the total mint cost to compare against value sent with tx.
-        uint256 totalCost;
+        // Get the minter address.
+        address minter = minterIfNotPayer != address(0)
+            ? minterIfNotPayer
+            : msg.sender;
 
-        // Iterate through each allowedNftToken.
-        for (uint256 i = 0; i < tokenGatedMintParams.length; ) {
-            // Set the mintParams to a variable.
-            TokenGatedMintParams calldata mintParams = tokenGatedMintParams[i];
+        // Set the dropStage to a variable.
+        TokenGatedDropStage storage dropStage = _tokenGatedDrops[nftContract][
+            mintParams.allowedNftToken
+        ];
 
-            // Set the dropStage to a variable.
-            TokenGatedDropStage storage dropStage = _tokenGatedDrops[
-                nftContract
-            ][mintParams.allowedNftToken];
+        // Validate that the dropStage is active.
+        _checkActive(dropStage.startTime, dropStage.endTime);
 
-            // Validate that the dropStage is active.
-            _checkActive(dropStage.startTime, dropStage.endTime);
+        // Check that the fee recipient is allowed if restricted.
+        _checkFeeRecipientIsAllowed(
+            nftContract,
+            feeRecipient,
+            dropStage.restrictFeeRecipients
+        );
 
-            // Check that the fee recipient is allowed if restricted.
-            _checkFeeRecipientIsAllowed(
-                nftContract,
-                feeRecipient,
-                dropStage.restrictFeeRecipients
-            );
+        // Put the mint quantity on the stack for more efficient access.
+        uint256 mintQuantity = mintParams.allowedNftTokenIds.length;
 
-            // Put the mint quantity on the stack for more efficient access.
-            uint256 mintQuantity = mintParams.allowedNftTokenIds.length;
+        // Validate payment is correct for number minted.
+        _checkCorrectPayment(mintQuantity, dropStage.mintPrice);
 
-            // Add to total cost.
-            totalCost += mintQuantity * dropStage.mintPrice;
+        // Check that the minter is allowed to mint the desired quantity.
+        _checkMintQuantity(
+            nftContract,
+            minter,
+            mintQuantity,
+            dropStage.maxTotalMintableByWallet,
+            dropStage.maxTokenSupplyForStage
+        );
 
-            // Check that the minter is allowed to mint the desired quantity.
-            _checkMintQuantity(
-                nftContract,
-                minter,
-                mintQuantity,
-                dropStage.maxTotalMintableByWallet,
-                dropStage.maxTokenSupplyForStage
-            );
+        // Iterate through each allowedNftTokenId
+        // to ensure it is not already redeemed.
+        for (uint256 j = 0; j < mintQuantity; ) {
+            // Put the tokenId on the stack.
+            uint256 tokenId = mintParams.allowedNftTokenIds[j];
 
-            // Iterate through each allowedNftTokenId
-            // to ensure it is not already redeemed.
-            for (uint256 j = 0; j < mintQuantity; ) {
-                // Put the tokenId on the stack.
-                uint256 tokenId = mintParams.allowedNftTokenIds[j];
+            // Check that the sender is the owner of the allowedNftTokenId.
+            if (
+                IERC721(mintParams.allowedNftToken).ownerOf(tokenId) != minter
+            ) {
+                revert TokenGatedNotTokenOwner(
+                    nftContract,
+                    mintParams.allowedNftToken,
+                    tokenId
+                );
+            }
 
-                // Check that the sender is the owner of the allowedNftTokenId.
-                if (
-                    IERC721(mintParams.allowedNftToken).ownerOf(tokenId) !=
-                    minter
-                ) {
-                    revert TokenGatedNotTokenOwner(
-                        nftContract,
-                        mintParams.allowedNftToken,
-                        tokenId
-                    );
-                }
-
-                // Check that the token id has not already been redeemed.
-                if (
-                    _tokenGatedRedeemed[nftContract][
-                        mintParams.allowedNftToken
-                    ][tokenId] == true
-                ) {
-                    revert TokenGatedTokenIdAlreadyRedeemed(
-                        nftContract,
-                        mintParams.allowedNftToken,
-                        tokenId
-                    );
-                }
-
-                // Mark the token id as redeemed.
+            // Check that the token id has not already been redeemed.
+            if (
                 _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
                     tokenId
-                ] = true;
-
-                unchecked {
-                    ++j;
-                }
+                ] == true
+            ) {
+                revert TokenGatedTokenIdAlreadyRedeemed(
+                    nftContract,
+                    mintParams.allowedNftToken,
+                    tokenId
+                );
             }
 
-            // Split the payout, mint the token, emit an event.
-            _payAndMint(
-                nftContract,
-                minter,
-                mintQuantity,
-                dropStage.mintPrice,
-                dropStage.dropStageIndex,
-                dropStage.feeBps,
-                feeRecipient
-            );
+            // Mark the token id as redeemed.
+            _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
+                tokenId
+            ] = true;
 
             unchecked {
-                ++i;
+                ++j;
             }
         }
 
-        // Validate correct payment.
-        if (msg.value != totalCost) {
-            revert IncorrectPayment(msg.value, totalCost);
-        }
+        // Split the payout, mint the token, emit an event.
+        _payAndMint(
+            nftContract,
+            minter,
+            mintQuantity,
+            dropStage.mintPrice,
+            dropStage.dropStageIndex,
+            dropStage.feeBps,
+            feeRecipient
+        );
     }
 
     /**

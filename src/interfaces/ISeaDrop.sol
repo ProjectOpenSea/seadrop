@@ -15,15 +15,15 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Mint a public drop.
      *
-     * @param nftContract   The nft contract to mint.
-     * @param feeRecipient  The fee recipient.
-     * @param minter        The mint recipient.
-     * @param quantity      The number of tokens to mint.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
+     * @param quantity         The number of tokens to mint.
      */
     function mintPublic(
         address nftContract,
         address feeRecipient,
-        address minter,
+        address minterIfNotPayer,
         uint256 quantity
     ) external payable;
 
@@ -32,7 +32,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *
      * @param nftContract   The nft contract to mint.
      * @param feeRecipient  The fee recipient.
-     * @param minter        The mint recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
      * @param quantity      The number of tokens to mint.
      * @param mintParams    The mint parameters.
      * @param proof         The proof for the leaf of the allow list.
@@ -40,7 +40,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     function mintAllowList(
         address nftContract,
         address feeRecipient,
-        address minter,
+        address minterIfNotPayer,
         uint256 quantity,
         MintParams calldata mintParams,
         bytes32[] calldata proof
@@ -51,7 +51,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *
      * @param nftContract   The nft contract to mint.
      * @param feeRecipient  The fee recipient.
-     * @param minter        The mint recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
      * @param quantity      The number of tokens to mint.
      * @param mintParams    The mint parameters.
      * @param signature     The server side signature, must be an allowed signer.
@@ -59,7 +59,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     function mintSigned(
         address nftContract,
         address feeRecipient,
-        address minter,
+        address minterIfNotPayer,
         uint256 quantity,
         MintParams calldata mintParams,
         bytes calldata signature
@@ -70,16 +70,16 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *         This will mark the token id as reedemed and will revert if the
      *         same token id is attempted to be redeemed twice.
      *
-     * @param nftContract          The nft contract to mint.
-     * @param feeRecipient         The fee recipient.
-     * @param minter               The mint recipient.
-     * @param tokenGatedMintParams The token gated mint params.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
+     * @param minterIfNotPayer The mint recipient if different than the payer.
+     * @param mintParams       The token gated mint params.
      */
     function mintAllowedTokenHolder(
         address nftContract,
         address feeRecipient,
-        address minter,
-        TokenGatedMintParams[] calldata tokenGatedMintParams
+        address minterIfNotPayer,
+        TokenGatedMintParams calldata mintParams
     ) external payable;
 
     /**
