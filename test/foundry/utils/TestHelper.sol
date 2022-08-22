@@ -3,9 +3,16 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
+import { SeaDrop } from "seadrop/SeaDrop.sol";
+
+import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
 contract TestHelper is Test, SeaDropErrorsAndEvents {
+    SeaDrop seadrop;
+    ERC721SeaDrop token;
+
     address creator = makeAddr("creator");
 
     struct FuzzInputs {

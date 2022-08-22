@@ -12,9 +12,6 @@ import { AllowListData, MintParams } from "seadrop/lib/SeaDropStructs.sol";
 import { Merkle } from "murky/Merkle.sol";
 
 contract ERC721DropTest is TestHelper {
-    SeaDrop seadrop;
-    ERC721SeaDrop test;
-
     modifier validateAllowList(FuzzInputs memory args) {
         for (uint256 i = 0; i < 10; i++) {
             vm.assume(
@@ -34,13 +31,13 @@ contract ERC721DropTest is TestHelper {
         // Deploy test ERC721SeaDrop.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        test = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+        token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
 
         // Set maxSupply to 1000.
-        test.setMaxSupply(1000);
+        token.setMaxSupply(1000);
 
         // Set creator payout address.
-        test.updateCreatorPayoutAddress(address(seadrop), creator);
+        token.updateCreatorPayoutAddress(address(seadrop), creator);
     }
 
     function _createMerkleRootAndProof(
@@ -107,7 +104,7 @@ contract ERC721DropTest is TestHelper {
             "test"
         );
 
-        vm.prank(address(test));
+        vm.prank(address(token));
 
         // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
@@ -118,7 +115,7 @@ contract ERC721DropTest is TestHelper {
 
         // Mint a token to the first address of the allowList.
         seadrop.mintAllowList{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.allowList[0],
             args.numMints,
@@ -126,7 +123,7 @@ contract ERC721DropTest is TestHelper {
             proof
         );
 
-        assertEq(test.balanceOf(args.allowList[0]), args.numMints);
+        assertEq(token.balanceOf(args.allowList[0]), args.numMints);
     }
 
     function testMintAllowList_revertUnauthorizedMinter(FuzzInputs memory args)
@@ -171,7 +168,7 @@ contract ERC721DropTest is TestHelper {
             "test"
         );
 
-        vm.prank(address(test));
+        vm.prank(address(token));
 
         // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
@@ -184,7 +181,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to mint a token to a non-allowlist address.
         seadrop.mintAllowList{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.minter, // fuzzed minter is not on allowList
             args.numMints,
@@ -235,7 +232,7 @@ contract ERC721DropTest is TestHelper {
             "test"
         );
 
-        vm.prank(address(test));
+        vm.prank(address(token));
 
         // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
@@ -250,7 +247,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to mint a token to a non-allowlist address.
         seadrop.mintAllowList{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.allowList[4], // proof refers to address at allowlist index 0.
             args.numMints,
@@ -299,7 +296,7 @@ contract ERC721DropTest is TestHelper {
             "test"
         );
 
-        vm.prank(address(test));
+        vm.prank(address(token));
 
         // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
@@ -316,7 +313,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to call mintAllowList with the zero address as the fee recipient.
         seadrop.mintAllowList{ value: mintValue }(
-            address(test),
+            address(token),
             address(0),
             args.allowList[0],
             args.numMints,
@@ -365,7 +362,7 @@ contract ERC721DropTest is TestHelper {
             "test"
         );
 
-        vm.prank(address(test));
+        vm.prank(address(token));
 
         // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
@@ -382,7 +379,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to call mintAllowList with an unauthorized fee recipient.
         seadrop.mintAllowList{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.allowList[0],
             args.numMints,
@@ -431,7 +428,7 @@ contract ERC721DropTest is TestHelper {
             "test"
         );
 
-        vm.prank(address(test));
+        vm.prank(address(token));
 
         // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
@@ -452,7 +449,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to mint more than the maxMintsPerWallet.
         seadrop.mintAllowList{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.allowList[0],
             100,
@@ -503,7 +500,7 @@ contract ERC721DropTest is TestHelper {
             "test"
         );
 
-        vm.prank(address(test));
+        vm.prank(address(token));
 
         // Set the allowList of the test erc721 contract.
         seadrop.updateAllowList(allowListData);
@@ -512,7 +509,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to mint more than the maxMintsPerWallet.
         seadrop.mintAllowList(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.allowList[0],
             args.numMints,
@@ -521,7 +518,7 @@ contract ERC721DropTest is TestHelper {
         );
 
         // Check minter token balance increased.
-        assertEq(test.balanceOf(args.allowList[0]), args.numMints);
+        assertEq(token.balanceOf(args.allowList[0]), args.numMints);
     }
 
     // testMintAllowList_differentPayerThanMinter

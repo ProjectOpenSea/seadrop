@@ -15,9 +15,6 @@ import {
 } from "seadrop/lib/SeaDropStructs.sol";
 
 contract ERC721DropTest is TestHelper {
-    SeaDrop seadrop;
-    ERC721SeaDrop test;
-
     struct FuzzInputsAllowedTokenHolders {
         uint16 numMints;
         address minter;
@@ -49,13 +46,13 @@ contract ERC721DropTest is TestHelper {
         // Deploy test ERC721SeaDrop.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        test = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+        token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
 
         // Set maxSupply to 1000.
-        test.setMaxSupply(1000);
+        token.setMaxSupply(1000);
 
         // Set creator payout address.
-        test.updateCreatorPayoutAddress(address(seadrop), creator);
+        token.updateCreatorPayoutAddress(address(seadrop), creator);
     }
 
     function _deployAndMintGateToken(address minter, uint256[] memory tokenIds)
@@ -106,7 +103,7 @@ contract ERC721DropTest is TestHelper {
             // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
             address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
 
-            vm.prank(address(test));
+            vm.prank(address(token));
             // Update token gated drop for the deployed gateToken.
             seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
 
@@ -124,7 +121,7 @@ contract ERC721DropTest is TestHelper {
 
         // Call mintAllowedTokenHolder.
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.minter,
             tokenGatedMintParamsArray
@@ -134,7 +131,7 @@ contract ERC721DropTest is TestHelper {
         uint256 mintQuantity = args.numAllowedNftToken * args.numMints;
 
         // Check minter token balance increased.
-        assertEq(test.balanceOf(args.minter), mintQuantity);
+        assertEq(token.balanceOf(args.minter), mintQuantity);
     }
 
     function testMintAllowedTokenHolder_revertAlreadyRedeemed(
@@ -169,7 +166,7 @@ contract ERC721DropTest is TestHelper {
             // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
             address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
 
-            vm.prank(address(test));
+            vm.prank(address(token));
             // Update token gated drop for the deployed gateToken.
             seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
 
@@ -187,7 +184,7 @@ contract ERC721DropTest is TestHelper {
 
         // Call mintAllowedTokenHolder.
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.minter,
             tokenGatedMintParamsArray
@@ -197,7 +194,7 @@ contract ERC721DropTest is TestHelper {
         uint256 mintQuantity = args.numAllowedNftToken * args.numMints;
 
         // Check minter token balance increased.
-        assertEq(test.balanceOf(args.minter), mintQuantity);
+        assertEq(token.balanceOf(args.minter), mintQuantity);
 
         // Create TokenGatedMintParams array of length 1 with the first
         // TokenGatedMintParams of the original array.
@@ -211,7 +208,7 @@ contract ERC721DropTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(
                 TokenGatedTokenIdAlreadyRedeemed.selector,
-                address(test),
+                address(token),
                 revertTokenGatedMintParamsArray[0].allowedNftToken,
                 revertTokenGatedMintParamsArray[0].allowedNftTokenIds[0]
             )
@@ -220,7 +217,7 @@ contract ERC721DropTest is TestHelper {
         // Attempt to call mintAllowedTokenHolder with the
         // TokenGatedMintParams from the previous call.
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
-            address(test),
+            address(token),
             args.feeRecipient,
             args.minter,
             tokenGatedMintParamsArray
