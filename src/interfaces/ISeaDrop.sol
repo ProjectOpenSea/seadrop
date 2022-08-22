@@ -30,12 +30,12 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Mint from an allow list.
      *
-     * @param nftContract   The nft contract to mint.
-     * @param feeRecipient  The fee recipient.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
      * @param minterIfNotPayer The mint recipient if different than the payer.
-     * @param quantity      The number of tokens to mint.
-     * @param mintParams    The mint parameters.
-     * @param proof         The proof for the leaf of the allow list.
+     * @param quantity         The number of tokens to mint.
+     * @param mintParams       The mint parameters.
+     * @param proof            The proof for the leaf of the allow list.
      */
     function mintAllowList(
         address nftContract,
@@ -49,12 +49,13 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Mint with a server side signature.
      *
-     * @param nftContract   The nft contract to mint.
-     * @param feeRecipient  The fee recipient.
+     * @param nftContract      The nft contract to mint.
+     * @param feeRecipient     The fee recipient.
      * @param minterIfNotPayer The mint recipient if different than the payer.
-     * @param quantity      The number of tokens to mint.
-     * @param mintParams    The mint parameters.
-     * @param signature     The server side signature, must be an allowed signer.
+     * @param quantity         The number of tokens to mint.
+     * @param mintParams       The mint parameters.
+     * @param signature        The server side signature, must be an allowed
+     *                         signer.
      */
     function mintSigned(
         address nftContract,
