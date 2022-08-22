@@ -334,7 +334,7 @@ contract ERC721DropTest is TestHelper {
             1,
             1000,
             100, // fee (1%)
-            false // if false, allow any fee recipient
+            true // if true, only allowed fee recipients
         );
 
         bytes32[] memory allowListTuples = new bytes32[](10);
