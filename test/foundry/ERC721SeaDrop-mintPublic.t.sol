@@ -13,21 +13,18 @@ import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
 
 contract ERC721DropTest is TestHelper {
     function setUp() public {
-        // Deploy SeaDrop.
-        seadrop = new SeaDrop();
-
-        // Deploy test ERC721SeaDrop.
+        // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
         token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
 
-        // Set maxSupply to 1000.
+        // Set the max supply to 1000.
         token.setMaxSupply(1000);
 
-        // Set creator payout address.
+        // Set the creator payout address.
         token.updateCreatorPayoutAddress(address(seadrop), creator);
 
-        // Create public drop object.
+        // Create the public drop stage.
         PublicDrop memory publicDrop = PublicDrop(
             0.1 ether, // mint price
             uint64(block.timestamp), // start time
@@ -36,10 +33,10 @@ contract ERC721DropTest is TestHelper {
             false // if false, allow any fee recipient
         );
 
-        // Impersonate test erc721 contract.
+        // Impersonate the token contract.
         vm.prank(address(token));
 
-        // Set the public drop for the erc721 contract.
+        // Set the public drop for the token contract.
         seadrop.updatePublicDrop(publicDrop);
     }
 
@@ -184,4 +181,6 @@ contract ERC721DropTest is TestHelper {
 
         token.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }
+
+    // testMintPublic_revertFeeRecipientNotAllowed
 }

@@ -5,3 +5,4 @@ pragma solidity ^0.8.13;
 // testMintSigned_unknownSigner
 // testMintSigned_differentPayerThanMinter
 // testMintSigned_freeMint
+// testMintSigned_revertFeeRecipientNotAllowed

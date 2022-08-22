@@ -25,18 +25,15 @@ contract ERC721DropTest is TestHelper {
     }
 
     function setUp() public {
-        // Deploy SeaDrop.
-        seadrop = new SeaDrop();
-
-        // Deploy test ERC721SeaDrop.
+        // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
         token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
 
-        // Set maxSupply to 1000.
+        // Set the max supply to 1000.
         token.setMaxSupply(1000);
 
-        // Set creator payout address.
+        // Set the creator payout address.
         token.updateCreatorPayoutAddress(address(seadrop), creator);
     }
 
@@ -106,7 +103,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
 
-        // Set the allowList of the test erc721 contract.
+        // Set the allow list of the token contract.
         seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
@@ -170,7 +167,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
 
-        // Set the allowList of the test erc721 contract.
+        // Set the allow list of the token contract.
         seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
@@ -234,7 +231,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
 
-        // Set the allowList of the test erc721 contract.
+        // Set the allow list of the token contract.
         seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
@@ -298,7 +295,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
 
-        // Set the allowList of the test erc721 contract.
+        // Set the allow list of the token contract.
         seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
@@ -364,7 +361,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
 
-        // Set the allowList of the test erc721 contract.
+        // Set the allow list of the token contract.
         seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
@@ -430,7 +427,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
 
-        // Set the allowList of the test erc721 contract.
+        // Set the allow list of the token contract.
         seadrop.updateAllowList(allowListData);
 
         uint256 mintValue = 100 * mintParams.mintPrice;
@@ -502,7 +499,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
 
-        // Set the allowList of the test erc721 contract.
+        // Set the allow list of the token contract.
         seadrop.updateAllowList(allowListData);
 
         hoax(args.allowList[0], 100 ether);
