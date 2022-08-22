@@ -7,10 +7,7 @@ import { SeaDrop } from "seadrop/SeaDrop.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
-import {
-    AllowListData,
-    MintParams
-} from "seadrop/lib/SeaDropStructs.sol";
+import { AllowListData, MintParams } from "seadrop/lib/SeaDropStructs.sol";
 
 import { Merkle } from "murky/Merkle.sol";
 
@@ -526,4 +523,6 @@ contract ERC721DropTest is TestHelper {
         // Check minter token balance increased.
         assertEq(test.balanceOf(args.allowList[0]), args.numMints);
     }
+
+    // testMintAllowList_differentPayerThanMinter
 }

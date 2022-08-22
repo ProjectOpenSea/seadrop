@@ -9,9 +9,7 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
-import {
-    PublicDrop
-} from "seadrop/lib/SeaDropStructs.sol";
+import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
 
 contract ERC721DropTest is TestHelper {
     SeaDrop seadrop;
@@ -108,7 +106,7 @@ contract ERC721DropTest is TestHelper {
     {
         // Create public drop object with free mint.
         PublicDrop memory publicDrop = PublicDrop(
-            0 ether, // mint price
+            0 ether, // mint price (free)
             uint64(block.timestamp), // start time
             10, // max mints per wallet
             100, // fee (1%)
@@ -138,11 +136,13 @@ contract ERC721DropTest is TestHelper {
     {
         PublicDrop memory publicDrop = seadrop.getPublicDrop(address(test));
 
-        hoax(args.allowList[1], 100 ether);
+        address payer = makeAddr("payer");
+
+        hoax(payer, 100 ether);
 
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
-        uint256 prePayerBalance = args.allowList[1].balance;
+        uint256 prePayerBalance = payer.balance;
         uint256 preFeeRecipientBalance = args.feeRecipient.balance;
         uint256 preCreatorBalance = creator.balance;
 
@@ -157,7 +157,7 @@ contract ERC721DropTest is TestHelper {
         assertEq(test.balanceOf(args.minter), args.numMints);
 
         // Check payer ether balance decreased.
-        assertEq(prePayerBalance - mintValue, args.allowList[1].balance);
+        assertEq(prePayerBalance - mintValue, payer.balance);
 
         // Check fee recipient ether balance increased.
         uint256 feeAmount = (mintValue * 100) / 10_000;
