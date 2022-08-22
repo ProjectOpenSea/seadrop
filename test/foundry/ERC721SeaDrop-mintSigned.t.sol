@@ -23,7 +23,6 @@ contract ERC721DropTest is TestHelper {
         address feeRecipient;
         string signerNameSeed;
     }
-
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _MINT_DATA_TYPEHASH =
