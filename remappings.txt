@@ -1,6 +1,9 @@
+ERC721A/=lib/ERC721A/contracts/
+ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
-utility-contracts/=lib/utility-contracts/src
-solmate/=lib/solmate/src
-primary-drops/=src
-ERC721A/=lib/ERC721A/contracts
-seadrop/=src
+murky/=lib/murky/src/
+openzeppelin-contracts/=lib/openzeppelin-contracts/
+seadrop/=src/
+solady/=lib/solady/src/
+solmate/=lib/solmate/src/
+utility-contracts/=lib/utility-contracts/src/

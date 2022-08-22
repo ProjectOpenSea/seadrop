@@ -23,9 +23,9 @@ import {
     TokenGatedDropStage
 } from "seadrop/lib/SeaDropStructs.sol";
 
-import { Merkle } from "lib/murky/src/Merkle.sol";
+import { Merkle } from "murky/Merkle.sol";
 
-import { ERC721A } from "lib/ERC721A/contracts/ERC721A.sol";
+import { ERC721A } from "ERC721A/ERC721A.sol";
 
 contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
     SeaDrop seadrop;
