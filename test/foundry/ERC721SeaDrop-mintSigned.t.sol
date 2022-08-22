@@ -158,9 +158,107 @@ contract ERC721DropTest is TestHelper {
 
         assertEq(token.balanceOf(args.minter), args.numMints);
     }
+
+    function testMintSigned_freeMint(FuzzInputsSigners memory args)
+        public
+        validateFuzzInputsSigners(args)
+    {
+        // Create a MintParams object with a mint price of 0 ether.
+        MintParams memory mintParams = MintParams(
+            0 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            false // if false, allow any fee recipient
+        );
+
+        // Get the signature components.
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            args.signerNameSeed,
+            args.minter,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Imperonate the token contract to update the signers.
+        vm.prank(address(token));
+
+        // Update the approved signers of the token contract.
+        address[] memory signers = new address[](1);
+        signers[0] = makeAddr(args.signerNameSeed);
+        seadrop.updateSigners(signers);
+
+        hoax(args.payer, 100 ether);
+
+        seadrop.mintSigned(
+            address(token),
+            args.feeRecipient,
+            args.minter,
+            args.numMints,
+            mintParams,
+            signature
+        );
+
+        assertEq(token.balanceOf(args.minter), args.numMints);
+    }
+
+    function testMintSigned_revertFeeRecipientNotAllowed(
+        FuzzInputsSigners memory args
+    ) public validateFuzzInputsSigners(args) {
+        // Create a MintParams object with a mint price of 0 ether.
+        MintParams memory mintParams = MintParams(
+            0 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        // Get the signature components.
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            args.signerNameSeed,
+            args.minter,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Imperonate the token contract to update the signers.
+        vm.prank(address(token));
+
+        // Update the approved signers of the token contract.
+        address[] memory signers = new address[](1);
+        signers[0] = makeAddr(args.signerNameSeed);
+        seadrop.updateSigners(signers);
+
+        hoax(args.payer, 100 ether);
+
+        // Expect the subsequent call to mintSigned to revert with error
+        // FeeRecipientNotAllowed
+        vm.expectRevert(
+            abi.encodeWithSelector(FeeRecipientNotAllowed.selector)
+        );
+
+        seadrop.mintSigned(
+            address(token),
+            args.feeRecipient,
+            args.minter,
+            args.numMints,
+            mintParams,
+            signature
+        );
+    }
 }
-// testMintSigned
+
 // testMintSigned_unknownSigner
 // testMintSigned_differentPayerThanMinter
-// testMintSigned_freeMint
 // testMintSigned_revertFeeRecipientNotAllowed
