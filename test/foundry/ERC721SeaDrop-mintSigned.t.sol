@@ -3,13 +3,11 @@ pragma solidity ^0.8.13;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { SeaDrop } from "seadrop/SeaDrop.sol";
-
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
-import { PublicDrop, MintParams } from "seadrop/lib/SeaDropStructs.sol";
+import { MintParams } from "seadrop/lib/SeaDropStructs.sol";
 
 import {
     ECDSA
@@ -19,10 +17,11 @@ contract ERC721DropTest is TestHelper {
     using ECDSA for bytes32;
 
     struct FuzzInputsSigners {
-        address caller;
+        address payer;
+        address minter;
         uint40 numMints;
         address feeRecipient;
-        string[2] nameSeeds;
+        string signerNameSeed;
     }
 
     /// @notice Internal constants for EIP-712: Typed structured
@@ -45,80 +44,56 @@ contract ERC721DropTest is TestHelper {
         vm.assume(
             args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
         );
-        // vm.assume(bytes(args.nameSeeds[0]) != bytes(args.nameSeeds[1]));
-        vm.assume(
-            args.caller != args.feeRecipient &&
-                args.caller != creator &&
-                args.feeRecipient != creator
-        );
+        vm.assume(args.minter != address(0));
         _;
     }
 
     function setUp() public {
-        // Deploy SeaDrop.
-        seadrop = new SeaDrop();
-
-        // Deploy test ERC721SeaDrop.
+        // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
         token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
 
-        // Set maxSupply to 1000.
+        // Set the max supply to 1000.
         token.setMaxSupply(1000);
 
-        // Set creator payout address.
+        // Set the creator payout address.
         token.updateCreatorPayoutAddress(address(seadrop), creator);
-
-        // Create public drop object.
-        PublicDrop memory publicDrop = PublicDrop(
-            0.1 ether, // mint price
-            uint64(block.timestamp), // start time
-            10, // max mints per wallet
-            100, // fee (1%)
-            false // if false, allow any fee recipient
-        );
-
-        // Impersonate test erc721 contract.
-        vm.prank(address(token));
-
-        // Set the public drop for the erc721 contract.
-        seadrop.updatePublicDrop(publicDrop);
     }
 
-    function getSignatureComponents(
+    function _getSignatureComponents(
         string memory name,
-        address caller,
+        address minter,
         MintParams memory mintParams
     )
         internal
         returns (
             bytes32 r,
             bytes32 s,
-            uint8 v,
-            bytes32 structHash
+            uint8 v
         )
     {
-        (address signer, uint256 pk) = makeAddrAndKey(name);
-        bytes32 mintDataTypeHash = _MINT_DATA_TYPEHASH;
-        structHash = keccak256(
-            abi.encode(
-                mintDataTypeHash,
-                caller,
-                mintParams.mintPrice,
-                mintParams.maxTotalMintableByWallet,
-                mintParams.startTime,
-                mintParams.endTime,
-                mintParams.dropStageIndex,
-                mintParams.feeBps,
-                mintParams.restrictFeeRecipients
+        (, uint256 pk) = makeAddrAndKey(name);
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                bytes2(0x1901),
+                _DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        _MINT_DATA_TYPEHASH,
+                        minter,
+                        mintParams.mintPrice,
+                        mintParams.maxTotalMintableByWallet,
+                        mintParams.startTime,
+                        mintParams.endTime,
+                        mintParams.dropStageIndex,
+                        mintParams.feeBps,
+                        mintParams.restrictFeeRecipients
+                    )
+                )
             )
         );
-        (v, r, s) = vm.sign(
-            pk,
-            keccak256(
-                abi.encodePacked(bytes2(0x1901), _DOMAIN_SEPARATOR, structHash)
-            )
-        );
+        (v, r, s) = vm.sign(pk, digest);
     }
 
     function _deriveDomainSeparator() internal view returns (bytes32) {
@@ -129,7 +104,7 @@ contract ERC721DropTest is TestHelper {
                 _NAME_HASH,
                 _VERSION_HASH,
                 block.chainid,
-                address(this)
+                address(seadrop)
             )
         );
     }
@@ -138,82 +113,51 @@ contract ERC721DropTest is TestHelper {
         public
         validateFuzzInputsSigners(args)
     {
-        uint256 numSigners = args.nameSeeds.length;
-
-        // Get the PublicDrop data for the test ERC721SeaDrop.
-        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(token));
-
-        // Create a MintParams object with the PublicDrop object.
+        // Create a MintParams object.
         MintParams memory mintParams = MintParams(
-            publicDrop.mintPrice,
-            publicDrop.maxMintsPerWallet,
-            publicDrop.startTime,
-            publicDrop.startTime + 1000,
+            0.1 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
             1,
             1000,
-            publicDrop.feeBps,
-            publicDrop.restrictFeeRecipients
+            100, // fee (1%)
+            false // if false, allow any fee recipient
         );
 
-        bytes[] memory signatures = new bytes[](numSigners);
+        // Get the signature components.
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            args.signerNameSeed,
+            args.minter,
+            mintParams
+        );
 
-        address[] memory signers = new address[](numSigners);
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
 
-        address[] memory minters = new address[](numSigners);
+        // Imperonate the token contract to update the signers.
+        vm.prank(address(token));
 
-        for (uint256 i = 0; i < numSigners; i++) {
-            string memory name = args.nameSeeds[i];
+        // Update the approved signers of the token contract.
+        address[] memory signers = new address[](1);
+        signers[0] = makeAddr(args.signerNameSeed);
+        seadrop.updateSigners(signers);
 
-            // Create minter address.
-            address minter = makeAddr(name);
-
-            // Get signature components.
-            (
-                bytes32 r,
-                bytes32 s,
-                uint8 v,
-                bytes32 structHash
-            ) = getSignatureComponents(name, minter, mintParams);
-
-            // Create the signature from the components.
-            bytes memory signature = abi.encodePacked(r, s, v);
-
-            signatures[i] = signature;
-
-            // Use the recover method to see what address was used to create
-            // the signature on this data.
-            address recoveredAddress = structHash.recover(signature);
-
-            assertEq(signers[i], recoveredAddress);
-
-            // Add the recovered address to the array.
-            signers[i] = recoveredAddress;
-        }
+        hoax(args.payer, 100 ether);
 
         // Calculate the value to send with the transaction.
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        // Set the test erc721 contract as msg.sender of the subsequent call to update the signers.
-        vm.prank(address(token));
+        seadrop.mintSigned{ value: mintValue }(
+            address(token),
+            args.feeRecipient,
+            args.minter,
+            args.numMints,
+            mintParams,
+            signature
+        );
 
-        // Update the approved signers of the test erc721 contract.
-        seadrop.updateSigners(signers);
-
-        hoax(args.caller, 100 ether);
-
-        for (uint256 i = 0; i < numSigners; i++) {
-            // Mint a token to the address at index i of the allowList.
-            seadrop.mintSigned{ value: mintValue }(
-                address(token),
-                args.feeRecipient,
-                minters[i],
-                args.numMints,
-                mintParams,
-                signatures[i]
-            );
-
-            assertEq(token.balanceOf(minters[i]), args.numMints);
-        }
+        assertEq(token.balanceOf(args.minter), args.numMints);
     }
 }
 // testMintSigned
