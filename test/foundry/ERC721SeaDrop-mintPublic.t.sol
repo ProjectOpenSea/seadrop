@@ -135,6 +135,12 @@ contract ERC721DropTest is TestHelper {
 
         address payer = makeAddr("payer");
 
+        vm.assume(
+            payer != creator &&
+                payer != args.minter &&
+                payer != args.feeRecipient
+        );
+
         hoax(payer, 100 ether);
 
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
