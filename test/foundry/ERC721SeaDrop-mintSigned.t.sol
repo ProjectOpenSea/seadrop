@@ -18,6 +18,13 @@ import {
 contract ERC721DropTest is TestHelper {
     using ECDSA for bytes32;
 
+    struct FuzzInputsSigners {
+        address caller;
+        uint40 numMints;
+        address feeRecipient;
+        string[2] nameSeeds;
+    }
+
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _MINT_DATA_TYPEHASH =
@@ -32,6 +39,20 @@ contract ERC721DropTest is TestHelper {
     bytes32 internal constant _VERSION_HASH = keccak256("1.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
     bytes32 internal immutable _DOMAIN_SEPARATOR = _deriveDomainSeparator();
+
+    modifier validateFuzzInputsSigners(FuzzInputsSigners memory args) {
+        vm.assume(args.numMints > 0 && args.numMints <= 10);
+        vm.assume(
+            args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
+        );
+        // vm.assume(bytes(args.nameSeeds[0]) != bytes(args.nameSeeds[1]));
+        vm.assume(
+            args.caller != args.feeRecipient &&
+                args.caller != creator &&
+                args.feeRecipient != creator
+        );
+        _;
+    }
 
     function setUp() public {
         // Deploy SeaDrop.
@@ -65,7 +86,7 @@ contract ERC721DropTest is TestHelper {
     }
 
     function getSignatureComponents(
-        address signer,
+        string memory name,
         address caller,
         MintParams memory mintParams
     )
@@ -73,15 +94,13 @@ contract ERC721DropTest is TestHelper {
         returns (
             bytes32 r,
             bytes32 s,
-            uint8 v
+            uint8 v,
+            bytes32 structHash
         )
     {
-        uint256 pk = privateKeys[signer];
-        if (pk == 0) {
-            revert("Signer not found");
-        }
+        (address signer, uint256 pk) = makeAddrAndKey(name);
         bytes32 mintDataTypeHash = _MINT_DATA_TYPEHASH;
-        bytes32 structHash = keccak256(
+        structHash = keccak256(
             abi.encode(
                 mintDataTypeHash,
                 caller,
@@ -115,7 +134,12 @@ contract ERC721DropTest is TestHelper {
         );
     }
 
-    function testMintSigned(FuzzInputs memory args) public validateArgs(args) {
+    function testMintSigned(FuzzInputsSigners memory args)
+        public
+        validateFuzzInputsSigners(args)
+    {
+        uint256 numSigners = args.nameSeeds.length;
+
         // Get the PublicDrop data for the test ERC721SeaDrop.
         PublicDrop memory publicDrop = seadrop.getPublicDrop(address(token));
 
@@ -131,54 +155,36 @@ contract ERC721DropTest is TestHelper {
             publicDrop.restrictFeeRecipients
         );
 
-        bytes[] memory signatures = new bytes[](args.allowList.length);
+        bytes[] memory signatures = new bytes[](numSigners);
 
-        address[] memory signers = new address[](args.allowList.length);
+        address[] memory signers = new address[](numSigners);
 
-        for (uint256 i = 0; i < args.allowList.length; i++) {
-            string memory name = string(abi.encodePacked("minter", i));
+        address[] memory minters = new address[](numSigners);
+
+        for (uint256 i = 0; i < numSigners; i++) {
+            string memory name = args.nameSeeds[i];
 
             // Create minter address.
             address minter = makeAddr(name);
 
             // Get signature components.
-            (bytes32 r, bytes32 s, uint8 v) = getSignatureComponents(
-                args.allowList[i],
-                minter,
-                mintParams
-            );
+            (
+                bytes32 r,
+                bytes32 s,
+                uint8 v,
+                bytes32 structHash
+            ) = getSignatureComponents(name, minter, mintParams);
 
             // Create the signature from the components.
             bytes memory signature = abi.encodePacked(r, s, v);
 
             signatures[i] = signature;
 
-            bytes32 digest = keccak256(
-                abi.encodePacked(
-                    // EIP-191: `0x19` as set prefix, `0x01` as version byte
-                    bytes2(0x1901),
-                    _DOMAIN_SEPARATOR,
-                    keccak256(
-                        abi.encode(
-                            _MINT_DATA_TYPEHASH,
-                            minter,
-                            mintParams.mintPrice,
-                            mintParams.maxTotalMintableByWallet,
-                            mintParams.startTime,
-                            mintParams.endTime,
-                            mintParams.dropStageIndex,
-                            mintParams.feeBps,
-                            mintParams.restrictFeeRecipients
-                        )
-                    )
-                )
-            );
-
             // Use the recover method to see what address was used to create
             // the signature on this data.
-            address recoveredAddress = digest.recover(signature);
+            address recoveredAddress = structHash.recover(signature);
 
-            assertEq(args.allowList[i], recoveredAddress);
+            assertEq(signers[i], recoveredAddress);
 
             // Add the recovered address to the array.
             signers[i] = recoveredAddress;
@@ -193,20 +199,20 @@ contract ERC721DropTest is TestHelper {
         // Update the approved signers of the test erc721 contract.
         seadrop.updateSigners(signers);
 
-        hoax(args.minter, 100 ether);
+        hoax(args.caller, 100 ether);
 
-        for (uint256 i = 0; i < args.allowList.length; i++) {
+        for (uint256 i = 0; i < numSigners; i++) {
             // Mint a token to the address at index i of the allowList.
             seadrop.mintSigned{ value: mintValue }(
                 address(token),
                 args.feeRecipient,
-                args.allowList[i],
+                minters[i],
                 args.numMints,
                 mintParams,
                 signatures[i]
             );
 
-            assertEq(token.balanceOf(args.allowList[i]), args.numMints);
+            assertEq(token.balanceOf(minters[i]), args.numMints);
         }
     }
 }
