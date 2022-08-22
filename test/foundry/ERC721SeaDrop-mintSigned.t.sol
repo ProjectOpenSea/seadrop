@@ -16,6 +16,12 @@ import {
 contract ERC721DropTest is TestHelper {
     using ECDSA for bytes32;
 
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 indexed identifier
+    );
+
     struct FuzzInputsSigners {
         address payer;
         address minter;
@@ -257,8 +263,111 @@ contract ERC721DropTest is TestHelper {
             signature
         );
     }
+
+    function testMintSigned_unknownSigner(string memory signerSeed) public {
+        vm.assume(
+            keccak256(bytes(signerSeed)) != keccak256(bytes("good seed"))
+        );
+        // Create a MintParams object with a mint price of 0 ether.
+        MintParams memory mintParams = MintParams(
+            0 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            false // restrictFeeRecipient
+        );
+
+        // Get the signature components with an invalid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            signerSeed,
+            address(this),
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Impersonate the token contract to update the signers.
+        vm.prank(address(token));
+        // Update the approved signers of the token contract.
+        address[] memory signers = new address[](1);
+        signers[0] = makeAddr("good seed");
+        seadrop.updateSigners(signers);
+
+        address expectedRecovered = makeAddr(signerSeed);
+
+        // Expect the subsequent call to mintSigned to revert with error
+        // FeeRecipientNotAllowed
+        vm.expectRevert(
+            abi.encodeWithSelector(InvalidSignature.selector, expectedRecovered)
+        );
+
+        seadrop.mintSigned(
+            address(token),
+            address(1),
+            address(this),
+            1,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_differentPayerThanMinter(
+        address minter,
+        address payer
+    ) public {
+        vm.assume(payer != address(0));
+        address minterIfNotPayer = minter;
+        if (minter == payer) {
+            minterIfNotPayer == address(0);
+        }
+        // Create a MintParams object with a mint price of 0 ether.
+        MintParams memory mintParams = MintParams(
+            0 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            false // restrictFeeRecipient
+        );
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(this),
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Impersonate the token contract to update the signers.
+        vm.prank(address(token));
+        // Update the approved signers of the token contract.
+        address[] memory signers = new address[](1);
+        signers[0] = makeAddr("good seed");
+        seadrop.updateSigners(signers);
+
+        vm.expectEmit(true, false, false, false);
+        emit Transfer(address(0), address(minter), 1);
+        // vm.expectEmit(true, true, true, false, address(token));
+        // emit Transfer(address(0), address(minter), 1);
+        vm.prank(address(payer));
+        seadrop.mintSigned(
+            address(token),
+            address(1),
+            address(this),
+            2,
+            mintParams,
+            signature
+        );
+    }
 }
 
 // testMintSigned_unknownSigner
 // testMintSigned_differentPayerThanMinter
-// testMintSigned_revertFeeRecipientNotAllowed

@@ -34,7 +34,6 @@ contract ERC721DropTest is TestHelper {
                 args.minter != creator &&
                 args.feeRecipient != creator
         );
-        vm.assume(args.numAllowedNftToken > 0 && args.numAllowedNftToken < 5);
         _;
     }
 

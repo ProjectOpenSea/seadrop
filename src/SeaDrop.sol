@@ -925,6 +925,10 @@ contract SeaDrop is ISeaDrop {
 
         // Add new enumeration.
         for (uint256 i = 0; i < newSigners.length; ) {
+            address newSigner = newSigners[i];
+            if (newSigner == address(0)) {
+                revert SignerCannotBeZeroAddress();
+            }
             enumeratedStorage.push(newSigners[i]);
             unchecked {
                 ++i;

@@ -40,4 +40,17 @@ contract TestSeaDrop is Test, SeaDropErrorsAndEvents {
         );
         test.updateDropURI(uri);
     }
+
+    function testUpdateSigners_noNullAdress(address[10] memory signers) public {
+        address[] memory newSigners = new address[](10);
+        for (uint256 i = 0; i < 10; i++) {
+            newSigners[i] = signers[i];
+        }
+        newSigners[9] = address(0);
+        vm.startPrank(address(token));
+        vm.expectRevert(
+            abi.encodeWithSelector(SignerCannotBeZeroAddress.selector)
+        );
+        test.updateSigners(newSigners);
+    }
 }
