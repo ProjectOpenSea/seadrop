@@ -15,12 +15,6 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev Revert with an error if the mint quantity exceeds the max allowed
-     *      per transaction.
-     */
-    error MintQuantityExceedsMaxPerTransaction(uint256 quantity, uint256 allowed);
-
-    /**
-     * @dev Revert with an error if the mint quantity exceeds the max allowed
      *      to be minted per wallet.
      */
     error MintQuantityExceedsMaxMintedPerWallet(uint256 total, uint256 allowed);
@@ -51,13 +45,6 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert if the creator payout address is the zero address.
      */
     error CreatorPayoutAddressCannotBeZeroAddress();
-
-    /**
-     * @dev Revert with an error if the allow list is already redeemed.
-     *      TODO should you only be able to redeem from an allow list once?
-     *           would otherwise be capped by maxTotalMintableByWallet
-     */
-    error AllowListRedeemed(address minter);
 
     /**
      * @dev Revert with an error if the received payment is incorrect.
