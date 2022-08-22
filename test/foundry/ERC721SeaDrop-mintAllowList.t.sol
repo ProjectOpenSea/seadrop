@@ -238,15 +238,20 @@ contract ERC721DropTest is TestHelper {
 
         hoax(args.minter, 100 ether);
 
+        // Proof refers to address at allowList[0], so assume
+        // it is not the same address as minting for allowList[4]
+        vm.assume(args.allowList[0] != args.allowList[4]);
+
         // Expect the subsequent call to mintAllowList to revert with error
         // InvalidProof
         vm.expectRevert(abi.encodeWithSelector(InvalidProof.selector));
 
-        // Attempt to mint a token to a non-allowlist address.
+        // Attempt to mint a token to allowList[4]
+        // with a proof for allowList[0].
         seadrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
-            args.allowList[4], // proof refers to address at allowlist index 0.
+            args.allowList[4], // proof refers to address at allowList[0]
             args.numMints,
             mintParams,
             proof
