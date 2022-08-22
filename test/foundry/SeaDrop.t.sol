@@ -4,20 +4,8 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 import { SeaDrop } from "seadrop/SeaDrop.sol";
-import { ERC721 } from "solmate/tokens/ERC721.sol";
+import { TestERC721 } from "test/foundry/utils/TestERC721.sol";
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
-
-contract TestERC721 is ERC721("", "") {
-    function tokenURI(uint256)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
-        return "";
-    }
-}
 
 contract TestSeaDrop is Test, SeaDropErrorsAndEvents {
     SeaDrop test;
@@ -39,5 +27,17 @@ contract TestSeaDrop is Test, SeaDropErrorsAndEvents {
         vm.prank(address(token));
         test.updateDropURI(uri);
         assertEq(test.getDropURI(address(token)), uri);
+    }
+
+    function testUpdateDropURI_onlyERC721SeaDrop() public {
+        string memory uri = "https://example.com/";
+        vm.startPrank(address(badToken));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OnlyIERC721SeaDrop.selector,
+                address(badToken)
+            )
+        );
+        test.updateDropURI(uri);
     }
 }
