@@ -16,16 +16,9 @@ import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
 import {
-    AllowListData,
-    PublicDrop,
-    MintParams,
     TokenGatedMintParams,
     TokenGatedDropStage
 } from "seadrop/lib/SeaDropStructs.sol";
-
-import { Merkle } from "murky/Merkle.sol";
-
-import { ERC721A } from "ERC721A/ERC721A.sol";
 
 contract ERC721DropTest is Test, TestHelper, SeaDropErrorsAndEvents {
     SeaDrop seadrop;
