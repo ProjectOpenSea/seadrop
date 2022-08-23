@@ -68,7 +68,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
 
     /**
      * @notice Mint as an allowed token holder.
-     *         This will mark the token id as reedemed and will revert if the
+     *         This will mark the token id as redeemed and will revert if the
      *         same token id is attempted to be redeemed twice.
      *
      * @param nftContract      The nft contract to mint.

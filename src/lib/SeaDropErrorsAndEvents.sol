@@ -37,7 +37,7 @@ interface SeaDropErrorsAndEvents {
     error FeeRecipientCannotBeZeroAddress();
 
     /**
-     * @dev Revert if the fee recipient is restricted and not allowe.
+     * @dev Revert if the fee recipient is restricted and not allowed.
      */
     error FeeRecipientNotAllowed();
 
@@ -63,7 +63,7 @@ interface SeaDropErrorsAndEvents {
     error SignerCannotBeZeroAddress();
 
     /**
-     * @dev Revert with an error if signer's signatuer is invalid.
+     * @dev Revert with an error if signer's signature is invalid.
      */
     error InvalidSignature(address recoveredSigner);
 

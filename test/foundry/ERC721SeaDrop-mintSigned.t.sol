@@ -141,7 +141,7 @@ contract ERC721DropTest is TestHelper {
         // Create the signature from the components.
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        // Imperonate the token contract to update the signers.
+        // Impersonate the token contract to update the signers.
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
@@ -192,7 +192,7 @@ contract ERC721DropTest is TestHelper {
         // Create the signature from the components.
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        // Imperonate the token contract to update the signers.
+        // Impersonate the token contract to update the signers.
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
@@ -239,7 +239,7 @@ contract ERC721DropTest is TestHelper {
         // Create the signature from the components.
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        // Imperonate the token contract to update the signers.
+        // Impersonate the token contract to update the signers.
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
