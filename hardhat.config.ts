@@ -83,7 +83,7 @@ const config: HardhatUserConfig = {
     }),
   },
   // specify separate cache for hardhat, since it could possibly conflict with foundry's
-  paths: { sources: "./src", cache: "hh-cache" },
+  paths: { sources: "./src", cache: "./hh-cache" },
 };
 
 export default config;
