@@ -57,6 +57,12 @@ interface SeaDropErrorsAndEvents {
     error InvalidProof();
 
     /**
+     * @dev Revert if a supplied signer address is the zero address,
+     *      as it would allow all invalid signatures.
+     */
+    error SignerCannotBeZeroAddress();
+
+    /**
      * @dev Revert with an error if signer's signatuer is invalid.
      */
     error InvalidSignature(address recoveredSigner);

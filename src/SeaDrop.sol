@@ -920,12 +920,16 @@ contract SeaDrop is ISeaDrop {
         // Track the old signers.
         address[] memory oldSigners = enumeratedStorage;
 
-        // Delete old enumeration.
+        // Delete the old enumeration.
         delete _enumeratedSigners[msg.sender];
 
-        // Add new enumeration.
+        // Add the new enumeration.
         for (uint256 i = 0; i < newSigners.length; ) {
-            enumeratedStorage.push(newSigners[i]);
+            address newSigner = newSigners[i];
+            if (newSigner == address(0)) {
+                revert SignerCannotBeZeroAddress();
+            }
+            enumeratedStorage.push(newSigner);
             unchecked {
                 ++i;
             }
