@@ -36,6 +36,8 @@ contract TestSeaDrop is TestHelper {
     bytes32 merkleRoot;
     bytes32[] proof;
     Merkle tree;
+    bytes signature;
+    MintParams mintParams;
 
     struct FuzzSelector {
         address targetAddress;
@@ -80,7 +82,7 @@ contract TestSeaDrop is TestHelper {
         vm.deal(address(5), 1 << 128);
         vm.deal(creator, 1 << 128);
 
-        MintParams memory mintParams = MintParams({
+        mintParams = MintParams({
             mintPrice: 0.1 ether,
             maxTotalMintableByWallet: 5,
             startTime: block.timestamp,
@@ -107,6 +109,41 @@ contract TestSeaDrop is TestHelper {
             allowListURI: ""
         });
         snapshotToken.updateAllowList(address(seadrop), allowListData);
+
+        _configureTokenGated();
+        _configureSigner();
+
+        badToken.mint(address(this), 1);
+    }
+
+    function _configureTokenGated() internal {
+        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage({
+            mintPrice: 0.1 ether, // mint price
+            maxTotalMintableByWallet: 10, // max mints per wallet
+            startTime: uint48(block.timestamp), // start time
+            endTime: uint48(block.timestamp) + 1000,
+            dropStageIndex: 1,
+            maxTokenSupplyForStage: 1000, // max supply for stage
+            feeBps: 100, // fee (1%)
+            restrictFeeRecipients: false // if false, allow any fee recipient
+        });
+        snapshotToken.updateTokenGatedDrop(
+            address(seadrop),
+            address(badToken),
+            tokenGatedDropStage
+        );
+    }
+
+    function _configureSigner() internal {
+        address signer = makeAddr("signer");
+        snapshotToken.updateSigner(address(seadrop), signer, true);
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "signer",
+            address(this),
+            address(5),
+            mintParams
+        );
+        signature = abi.encodePacked(r, s, v);
     }
 
     function testRegularMint_snapshot() public {
@@ -123,16 +160,6 @@ contract TestSeaDrop is TestHelper {
     }
 
     function testMintAllowList_snapshot() public {
-        MintParams memory mintParams = MintParams({
-            mintPrice: 0.1 ether,
-            maxTotalMintableByWallet: 5,
-            startTime: block.timestamp,
-            endTime: block.timestamp + 1000,
-            dropStageIndex: 1,
-            maxTokenSupplyForStage: 1000,
-            feeBps: 100,
-            restrictFeeRecipients: true
-        });
         seadrop.mintAllowList{ value: 0.1 ether }(
             address(snapshotToken),
             address(5),
@@ -140,6 +167,33 @@ contract TestSeaDrop is TestHelper {
             1,
             mintParams,
             proof
+        );
+    }
+
+    function testMintAllowedTokenHolder_snapshot() public {
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+        TokenGatedMintParams
+            memory tokenGatedMintParams = TokenGatedMintParams({
+                allowedNftToken: address(badToken),
+                allowedNftTokenIds: ids
+            });
+        seadrop.mintAllowedTokenHolder{ value: 0.1 ether }(
+            address(snapshotToken),
+            address(5),
+            address(0),
+            tokenGatedMintParams
+        );
+    }
+
+    function testMintSigned_snapshot() public {
+        seadrop.mintSigned{ value: 0.1 ether }(
+            address(snapshotToken),
+            address(5),
+            address(0),
+            1,
+            mintParams,
+            signature
         );
     }
 }

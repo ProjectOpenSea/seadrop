@@ -76,11 +76,11 @@ contract SeaDrop is ISeaDrop {
 
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
-    bytes32 internal constant _MINT_DATA_TYPEHASH =
+    bytes32 internal immutable _SIGNED_MINT_TYPEHASH =
         keccak256(
-            "MintParams(address minter,uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
+            "SignedMint(address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
         );
-    bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
+    bytes32 internal immutable _EIP_712_DOMAIN_TYPEHASH =
         keccak256(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
         );
@@ -300,15 +300,10 @@ contract SeaDrop is ISeaDrop {
                 _domainSeparator(),
                 keccak256(
                     abi.encode(
-                        _MINT_DATA_TYPEHASH,
+                        _SIGNED_MINT_TYPEHASH,
                         minter,
-                        mintParams.mintPrice,
-                        mintParams.maxTotalMintableByWallet,
-                        mintParams.startTime,
-                        mintParams.endTime,
-                        mintParams.dropStageIndex,
-                        mintParams.feeBps,
-                        mintParams.restrictFeeRecipients
+                        feeRecipient,
+                        mintParams
                     )
                 )
             )
