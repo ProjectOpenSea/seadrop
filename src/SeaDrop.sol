@@ -137,9 +137,10 @@ contract SeaDrop is ISeaDrop {
                 type(uint64).max
             );
         }
+        uint256 mintPrice = publicDrop.mintPrice;
 
         // Validate payment is correct for number minted.
-        _checkCorrectPayment(quantity, publicDrop.mintPrice);
+        _checkCorrectPayment(quantity, mintPrice);
 
         // Get the minter address.
         address minter = minterIfNotPayer != address(0)
@@ -167,7 +168,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            publicDrop.mintPrice,
+            mintPrice,
             0,
             publicDrop.feeBps,
             feeRecipient
@@ -195,8 +196,9 @@ contract SeaDrop is ISeaDrop {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
+        uint256 mintPrice = mintParams.mintPrice;
         // Validate payment is correct for number minted.
-        _checkCorrectPayment(quantity, mintParams.mintPrice);
+        _checkCorrectPayment(quantity, mintPrice);
 
         // Get the minter address.
         address minter = minterIfNotPayer != address(0)
@@ -235,7 +237,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            mintParams.mintPrice,
+            mintPrice,
             mintParams.dropStageIndex,
             mintParams.feeBps,
             feeRecipient
@@ -467,12 +469,10 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Revert if the fee recipient is restricted and not allowed.
-        if (
-            restrictFeeRecipients == true &&
-            _allowedFeeRecipients[nftContract][feeRecipient] == false
-        ) {
-            revert FeeRecipientNotAllowed();
-        }
+        if (restrictFeeRecipients == true)
+            if (_allowedFeeRecipients[nftContract][feeRecipient] == false) {
+                revert FeeRecipientNotAllowed();
+            }
     }
 
     /**
@@ -546,37 +546,39 @@ contract SeaDrop is ISeaDrop {
      * @notice Split the payment payout for the creator and fee recipient.
      *
      * @param nftContract  The nft contract.
-     * @param quantity     The number of tokens to mint.
-     * @param mintPrice    The mint price per token.
      * @param feeRecipient The fee recipient.
      * @param feeBps       The fee basis points.
      */
     function _splitPayout(
         address nftContract,
-        uint256 quantity,
-        uint256 mintPrice,
         address feeRecipient,
         uint256 feeBps
     ) internal {
-        // Return if the mint price is zero.
-        if (mintPrice == 0) return;
-
+        if (feeBps > 10000) {
+            revert InvalidFeeBps(feeBps);
+        }
         // Get the creator payout address.
         address creatorPayoutAddress = _creatorPayoutAddresses[nftContract];
+
+        if (feeBps == 0) {
+            SafeTransferLib.safeTransferETH(creatorPayoutAddress, msg.value);
+            return;
+        }
 
         // Ensure the creator payout address is not the zero address.
         if (creatorPayoutAddress == address(0)) {
             revert CreatorPayoutAddressCannotBeZeroAddress();
         }
 
-        // Get the total amount to pay.
-        uint256 total = quantity * mintPrice;
-
+        // msg.value has already been validated by this point, so can use it directly
         // Get the fee amount.
-        uint256 feeAmount = (total * feeBps) / 10_000;
+        uint256 feeAmount = (msg.value * feeBps) / 10_000;
 
-        // Get the creator payout amount.
-        uint256 payoutAmount = total - feeAmount;
+        // Get the creator payout amount. FeeAmount is <= msg.value per above
+        uint256 payoutAmount;
+        unchecked {
+            payoutAmount = msg.value - feeAmount;
+        }
 
         // Transfer the fee amount to the fee recipient.
         if (feeAmount > 0) {
@@ -608,8 +610,10 @@ contract SeaDrop is ISeaDrop {
         uint256 feeBps,
         address feeRecipient
     ) internal {
-        // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, quantity, mintPrice, feeRecipient, feeBps);
+        if (mintPrice != 0) {
+            // Split the payment between the creator and fee recipient.
+            _splitPayout(nftContract, feeRecipient, feeBps);
+        }
 
         // Mint the token(s).
         IERC721SeaDrop(nftContract).mintSeaDrop(minter, quantity);

@@ -42,6 +42,11 @@ interface SeaDropErrorsAndEvents {
     error FeeRecipientNotPresent();
 
     /**
+     * @dev Revert if fee bps is > 10000
+     */
+     error InvalidFeeBps(uint256 feeBps);
+
+    /**
      * @dev Revert if the fee recipient is already included.
      */
     error DuplicateFeeRecipient();
