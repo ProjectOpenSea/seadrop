@@ -126,8 +126,8 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Returns if the specified fee recipient is allowed
      *         for the nft contract.
-     *
      * @param nftContract The nft contract.
+     * @param feeRecipient The fee recipient.
      */
     function getFeeRecipientIsAllowed(address nftContract, address feeRecipient)
         external
@@ -153,6 +153,18 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         external
         view
         returns (address[] memory);
+
+    /**
+     * @notice Returns if the specified signer is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     * @param signer      The signer.
+     */
+    function getSignerIsAllowed(address nftContract, address signer)
+        external
+        view
+        returns (bool);
 
     /**
      * @notice Returns the allowed token gated drop tokens for the nft contract.

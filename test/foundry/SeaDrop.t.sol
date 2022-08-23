@@ -62,33 +62,80 @@ contract TestSeaDrop is TestHelper {
         seadrop.updateSigner(address(0), true);
     }
 
-    function testUpdateSigner(address signer1, address signer2) public {
+    function testUpdateSigner(
+        address signer1,
+        address signer2,
+        address signer3
+    ) public {
         vm.assume(signer1 != address(0));
         vm.assume(signer2 != address(0));
+        vm.assume(signer3 != address(0));
         vm.assume(signer1 != signer2);
+        vm.assume(signer1 != signer3);
+        vm.assume(signer2 != signer3);
+
         vm.startPrank(address(token));
+
         seadrop.updateSigner(signer1, true);
         address[] memory signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 1);
         assertEq(signers[0], signer1);
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
+
         seadrop.updateSigner(signer2, true);
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 2);
         assertEq(signers[0], signer1);
         assertEq(signers[1], signer2);
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
+
+        seadrop.updateSigner(signer3, true);
+        signers = seadrop.getSigners(address(token));
+        assertEq(signers.length, 3);
+        assertEq(signers[0], signer1);
+        assertEq(signers[1], signer2);
+        assertEq(signers[2], signer3);
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer3));
+
+        // remove signer after
+        seadrop.updateSigner(signer2, false);
+        signers = seadrop.getSigners(address(token));
+        assertEq(signers.length, 2);
+        assertEq(signers[0], signer1);
+        assertEq(signers[1], signer3);
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer3));
+
         seadrop.updateSigner(signer1, false);
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 1);
-        assertEq(signers[0], signer2);
-        seadrop.updateSigner(signer2, false);
+        assertEq(signers[0], signer3);
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer1));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertTrue(seadrop.getSignerIsAllowed(address(token), signer3));
+
+        seadrop.updateSigner(signer3, false);
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 0);
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer1));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
+        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
     }
 
-    function invariantNoDuplicatesInEnumeratedSigners() public {
+    function invariant_NoDuplicatesInEnumeratedSigners() public {
         address[] memory signers = seadrop.getSigners(address(token));
         for (uint256 i; i < signers.length; ++i) {
-            assertFalse(seenAddresses[signers[i]]);
+            assertTrue(seenAddresses[signers[i]]);
             seenAddresses[signers[i]] = true;
         }
     }
@@ -109,12 +156,12 @@ contract TestSeaDrop is TestHelper {
         }
     }
 
-    function targetContracts() public view returns (address[] memory) {
-        address[] memory targets = new address[](2);
-        targets[0] = address(seadrop);
-        targets[1] = address(token);
-        return targets;
-    }
+    // function targetContracts() public view returns (address[] memory) {
+    //     address[] memory targets = new address[](1);
+    //     targets[0] = address(seadrop);
+    //     // targets[1] = address(token);
+    //     return targets;
+    // }
 
     function targetSelectors() public view returns (FuzzSelector[] memory) {
         FuzzSelector[] memory fuzzSelectors = new FuzzSelector[](0);
@@ -124,5 +171,11 @@ contract TestSeaDrop is TestHelper {
 
         fuzzSelectors[0] = FuzzSelector(address(seadrop), selectors);
         return fuzzSelectors;
+    }
+
+    function targetSenders() public view returns (address[] memory) {
+        address[] memory senders = new address[](1);
+        senders[0] = address(token);
+        return senders;
     }
 }

@@ -753,6 +753,21 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
+     * @notice Returns if the specified signer is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     * @param signer      The signer.
+     */
+    function getSignerIsAllowed(address nftContract, address signer)
+        external
+        view
+        returns (bool)
+    {
+        return _signers[nftContract][signer];
+    }
+
+    /**
      * @notice Returns the allowed token gated drop tokens for the nft contract.
      *
      * @param nftContract The nft contract.
