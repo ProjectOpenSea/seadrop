@@ -54,6 +54,9 @@ contract SeaDrop is ISeaDrop {
     /// @notice Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
 
+    /// @notice Track the allowed fee recipients.
+    mapping(address => address[]) private _enumeratedFeeRecipients;
+
     /// @notice Track the allowed signers for server-side drops.
     mapping(address => mapping(address => bool)) private _signers;
 
@@ -352,7 +355,7 @@ contract SeaDrop is ISeaDrop {
             : msg.sender;
 
         // Set the dropStage to a variable.
-        TokenGatedDropStage storage dropStage = _tokenGatedDrops[nftContract][
+        TokenGatedDropStage memory dropStage = _tokenGatedDrops[nftContract][
             mintParams.allowedNftToken
         ];
 
@@ -724,6 +727,19 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
+     * @notice Returns an enumeration of allowed fee recipients for an nft contract when fee recipients are enforced
+     *
+     * @param nftContract The nft contract.
+     */
+    function getAllowedFeeRecipients(address nftContract)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _enumeratedFeeRecipients[nftContract];
+    }
+
+    /**
      * @notice Returns the server-side signers for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -835,37 +851,38 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
-        // Set the drop stage.
-        _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
+        // use maxTotalMintableByWallet != 0 as a signal that this update should add or update the drop stage
+        // otherwise we will be removing
+        bool addDropStage = dropStage.maxTotalMintableByWallet != 0;
 
-        // If the maxTotalMintableByWallet is greater than zero
-        // then we are setting an active drop stage.
-        if (dropStage.maxTotalMintableByWallet > 0) {
-            // Add allowedNftToken to enumerated list if not present.
-            bool allowedNftTokenExistsInEnumeration = false;
+        // get pointers to the token gated drop data and enumerated addresses
+        TokenGatedDropStage storage existingDropStageData = _tokenGatedDrops[
+            msg.sender
+        ][allowedNftToken];
+        address[] storage enumeratedTokens = _enumeratedTokenGatedTokens[
+            msg.sender
+        ];
 
-            // Iterate through enumerated token gated tokens for nft contract.
-            for (
-                uint256 i = 0;
-                i < _enumeratedTokenGatedTokens[msg.sender].length;
+        // stage struct packs to a single slot, so load it as a uint256; if it is 0, it is empty
+        bool dropStageExists;
+        assembly {
+            dropStageExists := iszero(eq(sload(existingDropStageData.slot), 0))
+        }
 
-            ) {
-                if (
-                    _enumeratedTokenGatedTokens[msg.sender][i] ==
-                    allowedNftToken
-                ) {
-                    // Set the bool to true if found.
-                    allowedNftTokenExistsInEnumeration = true;
-                }
-                unchecked {
-                    ++i;
-                }
+        if (addDropStage) {
+            _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
+            // add to enumeration if it does not exist already
+            if (!dropStageExists) {
+                enumeratedTokens.push(allowedNftToken);
             }
-
-            // Add allowedNftToken to enumerated list if not present.
-            if (allowedNftTokenExistsInEnumeration == false) {
-                _enumeratedTokenGatedTokens[msg.sender].push(allowedNftToken);
+        } else {
+            // check we are not deleting a drop stage that does not exist
+            if (!dropStageExists) {
+                revert TokenGatedDropStageNotPresent();
             }
+            // clear storage slot and remove from enumeration
+            delete _tokenGatedDrops[msg.sender][allowedNftToken];
+            _removeFromEnumeration(allowedNftToken, enumeratedTokens);
         }
 
         // Emit an event with the update.
@@ -881,6 +898,9 @@ contract SeaDrop is ISeaDrop {
         external
         onlyIERC721SeaDrop
     {
+        if (_payoutAddress == address(0)) {
+            revert CreatorPayoutAddressCannotBeZeroAddress();
+        }
         // Set the creator payout address.
         _creatorPayoutAddresses[msg.sender] = _payoutAddress;
 
@@ -898,8 +918,30 @@ contract SeaDrop is ISeaDrop {
         external
         onlyIERC721SeaDrop
     {
-        // Set the allowed fee recipient.
-        _allowedFeeRecipients[msg.sender][feeRecipient] = allowed;
+        if (feeRecipient == address(0)) {
+            revert FeeRecipientCannotBeZeroAddress();
+        }
+
+        // Track the enumerated storage.
+        address[] storage enumeratedStorage = _enumeratedFeeRecipients[
+            msg.sender
+        ];
+        mapping(address => bool)
+            storage feeRecipientsMap = _allowedFeeRecipients[msg.sender];
+
+        if (allowed) {
+            if (feeRecipientsMap[feeRecipient]) {
+                revert DuplicateFeeRecipient();
+            }
+            feeRecipientsMap[feeRecipient] = true;
+            enumeratedStorage.push(feeRecipient);
+        } else {
+            if (!feeRecipientsMap[feeRecipient]) {
+                revert FeeRecipientNotPresent();
+            }
+            delete _allowedFeeRecipients[msg.sender][feeRecipient];
+            _removeFromEnumeration(feeRecipient, enumeratedStorage);
+        }
 
         // Emit an event with the update.
         emit AllowedFeeRecipientUpdated(msg.sender, feeRecipient, allowed);
@@ -908,52 +950,58 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     * @param newSigners The new list of signers.
+     * @param signer Signer to add or remove
+     * @param allowed Whether to add or remove the signer
      */
-    function updateSigners(address[] calldata newSigners)
+    function updateSigner(address signer, bool allowed)
         external
         onlyIERC721SeaDrop
     {
+        if (signer == address(0)) {
+            revert SignerCannotBeZeroAddress();
+        }
+
         // Track the enumerated storage.
         address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
-
-        // Track the old signers.
-        address[] memory oldSigners = enumeratedStorage;
-
-        // Delete the old enumeration.
-        delete _enumeratedSigners[msg.sender];
-
-        // Add the new enumeration.
-        for (uint256 i = 0; i < newSigners.length; ) {
-            address newSigner = newSigners[i];
-            if (newSigner == address(0)) {
-                revert SignerCannotBeZeroAddress();
-            }
-            enumeratedStorage.push(newSigner);
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Get the mapping of signers.
         mapping(address => bool) storage signersMap = _signers[msg.sender];
 
-        // Delete old signers.
-        for (uint256 i = 0; i < oldSigners.length; ) {
-            signersMap[oldSigners[i]] = false;
-            unchecked {
-                ++i;
+        if (allowed) {
+            if (signersMap[signer]) {
+                revert DuplicateSigner();
             }
-        }
-        // Add new signers.
-        for (uint256 i = 0; i < newSigners.length; ) {
-            signersMap[newSigners[i]] = true;
-            unchecked {
-                ++i;
+            signersMap[signer] = true;
+            enumeratedStorage.push(signer);
+        } else {
+            if (!signersMap[signer]) {
+                revert SignerNotPresent();
             }
+            delete _signers[msg.sender][signer];
+            _removeFromEnumeration(signer, enumeratedStorage);
         }
 
         // Emit an event with the update.
-        emit SignersUpdated(msg.sender, oldSigners, newSigners);
+        emit SignerUpdated(msg.sender, signer, allowed);
+    }
+
+    function _removeFromEnumeration(
+        address toRemove,
+        address[] storage enumeration
+    ) internal {
+        // cache length
+        uint256 enumeratedDropsLength = enumeration.length;
+        for (uint256 i = 0; i < enumeratedDropsLength; ) {
+            // check if enumerated token is the one we are deleting
+            if (enumeration[i] == toRemove) {
+                // swap with last element
+                enumeration[i] = enumeration[enumeratedDropsLength - 1];
+                // delete (now duplicated) last element
+                enumeration.pop();
+                // exit loop
+                break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
     }
 }

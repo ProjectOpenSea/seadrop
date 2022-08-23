@@ -330,11 +330,15 @@ contract ERC721SeaDrop is
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
      *         Only the owner or administrator can update the signers.
-     *
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param newSigners  The new signers.
+     * @param signer  Signer to update
+     * @param allowed Whether signatures are allowed from this signer
      */
-    function updateSigners(address seaDropImpl, address[] calldata newSigners)
+    function updateSigner(
+        address seaDropImpl,
+        address signer,
+        bool allowed
+    )
         external
         virtual
         override
@@ -342,7 +346,7 @@ contract ERC721SeaDrop is
         onlyAllowedSeaDrop(seaDropImpl)
     {
         // Update the signers.
-        ISeaDrop(seaDropImpl).updateSigners(newSigners);
+        ISeaDrop(seaDropImpl).updateSigner(signer, allowed);
     }
 
     /**

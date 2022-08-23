@@ -158,8 +158,12 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      *         Only the owner or administrator can update the signers.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param newSigners  The new signers.
+     * @param signer  Signer to update
+     * @param allowed Whether signatures are allowed from this signer
      */
-    function updateSigners(address seaDropImpl, address[] calldata newSigners)
-        external;
+    function updateSigner(
+        address seaDropImpl,
+        address signer,
+        bool allowed
+    ) external;
 }

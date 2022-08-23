@@ -142,12 +142,13 @@ contract ERC721DropTest is TestHelper {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         // Impersonate the token contract to update the signers.
-        vm.prank(address(token));
 
         // Update the approved signers of the token contract.
         address[] memory signers = new address[](1);
-        signers[0] = makeAddr(args.signerNameSeed);
-        seadrop.updateSigners(signers);
+        address signer = makeAddr(args.signerNameSeed);
+        vm.prank(address(token));
+
+        seadrop.updateSigner(signer, true);
 
         hoax(args.payer, 100 ether);
 
@@ -196,9 +197,8 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
-        address[] memory signers = new address[](1);
-        signers[0] = makeAddr(args.signerNameSeed);
-        seadrop.updateSigners(signers);
+        address signer = makeAddr(args.signerNameSeed);
+        seadrop.updateSigner(signer, true);
 
         hoax(args.payer, 100 ether);
 
@@ -243,9 +243,8 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
-        address[] memory signers = new address[](1);
-        signers[0] = makeAddr(args.signerNameSeed);
-        seadrop.updateSigners(signers);
+        address signer = makeAddr(args.signerNameSeed);
+        seadrop.updateSigner(signer, true);
 
         hoax(args.payer, 100 ether);
 
@@ -297,9 +296,8 @@ contract ERC721DropTest is TestHelper {
         // Impersonate the token contract to update the signers.
         vm.prank(address(token));
         // Update the approved signers of the token contract.
-        address[] memory signers = new address[](1);
-        signers[0] = makeAddr("good seed");
-        seadrop.updateSigners(signers);
+        address signer = makeAddr("good seed");
+        seadrop.updateSigner(signer, true);
 
         address expectedRecovered = makeAddr(signerSeed);
 
@@ -354,9 +352,8 @@ contract ERC721DropTest is TestHelper {
         // Impersonate the token contract to update the signers.
         vm.prank(address(token));
         // Update the approved signers of the token contract.
-        address[] memory signers = new address[](1);
-        signers[0] = makeAddr("good seed");
-        seadrop.updateSigners(signers);
+        address signer = makeAddr("good seed");
+        seadrop.updateSigner(signer, true);
 
         hoax(payer, 100 ether);
 

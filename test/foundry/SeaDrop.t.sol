@@ -41,18 +41,11 @@ contract TestSeaDrop is TestHelper {
         seadrop.updateDropURI(uri);
     }
 
-    function testUpdateSigners_noNullAddress(address[10] memory signers)
-        public
-    {
-        address[] memory newSigners = new address[](10);
-        for (uint256 i = 0; i < 10; i++) {
-            newSigners[i] = signers[i];
-        }
-        newSigners[9] = address(0);
+    function testUpdateSigners_noNullAddress() public {
         vm.startPrank(address(token));
         vm.expectRevert(
             abi.encodeWithSelector(SignerCannotBeZeroAddress.selector)
         );
-        seadrop.updateSigners(newSigners);
+        seadrop.updateSigner(address(0), true);
     }
 }
