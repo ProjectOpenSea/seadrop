@@ -19,7 +19,6 @@ contract ERC721DropTest is TestHelper {
         uint16 numMints;
         address minter;
         address feeRecipient;
-        uint16 numAllowedNftToken;
     }
 
     modifier validateAllowedTokenHoldersArgs(
@@ -30,7 +29,11 @@ contract ERC721DropTest is TestHelper {
         vm.assume(
             args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
         );
-        vm.assume(args.numAllowedNftToken > 0 && args.numAllowedNftToken < 5);
+        vm.assume(
+            args.minter != args.feeRecipient &&
+                args.minter != creator &&
+                args.feeRecipient != creator
+        );
         _;
     }
 
@@ -66,8 +69,8 @@ contract ERC721DropTest is TestHelper {
     function testMintAllowedTokenHolder(
         FuzzInputsAllowedTokenHolders memory args
     ) public validateAllowedTokenHoldersArgs(args) {
-        // Create TokenGatedDropStage object.
-        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage(
+        // Create the token gated drop stage.
+        TokenGatedDropStage memory dropStage = TokenGatedDropStage(
             0.1 ether, // mint price
             200, // max mints per wallet
             uint48(block.timestamp), // start time
@@ -78,38 +81,28 @@ contract ERC721DropTest is TestHelper {
             false // if false, allow any fee recipient
         );
 
-        // Declare TokenGatedMintParams array.
-        TokenGatedMintParams[]
-            memory tokenGatedMintParamsArray = new TokenGatedMintParams[](
-                args.numAllowedNftToken
-            );
+        uint256[] memory tokenIds = new uint256[](args.numMints);
 
-        // Iterate over the fuzzed number of gate tokens.
-        for (uint256 i = 0; i < args.numAllowedNftToken; i++) {
-            uint256[] memory tokenIds = new uint256[](args.numMints);
-
-            for (uint256 j = 0; j < args.numMints; j++) {
-                tokenIds[j] = j;
-            }
-
-            // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
-            address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
-
-            vm.prank(address(token));
-            // Update token gated drop for the deployed gateToken.
-            seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
-
-            // Add TokenGatedMintParams object to the array.
-            tokenGatedMintParamsArray[i] = TokenGatedMintParams(
-                gateToken,
-                tokenIds
-            );
+        // Iterate over the fuzzed number of mints.
+        for (uint256 j = 0; j < args.numMints; j++) {
+            tokenIds[j] = j;
         }
 
+        // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
+        address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
+
+        vm.prank(address(token));
+        // Update token gated drop for the deployed gateToken.
+        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+
+        // Keep track of the mint params.
+        TokenGatedMintParams memory mintParams = TokenGatedMintParams(
+            gateToken,
+            tokenIds
+        );
+
         // Calculate the value to send with the transaction.
-        uint256 mintValue = args.numMints *
-            args.numAllowedNftToken *
-            tokenGatedDropStage.mintPrice;
+        uint256 mintValue = args.numMints * dropStage.mintPrice;
 
         // Prank the mint call as the minter.
         hoax(args.minter, 100 ether);
@@ -119,21 +112,18 @@ contract ERC721DropTest is TestHelper {
             address(token),
             args.feeRecipient,
             args.minter,
-            tokenGatedMintParamsArray
+            mintParams
         );
 
-        // Calculate the expected number of tokens to be minted to the minter.
-        uint256 mintQuantity = args.numAllowedNftToken * args.numMints;
-
         // Check minter token balance increased.
-        assertEq(token.balanceOf(args.minter), mintQuantity);
+        assertEq(token.balanceOf(args.minter), args.numMints);
     }
 
     function testMintAllowedTokenHolder_differentPayerThanMinter(
         FuzzInputsAllowedTokenHolders memory args
     ) public validateAllowedTokenHoldersArgs(args) {
         // Create TokenGatedDropStage object.
-        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage(
+        TokenGatedDropStage memory dropStage = TokenGatedDropStage(
             0.1 ether, // mint price
             200, // max mints per wallet
             uint48(block.timestamp), // start time
@@ -144,38 +134,27 @@ contract ERC721DropTest is TestHelper {
             false // if false, allow any fee recipient
         );
 
-        // Declare TokenGatedMintParams array.
-        TokenGatedMintParams[]
-            memory tokenGatedMintParamsArray = new TokenGatedMintParams[](
-                args.numAllowedNftToken
-            );
+        uint256[] memory tokenIds = new uint256[](args.numMints);
 
-        // Iterate over the fuzzed number of gate tokens.
-        for (uint256 i = 0; i < args.numAllowedNftToken; i++) {
-            uint256[] memory tokenIds = new uint256[](args.numMints);
-
-            for (uint256 j = 0; j < args.numMints; j++) {
-                tokenIds[j] = j;
-            }
-
-            // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
-            address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
-
-            vm.prank(address(token));
-            // Update token gated drop for the deployed gateToken.
-            seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
-
-            // Add TokenGatedMintParams object to the array.
-            tokenGatedMintParamsArray[i] = TokenGatedMintParams(
-                gateToken,
-                tokenIds
-            );
+        for (uint256 j = 0; j < args.numMints; j++) {
+            tokenIds[j] = j;
         }
 
+        // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
+        address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
+
+        vm.prank(address(token));
+        // Update token gated drop for the deployed gateToken.
+        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+
+        // Keep track of the mint params.
+        TokenGatedMintParams memory mintParams = TokenGatedMintParams(
+            gateToken,
+            tokenIds
+        );
+
         // Calculate the value to send with the transaction.
-        uint256 mintValue = args.numMints *
-            args.numAllowedNftToken *
-            tokenGatedDropStage.mintPrice;
+        uint256 mintValue = args.numMints * dropStage.mintPrice;
 
         // Derive an address to call the transaction with.
         address payer = makeAddr("payer");
@@ -187,21 +166,18 @@ contract ERC721DropTest is TestHelper {
             address(token),
             args.feeRecipient,
             args.minter,
-            tokenGatedMintParamsArray
+            mintParams
         );
 
-        // Calculate the expected number of tokens to be minted to the minter.
-        uint256 mintQuantity = args.numAllowedNftToken * args.numMints;
-
         // Check minter token balance increased.
-        assertEq(token.balanceOf(args.minter), mintQuantity);
+        assertEq(token.balanceOf(args.minter), args.numMints);
     }
 
     function testMintAllowedTokenHolder_revertAlreadyRedeemed(
         FuzzInputsAllowedTokenHolders memory args
     ) public validateAllowedTokenHoldersArgs(args) {
-        // Create TokenGatedDropStage object.
-        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage(
+        // Create the token gated drop stage.
+        TokenGatedDropStage memory dropStage = TokenGatedDropStage(
             0.1 ether, // mint price
             200, // max mints per wallet
             uint48(block.timestamp), // start time
@@ -212,68 +188,46 @@ contract ERC721DropTest is TestHelper {
             false // if false, allow any fee recipient
         );
 
-        // Declare TokenGatedMintParams array.
-        TokenGatedMintParams[]
-            memory tokenGatedMintParamsArray = new TokenGatedMintParams[](
-                args.numAllowedNftToken
-            );
+        uint256[] memory tokenIds = new uint256[](args.numMints);
 
-        // Iterate over the fuzzed number of gate tokens.
-        for (uint256 i = 0; i < args.numAllowedNftToken; i++) {
-            uint256[] memory tokenIds = new uint256[](args.numMints);
-
-            for (uint256 j = 0; j < args.numMints; j++) {
-                tokenIds[j] = j;
-            }
-
-            // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
-            address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
-
-            vm.prank(address(token));
-            // Update token gated drop for the deployed gateToken.
-            seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
-
-            // Add TokenGatedMintParams object to the array.
-            tokenGatedMintParamsArray[i] = TokenGatedMintParams(
-                gateToken,
-                tokenIds
-            );
+        for (uint256 j = 0; j < args.numMints; j++) {
+            tokenIds[j] = j;
         }
 
+        // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
+        address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
+
+        vm.prank(address(token));
+        // Update token gated drop for the deployed gateToken.
+        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+
+        // Keep track of the mint params.
+        TokenGatedMintParams memory mintParams = TokenGatedMintParams(
+            gateToken,
+            tokenIds
+        );
+
         // Calculate the value to send with the transaction.
-        uint256 mintValue = args.numMints *
-            args.numAllowedNftToken *
-            tokenGatedDropStage.mintPrice;
+        uint256 mintValue = args.numMints * dropStage.mintPrice;
 
         // Call mintAllowedTokenHolder.
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
-            tokenGatedMintParamsArray
+            mintParams
         );
 
-        // Calculate the expected number of tokens to be minted to the minter.
-        uint256 mintQuantity = args.numAllowedNftToken * args.numMints;
-
         // Check minter token balance increased.
-        assertEq(token.balanceOf(args.minter), mintQuantity);
-
-        // Create TokenGatedMintParams array of length 1 with the first
-        // TokenGatedMintParams of the original array.
-        TokenGatedMintParams[]
-            memory revertTokenGatedMintParamsArray = new TokenGatedMintParams[](
-                1
-            );
-        revertTokenGatedMintParamsArray[0] = tokenGatedMintParamsArray[0];
+        assertEq(token.balanceOf(args.minter), args.numMints);
 
         // Expect revert since the tokens were already minted in the previous call.
         vm.expectRevert(
             abi.encodeWithSelector(
                 TokenGatedTokenIdAlreadyRedeemed.selector,
                 address(token),
-                revertTokenGatedMintParamsArray[0].allowedNftToken,
-                revertTokenGatedMintParamsArray[0].allowedNftTokenIds[0]
+                mintParams.allowedNftToken,
+                mintParams.allowedNftTokenIds[0]
             )
         );
 
@@ -283,7 +237,7 @@ contract ERC721DropTest is TestHelper {
             address(token),
             args.feeRecipient,
             args.minter,
-            tokenGatedMintParamsArray
+            mintParams
         );
     }
 
@@ -291,7 +245,7 @@ contract ERC721DropTest is TestHelper {
         FuzzInputsAllowedTokenHolders memory args
     ) public validateAllowedTokenHoldersArgs(args) {
         // Create TokenGatedDropStage object with free mint.
-        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage(
+        TokenGatedDropStage memory dropStage = TokenGatedDropStage(
             0 ether, // mint price
             200, // max mints per wallet
             uint48(block.timestamp), // start time
@@ -302,54 +256,43 @@ contract ERC721DropTest is TestHelper {
             false // if false, allow any fee recipient
         );
 
-        // Declare TokenGatedMintParams array.
-        TokenGatedMintParams[]
-            memory tokenGatedMintParamsArray = new TokenGatedMintParams[](
-                args.numAllowedNftToken
-            );
+        uint256[] memory tokenIds = new uint256[](args.numMints);
 
-        // Iterate over the fuzzed number of gate tokens.
-        for (uint256 i = 0; i < args.numAllowedNftToken; i++) {
-            uint256[] memory tokenIds = new uint256[](args.numMints);
-
-            for (uint256 j = 0; j < args.numMints; j++) {
-                tokenIds[j] = j;
-            }
-
-            // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
-            address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
-
-            vm.prank(address(token));
-            // Update token gated drop for the deployed gateToken.
-            seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
-
-            // Add TokenGatedMintParams object to the array.
-            tokenGatedMintParamsArray[i] = TokenGatedMintParams(
-                gateToken,
-                tokenIds
-            );
+        for (uint256 j = 0; j < args.numMints; j++) {
+            tokenIds[j] = j;
         }
+
+        // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
+        address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
+
+        vm.prank(address(token));
+
+        // Update token gated drop for the deployed gateToken.
+        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+
+        // Keep track of the mint params.
+        TokenGatedMintParams memory mintParams = TokenGatedMintParams(
+            gateToken,
+            tokenIds
+        );
 
         // Call mintAllowedTokenHolder.
         seadrop.mintAllowedTokenHolder(
             address(token),
             args.feeRecipient,
             args.minter,
-            tokenGatedMintParamsArray
+            mintParams
         );
 
-        // Calculate the expected number of tokens to be minted to the minter.
-        uint256 mintQuantity = args.numAllowedNftToken * args.numMints;
-
         // Check minter token balance increased.
-        assertEq(token.balanceOf(args.minter), mintQuantity);
+        assertEq(token.balanceOf(args.minter), args.numMints);
     }
 
     function testMintAllowedTokenHolder_revertNotOwner(
         FuzzInputsAllowedTokenHolders memory args
     ) public validateAllowedTokenHoldersArgs(args) {
         // Create TokenGatedDropStage object.
-        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage(
+        TokenGatedDropStage memory dropStage = TokenGatedDropStage(
             0.1 ether, // mint price
             200, // max mints per wallet
             uint48(block.timestamp), // start time
@@ -360,38 +303,28 @@ contract ERC721DropTest is TestHelper {
             false // if false, allow any fee recipient
         );
 
-        // Declare TokenGatedMintParams array.
-        TokenGatedMintParams[]
-            memory tokenGatedMintParamsArray = new TokenGatedMintParams[](
-                args.numAllowedNftToken
-            );
+        uint256[] memory tokenIds = new uint256[](args.numMints);
 
-        // Iterate over the fuzzed number of gate tokens.
-        for (uint256 i = 0; i < args.numAllowedNftToken; i++) {
-            uint256[] memory tokenIds = new uint256[](args.numMints);
-
-            for (uint256 j = 0; j < args.numMints; j++) {
-                tokenIds[j] = j;
-            }
-
-            // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
-            address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
-
-            vm.prank(address(token));
-            // Update token gated drop for the deployed gateToken.
-            seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
-
-            // Add TokenGatedMintParams object to the array.
-            tokenGatedMintParamsArray[i] = TokenGatedMintParams(
-                gateToken,
-                tokenIds
-            );
+        for (uint256 j = 0; j < args.numMints; j++) {
+            tokenIds[j] = j;
         }
 
+        // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
+        address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
+
+        vm.prank(address(token));
+
+        // Update token gated drop for the deployed gateToken.
+        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+
+        // Keep track of the mint params.
+        TokenGatedMintParams memory mintParams = TokenGatedMintParams(
+            gateToken,
+            tokenIds
+        );
+
         // Calculate the value to send with the transaction.
-        uint256 mintValue = args.numMints *
-            args.numAllowedNftToken *
-            tokenGatedDropStage.mintPrice;
+        uint256 mintValue = args.numMints * dropStage.mintPrice;
 
         // Create an address to attempt to mint the tokens to, that doesn't
         // own the allowed NFT tokens.
@@ -403,8 +336,8 @@ contract ERC721DropTest is TestHelper {
             abi.encodeWithSelector(
                 TokenGatedNotTokenOwner.selector,
                 address(token),
-                tokenGatedMintParamsArray[0].allowedNftToken,
-                tokenGatedMintParamsArray[0].allowedNftTokenIds[0]
+                gateToken,
+                tokenIds[0]
             )
         );
         // Call mintAllowedTokenHolder.
@@ -412,7 +345,7 @@ contract ERC721DropTest is TestHelper {
             address(token),
             args.feeRecipient,
             notOwner,
-            tokenGatedMintParamsArray
+            mintParams
         );
     }
 
@@ -420,7 +353,7 @@ contract ERC721DropTest is TestHelper {
         FuzzInputsAllowedTokenHolders memory args
     ) public validateAllowedTokenHoldersArgs(args) {
         // Create TokenGatedDropStage object with restricted fee recipients.
-        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage(
+        TokenGatedDropStage memory dropStage = TokenGatedDropStage(
             0.1 ether, // mint price
             200, // max mints per wallet
             uint48(block.timestamp), // start time
@@ -431,38 +364,27 @@ contract ERC721DropTest is TestHelper {
             true // restrict fee recipients
         );
 
-        // Declare TokenGatedMintParams array.
-        TokenGatedMintParams[]
-            memory tokenGatedMintParamsArray = new TokenGatedMintParams[](
-                args.numAllowedNftToken
-            );
+        uint256[] memory tokenIds = new uint256[](args.numMints);
 
-        // Iterate over the fuzzed number of gate tokens.
-        for (uint256 i = 0; i < args.numAllowedNftToken; i++) {
-            uint256[] memory tokenIds = new uint256[](args.numMints);
-
-            for (uint256 j = 0; j < args.numMints; j++) {
-                tokenIds[j] = j;
-            }
-
-            // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
-            address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
-
-            vm.prank(address(token));
-            // Update token gated drop for the deployed gateToken.
-            seadrop.updateTokenGatedDrop(gateToken, tokenGatedDropStage);
-
-            // Add TokenGatedMintParams object to the array.
-            tokenGatedMintParamsArray[i] = TokenGatedMintParams(
-                gateToken,
-                tokenIds
-            );
+        for (uint256 j = 0; j < args.numMints; j++) {
+            tokenIds[j] = j;
         }
 
+        // Deploy a gateToken, mint tokenIds to the minter and store the token's address.
+        address gateToken = _deployAndMintGateToken(args.minter, tokenIds);
+
+        vm.prank(address(token));
+
+        // Update token gated drop for the deployed gateToken.
+        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+
+        // Keep track of the mint params.
+        TokenGatedMintParams memory mintParams = TokenGatedMintParams(
+            gateToken,
+            tokenIds
+        );
         // Calculate the value to send with the transaction.
-        uint256 mintValue = args.numMints *
-            args.numAllowedNftToken *
-            tokenGatedDropStage.mintPrice;
+        uint256 mintValue = args.numMints * dropStage.mintPrice;
 
         // Expect the call to fail since the passed in fee recipient
         // is not allowed.
@@ -474,7 +396,7 @@ contract ERC721DropTest is TestHelper {
             address(token),
             args.feeRecipient,
             args.minter,
-            tokenGatedMintParamsArray
+            mintParams
         );
     }
 }

@@ -153,7 +153,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     ) external;
 
     /**
-     * @notice Update the server side signers for this nft contract
+     * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
      *         Only the owner or administrator can update the signers.
      *

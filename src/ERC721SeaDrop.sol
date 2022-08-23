@@ -327,7 +327,7 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Update the server side signers for this nft contract
+     * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
      *         Only the owner or administrator can update the signers.
      *

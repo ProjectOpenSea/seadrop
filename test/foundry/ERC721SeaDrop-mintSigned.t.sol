@@ -16,6 +16,12 @@ import {
 contract ERC721DropTest is TestHelper {
     using ECDSA for bytes32;
 
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 indexed identifier
+    );
+
     struct FuzzInputsSigners {
         address payer;
         address minter;
@@ -23,6 +29,7 @@ contract ERC721DropTest is TestHelper {
         address feeRecipient;
         string signerNameSeed;
     }
+
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _MINT_DATA_TYPEHASH =
@@ -134,7 +141,7 @@ contract ERC721DropTest is TestHelper {
         // Create the signature from the components.
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        // Imperonate the token contract to update the signers.
+        // Impersonate the token contract to update the signers.
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
@@ -165,7 +172,7 @@ contract ERC721DropTest is TestHelper {
     {
         // Create a MintParams object with a mint price of 0 ether.
         MintParams memory mintParams = MintParams(
-            0 ether, // mint price
+            0 ether, // mint price (free)
             10, // max mints per wallet
             uint64(block.timestamp), // start time
             uint64(block.timestamp) + 1000, // end time
@@ -185,7 +192,7 @@ contract ERC721DropTest is TestHelper {
         // Create the signature from the components.
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        // Imperonate the token contract to update the signers.
+        // Impersonate the token contract to update the signers.
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
@@ -210,9 +217,9 @@ contract ERC721DropTest is TestHelper {
     function testMintSigned_revertFeeRecipientNotAllowed(
         FuzzInputsSigners memory args
     ) public validateFuzzInputsSigners(args) {
-        // Create a MintParams object with a mint price of 0 ether.
+        // Create a MintParams object.
         MintParams memory mintParams = MintParams(
-            0 ether, // mint price
+            0.1 ether, // mint price
             10, // max mints per wallet
             uint64(block.timestamp), // start time
             uint64(block.timestamp) + 1000, // end time
@@ -232,7 +239,7 @@ contract ERC721DropTest is TestHelper {
         // Create the signature from the components.
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        // Imperonate the token contract to update the signers.
+        // Impersonate the token contract to update the signers.
         vm.prank(address(token));
 
         // Update the approved signers of the token contract.
@@ -248,7 +255,10 @@ contract ERC721DropTest is TestHelper {
             abi.encodeWithSelector(FeeRecipientNotAllowed.selector)
         );
 
-        seadrop.mintSigned(
+        // Calculate the value to send with the transaction.
+        uint256 mintValue = args.numMints * mintParams.mintPrice;
+
+        seadrop.mintSigned{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -257,8 +267,112 @@ contract ERC721DropTest is TestHelper {
             signature
         );
     }
-}
 
-// testMintSigned_unknownSigner
-// testMintSigned_differentPayerThanMinter
-// testMintSigned_revertFeeRecipientNotAllowed
+    function testMintSigned_unknownSigner(string memory signerSeed) public {
+        vm.assume(
+            keccak256(bytes(signerSeed)) != keccak256(bytes("good seed"))
+        );
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            false // restrictFeeRecipient
+        );
+
+        // Get the signature components with an invalid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            signerSeed,
+            msg.sender,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Impersonate the token contract to update the signers.
+        vm.prank(address(token));
+        // Update the approved signers of the token contract.
+        address[] memory signers = new address[](1);
+        signers[0] = makeAddr("good seed");
+        seadrop.updateSigners(signers);
+
+        address expectedRecovered = makeAddr(signerSeed);
+
+        vm.deal(msg.sender, 100 ether);
+
+        // Expect the subsequent call to mintSigned to revert with error
+        // InvalidSignature
+        vm.expectRevert(
+            abi.encodeWithSelector(InvalidSignature.selector, expectedRecovered)
+        );
+
+        seadrop.mintSigned{ value: mintParams.mintPrice }(
+            address(token),
+            address(1),
+            msg.sender,
+            1,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_differentPayerThanMinter(
+        address minter,
+        address payer
+    ) public {
+        vm.assume(
+            minter != address(0) && payer != address(0) && minter != payer
+        );
+
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            false // restrictFeeRecipient
+        );
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            minter,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Impersonate the token contract to update the signers.
+        vm.prank(address(token));
+        // Update the approved signers of the token contract.
+        address[] memory signers = new address[](1);
+        signers[0] = makeAddr("good seed");
+        seadrop.updateSigners(signers);
+
+        hoax(payer, 100 ether);
+
+        vm.expectEmit(true, false, false, false);
+        emit Transfer(address(0), minter, 1);
+
+        vm.expectEmit(true, true, true, false, address(token));
+        emit Transfer(address(0), minter, 1);
+
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            address(1),
+            minter,
+            2,
+            mintParams,
+            signature
+        );
+    }
+}

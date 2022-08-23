@@ -37,7 +37,7 @@ interface SeaDropErrorsAndEvents {
     error FeeRecipientCannotBeZeroAddress();
 
     /**
-     * @dev Revert if the fee recipient is restricted and not allowe.
+     * @dev Revert if the fee recipient is restricted and not allowed.
      */
     error FeeRecipientNotAllowed();
 
@@ -57,7 +57,13 @@ interface SeaDropErrorsAndEvents {
     error InvalidProof();
 
     /**
-     * @dev Revert with an error if signer's signatuer is invalid.
+     * @dev Revert if a supplied signer address is the zero address,
+     *      as it would allow all invalid signatures.
+     */
+    error SignerCannotBeZeroAddress();
+
+    /**
+     * @dev Revert with an error if signer's signature is invalid.
      */
     error InvalidSignature(address recoveredSigner);
 
@@ -161,7 +167,7 @@ event AllowListUpdated(
     );
 
     /**
-     * @dev An event with the updated server side signers for an nft contract.
+     * @dev An event with the updated server-side signers for an nft contract.
      */
     event SignersUpdated(
         address indexed nftContract,

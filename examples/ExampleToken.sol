@@ -6,9 +6,12 @@ import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /**
- * @notice Example token that is compatible with SeaDrop.
+ * @notice Example token with on-chain metadata that is compatible
+ *         with SeaDrop.
  */
 contract ExampleToken is ERC721SeaDrop {
+    /// @notice Store the int representation of this address as a
+    ///         seed for its tokens' randomized output.
     uint160 private immutable thisUintAddress = uint160(address(this));
 
     /**
@@ -48,18 +51,24 @@ contract ExampleToken is ERC721SeaDrop {
         svg = string.concat(
             svg,
             "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'>"
-            "<style>"
-            "  .example { fill: white; font-family: serif; font-size: 24px; }"
-            "</style>"
-            "<rect width='100%' height='100%' fill='black' />"
-            "<text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' style='fill: white; font-family: "
+            "<rect width='100%' height='100%' style='fill: "
+        );
+        svg = string.concat(svg, _randomPastelColor(tokenId));
+        svg = string.concat(
+            svg,
+            "' /><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'"
+            "style='fill: black; font-family: "
         );
         svg = string.concat(svg, _font(tokenId));
         svg = string.concat(svg, "; font-size: ");
         svg = string.concat(svg, _fontSize(tokenId));
-        svg = string.concat(svg, "px;'>");
+        svg = string.concat(svg, "px'>");
         svg = string.concat(svg, Strings.toString(tokenId));
-        svg = string.concat(svg, "</text></svg>");
+        svg = string.concat(svg, "</text>");
+        svg = string.concat(svg, _randomRect(tokenId));
+        svg = string.concat(svg, _randomPolygon(tokenId));
+        svg = string.concat(svg, _randomCircle(tokenId));
+        svg = string.concat(svg, "</svg>");
 
         string memory json = '{"name": "Test Token #';
 
@@ -67,8 +76,8 @@ contract ExampleToken is ERC721SeaDrop {
         json = string.concat(
             json,
             '", "description": "This is a test token, for trying out cool things related to NFTs!'
-            ' Please note that this token has no value or warranty of any kind.\\n\\n\\"The future belongs to those who believe in'
-            ' the beauty of their dreams.\\"\\n-Eleanor Roosevelt", "image_data": "'
+            ' Please note that this token has no value or warranty of any kind.\\n\\n\\"The future belongs to'
+            ' those who believe in the beauty of their dreams.\\"\\n-Eleanor Roosevelt", "image_data": "'
         );
         json = string.concat(json, svg);
         json = string.concat(
@@ -94,7 +103,7 @@ contract ExampleToken is ERC721SeaDrop {
      * @notice Returns a random web safe font based on the token id.
      */
     function _font(uint256 tokenId) internal view returns (string memory) {
-        uint256 roll = thisUintAddress + tokenId;
+        uint256 roll = thisUintAddress / (tokenId + 1);
 
         if (roll % 9 == 0) {
             return "Garamond";
@@ -119,6 +128,121 @@ contract ExampleToken is ERC721SeaDrop {
      * @notice Returns a random font size based on the token id.
      */
     function _fontSize(uint256 tokenId) internal view returns (string memory) {
-        return Strings.toString(((thisUintAddress * tokenId) % 200) + 10);
+        return Strings.toString(((thisUintAddress / (tokenId + 1)) % 180) + 12);
+    }
+
+    /**
+     * @notice Returns a random pastel color based on the token id.
+     */
+    function _randomPastelColor(uint256 tokenId)
+        internal
+        view
+        returns (string memory)
+    {
+        uint256 roll = thisUintAddress / (tokenId + 1);
+        string memory color = "rgb(";
+        uint256 r = ((roll << 1) % 127) + 127;
+        uint256 g = ((roll << 2) % 127) + 127;
+        uint256 b = ((roll << 3) % 127) + 127;
+        color = string.concat(color, Strings.toString(r));
+        color = string.concat(color, ", ");
+        color = string.concat(color, Strings.toString(g));
+        color = string.concat(color, ", ");
+        color = string.concat(color, Strings.toString(b));
+        color = string.concat(color, ")");
+        return color;
+    }
+
+    /**
+     * @notice Returns a random rectangle...sometimes.
+     */
+    function _randomRect(uint256 tokenId)
+        internal
+        view
+        returns (string memory)
+    {
+        uint256 roll = thisUintAddress / (tokenId + 1);
+        if (roll % 3 != 0) return "";
+        string memory rect = "<rect x='";
+        uint256 x = (roll << 1) % 301;
+        uint256 y = (roll << 2) % 302;
+        uint256 width = (roll << 3) % 303;
+        uint256 height = (roll << 4) % 303;
+        rect = string.concat(rect, Strings.toString(x));
+        rect = string.concat(rect, "' y='");
+        rect = string.concat(rect, Strings.toString(y));
+        rect = string.concat(rect, "' width='");
+        rect = string.concat(rect, Strings.toString(width));
+        rect = string.concat(rect, "' height='");
+        rect = string.concat(rect, Strings.toString(height));
+        rect = string.concat(
+            rect,
+            "' style='fill:blue;stroke:teal;stroke-width:5;fill-opacity:0.1;"
+            "stroke-opacity:0.3' />"
+        );
+        return rect;
+    }
+
+    /**
+     * @notice Returns a random polygon...sometimes.
+     */
+    function _randomPolygon(uint256 tokenId)
+        internal
+        view
+        returns (string memory)
+    {
+        uint256 roll = thisUintAddress / (tokenId + 1);
+        if (roll % 5 != 0) return "";
+        string memory poly = "<polygon points='";
+        uint256 x1 = (roll << 1) % 301;
+        uint256 y1 = (roll << 2) % 302;
+        uint256 x2 = (roll << 3) % 303;
+        uint256 y2 = (roll << 4) % 304;
+        uint256 x3 = (roll << 5) % 305;
+        uint256 y3 = (roll << 6) % 306;
+        poly = string.concat(poly, Strings.toString(x1));
+        poly = string.concat(poly, ",");
+        poly = string.concat(poly, Strings.toString(y1));
+        poly = string.concat(poly, " ");
+        poly = string.concat(poly, Strings.toString(x2));
+        poly = string.concat(poly, ",");
+        poly = string.concat(poly, Strings.toString(y2));
+        poly = string.concat(poly, " ");
+        poly = string.concat(poly, Strings.toString(x3));
+        poly = string.concat(poly, ",");
+        poly = string.concat(poly, Strings.toString(y3));
+        poly = string.concat(
+            poly,
+            "' style='fill:lime;stroke:purple;stroke-width:1;stroke-dasharray:5;"
+            "fill-opacity:0.3;stroke-opacity:0.7' />"
+        );
+        return poly;
+    }
+
+    /**
+     * @notice Returns a random circle...sometimes.
+     */
+    function _randomCircle(uint256 tokenId)
+        internal
+        view
+        returns (string memory)
+    {
+        uint256 roll = thisUintAddress / (tokenId + 1);
+        if (roll % 7 != 0) return "";
+        string memory circle = "<circle cx='";
+        uint256 cx = (roll << 1) % 300;
+        uint256 cy = (roll << 2) % 300;
+        uint256 r = (roll << 3) % 150;
+        circle = string.concat(circle, Strings.toString(cx));
+        circle = string.concat(circle, "' cy='");
+        circle = string.concat(circle, Strings.toString(cy));
+        circle = string.concat(circle, "' r='");
+        circle = string.concat(circle, Strings.toString(r));
+        circle = string.concat(
+            circle,
+            "' style='fill:red;stroke:black;stroke-width:2;fill-opacity:0.3;"
+            "stroke-opacity:0.5' />"
+        );
+        return circle;
     }
 }
