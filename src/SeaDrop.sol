@@ -727,7 +727,8 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Returns an enumeration of allowed fee recipients for an nft contract when fee recipients are enforced
+     * @notice Returns an enumeration of allowed fee recipients for an
+     *         nft contract when fee recipients are enforced.
      *
      * @param nftContract The nft contract.
      */
@@ -866,11 +867,11 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
-        // use maxTotalMintableByWallet != 0 as a signal that this update should add or update the drop stage
-        // otherwise we will be removing
+        // Use maxTotalMintableByWallet != 0 as a signal that this update should
+        // add or update the drop stage, otherwise we will be removing.
         bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
 
-        // get pointers to the token gated drop data and enumerated addresses
+        // Get pointers to the token gated drop data and enumerated addresses.
         TokenGatedDropStage storage existingDropStageData = _tokenGatedDrops[
             msg.sender
         ][allowedNftToken];
@@ -878,7 +879,8 @@ contract SeaDrop is ISeaDrop {
             msg.sender
         ];
 
-        // stage struct packs to a single slot, so load it as a uint256; if it is 0, it is empty
+        // Stage struct packs to a single slot, so load it
+        // as a uint256; if it is 0, it is empty.
         bool dropStageExists;
         assembly {
             dropStageExists := iszero(eq(sload(existingDropStageData.slot), 0))
@@ -886,16 +888,16 @@ contract SeaDrop is ISeaDrop {
 
         if (addOrUpdateDropStage) {
             _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
-            // add to enumeration if it does not exist already
+            // Add to enumeration if it does not exist already.
             if (!dropStageExists) {
                 enumeratedTokens.push(allowedNftToken);
             }
         } else {
-            // check we are not deleting a drop stage that does not exist
+            // Check we are not deleting a drop stage that does not exist.
             if (!dropStageExists) {
                 revert TokenGatedDropStageNotPresent();
             }
-            // clear storage slot and remove from enumeration
+            // Clear storage slot and remove from enumeration.
             delete _tokenGatedDrops[msg.sender][allowedNftToken];
             _removeFromEnumeration(allowedNftToken, enumeratedTokens);
         }
@@ -965,8 +967,8 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     * @param signer Signer to add or remove
-     * @param allowed Whether to add or remove the signer
+     * @param signer  The signer to add or remove.
+     * @param allowed Whether to add or remove the signer.
      */
     function updateSigner(address signer, bool allowed)
         external

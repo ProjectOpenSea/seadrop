@@ -37,13 +37,12 @@ interface SeaDropErrorsAndEvents {
     error FeeRecipientCannotBeZeroAddress();
 
     /**
-     * @dev Revert if the fee recipient is not already included
+     * @dev Revert if the fee recipient is not already included.
      */
     error FeeRecipientNotPresent();
 
-
     /**
-     * @dev Revert if fee recipient is already included
+     * @dev Revert if the fee recipient is already included.
      */
     error DuplicateFeeRecipient();
 
@@ -77,13 +76,16 @@ interface SeaDropErrorsAndEvents {
     error InvalidSignature(address recoveredSigner);
 
     /**
-     * @dev Revert with an error if a signer is not included in enumeration when removing
+     * @dev Revert with an error if a signer is not included in
+     *      the enumeration when removing.
      */
     error SignerNotPresent();
 
     /**
-     * @dev Revert with an error if a signer is already included in mapping when adding
-     * note: only applies when adding a single signer, as duplicates in enumeartion can be removed with removeSigner
+     * @dev Revert with an error if a signer is already included in mapping
+     *      when adding.
+     *      Note: only applies when adding a single signer, as duplicates in
+     *      enumeration can be removed with removeSigner.
      */
     error DuplicateSigner();
 
