@@ -853,7 +853,7 @@ contract SeaDrop is ISeaDrop {
     ) external override onlyIERC721SeaDrop {
         // use maxTotalMintableByWallet != 0 as a signal that this update should add or update the drop stage
         // otherwise we will be removing
-        bool addDropStage = dropStage.maxTotalMintableByWallet != 0;
+        bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
 
         // get pointers to the token gated drop data and enumerated addresses
         TokenGatedDropStage storage existingDropStageData = _tokenGatedDrops[
@@ -869,7 +869,7 @@ contract SeaDrop is ISeaDrop {
             dropStageExists := iszero(eq(sload(existingDropStageData.slot), 0))
         }
 
-        if (addDropStage) {
+        if (addOrUpdateDropStage) {
             _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
             // add to enumeration if it does not exist already
             if (!dropStageExists) {
