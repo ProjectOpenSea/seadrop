@@ -6,9 +6,22 @@ import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { TestERC721 } from "test/foundry/utils/TestERC721.sol";
+import {
+    AllowListData,
+    MintParams,
+    PublicDrop,
+    TokenGatedDropStage,
+    TokenGatedMintParams
+} from "seadrop/lib/SeaDropStructs.sol";
 
 contract TestSeaDrop is TestHelper {
     TestERC721 badToken;
+    mapping(address => bool) seenAddresses;
+
+    struct FuzzSelector {
+        address targetAddress;
+        bytes4[] targetSelectors;
+    }
 
     function setUp() public {
         // Deploy the ERC721SeaDrop token.
@@ -47,5 +60,69 @@ contract TestSeaDrop is TestHelper {
             abi.encodeWithSelector(SignerCannotBeZeroAddress.selector)
         );
         seadrop.updateSigner(address(0), true);
+    }
+
+    function testUpdateSigner(address signer1, address signer2) public {
+        vm.assume(signer1 != address(0));
+        vm.assume(signer2 != address(0));
+        vm.assume(signer1 != signer2);
+        vm.startPrank(address(token));
+        seadrop.updateSigner(signer1, true);
+        address[] memory signers = seadrop.getSigners(address(token));
+        assertEq(signers.length, 1);
+        assertEq(signers[0], signer1);
+        seadrop.updateSigner(signer2, true);
+        signers = seadrop.getSigners(address(token));
+        assertEq(signers.length, 2);
+        assertEq(signers[0], signer1);
+        assertEq(signers[1], signer2);
+        seadrop.updateSigner(signer1, false);
+        signers = seadrop.getSigners(address(token));
+        assertEq(signers.length, 1);
+        assertEq(signers[0], signer2);
+        seadrop.updateSigner(signer2, false);
+        signers = seadrop.getSigners(address(token));
+        assertEq(signers.length, 0);
+    }
+
+    function invariantNoDuplicatesInEnumeratedSigners() public {
+        address[] memory signers = seadrop.getSigners(address(token));
+        for (uint256 i; i < signers.length; ++i) {
+            assertFalse(seenAddresses[signers[i]]);
+            seenAddresses[signers[i]] = true;
+        }
+    }
+
+    function invariantNoDuplicatesInEnumeratedTokens() public {
+        address[] memory tokens = seadrop.getTokenGatedAllowedTokens(
+            address(token)
+        );
+        for (uint256 i; i < tokens.length; ++i) {
+            assertFalse(seenAddresses[tokens[i]]);
+            seenAddresses[tokens[i]] = true;
+
+            TokenGatedDropStage memory drop = seadrop.getTokenGatedDrop(
+                address(token),
+                tokens[i]
+            );
+            assertGt(drop.maxTotalMintableByWallet, 0);
+        }
+    }
+
+    function targetContracts() public view returns (address[] memory) {
+        address[] memory targets = new address[](2);
+        targets[0] = address(seadrop);
+        targets[1] = address(token);
+        return targets;
+    }
+
+    function targetSelectors() public view returns (FuzzSelector[] memory) {
+        FuzzSelector[] memory fuzzSelectors = new FuzzSelector[](0);
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = seadrop.updateSigner.selector;
+        selectors[1] = seadrop.updateTokenGatedDrop.selector;
+
+        fuzzSelectors[0] = FuzzSelector(address(seadrop), selectors);
+        return fuzzSelectors;
     }
 }
