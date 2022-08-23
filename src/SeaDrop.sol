@@ -1011,7 +1011,7 @@ contract SeaDrop is ISeaDrop {
         // cache length
         uint256 enumeratedDropsLength = enumeration.length;
         for (uint256 i = 0; i < enumeratedDropsLength; ) {
-            // check if enumerated token is the one we are deleting
+            // check if enumerated element is the one we are deleting
             if (enumeration[i] == toRemove) {
                 // swap with last element
                 enumeration[i] = enumeration[enumeratedDropsLength - 1];
