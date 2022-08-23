@@ -47,14 +47,14 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     ) external payable;
 
     /**
-     * @notice Mint with a server side signature.
+     * @notice Mint with a server-side signature.
      *
      * @param nftContract      The nft contract to mint.
      * @param feeRecipient     The fee recipient.
      * @param minterIfNotPayer The mint recipient if different than the payer.
      * @param quantity         The number of tokens to mint.
      * @param mintParams       The mint parameters.
-     * @param signature        The server side signature, must be an allowed
+     * @param signature        The server-side signature, must be an allowed
      *                         signer.
      */
     function mintSigned(
@@ -135,7 +135,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (bool);
 
     /**
-     * @notice Returns the server side signers for the nft contract.
+     * @notice Returns the server-side signers for the nft contract.
      *
      * @param nftContract The nft contract.
      */
@@ -223,7 +223,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         external;
 
     /**
-     * @notice Updates the allowed server side signers and emits an event.
+     * @notice Updates the allowed server-side signers and emits an event.
      *
      * @param newSigners The new list of signers.
      */

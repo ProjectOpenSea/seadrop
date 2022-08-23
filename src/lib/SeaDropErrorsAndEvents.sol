@@ -167,7 +167,7 @@ event AllowListUpdated(
     );
 
     /**
-     * @dev An event with the updated server side signers for an nft contract.
+     * @dev An event with the updated server-side signers for an nft contract.
      */
     event SignersUpdated(
         address indexed nftContract,

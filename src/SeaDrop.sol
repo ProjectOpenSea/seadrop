@@ -54,10 +54,10 @@ contract SeaDrop is ISeaDrop {
     /// @notice Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
 
-    /// @notice Track the allowed signers for server side drops.
+    /// @notice Track the allowed signers for server-side drops.
     mapping(address => mapping(address => bool)) private _signers;
 
-    /// @notice Track the signers for each server side drop.
+    /// @notice Track the signers for each server-side drop.
     mapping(address => address[]) private _enumeratedSigners;
 
     /// @notice Track token gated drop stages.
@@ -240,14 +240,14 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Mint with a server side signature.
+     * @notice Mint with a server-side signature.
      *
      * @param nftContract      The nft contract to mint.
      * @param feeRecipient     The fee recipient.
      * @param minterIfNotPayer The mint recipient if different than the payer.
      * @param quantity         The number of tokens to mint.
      * @param mintParams       The mint parameters.
-     * @param signature        The server side signature, must be an allowed
+     * @param signature        The server-side signature, must be an allowed
      *                         signer.
      */
     function mintSigned(
@@ -724,7 +724,7 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Returns the server side signers for the nft contract.
+     * @notice Returns the server-side signers for the nft contract.
      *
      * @param nftContract The nft contract.
      */
@@ -906,7 +906,7 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Updates the allowed server side signers and emits an event.
+     * @notice Updates the allowed server-side signers and emits an event.
      *
      * @param newSigners The new list of signers.
      */
