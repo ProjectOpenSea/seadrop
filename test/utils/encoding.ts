@@ -1,6 +1,6 @@
 import { randomBytes as nodeRandomBytes } from "crypto";
 
-const SeededRNG = require("./seeded-rng.js");
+const SeededRNG = require("./seeded-rng");
 
 const GAS_REPORT_MODE = process.env.REPORT_GAS;
 
