@@ -29,6 +29,7 @@ contract ERC721DropTest is TestHelper {
         address feeRecipient;
         string signerNameSeed;
     }
+
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _MINT_DATA_TYPEHASH =
@@ -171,7 +172,7 @@ contract ERC721DropTest is TestHelper {
     {
         // Create a MintParams object with a mint price of 0 ether.
         MintParams memory mintParams = MintParams(
-            0 ether, // mint price
+            0 ether, // mint price (free)
             10, // max mints per wallet
             uint64(block.timestamp), // start time
             uint64(block.timestamp) + 1000, // end time
@@ -216,9 +217,9 @@ contract ERC721DropTest is TestHelper {
     function testMintSigned_revertFeeRecipientNotAllowed(
         FuzzInputsSigners memory args
     ) public validateFuzzInputsSigners(args) {
-        // Create a MintParams object with a mint price of 0 ether.
+        // Create a MintParams object.
         MintParams memory mintParams = MintParams(
-            0 ether, // mint price
+            0.1 ether, // mint price
             10, // max mints per wallet
             uint64(block.timestamp), // start time
             uint64(block.timestamp) + 1000, // end time
@@ -254,7 +255,10 @@ contract ERC721DropTest is TestHelper {
             abi.encodeWithSelector(FeeRecipientNotAllowed.selector)
         );
 
-        seadrop.mintSigned(
+        // Calculate the value to send with the transaction.
+        uint256 mintValue = args.numMints * mintParams.mintPrice;
+
+        seadrop.mintSigned{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -268,9 +272,9 @@ contract ERC721DropTest is TestHelper {
         vm.assume(
             keccak256(bytes(signerSeed)) != keccak256(bytes("good seed"))
         );
-        // Create a MintParams object with a mint price of 0 ether.
+        // Create a MintParams object.
         MintParams memory mintParams = MintParams(
-            0 ether, // mint price
+            0.1 ether, // mint price
             10, // max mints per wallet
             uint64(block.timestamp), // start time
             uint64(block.timestamp) + 1000, // end time
@@ -283,7 +287,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components with an invalid signer
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             signerSeed,
-            address(this),
+            msg.sender,
             mintParams
         );
 
@@ -299,16 +303,18 @@ contract ERC721DropTest is TestHelper {
 
         address expectedRecovered = makeAddr(signerSeed);
 
+        vm.deal(msg.sender, 100 ether);
+
         // Expect the subsequent call to mintSigned to revert with error
-        // FeeRecipientNotAllowed
+        // InvalidSignature
         vm.expectRevert(
             abi.encodeWithSelector(InvalidSignature.selector, expectedRecovered)
         );
 
-        seadrop.mintSigned(
+        seadrop.mintSigned{ value: mintParams.mintPrice }(
             address(token),
             address(1),
-            address(this),
+            msg.sender,
             1,
             mintParams,
             signature
@@ -319,14 +325,13 @@ contract ERC721DropTest is TestHelper {
         address minter,
         address payer
     ) public {
-        vm.assume(payer != address(0));
-        address minterIfNotPayer = minter;
-        if (minter == payer) {
-            minterIfNotPayer == address(0);
-        }
-        // Create a MintParams object with a mint price of 0 ether.
+        vm.assume(
+            minter != address(0) && payer != address(0) && minter != payer
+        );
+
+        // Create a MintParams object.
         MintParams memory mintParams = MintParams(
-            0 ether, // mint price
+            0.1 ether, // mint price
             10, // max mints per wallet
             uint64(block.timestamp), // start time
             uint64(block.timestamp) + 1000, // end time
@@ -339,7 +344,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components with a valid signer
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             "good seed",
-            address(this),
+            minter,
             mintParams
         );
 
@@ -353,21 +358,21 @@ contract ERC721DropTest is TestHelper {
         signers[0] = makeAddr("good seed");
         seadrop.updateSigners(signers);
 
+        hoax(payer, 100 ether);
+
         vm.expectEmit(true, false, false, false);
-        emit Transfer(address(0), address(minter), 1);
-        // vm.expectEmit(true, true, true, false, address(token));
-        // emit Transfer(address(0), address(minter), 1);
-        vm.prank(address(payer));
-        seadrop.mintSigned(
+        emit Transfer(address(0), minter, 1);
+
+        vm.expectEmit(true, true, true, false, address(token));
+        emit Transfer(address(0), minter, 1);
+
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
             address(token),
             address(1),
-            address(this),
+            minter,
             2,
             mintParams,
             signature
         );
     }
 }
-
-// testMintSigned_unknownSigner
-// testMintSigned_differentPayerThanMinter
