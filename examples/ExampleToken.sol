@@ -141,7 +141,7 @@ contract ExampleToken is ERC721SeaDrop {
     {
         uint256 roll = thisUintAddress / (tokenId + 1);
         string memory color = "rgb(";
-        uint256 r = (roll << 1 % 127) + 127;
+        uint256 r = ((roll << 1) % 127) + 127;
         uint256 g = ((roll << 2) % 127) + 127;
         uint256 b = ((roll << 3) % 127) + 127;
         color = string.concat(color, Strings.toString(r));
