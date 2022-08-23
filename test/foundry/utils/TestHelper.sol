@@ -13,9 +13,6 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
     SeaDrop seadrop = new SeaDrop();
     ERC721SeaDrop token;
 
-    mapping(address => uint256) privateKeys;
-    mapping(bytes => address) seedAddresses;
-
     address creator = makeAddr("creator");
 
     struct FuzzInputs {
@@ -46,17 +43,6 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
         privateKey = uint256(keccak256(abi.encodePacked(name)));
         addr = vm.addr(privateKey);
         vm.label(addr, name);
-    }
-
-    function makeAndStoreAddrAndKey(bytes memory seed)
-        public
-        returns (address)
-    {
-        uint256 pk = uint256(keccak256(seed));
-        address derived = vm.addr(pk);
-        seedAddresses[seed] = derived;
-        privateKeys[derived] = pk;
-        return derived;
     }
 
     function makeAddr(string memory name) internal returns (address addr) {
