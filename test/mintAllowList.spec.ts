@@ -7,7 +7,10 @@ import { randomHex } from "./utils/encoding";
 import { VERSION } from "./utils/helpers";
 
 import type { IERC721SeaDrop, ISeaDrop } from "../typechain-types";
-import type { MintParamsStruct } from "../typechain-types/src/SeaDrop";
+import type {
+  MintParamsStruct,
+  AllowListDataStruct,
+} from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 const allowListElements = async (
@@ -32,6 +35,7 @@ describe(`Mint Allow List (v${VERSION})`, function () {
   let seadrop: ISeaDrop;
   let token: IERC721SeaDrop;
   let creator: Wallet;
+  let admin: Wallet;
   let feeRecipient: Wallet;
   let feeBps: number;
 
@@ -44,13 +48,18 @@ describe(`Mint Allow List (v${VERSION})`, function () {
   before(async () => {
     const SeaDrop = await ethers.getContractFactory("SeaDrop");
     seadrop = await SeaDrop.deploy();
-    creator = new ethers.Wallet(randomHex(32), provider);
-    feeRecipient = new ethers.Wallet(randomHex(32), provider);
+    creator = new ethers.Wallet(randomHex(32), provider as any);
+    admin = new ethers.Wallet(randomHex(32), provider as any);
+    feeRecipient = new ethers.Wallet(randomHex(32), provider as any);
     const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
-    token = await SeaDropToken.deploy();
-    await token.updateAllowedFeeRecipient(seadrop, feeRecipient.address);
-    await token.updateCreatorPayoutAddress(creator);
-    await token.updatePublicDropFee(feeBps);
+    token = await SeaDropToken.deploy("", "", admin.address, [seadrop.address]);
+    await token.updateAllowedFeeRecipient(
+      seadrop.address,
+      feeRecipient.address,
+      true
+    );
+    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await token.updatePublicDropFee(seadrop.address, feeBps);
   });
 
   it("Should mint an allow list stage", async () => {
@@ -79,13 +88,17 @@ describe(`Mint Allow List (v${VERSION})`, function () {
 
     const proof = merkleTree.getHexProof(leaf);
 
-    const allowListData = [root, [], ""];
-    await token.updateAllowList(seadrop, allowListData);
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    await token.updateAllowList(seadrop.address, allowListData);
 
     expect(
       await seadrop.mintAllowList(
         token.address,
-        feeRecipient,
+        feeRecipient.address,
         minter,
         3,
         mintParams,
@@ -120,13 +133,17 @@ describe(`Mint Allow List (v${VERSION})`, function () {
 
     const proof = merkleTree.getHexProof(leaf);
 
-    const allowListData = [root, [], ""];
-    await token.updateAllowList(seadrop, allowListData);
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    await token.updateAllowList(seadrop.address, allowListData);
 
     expect(
       await seadrop.mintAllowList(
         token.address,
-        feeRecipient,
+        feeRecipient.address,
         minter,
         3,
         mintParams,
@@ -134,4 +151,6 @@ describe(`Mint Allow List (v${VERSION})`, function () {
       )
     ).to.be.true;
   });
+
+  // it("Should revert if the minter is not on the allow list", async () => {});
 });
