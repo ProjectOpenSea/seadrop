@@ -15,7 +15,6 @@ import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
 
 import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
-import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
 
 import {
     IERC721
@@ -28,6 +27,8 @@ import {
 import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+
+import { MerkleProof } from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title  SeaDrop
@@ -224,7 +225,7 @@ contract SeaDrop is ISeaDrop {
 
         // Verify the proof.
         if (
-            !MerkleProofLib.verify(
+            !MerkleProof.verify(
                 proof,
                 _allowListMerkleRoots[nftContract],
                 keccak256(abi.encode(minter, mintParams))
