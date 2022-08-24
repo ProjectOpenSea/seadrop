@@ -3,6 +3,8 @@ pragma solidity ^0.8.11;
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
+import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
+
 import {
     AllowListData,
     MintParams,
@@ -11,10 +13,7 @@ import {
     TokenGatedMintParams
 } from "./lib/SeaDropStructs.sol";
 
-import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
-
-import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 import {
     IERC721
@@ -28,7 +27,9 @@ import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
-import { MerkleProof } from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
+import {
+    MerkleProof
+} from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title  SeaDrop
