@@ -1,4 +1,3 @@
-/*
 import { expect } from "chai";
 import { keccak256 } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
@@ -54,7 +53,7 @@ describe(`Mint Allow List (v${VERSION})`, function () {
     await token.updatePublicDropFee(feeBps);
   });
 
-  it("can mint an allow list stage", async () => {
+  it("Should mint an allow list stage", async () => {
     const minter = "0xabc";
     const mintParams = {
       mintPrice: "10000000000000",
@@ -94,5 +93,45 @@ describe(`Mint Allow List (v${VERSION})`, function () {
       )
     ).to.be.true;
   });
+
+  it("Should mint a free mint allow list stage", async () => {
+    const minter = "0xabc";
+    const mintParams = {
+      mintPrice: "0",
+      maxTotalMintableByWallet: 10,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: 100,
+      restrictFeeRecipients: false,
+    };
+
+    const elements = await allowListElements([[minter, mintParams]]);
+
+    const merkleTree = new MerkleTree(elements, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    const root = merkleTree.getHexRoot();
+
+    const leaf = merkleTree.getLeaf(0);
+
+    const proof = merkleTree.getHexProof(leaf);
+
+    const allowListData = [root, [], ""];
+    await token.updateAllowList(seadrop, allowListData);
+
+    expect(
+      await seadrop.mintAllowList(
+        token.address,
+        feeRecipient,
+        minter,
+        3,
+        mintParams,
+        proof
+      )
+    ).to.be.true;
+  });
 });
-*/
