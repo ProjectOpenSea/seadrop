@@ -140,6 +140,7 @@ contract TestSeaDropSnapshot is TestHelper {
         snapshotToken.updateSigner(address(seadrop), signer, true);
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             "signer",
+            address(snapshotToken),
             address(this),
             address(5),
             mintParams

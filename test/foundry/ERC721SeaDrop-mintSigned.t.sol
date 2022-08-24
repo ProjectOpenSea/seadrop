@@ -15,6 +15,7 @@ import {
 
 contract ERC721DropTest is TestHelper {
     using ECDSA for bytes32;
+    ERC721SeaDrop token2;
 
     event Transfer(
         address indexed from,
@@ -44,12 +45,15 @@ contract ERC721DropTest is TestHelper {
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
         token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+        token2 = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
+        token2.setMaxSupply(1000);
 
         // Set the creator payout address.
         token.updateCreatorPayoutAddress(address(seadrop), creator);
+        token2.updateCreatorPayoutAddress(address(seadrop), creator);
     }
 
     function testMintSigned(FuzzInputsSigners memory args)
@@ -71,6 +75,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components.
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             args.signerNameSeed,
+            address(token),
             args.minter,
             args.feeRecipient,
             mintParams
@@ -104,6 +109,84 @@ contract ERC721DropTest is TestHelper {
         assertEq(token.balanceOf(args.minter), args.numMints);
     }
 
+    function testMintSigned_validSignatureWrongToken(
+        FuzzInputsSigners memory args
+    ) public validateFuzzInputsSigners(args) {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            10, // max mints per wallet
+            uint64(block.timestamp), // start time
+            uint64(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            false // if false, allow any fee recipient
+        );
+
+        // Get the signature components.
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            args.signerNameSeed,
+            address(token),
+            args.minter,
+            args.feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Impersonate the token contract to update the signers.
+
+        // Update the approved signers of the token contract.
+        address signer = makeAddr(args.signerNameSeed);
+        vm.prank(address(token));
+
+        seadrop.updateSigner(signer, true);
+
+        vm.prank(address(token2));
+        seadrop.updateSigner(signer, true);
+
+        hoax(args.payer, 100 ether);
+
+        // Calculate the value to send with the transaction.
+        uint256 mintValue = args.numMints * mintParams.mintPrice;
+
+        seadrop.mintSigned{ value: mintValue }(
+            address(token),
+            args.feeRecipient,
+            args.minter,
+            args.numMints,
+            mintParams,
+            signature
+        );
+
+        {
+            bytes32 digest = _getDigest(
+                address(token2),
+                args.minter,
+                args.feeRecipient,
+                mintParams
+            );
+            address expectedRecovered = digest.recover(signature);
+
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    InvalidSignature.selector,
+                    expectedRecovered
+                )
+            );
+        }
+        seadrop.mintSigned{ value: mintValue }(
+            address(token2),
+            args.feeRecipient,
+            args.minter,
+            args.numMints,
+            mintParams,
+            signature
+        );
+    }
+
     function testMintSigned_invalidFeeRecipient(FuzzInputsSigners memory args)
         public
         validateFuzzInputsSigners(args)
@@ -123,6 +206,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components.
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             args.signerNameSeed,
+            address(token),
             args.minter,
             args.feeRecipient,
             mintParams
@@ -156,6 +240,7 @@ contract ERC721DropTest is TestHelper {
         }
 
         bytes32 badDigest = _getDigest(
+            address(token),
             args.minter,
             badFeeRecipient,
             mintParams
@@ -195,6 +280,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components.
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             args.signerNameSeed,
+            address(token),
             args.minter,
             args.feeRecipient,
             mintParams
@@ -242,6 +328,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components.
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             args.signerNameSeed,
+            address(token),
             args.minter,
             args.feeRecipient,
             mintParams
@@ -297,6 +384,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components with an invalid signer
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             signerSeed,
+            address(token),
             msg.sender,
             feeRecipient,
             mintParams
@@ -355,6 +443,7 @@ contract ERC721DropTest is TestHelper {
         // Get the signature components with a valid signer
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             "good seed",
+            address(token),
             minter,
             feeRecipient,
             mintParams

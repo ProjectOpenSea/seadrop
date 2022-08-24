@@ -75,7 +75,7 @@ contract SeaDrop is ISeaDrop {
     ///         data hashing and signing
     bytes32 internal immutable _SIGNED_MINT_TYPEHASH =
         keccak256(
-            "SignedMint(address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
+            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
         );
     bytes32 internal immutable _EIP_712_DOMAIN_TYPEHASH =
         keccak256(
@@ -302,6 +302,7 @@ contract SeaDrop is ISeaDrop {
                 keccak256(
                     abi.encode(
                         _SIGNED_MINT_TYPEHASH,
+                        nftContract,
                         minter,
                         feeRecipient,
                         mintParams
