@@ -137,6 +137,8 @@ contract SeaDrop is ISeaDrop {
                 type(uint64).max
             );
         }
+
+        // Put the mint price on the stack.
         uint256 mintPrice = publicDrop.mintPrice;
 
         // Validate payment is correct for number minted.
@@ -196,7 +198,9 @@ contract SeaDrop is ISeaDrop {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
+        // Put the mint price on the stack.
         uint256 mintPrice = mintParams.mintPrice;
+
         // Validate payment is correct for number minted.
         _checkCorrectPayment(quantity, mintPrice);
 
@@ -549,27 +553,31 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient,
         uint256 feeBps
     ) internal {
-        if (feeBps > 10000) {
+        // Revert if the fee basis points is greater than 10_000.
+        if (feeBps > 10_000) {
             revert InvalidFeeBps(feeBps);
         }
+
         // Get the creator payout address.
         address creatorPayoutAddress = _creatorPayoutAddresses[nftContract];
-
-        if (feeBps == 0) {
-            SafeTransferLib.safeTransferETH(creatorPayoutAddress, msg.value);
-            return;
-        }
 
         // Ensure the creator payout address is not the zero address.
         if (creatorPayoutAddress == address(0)) {
             revert CreatorPayoutAddressCannotBeZeroAddress();
         }
 
-        // msg.value has already been validated by this point, so can use it directly
+        // msg.value has already been validated by this point, so can use it directly.
+
+        // If the fee is zero, just transfer to the creator and return.
+        if (feeBps == 0) {
+            SafeTransferLib.safeTransferETH(creatorPayoutAddress, msg.value);
+            return;
+        }
+
         // Get the fee amount.
         uint256 feeAmount = (msg.value * feeBps) / 10_000;
 
-        // Get the creator payout amount. FeeAmount is <= msg.value per above
+        // Get the creator payout amount. Fee amount is <= msg.value per above.
         uint256 payoutAmount;
         unchecked {
             payoutAmount = msg.value - feeAmount;
@@ -999,20 +1007,26 @@ contract SeaDrop is ISeaDrop {
         emit SignerUpdated(msg.sender, signer, allowed);
     }
 
+    /**
+     * @notice Remove an address from a supplied enumeration.
+     *
+     * @param toRemove    The address to remove.
+     * @param enumeration The enumerated addresses to parse.
+     */
     function _removeFromEnumeration(
         address toRemove,
         address[] storage enumeration
     ) internal {
-        // cache length
+        // Cache the length.
         uint256 enumeratedDropsLength = enumeration.length;
         for (uint256 i = 0; i < enumeratedDropsLength; ) {
-            // check if enumerated element is the one we are deleting
+            // Check if the enumerated element is the one we are deleting.
             if (enumeration[i] == toRemove) {
-                // swap with last element
+                // Swap with the last element.
                 enumeration[i] = enumeration[enumeratedDropsLength - 1];
-                // delete (now duplicated) last element
+                // Delete the (now duplicated) last element.
                 enumeration.pop();
-                // exit loop
+                // Exit the loop.
                 break;
             }
             unchecked {
