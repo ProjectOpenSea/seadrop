@@ -39,7 +39,6 @@ contract TestSeaDrop is TestHelper {
         emit DropURIUpdated(address(token), uri);
         vm.prank(address(token));
         seadrop.updateDropURI(uri);
-        assertEq(seadrop.getDropURI(address(token)), uri);
     }
 
     function testUpdateDropURI_onlyERC721SeaDrop() public {

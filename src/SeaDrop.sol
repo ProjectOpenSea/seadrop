@@ -42,9 +42,6 @@ contract SeaDrop is ISeaDrop {
     /// @notice Track the public drops.
     mapping(address => PublicDrop) private _publicDrops;
 
-    /// @notice Track the drop URIs.
-    mapping(address => string) private _dropURIs;
-
     /// @notice Track the creator payout addresses.
     mapping(address => address) private _creatorPayoutAddresses;
 
@@ -668,19 +665,6 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Returns the drop URI for the nft contract.
-     *
-     * @param nftContract The nft contract.
-     */
-    function getDropURI(address nftContract)
-        external
-        view
-        returns (string memory)
-    {
-        return _dropURIs[nftContract];
-    }
-
-    /**
      * @notice Returns the public drop data for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -804,19 +788,16 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Updates the drop URI and emits an event.
+     * @notice Emits an event to notify update of the drop URI.
      *
-     * @param newDropURI The new drop URI.
+     * @param dropURI The new drop URI.
      */
-    function updateDropURI(string calldata newDropURI)
+    function updateDropURI(string calldata dropURI)
         external
         onlyIERC721SeaDrop
     {
-        // Set the new drop URI.
-        _dropURIs[msg.sender] = newDropURI;
-
         // Emit an event with the update.
-        emit DropURIUpdated(msg.sender, newDropURI);
+        emit DropURIUpdated(msg.sender, dropURI);
     }
 
     /**

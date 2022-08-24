@@ -84,16 +84,6 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     ) external payable;
 
     /**
-     * @notice Returns the drop URI for the nft contract.
-     *
-     * @param nftContract The nft contract.
-     */
-    function getDropURI(address nftContract)
-        external
-        view
-        returns (string memory);
-
-    /**
      * @notice Returns the public drop data for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -196,7 +186,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      */
 
     /**
-     * @notice Updates the drop URI and emits an event.
+     * @notice Emits an event to notify update of the drop URI.
      *
      * @param dropURI The new drop URI.
      */
