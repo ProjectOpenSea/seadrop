@@ -37,6 +37,7 @@ contract TestSeaDrop is TestHelper {
     bytes32[] proof;
     Merkle tree;
     bytes signature;
+    bytes signature2098;
     MintParams mintParams;
 
     struct FuzzSelector {
@@ -144,6 +145,7 @@ contract TestSeaDrop is TestHelper {
             mintParams
         );
         signature = abi.encodePacked(r, s, v);
+        signature2098 = _encodeSignature2098(r, s, v);
     }
 
     function testRegularMint_snapshot() public {
@@ -168,6 +170,12 @@ contract TestSeaDrop is TestHelper {
             mintParams,
             proof
         );
+    }
+
+    function testMintAllowListBaseStorageAccess_snapshot() public {
+        MintParams memory _mintParams = mintParams;
+        bytes32[] memory _proof = proof;
+        address _snapshotTokenAddress = address(snapshotToken);
     }
 
     function testMintAllowedTokenHolder_snapshot() public {
@@ -195,5 +203,28 @@ contract TestSeaDrop is TestHelper {
             mintParams,
             signature
         );
+    }
+
+    function testMintSignedBaseStorageAccess_snapshot() public {
+        MintParams memory _mintParams = mintParams;
+        bytes memory _signature = signature;
+        address _snapshotTokenAddress = address(snapshotToken);
+    }
+
+    function testMintSigned2098_snapshot() public {
+        seadrop.mintSigned{ value: 0.1 ether }(
+            address(snapshotToken),
+            address(5),
+            address(0),
+            1,
+            mintParams,
+            signature2098
+        );
+    }
+
+    function testMintSigned2098BaseStorageAccess_snapshot() public {
+        MintParams memory _mintParams = mintParams;
+        bytes memory _signature = signature2098;
+        address _snapshotTokenAddress = address(snapshotToken);
     }
 }

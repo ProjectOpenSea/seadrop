@@ -103,6 +103,21 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
         );
     }
 
+    function _encodeSignature2098(
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) internal pure returns (bytes memory) {
+        uint256 yParity;
+        if (v == 27) {
+            yParity = 0;
+        } else {
+            yParity = 1;
+        }
+        uint256 yParityAndS = (yParity << 255) | uint256(s);
+        return abi.encodePacked(r, yParityAndS);
+    }
+
     function _deriveDomainSeparator() internal view returns (bytes32) {
         // prettier-ignore
         return keccak256(
