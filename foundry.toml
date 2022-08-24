@@ -8,6 +8,7 @@ remappings = [
     'ds-test/=lib/forge-std/lib/ds-test/src/',
     'seadrop/=src/',
 ]
+optimizer_runs = 1_000_000
 # via_ir = true
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

@@ -37,6 +37,21 @@ interface SeaDropErrorsAndEvents {
     error FeeRecipientCannotBeZeroAddress();
 
     /**
+     * @dev Revert if the fee recipient is not already included.
+     */
+    error FeeRecipientNotPresent();
+
+    /**
+     * @dev Revert if fee bps is > 10000
+     */
+     error InvalidFeeBps(uint256 feeBps);
+
+    /**
+     * @dev Revert if the fee recipient is already included.
+     */
+    error DuplicateFeeRecipient();
+
+    /**
      * @dev Revert if the fee recipient is restricted and not allowed.
      */
     error FeeRecipientNotAllowed();
@@ -57,15 +72,27 @@ interface SeaDropErrorsAndEvents {
     error InvalidProof();
 
     /**
-     * @dev Revert if a supplied signer address is the zero address,
-     *      as it would allow all invalid signatures.
+     * @dev Revert if a supplied signer address is the zero address
      */
     error SignerCannotBeZeroAddress();
-
     /**
      * @dev Revert with an error if signer's signature is invalid.
      */
     error InvalidSignature(address recoveredSigner);
+
+    /**
+     * @dev Revert with an error if a signer is not included in
+     *      the enumeration when removing.
+     */
+    error SignerNotPresent();
+
+    /**
+     * @dev Revert with an error if a signer is already included in mapping
+     *      when adding.
+     *      Note: only applies when adding a single signer, as duplicates in
+     *      enumeration can be removed with removeSigner.
+     */
+    error DuplicateSigner();
 
     /**
      * @dev Revert with an error if the sender does not
@@ -84,6 +111,11 @@ interface SeaDropErrorsAndEvents {
      *      redeem a token gated drop stage.
      */
     error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);
+
+    /**
+     * @dev Revert with an error if an empty TokenGatedDropStage is provided for an already-empty TokenGatedDropStage
+     */
+     error TokenGatedDropStageNotPresent();
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
@@ -169,9 +201,9 @@ event AllowListUpdated(
     /**
      * @dev An event with the updated server-side signers for an nft contract.
      */
-    event SignersUpdated(
+    event SignerUpdated(
         address indexed nftContract,
-        address[] oldSigners,
-        address[] newSigners
+        address indexed signer,
+        bool indexed allowed
     );
 }
