@@ -18,6 +18,10 @@ contract TestSeaDrop is TestHelper {
     TestERC721 badToken;
     mapping(address => bool) seenAddresses;
 
+    TokenGatedDropStage remove;
+    TokenGatedDropStage add;
+    TokenGatedDropStage update;
+
     struct FuzzSelector {
         address targetAddress;
         bytes4[] targetSelectors;
@@ -31,6 +35,8 @@ contract TestSeaDrop is TestHelper {
 
         // Deploy a vanilla ERC721 token.
         badToken = new TestERC721();
+        add.maxTotalMintableByWallet = 1;
+        update.maxTotalMintableByWallet = 2;
     }
 
     function testUpdateDropURI() public {
@@ -131,50 +137,304 @@ contract TestSeaDrop is TestHelper {
         assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
     }
 
-    function invariant_NoDuplicatesInEnumeratedSigners() public {
-        address[] memory signers = seadrop.getSigners(address(token));
-        for (uint256 i; i < signers.length; ++i) {
-            assertTrue(seenAddresses[signers[i]]);
-            seenAddresses[signers[i]] = true;
-        }
+    function testUpdateAllowedFeeRecipient(
+        address recipient1,
+        address recipient2,
+        address recipient3
+    ) public {
+        vm.assume(recipient1 != address(0));
+        vm.assume(recipient2 != address(0));
+        vm.assume(recipient3 != address(0));
+        vm.assume(recipient1 != recipient2);
+        vm.assume(recipient1 != recipient3);
+        vm.assume(recipient2 != recipient3);
+
+        vm.startPrank(address(token));
+
+        seadrop.updateAllowedFeeRecipient(recipient1, true);
+        address[] memory signers = seadrop.getAllowedFeeRecipients(
+            address(token)
+        );
+        assertEq(signers.length, 1);
+        assertEq(signers[0], recipient1);
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient1)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient3)
+        );
+
+        seadrop.updateAllowedFeeRecipient(recipient2, true);
+        signers = seadrop.getAllowedFeeRecipients(address(token));
+        assertEq(signers.length, 2);
+        assertEq(signers[0], recipient1);
+        assertEq(signers[1], recipient2);
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient1)
+        );
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient3)
+        );
+
+        seadrop.updateAllowedFeeRecipient(recipient3, true);
+        signers = seadrop.getAllowedFeeRecipients(address(token));
+        assertEq(signers.length, 3);
+        assertEq(signers[0], recipient1);
+        assertEq(signers[1], recipient2);
+        assertEq(signers[2], recipient3);
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient1)
+        );
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient3)
+        );
+
+        // remove signer after
+        seadrop.updateAllowedFeeRecipient(recipient2, false);
+        signers = seadrop.getAllowedFeeRecipients(address(token));
+        assertEq(signers.length, 2);
+        assertEq(signers[0], recipient1);
+        assertEq(signers[1], recipient3);
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient1)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient3)
+        );
+
+        seadrop.updateAllowedFeeRecipient(recipient1, false);
+        signers = seadrop.getAllowedFeeRecipients(address(token));
+        assertEq(signers.length, 1);
+        assertEq(signers[0], recipient3);
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient1)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertTrue(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient3)
+        );
+
+        seadrop.updateAllowedFeeRecipient(recipient3, false);
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient3)
+        );
+        signers = seadrop.getAllowedFeeRecipients(address(token));
+        assertEq(signers.length, 0);
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient1)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient2)
+        );
+        assertFalse(
+            seadrop.getFeeRecipientIsAllowed(address(token), recipient3)
+        );
     }
 
-    function invariantNoDuplicatesInEnumeratedTokens() public {
+    function testUpdateTokenGatedDrop(
+        address token1,
+        address token2,
+        address token3
+    ) public {
+        vm.assume(token1 != address(0));
+        vm.assume(token2 != address(0));
+        vm.assume(token3 != address(0));
+        vm.assume(token1 != token2);
+        vm.assume(token1 != token3);
+        vm.assume(token2 != token3);
+
+        vm.startPrank(address(token));
+
+        seadrop.updateTokenGatedDrop(token1, add);
         address[] memory tokens = seadrop.getTokenGatedAllowedTokens(
             address(token)
         );
-        for (uint256 i; i < tokens.length; ++i) {
-            assertFalse(seenAddresses[tokens[i]]);
-            seenAddresses[tokens[i]] = true;
+        assertEq(tokens.length, 1);
+        assertEq(tokens[0], token1);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token1)
+                .maxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token3)
+                .maxTotalMintableByWallet,
+            0
+        );
 
-            TokenGatedDropStage memory drop = seadrop.getTokenGatedDrop(
-                address(token),
-                tokens[i]
-            );
-            assertGt(drop.maxTotalMintableByWallet, 0);
-        }
-    }
+        seadrop.updateTokenGatedDrop(token2, add);
+        tokens = seadrop.getTokenGatedAllowedTokens(address(token));
+        assertEq(tokens.length, 2);
+        assertEq(tokens[0], token1);
+        assertEq(tokens[1], token2);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token1)
+                .maxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token3)
+                .maxTotalMintableByWallet,
+            0
+        );
 
-    // function targetContracts() public view returns (address[] memory) {
-    //     address[] memory targets = new address[](1);
-    //     targets[0] = address(seadrop);
-    //     // targets[1] = address(token);
-    //     return targets;
-    // }
+        seadrop.updateTokenGatedDrop(token3, add);
+        tokens = seadrop.getTokenGatedAllowedTokens(address(token));
+        assertEq(tokens.length, 3);
+        assertEq(tokens[0], token1);
+        assertEq(tokens[1], token2);
+        assertEq(tokens[2], token3);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token1)
+                .maxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token3)
+                .maxTotalMintableByWallet,
+            1
+        );
 
-    function targetSelectors() public view returns (FuzzSelector[] memory) {
-        FuzzSelector[] memory fuzzSelectors = new FuzzSelector[](0);
-        bytes4[] memory selectors = new bytes4[](2);
-        selectors[0] = seadrop.updateSigner.selector;
-        selectors[1] = seadrop.updateTokenGatedDrop.selector;
+        // test update
+        seadrop.updateTokenGatedDrop(token2, update);
+        tokens = seadrop.getTokenGatedAllowedTokens(address(token));
+        assertEq(tokens.length, 3);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            2
+        );
+        // remove signer after
+        seadrop.updateTokenGatedDrop(token2, remove);
+        tokens = seadrop.getTokenGatedAllowedTokens(address(token));
+        assertEq(tokens.length, 2);
+        assertEq(tokens[0], token1);
+        assertEq(tokens[1], token3);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token1)
+                .maxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token3)
+                .maxTotalMintableByWallet,
+            1
+        );
 
-        fuzzSelectors[0] = FuzzSelector(address(seadrop), selectors);
-        return fuzzSelectors;
-    }
+        seadrop.updateTokenGatedDrop(token1, remove);
+        tokens = seadrop.getTokenGatedAllowedTokens(address(token));
+        assertEq(tokens.length, 1);
+        assertEq(tokens[0], token3);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token1)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token3)
+                .maxTotalMintableByWallet,
+            1
+        );
 
-    function targetSenders() public view returns (address[] memory) {
-        address[] memory senders = new address[](1);
-        senders[0] = address(token);
-        return senders;
+        seadrop.updateTokenGatedDrop(token3, remove);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token3)
+                .maxTotalMintableByWallet,
+            0
+        );
+        tokens = seadrop.getTokenGatedAllowedTokens(address(token));
+        assertEq(tokens.length, 0);
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token1)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token2)
+                .maxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getTokenGatedDrop(address(token), token3)
+                .maxTotalMintableByWallet,
+            0
+        );
     }
 }
