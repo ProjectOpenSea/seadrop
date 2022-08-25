@@ -11,7 +11,7 @@ import type { PublicDropStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
-  const { provider } = ethers;
+  const { provider } = ethers as any;
   let seadrop: ISeaDrop;
   let token: ERC721SeaDrop;
   let owner: Wallet;
@@ -63,7 +63,9 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       feeRecipient.address,
       true
     );
-    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await token
+      .connect(seadrop.address)
+      .updateCreatorPayoutAddress(seadrop.address, creator.address);
     feeBps = getRandomNumberBetween(100, 1000);
     await token.updatePublicDropFee(seadrop.address, feeBps);
 

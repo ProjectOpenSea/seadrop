@@ -4,6 +4,7 @@ import { ethers, network } from "hardhat";
 import { MerkleTree } from "merkletreejs";
 
 import { randomHex } from "./utils/encoding";
+import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
 import type { IERC721SeaDrop, ISeaDrop } from "../typechain-types";
@@ -35,7 +36,7 @@ describe(`Mint Allow List (v${VERSION})`, function () {
   let seadrop: ISeaDrop;
   let token: IERC721SeaDrop;
   let creator: Wallet;
-  let admin: Wallet;
+  let deployer: Wallet;
   let feeRecipient: Wallet;
   let feeBps: number;
 
@@ -46,20 +47,30 @@ describe(`Mint Allow List (v${VERSION})`, function () {
   });
 
   before(async () => {
+    // Set the wallets.
+    deployer = new ethers.Wallet(randomHex(32), provider as any);
+    creator = new ethers.Wallet(randomHex(32), provider as any);
+    feeRecipient = new ethers.Wallet(randomHex(32), provider as any);
+
+    // Add eth to wallets.
+    await faucet(deployer.address, provider as any);
+
+    // Deploy Seadrop.
     const SeaDrop = await ethers.getContractFactory("SeaDrop");
     seadrop = await SeaDrop.deploy();
-    creator = new ethers.Wallet(randomHex(32), provider as any);
-    admin = new ethers.Wallet(randomHex(32), provider as any);
-    feeRecipient = new ethers.Wallet(randomHex(32), provider as any);
+
+    // Deploy token.
     const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
-    token = await SeaDropToken.deploy("", "", admin.address, [seadrop.address]);
-    await token.updateAllowedFeeRecipient(
+    token = await SeaDropToken.deploy("", "", deployer.address, [
       seadrop.address,
-      feeRecipient.address,
-      true
-    );
+    ]);
+
+    // Update the fee recipient and creator payout address for the token.
+    await token
+      .connect(deployer)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
-    await token.updatePublicDropFee(seadrop.address, feeBps);
   });
 
   it("Should mint an allow list stage", async () => {
@@ -76,6 +87,8 @@ describe(`Mint Allow List (v${VERSION})`, function () {
     };
 
     const elements = await allowListElements([[minter, mintParams]]);
+
+    console.log(elements);
 
     const merkleTree = new MerkleTree(elements, keccak256, {
       hashLeaves: true,
