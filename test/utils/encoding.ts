@@ -13,7 +13,3 @@ if (GAS_REPORT_MODE) {
 }
 
 export const randomHex = (bytes = 32) => `0x${randomBytes(bytes)}`;
-
-export const getRandomNumberBetween = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-};

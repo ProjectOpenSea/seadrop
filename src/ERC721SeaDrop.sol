@@ -362,19 +362,6 @@ contract ERC721SeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     }
 
     /**
-     * @notice Returns the total token supply.
-     */
-    function totalSupply()
-        public
-        view
-        virtual
-        override(IERC721ContractMetadata, ERC721ContractMetadata)
-        returns (uint256)
-    {
-        return ERC721A.totalSupply();
-    }
-
-    /**
      * @notice Returns whether the interface is supported.
      *
      * @param interfaceId The interface id to check against.

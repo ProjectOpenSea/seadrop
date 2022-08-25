@@ -1,6 +1,7 @@
 import { faucet } from "./faucet";
 
 import type { JsonRpcProvider } from "@ethersproject/providers";
+import type { Signer } from "ethers";
 
 export const impersonate = async (
   address: string,
@@ -20,10 +21,11 @@ export const stopImpersonation = async (
 export const whileImpersonating = async <T>(
   address: string,
   provider: JsonRpcProvider,
-  fn: () => T
+  fn: (impersonatedSigner: Signer) => T
 ) => {
   await impersonate(address, provider);
-  const result = await fn();
+  const impersonatedSigner = await provider.getSigner(address);
+  const result = await fn(impersonatedSigner);
   await stopImpersonation(address, provider);
   return result;
 };

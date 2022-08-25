@@ -4,6 +4,7 @@ import { ethers, network } from "hardhat";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
+import { whileImpersonating } from "./utils/impersonate";
 
 import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
@@ -75,7 +76,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           seadrop.address,
           ethers.constants.AddressZero
         )
-    ).to.be.reverted; // TODO find out why hardhat not recognizing revertedWith("CreatorPayoutAddressCannotBeZeroAddress")
+    ).to.be.revertedWith("CreatorPayoutAddressCannotBeZeroAddress");
 
     await expect(
       token
@@ -146,9 +147,14 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   it("Should only let the admin update the allowed fee recipients", async () => {
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.not.include(
-      feeRecipient.address
-    );
+    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
+
+    expect(
+      await seadrop.getFeeRecipientIsAllowed(
+        token.address,
+        feeRecipient.address
+      )
+    ).to.be.false;
 
     await expect(
       token
@@ -156,9 +162,17 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true)
     ).to.be.revertedWith("OnlyAdministrator");
 
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.not.include(
-      feeRecipient.address
-    );
+    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
+
+    await expect(
+      token
+        .connect(admin)
+        .updateAllowedFeeRecipient(
+          seadrop.address,
+          ethers.constants.AddressZero,
+          true
+        )
+    ).to.be.revertedWith("FeeRecipientCannotBeZeroAddress");
 
     await expect(
       token
@@ -166,9 +180,22 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true)
     ).to.emit(seadrop, "AllowedFeeRecipientUpdated");
 
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.include(
-      feeRecipient.address
-    );
+    await expect(
+      token
+        .connect(admin)
+        .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true)
+    ).to.be.revertedWith("DuplicateFeeRecipient");
+
+    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([
+      feeRecipient.address,
+    ]);
+
+    expect(
+      await seadrop.getFeeRecipientIsAllowed(
+        token.address,
+        feeRecipient.address
+      )
+    ).to.be.true;
 
     // Now let's disallow the feeRecipient
     await expect(
@@ -177,8 +204,69 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, false)
     ).to.emit(seadrop, "AllowedFeeRecipientUpdated");
 
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.not.include(
-      feeRecipient.address
+    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
+
+    expect(
+      await seadrop.getFeeRecipientIsAllowed(
+        token.address,
+        feeRecipient.address
+      )
+    ).to.be.false;
+
+    await expect(
+      token
+        .connect(admin)
+        .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, false)
+    ).to.be.revertedWith("FeeRecipientNotPresent");
+  });
+
+  it("Should only let the owner set the provenance hash", async () => {
+    expect(await token.provenanceHash()).to.equal(ethers.constants.HashZero);
+
+    const firstProvenanceHash =
+      "0x1111111111111111111111111111111111111111111111111111111111111111";
+    const secondProvenanceHash =
+      "0x2222222222222222222222222222222222222222222222222222222222222222";
+
+    await expect(
+      token.connect(creator).setProvenanceHash(firstProvenanceHash)
+    ).to.revertedWith("OnlyOwner");
+
+    await expect(
+      token.connect(admin).setProvenanceHash(firstProvenanceHash)
+    ).to.revertedWith("OnlyOwner");
+
+    await expect(
+      token.connect(owner).setProvenanceHash(firstProvenanceHash)
+    ).to.emit(token, "ProvenanceHashUpdated");
+
+    // Provenance hash should not be updatable after the first token has minted
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1);
+      }
     );
+
+    await expect(
+      token.connect(owner).setProvenanceHash(secondProvenanceHash)
+    ).to.be.revertedWith("ProvenanceHashCannotBeSetAfterMintStarted");
+
+    expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
+  });
+
+  it("Should only let the token owner or admin update the allowed SeaDrop addresses", async () => {
+    await expect(
+      token.connect(creator).updateAllowedSeaDrop([seadrop.address])
+    ).to.revertedWith("OnlyOwnerOrAdministrator");
+
+    await expect(
+      token.connect(owner).updateAllowedSeaDrop([seadrop.address])
+    ).to.emit(token, "AllowedSeaDropUpdated");
+
+    await expect(
+      token.connect(admin).updateAllowedSeaDrop([seadrop.address])
+    ).to.emit(token, "AllowedSeaDropUpdated");
   });
 });
