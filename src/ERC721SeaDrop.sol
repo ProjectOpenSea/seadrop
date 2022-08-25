@@ -2,18 +2,24 @@
 pragma solidity ^0.8.11;
 
 import {
-    IERC721SeaDrop,
-    IERC721ContractMetadata
-} from "./interfaces/IERC721SeaDrop.sol";
-
-import {
     ERC721ContractMetadata,
     IERC721ContractMetadata
 } from "./ERC721ContractMetadata.sol";
 
-import { ERC721A } from "ERC721A/ERC721A.sol";
+import {
+    IERC721SeaDrop,
+    IERC721ContractMetadata
+} from "./interfaces/IERC721SeaDrop.sol";
 
-import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
+import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
+
+import {
+    AllowListData,
+    PublicDrop,
+    TokenGatedDropStage
+} from "./lib/SeaDropStructs.sol";
+
+import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import {
     IERC721
@@ -23,28 +29,13 @@ import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
-import { SeaDrop } from "./SeaDrop.sol";
-
-import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
-
-import { SeaDropErrorsAndEvents } from "./lib/SeaDropErrorsAndEvents.sol";
-import {
-    AllowListData,
-    PublicDrop,
-    TokenGatedDropStage
-} from "./lib/SeaDropStructs.sol";
-
 /**
  * @title  ERC721SeaDrop
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721SeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop.
  */
-contract ERC721SeaDrop is
-    ERC721ContractMetadata,
-    IERC721SeaDrop,
-    SeaDropErrorsAndEvents
-{
+contract ERC721SeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) private _allowedSeaDrop;
 
@@ -330,11 +321,15 @@ contract ERC721SeaDrop is
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
      *         Only the owner or administrator can update the signers.
-     *
      * @param seaDropImpl The allowed SeaDrop contract.
-     * @param newSigners  The new signers.
+     * @param signer      The signer to update.
+     * @param allowed     Whether signatures are allowed from this signer.
      */
-    function updateSigners(address seaDropImpl, address[] calldata newSigners)
+    function updateSigner(
+        address seaDropImpl,
+        address signer,
+        bool allowed
+    )
         external
         virtual
         override
@@ -342,7 +337,7 @@ contract ERC721SeaDrop is
         onlyAllowedSeaDrop(seaDropImpl)
     {
         // Update the signers.
-        ISeaDrop(seaDropImpl).updateSigners(newSigners);
+        ISeaDrop(seaDropImpl).updateSigner(signer, allowed);
     }
 
     /**

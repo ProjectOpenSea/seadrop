@@ -48,21 +48,7 @@ const config: HardhatUserConfig = {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
   },
-  preprocess: {
-    eachLine: (hre) => ({
-      transform: (line: string) => {
-        if (line.match(/ from "/i)) {
-          getRemappings().forEach(([find, replace]: string[]) => {
-            if (line.match(find)) {
-              line = line.replace(find, replace);
-            }
-          });
-        }
-        return line;
-      },
-    }),
-  },
-  paths: { sources: "./src" },
+  paths: { sources: "./temp-src-coverage" },
 };
 
 export default config;

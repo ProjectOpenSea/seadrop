@@ -9,8 +9,9 @@ yarn-error.log
 artifacts/
 artifacts-ref/
 hh-cache/
+hh-cache-coverage/
 hh-cache-ref/
-
+temp-src-coverage/
 
 #foundry test compilation files
 cache

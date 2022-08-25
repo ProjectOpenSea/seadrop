@@ -10,7 +10,7 @@ pragma solidity ^0.8.11;
  * @param startTime             The start time, ensure this is not zero.
  * @param maxMintsPerWallet     Maximum total number of mints a user is
  *                              allowed.
- * @param feeBps                Fee out of 10,000 basis points to be collected.
+ * @param feeBps                Fee out of 10_000 basis points to be collected.
  * @param restrictFeeRecipients If false, allow any fee recipient;
  *                              if true, check fee recipient is allowed.
  */
@@ -44,7 +44,7 @@ struct PublicDrop {
  *                                 with index zero.
  * @param maxTokenSupplyForStage   The limit of token supply this stage can
  *                                 mint within.
- * @param feeBps                   Fee out of 10,000 basis points to be
+ * @param feeBps                   Fee out of 10_000 basis points to be
  *                                 collected.
  * @param restrictFeeRecipients    If false, allow any fee recipient;
  *                                 if true, check fee recipient is allowed.
@@ -78,7 +78,7 @@ struct TokenGatedDropStage {
  *                                 index zero.
  * @param maxTokenSupplyForStage   The limit of token supply this stage can
  *                                 mint within.
- * @param feeBps                   Fee out of 10,000 basis points to be
+ * @param feeBps                   Fee out of 10_000 basis points to be
  *                                 collected.
  * @param restrictFeeRecipients    If false, allow any fee recipient;
  *                                 if true, check fee recipient is allowed.

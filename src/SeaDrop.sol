@@ -3,6 +3,8 @@ pragma solidity ^0.8.11;
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
+import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
+
 import {
     AllowListData,
     MintParams,
@@ -11,11 +13,7 @@ import {
     TokenGatedMintParams
 } from "./lib/SeaDropStructs.sol";
 
-import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
-
-import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-
-import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 import {
     IERC721
@@ -28,6 +26,10 @@ import {
 import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+
+import {
+    MerkleProof
+} from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title  SeaDrop
@@ -42,9 +44,6 @@ contract SeaDrop is ISeaDrop {
     /// @notice Track the public drops.
     mapping(address => PublicDrop) private _publicDrops;
 
-    /// @notice Track the drop URIs.
-    mapping(address => string) private _dropURIs;
-
     /// @notice Track the creator payout addresses.
     mapping(address => address) private _creatorPayoutAddresses;
 
@@ -53,6 +52,9 @@ contract SeaDrop is ISeaDrop {
 
     /// @notice Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
+
+    /// @notice Track the allowed fee recipients.
+    mapping(address => address[]) private _enumeratedFeeRecipients;
 
     /// @notice Track the allowed signers for server-side drops.
     mapping(address => mapping(address => bool)) private _signers;
@@ -73,11 +75,11 @@ contract SeaDrop is ISeaDrop {
 
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
-    bytes32 internal constant _MINT_DATA_TYPEHASH =
+    bytes32 internal immutable _SIGNED_MINT_TYPEHASH =
         keccak256(
-            "MintParams(address minter,uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
+            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
         );
-    bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
+    bytes32 internal immutable _EIP_712_DOMAIN_TYPEHASH =
         keccak256(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
         );
@@ -135,8 +137,11 @@ contract SeaDrop is ISeaDrop {
             );
         }
 
+        // Put the mint price on the stack.
+        uint256 mintPrice = publicDrop.mintPrice;
+
         // Validate payment is correct for number minted.
-        _checkCorrectPayment(quantity, publicDrop.mintPrice);
+        _checkCorrectPayment(quantity, mintPrice);
 
         // Get the minter address.
         address minter = minterIfNotPayer != address(0)
@@ -164,7 +169,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            publicDrop.mintPrice,
+            mintPrice,
             0,
             publicDrop.feeBps,
             feeRecipient
@@ -192,8 +197,11 @@ contract SeaDrop is ISeaDrop {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
 
+        // Put the mint price on the stack.
+        uint256 mintPrice = mintParams.mintPrice;
+
         // Validate payment is correct for number minted.
-        _checkCorrectPayment(quantity, mintParams.mintPrice);
+        _checkCorrectPayment(quantity, mintPrice);
 
         // Get the minter address.
         address minter = minterIfNotPayer != address(0)
@@ -218,7 +226,7 @@ contract SeaDrop is ISeaDrop {
 
         // Verify the proof.
         if (
-            !MerkleProofLib.verify(
+            !MerkleProof.verify(
                 proof,
                 _allowListMerkleRoots[nftContract],
                 keccak256(abi.encode(minter, mintParams))
@@ -232,7 +240,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            mintParams.mintPrice,
+            mintPrice,
             mintParams.dropStageIndex,
             mintParams.feeBps,
             feeRecipient
@@ -295,15 +303,11 @@ contract SeaDrop is ISeaDrop {
                 _domainSeparator(),
                 keccak256(
                     abi.encode(
-                        _MINT_DATA_TYPEHASH,
+                        _SIGNED_MINT_TYPEHASH,
+                        nftContract,
                         minter,
-                        mintParams.mintPrice,
-                        mintParams.maxTotalMintableByWallet,
-                        mintParams.startTime,
-                        mintParams.endTime,
-                        mintParams.dropStageIndex,
-                        mintParams.feeBps,
-                        mintParams.restrictFeeRecipients
+                        feeRecipient,
+                        mintParams
                     )
                 )
             )
@@ -352,7 +356,7 @@ contract SeaDrop is ISeaDrop {
             : msg.sender;
 
         // Set the dropStage to a variable.
-        TokenGatedDropStage storage dropStage = _tokenGatedDrops[nftContract][
+        TokenGatedDropStage memory dropStage = _tokenGatedDrops[nftContract][
             mintParams.allowedNftToken
         ];
 
@@ -464,12 +468,10 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Revert if the fee recipient is restricted and not allowed.
-        if (
-            restrictFeeRecipients == true &&
-            _allowedFeeRecipients[nftContract][feeRecipient] == false
-        ) {
-            revert FeeRecipientNotAllowed();
-        }
+        if (restrictFeeRecipients == true)
+            if (_allowedFeeRecipients[nftContract][feeRecipient] == false) {
+                revert FeeRecipientNotAllowed();
+            }
     }
 
     /**
@@ -543,20 +545,18 @@ contract SeaDrop is ISeaDrop {
      * @notice Split the payment payout for the creator and fee recipient.
      *
      * @param nftContract  The nft contract.
-     * @param quantity     The number of tokens to mint.
-     * @param mintPrice    The mint price per token.
      * @param feeRecipient The fee recipient.
      * @param feeBps       The fee basis points.
      */
     function _splitPayout(
         address nftContract,
-        uint256 quantity,
-        uint256 mintPrice,
         address feeRecipient,
         uint256 feeBps
     ) internal {
-        // Return if the mint price is zero.
-        if (mintPrice == 0) return;
+        // Revert if the fee basis points is greater than 10_000.
+        if (feeBps > 10_000) {
+            revert InvalidFeeBps(feeBps);
+        }
 
         // Get the creator payout address.
         address creatorPayoutAddress = _creatorPayoutAddresses[nftContract];
@@ -566,14 +566,22 @@ contract SeaDrop is ISeaDrop {
             revert CreatorPayoutAddressCannotBeZeroAddress();
         }
 
-        // Get the total amount to pay.
-        uint256 total = quantity * mintPrice;
+        // msg.value has already been validated by this point, so can use it directly.
+
+        // If the fee is zero, just transfer to the creator and return.
+        if (feeBps == 0) {
+            SafeTransferLib.safeTransferETH(creatorPayoutAddress, msg.value);
+            return;
+        }
 
         // Get the fee amount.
-        uint256 feeAmount = (total * feeBps) / 10_000;
+        uint256 feeAmount = (msg.value * feeBps) / 10_000;
 
-        // Get the creator payout amount.
-        uint256 payoutAmount = total - feeAmount;
+        // Get the creator payout amount. Fee amount is <= msg.value per above.
+        uint256 payoutAmount;
+        unchecked {
+            payoutAmount = msg.value - feeAmount;
+        }
 
         // Transfer the fee amount to the fee recipient.
         if (feeAmount > 0) {
@@ -605,8 +613,10 @@ contract SeaDrop is ISeaDrop {
         uint256 feeBps,
         address feeRecipient
     ) internal {
-        // Split the payment between the creator and fee recipient.
-        _splitPayout(nftContract, quantity, mintPrice, feeRecipient, feeBps);
+        if (mintPrice != 0) {
+            // Split the payment between the creator and fee recipient.
+            _splitPayout(nftContract, feeRecipient, feeBps);
+        }
 
         // Mint the token(s).
         IERC721SeaDrop(nftContract).mintSeaDrop(minter, quantity);
@@ -655,19 +665,6 @@ contract SeaDrop is ISeaDrop {
                 address(this)
             )
         );
-    }
-
-    /**
-     * @notice Returns the drop URI for the nft contract.
-     *
-     * @param nftContract The nft contract.
-     */
-    function getDropURI(address nftContract)
-        external
-        view
-        returns (string memory)
-    {
-        return _dropURIs[nftContract];
     }
 
     /**
@@ -724,6 +721,20 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
+     * @notice Returns an enumeration of allowed fee recipients for an
+     *         nft contract when fee recipients are enforced.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getAllowedFeeRecipients(address nftContract)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _enumeratedFeeRecipients[nftContract];
+    }
+
+    /**
      * @notice Returns the server-side signers for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -734,6 +745,21 @@ contract SeaDrop is ISeaDrop {
         returns (address[] memory)
     {
         return _enumeratedSigners[nftContract];
+    }
+
+    /**
+     * @notice Returns if the specified signer is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     * @param signer      The signer.
+     */
+    function getSignerIsAllowed(address nftContract, address signer)
+        external
+        view
+        returns (bool)
+    {
+        return _signers[nftContract][signer];
     }
 
     /**
@@ -765,19 +791,16 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Updates the drop URI and emits an event.
+     * @notice Emits an event to notify update of the drop URI.
      *
-     * @param newDropURI The new drop URI.
+     * @param dropURI The new drop URI.
      */
-    function updateDropURI(string calldata newDropURI)
+    function updateDropURI(string calldata dropURI)
         external
         onlyIERC721SeaDrop
     {
-        // Set the new drop URI.
-        _dropURIs[msg.sender] = newDropURI;
-
         // Emit an event with the update.
-        emit DropURIUpdated(msg.sender, newDropURI);
+        emit DropURIUpdated(msg.sender, dropURI);
     }
 
     /**
@@ -835,37 +858,39 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
-        // Set the drop stage.
-        _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
+        // Use maxTotalMintableByWallet != 0 as a signal that this update should
+        // add or update the drop stage, otherwise we will be removing.
+        bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
 
-        // If the maxTotalMintableByWallet is greater than zero
-        // then we are setting an active drop stage.
-        if (dropStage.maxTotalMintableByWallet > 0) {
-            // Add allowedNftToken to enumerated list if not present.
-            bool allowedNftTokenExistsInEnumeration = false;
+        // Get pointers to the token gated drop data and enumerated addresses.
+        TokenGatedDropStage storage existingDropStageData = _tokenGatedDrops[
+            msg.sender
+        ][allowedNftToken];
+        address[] storage enumeratedTokens = _enumeratedTokenGatedTokens[
+            msg.sender
+        ];
 
-            // Iterate through enumerated token gated tokens for nft contract.
-            for (
-                uint256 i = 0;
-                i < _enumeratedTokenGatedTokens[msg.sender].length;
+        // Stage struct packs to a single slot, so load it
+        // as a uint256; if it is 0, it is empty.
+        bool dropStageExists;
+        assembly {
+            dropStageExists := iszero(eq(sload(existingDropStageData.slot), 0))
+        }
 
-            ) {
-                if (
-                    _enumeratedTokenGatedTokens[msg.sender][i] ==
-                    allowedNftToken
-                ) {
-                    // Set the bool to true if found.
-                    allowedNftTokenExistsInEnumeration = true;
-                }
-                unchecked {
-                    ++i;
-                }
+        if (addOrUpdateDropStage) {
+            _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
+            // Add to enumeration if it does not exist already.
+            if (!dropStageExists) {
+                enumeratedTokens.push(allowedNftToken);
             }
-
-            // Add allowedNftToken to enumerated list if not present.
-            if (allowedNftTokenExistsInEnumeration == false) {
-                _enumeratedTokenGatedTokens[msg.sender].push(allowedNftToken);
+        } else {
+            // Check we are not deleting a drop stage that does not exist.
+            if (!dropStageExists) {
+                revert TokenGatedDropStageNotPresent();
             }
+            // Clear storage slot and remove from enumeration.
+            delete _tokenGatedDrops[msg.sender][allowedNftToken];
+            _removeFromEnumeration(allowedNftToken, enumeratedTokens);
         }
 
         // Emit an event with the update.
@@ -881,6 +906,9 @@ contract SeaDrop is ISeaDrop {
         external
         onlyIERC721SeaDrop
     {
+        if (_payoutAddress == address(0)) {
+            revert CreatorPayoutAddressCannotBeZeroAddress();
+        }
         // Set the creator payout address.
         _creatorPayoutAddresses[msg.sender] = _payoutAddress;
 
@@ -898,8 +926,30 @@ contract SeaDrop is ISeaDrop {
         external
         onlyIERC721SeaDrop
     {
-        // Set the allowed fee recipient.
-        _allowedFeeRecipients[msg.sender][feeRecipient] = allowed;
+        if (feeRecipient == address(0)) {
+            revert FeeRecipientCannotBeZeroAddress();
+        }
+
+        // Track the enumerated storage.
+        address[] storage enumeratedStorage = _enumeratedFeeRecipients[
+            msg.sender
+        ];
+        mapping(address => bool)
+            storage feeRecipientsMap = _allowedFeeRecipients[msg.sender];
+
+        if (allowed) {
+            if (feeRecipientsMap[feeRecipient]) {
+                revert DuplicateFeeRecipient();
+            }
+            feeRecipientsMap[feeRecipient] = true;
+            enumeratedStorage.push(feeRecipient);
+        } else {
+            if (!feeRecipientsMap[feeRecipient]) {
+                revert FeeRecipientNotPresent();
+            }
+            delete _allowedFeeRecipients[msg.sender][feeRecipient];
+            _removeFromEnumeration(feeRecipient, enumeratedStorage);
+        }
 
         // Emit an event with the update.
         emit AllowedFeeRecipientUpdated(msg.sender, feeRecipient, allowed);
@@ -908,52 +958,64 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     * @param newSigners The new list of signers.
+     * @param signer  The signer to add or remove.
+     * @param allowed Whether to add or remove the signer.
      */
-    function updateSigners(address[] calldata newSigners)
+    function updateSigner(address signer, bool allowed)
         external
         onlyIERC721SeaDrop
     {
+        if (signer == address(0)) {
+            revert SignerCannotBeZeroAddress();
+        }
+
         // Track the enumerated storage.
         address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
-
-        // Track the old signers.
-        address[] memory oldSigners = enumeratedStorage;
-
-        // Delete the old enumeration.
-        delete _enumeratedSigners[msg.sender];
-
-        // Add the new enumeration.
-        for (uint256 i = 0; i < newSigners.length; ) {
-            address newSigner = newSigners[i];
-            if (newSigner == address(0)) {
-                revert SignerCannotBeZeroAddress();
-            }
-            enumeratedStorage.push(newSigner);
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Get the mapping of signers.
         mapping(address => bool) storage signersMap = _signers[msg.sender];
 
-        // Delete old signers.
-        for (uint256 i = 0; i < oldSigners.length; ) {
-            signersMap[oldSigners[i]] = false;
-            unchecked {
-                ++i;
+        if (allowed) {
+            if (signersMap[signer]) {
+                revert DuplicateSigner();
             }
-        }
-        // Add new signers.
-        for (uint256 i = 0; i < newSigners.length; ) {
-            signersMap[newSigners[i]] = true;
-            unchecked {
-                ++i;
+            signersMap[signer] = true;
+            enumeratedStorage.push(signer);
+        } else {
+            if (!signersMap[signer]) {
+                revert SignerNotPresent();
             }
+            delete _signers[msg.sender][signer];
+            _removeFromEnumeration(signer, enumeratedStorage);
         }
 
         // Emit an event with the update.
-        emit SignersUpdated(msg.sender, oldSigners, newSigners);
+        emit SignerUpdated(msg.sender, signer, allowed);
+    }
+
+    /**
+     * @notice Remove an address from a supplied enumeration.
+     *
+     * @param toRemove    The address to remove.
+     * @param enumeration The enumerated addresses to parse.
+     */
+    function _removeFromEnumeration(
+        address toRemove,
+        address[] storage enumeration
+    ) internal {
+        // Cache the length.
+        uint256 enumeratedDropsLength = enumeration.length;
+        for (uint256 i = 0; i < enumeratedDropsLength; ) {
+            // Check if the enumerated element is the one we are deleting.
+            if (enumeration[i] == toRemove) {
+                // Swap with the last element.
+                enumeration[i] = enumeration[enumeratedDropsLength - 1];
+                // Delete the (now duplicated) last element.
+                enumeration.pop();
+                // Exit the loop.
+                break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
     }
 }

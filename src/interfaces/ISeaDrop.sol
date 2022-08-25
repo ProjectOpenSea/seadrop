@@ -84,16 +84,6 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     ) external payable;
 
     /**
-     * @notice Returns the drop URI for the nft contract.
-     *
-     * @param nftContract The nft contract.
-     */
-    function getDropURI(address nftContract)
-        external
-        view
-        returns (string memory);
-
-    /**
      * @notice Returns the public drop data for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -127,12 +117,24 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Returns if the specified fee recipient is allowed
      *         for the nft contract.
      *
-     * @param nftContract The nft contract.
+     * @param nftContract  The nft contract.
+     * @param feeRecipient The fee recipient.
      */
     function getFeeRecipientIsAllowed(address nftContract, address feeRecipient)
         external
         view
         returns (bool);
+
+    /**
+     * @notice Returns an enumeration of allowed fee recipients for an
+     *         nft contract when fee recipients are enforced
+     *
+     * @param nftContract The nft contract.
+     */
+    function getAllowedFeeRecipients(address nftContract)
+        external
+        view
+        returns (address[] memory);
 
     /**
      * @notice Returns the server-side signers for the nft contract.
@@ -143,6 +145,18 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         external
         view
         returns (address[] memory);
+
+    /**
+     * @notice Returns if the specified signer is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     * @param signer      The signer.
+     */
+    function getSignerIsAllowed(address nftContract, address signer)
+        external
+        view
+        returns (bool);
 
     /**
      * @notice Returns the allowed token gated drop tokens for the nft contract.
@@ -172,7 +186,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      */
 
     /**
-     * @notice Updates the drop URI and emits an event.
+     * @notice Emits an event to notify update of the drop URI.
      *
      * @param dropURI The new drop URI.
      */
@@ -225,7 +239,8 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     * @param newSigners The new list of signers.
+     * @param signer  The signer to update.
+     * @param allowed Whether signatures are allowed from this signer.
      */
-    function updateSigners(address[] calldata newSigners) external;
+    function updateSigner(address signer, bool allowed) external;
 }

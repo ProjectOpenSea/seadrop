@@ -48,26 +48,33 @@ contract ExampleToken is ERC721SeaDrop {
     function _tokenJson(uint256 tokenId) internal view returns (string memory) {
         string memory svg;
 
+        string memory rect = _randomRect(tokenId);
+        string memory poly = _randomPolygon(tokenId);
+        string memory circle = _randomCircle(tokenId);
+
         svg = string.concat(
             svg,
             "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'>"
-            "<rect width='100%' height='100%' style='fill: "
+            "<rect width='100%' height='100%' style='fill:"
         );
-        svg = string.concat(svg, _randomPastelColor(tokenId));
+        svg = string.concat(svg, _randomColor(tokenId, true));
         svg = string.concat(
             svg,
-            "' /><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'"
-            "style='fill: black; font-family: "
+            "' /><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' style='fill:"
         );
+        svg = string.concat(svg, _randomColor(tokenId + 1, false));
+        svg = string.concat(svg, ";font-family:");
         svg = string.concat(svg, _font(tokenId));
-        svg = string.concat(svg, "; font-size: ");
+        svg = string.concat(svg, ";font-size:");
         svg = string.concat(svg, _fontSize(tokenId));
-        svg = string.concat(svg, "px'>");
+        svg = string.concat(svg, "px;");
+        svg = string.concat(svg, _randomStyle(tokenId, 1));
+        svg = string.concat(svg, "'>");
         svg = string.concat(svg, Strings.toString(tokenId));
         svg = string.concat(svg, "</text>");
-        svg = string.concat(svg, _randomRect(tokenId));
-        svg = string.concat(svg, _randomPolygon(tokenId));
-        svg = string.concat(svg, _randomCircle(tokenId));
+        svg = string.concat(svg, rect);
+        svg = string.concat(svg, poly);
+        svg = string.concat(svg, circle);
         svg = string.concat(svg, "</svg>");
 
         string memory json = '{"name": "Test Token #';
@@ -76,8 +83,8 @@ contract ExampleToken is ERC721SeaDrop {
         json = string.concat(
             json,
             '", "description": "This is a test token, for trying out cool things related to NFTs!'
-            ' Please note that this token has no value or warranty of any kind.\\n\\n\\"The future belongs to'
-            ' those who believe in the beauty of their dreams.\\"\\n-Eleanor Roosevelt", "image_data": "'
+            ' Please note that this token has no value or warranty of any kind.\\n\\n\\"The future'
+            ' belongs to those who believe in the beauty of their dreams.\\"\\n-Eleanor Roosevelt", "image_data": "'
         );
         json = string.concat(json, svg);
         json = string.concat(
@@ -92,6 +99,15 @@ contract ExampleToken is ERC721SeaDrop {
             '"}, {"trait_type": "Font size", "value": "'
         );
         json = string.concat(json, _fontSize(tokenId));
+        json = string.concat(
+            json,
+            '"}, {"trait_type": "Rectangle", "value": "'
+        );
+        json = string.concat(json, _returnYesOrNo(rect));
+        json = string.concat(json, '"}, {"trait_type": "Triangle", "value": "');
+        json = string.concat(json, _returnYesOrNo(poly));
+        json = string.concat(json, '"}, {"trait_type": "Circle", "value": "');
+        json = string.concat(json, _returnYesOrNo(circle));
         json = string.concat(json, '"}, {"trait_type": "Chain ID", "value": "');
         json = string.concat(json, Strings.toString(block.chainid));
         json = string.concat(json, '"}]}');
@@ -100,11 +116,22 @@ contract ExampleToken is ERC721SeaDrop {
     }
 
     /**
+     * @notice Returns "No" if the input string is empty, otherwise "Yes",
+     *         for formatting metadata traits.
+     */
+    function _returnYesOrNo(string memory input)
+        internal
+        pure
+        returns (string memory)
+    {
+        return bytes(input).length == 0 ? "No" : "Yes";
+    }
+
+    /**
      * @notice Returns a random web safe font based on the token id.
      */
     function _font(uint256 tokenId) internal view returns (string memory) {
         uint256 roll = thisUintAddress / (tokenId + 1);
-
         if (roll % 9 == 0) {
             return "Garamond";
         } else if (roll % 8 == 0) {
@@ -132,18 +159,19 @@ contract ExampleToken is ERC721SeaDrop {
     }
 
     /**
-     * @notice Returns a random pastel color based on the token id.
+     * @notice Returns a random color based on the token id.
      */
-    function _randomPastelColor(uint256 tokenId)
+    function _randomColor(uint256 tokenId, bool onlyPastel)
         internal
         view
         returns (string memory)
     {
         uint256 roll = thisUintAddress / (tokenId + 1);
         string memory color = "rgb(";
-        uint256 r = ((roll << 1) % 127) + 127;
-        uint256 g = ((roll << 2) % 127) + 127;
-        uint256 b = ((roll << 3) % 127) + 127;
+        uint256 pastelBase = onlyPastel == true ? 127 : 0;
+        uint256 r = ((roll << 1) % (255 - pastelBase)) + pastelBase;
+        uint256 g = ((roll << 2) % (255 - pastelBase)) + pastelBase;
+        uint256 b = ((roll << 3) % (255 - pastelBase)) + pastelBase;
         color = string.concat(color, Strings.toString(r));
         color = string.concat(color, ", ");
         color = string.concat(color, Strings.toString(g));
@@ -175,11 +203,9 @@ contract ExampleToken is ERC721SeaDrop {
         rect = string.concat(rect, Strings.toString(width));
         rect = string.concat(rect, "' height='");
         rect = string.concat(rect, Strings.toString(height));
-        rect = string.concat(
-            rect,
-            "' style='fill:blue;stroke:teal;stroke-width:5;fill-opacity:0.1;"
-            "stroke-opacity:0.3' />"
-        );
+        rect = string.concat(rect, "' style='");
+        rect = string.concat(rect, _randomStyle(tokenId, 3));
+        rect = string.concat(rect, "' />");
         return rect;
     }
 
@@ -211,11 +237,9 @@ contract ExampleToken is ERC721SeaDrop {
         poly = string.concat(poly, Strings.toString(x3));
         poly = string.concat(poly, ",");
         poly = string.concat(poly, Strings.toString(y3));
-        poly = string.concat(
-            poly,
-            "' style='fill:lime;stroke:purple;stroke-width:1;stroke-dasharray:5;"
-            "fill-opacity:0.3;stroke-opacity:0.7' />"
-        );
+        poly = string.concat(poly, "' style='");
+        poly = string.concat(poly, _randomStyle(tokenId, 5));
+        poly = string.concat(poly, "' />");
         return poly;
     }
 
@@ -238,11 +262,68 @@ contract ExampleToken is ERC721SeaDrop {
         circle = string.concat(circle, Strings.toString(cy));
         circle = string.concat(circle, "' r='");
         circle = string.concat(circle, Strings.toString(r));
-        circle = string.concat(
-            circle,
-            "' style='fill:red;stroke:black;stroke-width:2;fill-opacity:0.3;"
-            "stroke-opacity:0.5' />"
-        );
+        circle = string.concat(circle, "' style='");
+        circle = string.concat(circle, _randomStyle(tokenId, 7));
+        circle = string.concat(circle, "' />");
         return circle;
+    }
+
+    /**
+     * @notice Returns a random style of fill color, fill opacity,
+     *         stroke width, stroke opacity, and dasharray.
+     */
+    function _randomStyle(uint256 tokenId, uint256 seed)
+        internal
+        view
+        returns (string memory)
+    {
+        string memory style = "fill:";
+        style = string.concat(style, _randomColor(tokenId + seed + 1, true));
+        style = string.concat(style, ";fill-opacity:.");
+        style = string.concat(
+            style,
+            Strings.toString(_randomOpacity(tokenId + seed + 3))
+        );
+        style = string.concat(style, ";stroke:");
+        style = string.concat(style, _randomColor(tokenId + 5, false));
+        style = string.concat(style, ";stroke-width:");
+        style = string.concat(
+            style,
+            Strings.toString(_randomStrokeWidth(tokenId + seed + 7))
+        );
+        style = string.concat(style, ";stroke-opacity:.");
+        style = string.concat(
+            style,
+            Strings.toString(_randomOpacity(tokenId + seed + 9))
+        );
+        if ((tokenId + seed) % 5 == 0) {
+            style = string.concat(style, ";stroke-dasharray:");
+            style = string.concat(
+                style,
+                Strings.toString(_randomStrokeWidth(tokenId + seed + 13))
+            );
+        }
+        return style;
+    }
+
+    /**
+     * @notice Returns a random fill opacity from 1 to 9,
+     *         to be prepended with a decimal in the css.
+     */
+    function _randomOpacity(uint256 tokenId) internal view returns (uint256) {
+        uint256 roll = thisUintAddress / (tokenId + 1);
+        return ((roll << 1) % 9) + 1;
+    }
+
+    /**
+     * @notice Returns a random stroke width from 0 to 9.
+     */
+    function _randomStrokeWidth(uint256 tokenId)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 roll = thisUintAddress / (tokenId + 1);
+        return (roll << 3) % 10;
     }
 }
