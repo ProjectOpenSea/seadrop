@@ -10,16 +10,17 @@ import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
 import type { PublicDropStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
-describe(`Mint Public (v${VERSION})`, function () {
+describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
   let token: ERC721SeaDrop;
-  let deployer: Wallet;
+  let owner: Wallet;
   let creator: Wallet;
   let payer: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
   let feeBps: number;
+  let publicDrop: PublicDropStruct;
 
   after(async () => {
     await network.provider.request({
@@ -29,27 +30,29 @@ describe(`Mint Public (v${VERSION})`, function () {
 
   before(async () => {
     // Set the wallets
-    deployer = new ethers.Wallet(randomHex(32), provider);
+    owner = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
     payer = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    await faucet(deployer.address, provider);
+    await faucet(owner.address, provider);
     await faucet(payer.address, provider);
     await faucet(minter.address, provider);
 
     // Deploy SeaDrop
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", deployer);
+    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
     seadrop = await SeaDrop.deploy();
+  });
 
+  beforeEach(async () => {
     // Deploy token
     const ERC721SeaDrop = await ethers.getContractFactory(
       "ERC721SeaDrop",
-      deployer
+      owner
     );
-    token = await ERC721SeaDrop.deploy("", "", deployer.address, [
+    token = await ERC721SeaDrop.deploy("", "", owner.address, [
       seadrop.address,
     ]);
 
@@ -63,22 +66,20 @@ describe(`Mint Public (v${VERSION})`, function () {
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
     feeBps = getRandomNumberBetween(100, 1000);
     await token.updatePublicDropFee(seadrop.address, feeBps);
-  });
 
-  it("can mint a public stage", async () => {
-    const publicDrop: PublicDropStruct = {
+    publicDrop = {
       mintPrice: "100000000000000000", // 0.1 ether
       maxMintsPerWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       feeBps,
       restrictFeeRecipients: false,
     };
-
     await token.updatePublicDrop(seadrop.address, publicDrop);
+  });
 
-    const value = BigNumber.from(publicDrop.mintPrice).mul(3);
-
+  it("Should mint a public stage", async () => {
     // Mint public with payer for minter.
+    const value = BigNumber.from(publicDrop.mintPrice).mul(3);
     await expect(
       seadrop
         .connect(payer)
@@ -103,5 +104,118 @@ describe(`Mint Public (v${VERSION})`, function () {
     ).to.emit(seadrop, "SeaDropMint");
     minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(6);
+  });
+
+  it("Should not mint a public stage that hasn't started", async () => {
+    // Set start time in the future.
+    publicDrop.startTime = Math.round(Date.now() / 1000) + 100;
+    await token.updatePublicDrop(seadrop.address, publicDrop);
+
+    // Mint public with payer for minter.
+    const value = BigNumber.from(publicDrop.mintPrice).mul(3);
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 3, {
+          value,
+        })
+    ).to.be.revertedWith("NotActive");
+
+    // Mint public with minter being payer.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintPublic(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          3,
+          { value }
+        )
+    ).to.be.revertedWith("NotActive");
+  });
+
+  it("Should respect limit for max mints per wallet and max supply", async () => {
+    // Update max limit per wallet to 2.
+    publicDrop.maxMintsPerWallet = 2;
+    await token.updatePublicDrop(seadrop.address, publicDrop);
+
+    // Update max supply to 1.
+    await token.setMaxSupply(1);
+
+    // Mint one.
+    const value = publicDrop.mintPrice;
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
+          value,
+        })
+    ).to.emit(seadrop, "SeaDropMint");
+
+    // Minting the next should throw MintQuantityExceedsMaxSupply.
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
+          value,
+        })
+    ).to.be.revertedWith("MintQuantityExceedsMaxSupply");
+
+    // Update max supply to 3.
+    await token.setMaxSupply(3);
+
+    // Mint one.
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
+          value,
+        })
+    ).to.emit(seadrop, "SeaDropMint");
+
+    // Minting the next should throw MintQuantityExceedsMaxMintedPerWallet.
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
+          value,
+        })
+    ).to.be.revertedWith("MintQuantityExceedsMaxMintedPerWallet");
+  });
+
+  it("Should not mint with incorrect payment", async () => {
+    // Pay for only 1 mint, but request quantity of 2.
+    let value = BigNumber.from(publicDrop.mintPrice);
+    let mintQuantity = 2;
+
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          {
+            value,
+          }
+        )
+    ).to.be.revertedWith("IncorrectPayment");
+
+    // Pay for 3 mints but request quantity of 2.
+    value = BigNumber.from(publicDrop.mintPrice).mul(3);
+    mintQuantity = 2;
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintPublic(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          { value }
+        )
+    ).to.be.revertedWith("IncorrectPayment");
   });
 });
