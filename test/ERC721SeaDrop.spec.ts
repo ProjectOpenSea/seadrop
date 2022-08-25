@@ -76,7 +76,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           seadrop.address,
           ethers.constants.AddressZero
         )
-    ).to.be.reverted; // TODO find out why hardhat not recognizing revertedWith("CreatorPayoutAddressCannotBeZeroAddress")
+    ).to.be.revertedWith("CreatorPayoutAddressCannotBeZeroAddress");
 
     await expect(
       token
@@ -172,7 +172,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           true
         )
-    ).to.be.reverted; // TODO find out why hardhat not recognizing revertedWith("FeeRecipientCannotBeZeroAddress")
+    ).to.be.revertedWith("FeeRecipientCannotBeZeroAddress");
 
     await expect(
       token
@@ -184,7 +184,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token
         .connect(admin)
         .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true)
-    ).to.be.reverted; // TODO find out why hardhat not recognizing revertedWith("DuplicateFeeRecipient")
+    ).to.be.revertedWith("DuplicateFeeRecipient");
 
     expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([
       feeRecipient.address,
@@ -217,7 +217,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token
         .connect(admin)
         .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, false)
-    ).to.be.reverted; // TODO find out why hardhat not recognizing revertedWith("FeeRecipientNotPresent")
+    ).to.be.revertedWith("FeeRecipientNotPresent");
   });
 
   it("Should only let the owner set the provenance hash", async () => {
