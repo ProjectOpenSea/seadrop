@@ -51,7 +51,7 @@ contract ERC721ContractMetadata is
      * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view override returns (string memory) {
-        return _theBaseURI;
+        return _baseURI();
     }
 
     /**
@@ -85,11 +85,10 @@ contract ERC721ContractMetadata is
      * @param startTokenId The start token id.
      * @param endTokenId   The end token id.
      */
-    function setBatchTokenURIs(
-        uint256 startTokenId,
-        uint256 endTokenId,
-        string calldata
-    ) external onlyOwner {
+    function setBatchTokenURIs(uint256 startTokenId, uint256 endTokenId)
+        external
+        onlyOwner
+    {
         // Emit an event with the update.
         emit TokenURIUpdated(startTokenId, endTokenId);
     }
