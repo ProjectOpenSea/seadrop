@@ -75,11 +75,6 @@ interface IERC721ContractMetadata {
     function setMaxSupply(uint256 newMaxSupply) external;
 
     /**
-     * @notice Returns the total token supply.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
      * @notice Returns the provenance hash.
      *         The provenance hash is used for random reveals, which
      *         is a hash of the ordered metadata to show it is unmodified

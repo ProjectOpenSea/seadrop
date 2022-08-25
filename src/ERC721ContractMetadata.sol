@@ -101,19 +101,6 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Returns the total token supply.
-     */
-    function totalSupply()
-        public
-        view
-        virtual
-        override(ERC721A, IERC721ContractMetadata)
-        returns (uint256)
-    {
-        return ERC721A.totalSupply();
-    }
-
-    /**
      * @notice Returns the provenance hash.
      *         The provenance hash is used for random reveals, which
      *         is a hash of the ordered metadata to show it is unmodified
