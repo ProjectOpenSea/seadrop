@@ -255,4 +255,18 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
   });
+
+  it("Should only let the token owner or admin update the allowed SeaDrop addresses", async () => {
+    await expect(
+      token.connect(creator).updateAllowedSeaDrop([seadrop.address])
+    ).to.revertedWith("OnlyOwnerOrAdministrator");
+
+    await expect(
+      token.connect(owner).updateAllowedSeaDrop([seadrop.address])
+    ).to.emit(token, "AllowedSeaDropUpdated");
+
+    await expect(
+      token.connect(admin).updateAllowedSeaDrop([seadrop.address])
+    ).to.emit(token, "AllowedSeaDropUpdated");
+  });
 });
