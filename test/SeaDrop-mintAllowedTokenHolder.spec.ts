@@ -241,4 +241,26 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
         )
     ).to.be.revertedWith("TokenGatedTokenIdAlreadyRedeemed");
   });
+
+  it("Should revert if the minter does not own the allowed NFT token passed into the call", async () => {
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: [0],
+    };
+
+    // Mint an allowedNftToken to the owner.
+    await allowedNftToken.mint(owner.address, 0);
+
+    expect(
+      await seadrop
+        .connect(minter)
+        .mintAllowedTokenHolder(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams,
+          { value: 10000000000000 }
+        )
+    ).to.be.revertedWith("TokenGatedNotTokenOwner");
+  });
 });
