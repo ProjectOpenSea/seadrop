@@ -5,13 +5,13 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { IERC721SeaDrop, ISeaDrop, TestERC721 } from "../typechain-types";
+import type { ERC721SeaDrop, ISeaDrop, TestERC721 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
-  const { provider } = ethers as any;
+  const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: IERC721SeaDrop;
+  let token: ERC721SeaDrop;
   let allowedNftToken: TestERC721;
   let owner: Wallet;
   let creator: Wallet;
@@ -88,8 +88,8 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
-    expect(
-      await seadrop
+    await expect(
+      seadrop
         .connect(minter)
         .mintAllowedTokenHolder(
           token.address,
@@ -121,8 +121,8 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
-    expect(
-      await seadrop
+    await expect(
+      seadrop
         .connect(owner)
         .mintAllowedTokenHolder(
           token.address,
@@ -143,12 +143,15 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
         0,
         1
       );
+
+    let minterBalance = await token.balanceOf(minter.address);
+    expect(minterBalance).to.eq(1);
   });
 
   it("Should mint a token to a user with the allowed NFT token when the mint is free", async () => {
     // Create the free mint drop stage object.
     const dropStage = {
-      mintPrice: "10000000000000",
+      mintPrice: "0",
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 100,
@@ -173,15 +176,14 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
-    expect(
-      await seadrop
+    await expect(
+      seadrop
         .connect(owner)
         .mintAllowedTokenHolder(
           token.address,
           feeRecipient.address,
           minter.address,
-          mintParams,
-          { value: 10000000000000 }
+          mintParams
         )
     )
       .to.emit(seadrop, "SeaDropMint")
@@ -195,6 +197,9 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
         0,
         1
       );
+
+    let minterBalance = await token.balanceOf(minter.address);
+    expect(minterBalance).to.eq(1);
   });
 
   it("Should revert if the allowed NFT token has already been redeemed", async () => {
@@ -206,8 +211,8 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
-    expect(
-      await seadrop
+    await expect(
+      seadrop
         .connect(minter)
         .mintAllowedTokenHolder(
           token.address,
@@ -229,8 +234,8 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
         1
       );
 
-    expect(
-      await seadrop
+    await expect(
+      seadrop
         .connect(minter)
         .mintAllowedTokenHolder(
           token.address,
@@ -239,7 +244,9 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: 10000000000000 }
         )
-    ).to.be.revertedWith("TokenGatedTokenIdAlreadyRedeemed");
+    ).to.be.revertedWith(
+      `TokenGatedTokenIdAlreadyRedeemed(${token.address}, ${allowedNftToken.address}, 0)`
+    );
   });
 
   it("Should revert if the minter does not own the allowed NFT token passed into the call", async () => {
@@ -251,8 +258,8 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the owner.
     await allowedNftToken.mint(owner.address, 0);
 
-    expect(
-      await seadrop
+    await expect(
+      seadrop
         .connect(minter)
         .mintAllowedTokenHolder(
           token.address,
@@ -261,6 +268,8 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: 10000000000000 }
         )
-    ).to.be.revertedWith("TokenGatedNotTokenOwner");
+    ).to.be.revertedWith(
+      `TokenGatedNotTokenOwner(${token.address}, ${allowedNftToken.address}, 0)`
+    );
   });
 });

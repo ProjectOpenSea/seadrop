@@ -1,5 +1,5 @@
 module.exports = {
-  skipFiles: [],
+  skipFiles: ["src/"],
   configureYulOptimizer: true,
   solcOptimizerDetails: {
     yul: true,
