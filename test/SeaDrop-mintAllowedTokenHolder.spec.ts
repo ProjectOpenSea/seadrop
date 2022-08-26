@@ -8,7 +8,7 @@ import { VERSION } from "./utils/helpers";
 import type { ERC721SeaDrop, ISeaDrop, TestERC721 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
-describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
+describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
   let token: ERC721SeaDrop;
