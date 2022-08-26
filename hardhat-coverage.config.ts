@@ -12,18 +12,6 @@ import "solidity-coverage";
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
-// Configure remappings.
-// https://book.getfoundry.sh/config/hardhat
-// Re-run `forge remappings > remappings.txt`
-// every time you modify libraries in Foundry.
-function getRemappings() {
-  return fs
-    .readFileSync("remappings.txt", "utf8")
-    .split("\n")
-    .filter(Boolean) // remove empty lines
-    .map((line: string) => line.trim().split("="));
-}
-
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
@@ -48,7 +36,11 @@ const config: HardhatUserConfig = {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
   },
-  paths: { sources: "./temp-src-coverage" },
+  paths: {
+    sources: "./temp-src-coverage",
+    artifacts: "./artifacts-temp-src-coverage",
+    cache: "./hh-cache-coverage",
+  },
 };
 
 export default config;
