@@ -11,7 +11,7 @@ import type { PublicDropStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
-  const { provider } = ethers as any;
+  const { provider } = ethers;
   let seadrop: ISeaDrop;
   let token: ERC721SeaDrop;
   let owner: Wallet;

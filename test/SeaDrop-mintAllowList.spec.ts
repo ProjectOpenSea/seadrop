@@ -48,12 +48,12 @@ describe(`Mint Allow List (v${VERSION})`, function () {
 
   before(async () => {
     // Set the wallets.
-    deployer = new ethers.Wallet(randomHex(32), provider as any);
-    creator = new ethers.Wallet(randomHex(32), provider as any);
-    feeRecipient = new ethers.Wallet(randomHex(32), provider as any);
+    deployer = new ethers.Wallet(randomHex(32), provider);
+    creator = new ethers.Wallet(randomHex(32), provider);
+    feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets.
-    await faucet(deployer.address, provider as any);
+    await faucet(deployer.address, provider);
 
     // Deploy Seadrop.
     const SeaDrop = await ethers.getContractFactory("SeaDrop");
@@ -73,8 +73,10 @@ describe(`Mint Allow List (v${VERSION})`, function () {
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
   });
 
+  // TODO: Test for MintQuantityExceedsMaxTokenSupplyForStage
+
   it("Should mint an allow list stage", async () => {
-    const minter = "0xabc";
+    const minter = `0x${"1".repeat(40)}`;
     const mintParams = {
       mintPrice: "10000000000000",
       maxTotalMintableByWallet: 10,
@@ -121,7 +123,7 @@ describe(`Mint Allow List (v${VERSION})`, function () {
   });
 
   it("Should mint a free mint allow list stage", async () => {
-    const minter = "0xabc";
+    const minter = `0x${"1".repeat(40)}`;
     const mintParams = {
       mintPrice: "0",
       maxTotalMintableByWallet: 10,
