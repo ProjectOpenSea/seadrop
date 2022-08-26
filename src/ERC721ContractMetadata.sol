@@ -7,9 +7,7 @@ import {
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
-import {
-    TwoStepAdministered
-} from "../lib/utility-contracts/src/TwoStepAdministered.sol";
+import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
 import {
     ECDSA
