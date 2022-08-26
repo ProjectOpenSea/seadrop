@@ -51,11 +51,11 @@ struct PublicDrop {
  */
 struct TokenGatedDropStage {
     uint80 mintPrice; // 80/256 bits
-    uint16 maxTotalMintableByWallet;
+    uint16 maxMintsPerWallet;
     uint48 startTime;
     uint48 endTime;
     uint8 dropStageIndex; // non-zero
-    uint40 maxTokenSupplyForStage;
+    uint32 maxTokenSupplyForStage;
     uint16 feeBps;
     bool restrictFeeRecipients;
 }
@@ -117,4 +117,13 @@ struct AllowListData {
     bytes32 merkleRoot;
     string[] publicKeyURIs;
     string allowListURI;
+}
+
+struct SignedMintParams {
+    uint80 minMintPrice;
+    uint24 maxMaxTotalMintableByWallet;
+    uint48 minStartTime;
+    uint48 maxEndTime;
+    uint40 maxMaxTokenSupplyForStage;
+    uint16 maxFeeBps;
 }

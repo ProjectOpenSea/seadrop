@@ -20,6 +20,7 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
         keccak256(
             "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
+<<<<<<< HEAD
         );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
         keccak256(
@@ -33,6 +34,8 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
             "uint256 feeBps,"
             "bool restrictFeeRecipients"
             ")"
+=======
+>>>>>>> 3216180 (change token gated maxMintsPerWallet name; fix _SIGNED_MINT_TYPEHASH; add SignedMintParams tentatively)
         );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
         keccak256(
