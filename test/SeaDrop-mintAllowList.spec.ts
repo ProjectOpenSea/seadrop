@@ -90,8 +90,6 @@ describe(`Mint Allow List (v${VERSION})`, function () {
 
     const elements = await allowListElements([[minter, mintParams]]);
 
-    console.log(elements);
-
     const merkleTree = new MerkleTree(elements, keccak256, {
       hashLeaves: true,
       sortPairs: true,

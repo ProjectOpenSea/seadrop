@@ -272,4 +272,54 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
       `TokenGatedNotTokenOwner("${token.address}", "${allowedNftToken.address}", 0)`
     );
   });
+
+  it("Should revert if the drop stage is not active", async () => {
+    // Create the drop stage object.
+    const dropStage = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 10,
+      startTime: Math.round(Date.now() / 1000) - 1000,
+      endTime: Math.round(Date.now() / 1000) - 500,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: 100,
+      restrictFeeRecipients: false,
+    };
+
+    // Update the token gated drop for the deployed allowed NFT token.
+    await token.updateTokenGatedDrop(
+      seadrop.address,
+      allowedNftToken.address,
+      dropStage
+    );
+
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: [0],
+    };
+
+    // Mint an allowedNftToken to the minter.
+    await allowedNftToken.mint(minter.address, 0);
+
+    // Get block.timestamp for custom error.
+    const mostRecentBlock = await ethers.provider.getBlock(
+      await ethers.provider.getBlockNumber()
+    );
+    const mostRecentBlockTimestamp = mostRecentBlock.timestamp;
+
+    await expect(
+      seadrop
+        .connect(owner)
+        .mintAllowedTokenHolder(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams
+        )
+    ).to.be.revertedWith(
+      `NotActive(${mostRecentBlockTimestamp + 1}, ${dropStage.startTime}, ${
+        dropStage.endTime
+      })`
+    );
+  });
 });
