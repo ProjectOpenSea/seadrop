@@ -382,7 +382,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             mintQuantity,
-            dropStage.maxTotalMintableByWallet,
+            dropStage.maxMintsPerWallet,
             dropStage.maxTokenSupplyForStage
         );
 
@@ -407,7 +407,7 @@ contract SeaDrop is ISeaDrop {
             if (
                 _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
                     tokenId
-                ] == true
+                ]
             ) {
                 revert TokenGatedTokenIdAlreadyRedeemed(
                     nftContract,
@@ -469,7 +469,7 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Revert if the fee recipient is restricted and not allowed.
-        if (restrictFeeRecipients == true)
+        if (restrictFeeRecipients)
             if (_allowedFeeRecipients[nftContract][feeRecipient] == false) {
                 revert FeeRecipientNotAllowed();
             }
@@ -861,7 +861,7 @@ contract SeaDrop is ISeaDrop {
     ) external override onlyIERC721SeaDrop {
         // Use maxTotalMintableByWallet != 0 as a signal that this update should
         // add or update the drop stage, otherwise we will be removing.
-        bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
+        bool addOrUpdateDropStage = dropStage.maxMintsPerWallet != 0;
 
         // Get pointers to the token gated drop data and enumerated addresses.
         TokenGatedDropStage storage existingDropStageData = _tokenGatedDrops[
