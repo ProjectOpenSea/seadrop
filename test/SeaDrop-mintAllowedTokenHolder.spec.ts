@@ -245,7 +245,7 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
           { value: 10000000000000 }
         )
     ).to.be.revertedWith(
-      `TokenGatedTokenIdAlreadyRedeemed(${token.address}, ${allowedNftToken.address}, 0)`
+      `TokenGatedTokenIdAlreadyRedeemed("${token.address}", "${allowedNftToken.address}", 0)`
     );
   });
 
@@ -269,7 +269,7 @@ describe(`Mint Allowed Token Holder (v${VERSION})`, function () {
           { value: 10000000000000 }
         )
     ).to.be.revertedWith(
-      `TokenGatedNotTokenOwner(${token.address}, ${allowedNftToken.address}, 0)`
+      `TokenGatedNotTokenOwner("${token.address}", "${allowedNftToken.address}", 0)`
     );
   });
 });
