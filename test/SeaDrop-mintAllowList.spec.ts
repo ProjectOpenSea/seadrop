@@ -12,7 +12,7 @@ import type {
   MintParamsStruct,
   AllowListDataStruct,
 } from "../typechain-types/src/SeaDrop";
-import type { Wallet } from "ethers";
+import type { Wallet, BigNumber } from "ethers";
 
 const allowListElements = async (
   leaves: Array<[minter: string, mintParams: MintParamsStruct]>
@@ -37,6 +37,7 @@ describe(`Mint Allow List (v${VERSION})`, function () {
   let token: IERC721SeaDrop;
   let creator: Wallet;
   let deployer: Wallet;
+  let minter: Wallet;
   let feeRecipient: Wallet;
   let feeBps: number;
 
@@ -50,6 +51,7 @@ describe(`Mint Allow List (v${VERSION})`, function () {
     // Set the wallets.
     deployer = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
+    minter = new ethers.Wallet(randomHex(32), provider);
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets.
@@ -66,6 +68,7 @@ describe(`Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Update the fee recipient and creator payout address for the token.
+    await token.setMaxSupply(100);
     await token
       .connect(deployer)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
@@ -121,7 +124,6 @@ describe(`Mint Allow List (v${VERSION})`, function () {
   });
 
   it("Should mint a free mint allow list stage", async () => {
-    const minter = `0x${"1".repeat(40)}`;
     const mintParams = {
       mintPrice: "0",
       maxTotalMintableByWallet: 10,
@@ -133,9 +135,59 @@ describe(`Mint Allow List (v${VERSION})`, function () {
       restrictFeeRecipients: false,
     };
 
-    const elements = await allowListElements([[minter, mintParams]]);
+    // const elements = await allowListElements([[minter, mintParams]]);
 
-    const merkleTree = new MerkleTree(elements, keccak256, {
+    const elementsBuffer = [
+      Buffer.concat([
+        Buffer.from(minter.address.slice(2), "hex"),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.mintPrice).toHexString().slice(2),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.maxTotalMintableByWallet)
+            .toHexString()
+            .slice(2),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.startTime).toHexString().slice(2),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.endTime).toHexString().slice(2),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.dropStageIndex)
+            .toHexString()
+            .slice(2),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.maxTokenSupplyForStage)
+            .toHexString()
+            .slice(2),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.feeBps).toHexString().slice(2),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(
+            mintParams.restrictFeeRecipients === true ? 1 : 0
+          )
+            .toHexString()
+            .slice(2),
+          "hex"
+        ),
+      ]),
+    ];
+
+    console.log(elementsBuffer);
+
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
       hashLeaves: true,
       sortPairs: true,
     });
@@ -153,16 +205,27 @@ describe(`Mint Allow List (v${VERSION})`, function () {
     };
     await token.updateAllowList(seadrop.address, allowListData);
 
-    expect(
-      await seadrop.mintAllowList(
+    await expect(
+      seadrop.mintAllowList(
         token.address,
         feeRecipient.address,
-        minter,
+        minter.address,
         3,
         mintParams,
         proof
       )
-    ).to.be.true;
+    )
+      .to.emit(seadrop, "SeaDropMint")
+      .withArgs(
+        token.address,
+        minter.address,
+        feeRecipient.address,
+        deployer.address,
+        1,
+        10000000000000,
+        0,
+        1
+      );
   });
 
   // it("Should revert if the minter is not on the allow list", async () => {});
