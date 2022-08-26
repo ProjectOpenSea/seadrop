@@ -45,10 +45,9 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.be.revertedWith("OnlyOwner");
     expect(await token.baseURI()).to.equal("");
 
-    await expect(token.connect(owner).setBaseURI("http://example.com")).to.emit(
-      token,
-      "BaseURIUpdated"
-    );
+    await expect(token.connect(owner).setBaseURI("http://example.com"))
+      .to.emit(token, "BaseURIUpdated")
+      .withArgs("http://example.com");
     expect(await token.baseURI()).to.equal("http://example.com");
   });
 
@@ -60,9 +59,9 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.be.revertedWith("OnlyOwner");
     expect(await token.contractURI()).to.equal("");
 
-    await expect(
-      token.connect(owner).setContractURI("http://example.com")
-    ).to.emit(token, "ContractURIUpdated");
+    await expect(token.connect(owner).setContractURI("http://example.com"))
+      .to.emit(token, "ContractURIUpdated")
+      .withArgs("http://example.com");
     expect(await token.contractURI()).to.equal("http://example.com");
   });
 
@@ -74,10 +73,9 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     );
     expect(await token.maxSupply()).to.equal(0);
 
-    await expect(token.connect(owner).setMaxSupply(5)).to.emit(
-      token,
-      "MaxSupplyUpdated"
-    );
+    await expect(token.connect(owner).setMaxSupply(5))
+      .to.emit(token, "MaxSupplyUpdated")
+      .withArgs(5);
     expect(await token.maxSupply()).to.equal(5);
   });
 
@@ -86,9 +84,8 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token.connect(admin).setBatchTokenURIs(5, 10)
     ).to.be.revertedWith("OnlyOwner");
 
-    await expect(token.connect(owner).setBatchTokenURIs(5, 10)).to.emit(
-      token,
-      "TokenURIUpdated"
-    );
+    await expect(token.connect(owner).setBatchTokenURIs(5, 10))
+      .to.emit(token, "TokenURIUpdated")
+      .withArgs(5, 10);
   });
 });
