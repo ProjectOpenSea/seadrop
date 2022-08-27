@@ -144,7 +144,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         1
       );
 
-    let minterBalance = await token.balanceOf(minter.address);
+    const minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(1);
   });
 
@@ -198,7 +198,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         1
       );
 
-    let minterBalance = await token.balanceOf(minter.address);
+    const minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(1);
   });
 

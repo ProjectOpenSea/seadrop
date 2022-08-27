@@ -1,5 +1,3 @@
-import fs from "fs";
-
 import type { HardhatUserConfig } from "hardhat/config";
 
 import "dotenv/config";
@@ -38,8 +36,6 @@ const config: HardhatUserConfig = {
   },
   paths: {
     sources: "./temp-src-coverage",
-    artifacts: "./artifacts-temp-src-coverage",
-    cache: "./hh-cache-coverage",
   },
 };
 
