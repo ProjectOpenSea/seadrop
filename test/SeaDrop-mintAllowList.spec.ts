@@ -403,5 +403,4 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         )
     ).to.be.revertedWith("InvalidProof()");
   });
-  g;
 });
