@@ -8,27 +8,82 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
 import type { IERC721SeaDrop, ISeaDrop } from "../typechain-types";
-import type {
-  MintParamsStruct,
-  AllowListDataStruct,
-} from "../typechain-types/src/SeaDrop";
-import type { Wallet, BigNumber } from "ethers";
+import type { MintParamsStruct } from "../typechain-types/src/SeaDrop";
+import type { Wallet } from "ethers";
 
-const allowListElements = async (
+const allowListElementsBuffer = async (
   leaves: Array<[minter: string, mintParams: MintParamsStruct]>
 ) =>
   Promise.all(
-    leaves.map(async ([minter, mintParams]) => [
-      minter,
-      await mintParams.mintPrice,
-      await mintParams.maxTotalMintableByWallet,
-      await mintParams.startTime,
-      await mintParams.endTime,
-      await mintParams.dropStageIndex,
-      await mintParams.maxTokenSupplyForStage,
-      await mintParams.feeBps,
-      (await mintParams.restrictFeeRecipients) === true ? 1 : 0,
-    ])
+    leaves.map(async ([minter, mintParams]) =>
+      Buffer.concat([
+        Buffer.from(
+          ethers.BigNumber.from(minter)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.mintPrice)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.maxTotalMintableByWallet)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.startTime)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.endTime)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.dropStageIndex)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.maxTokenSupplyForStage)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(mintParams.feeBps)
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+        Buffer.from(
+          ethers.BigNumber.from(
+            mintParams.restrictFeeRecipients === true ? 1 : 0
+          )
+            .toHexString()
+            .slice(2)
+            .padStart(64, "0"),
+          "hex"
+        ),
+      ])
+    )
   );
 
 describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
@@ -82,6 +137,125 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   // TODO: Test for MintQuantityExceedsMaxTokenSupplyForStage
 
   it("Should mint an allow list stage", async () => {
+    const mintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 10,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: 100,
+      restrictFeeRecipients: false,
+    };
+
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    const root = merkleTree.getHexRoot();
+
+    const leaf = merkleTree.getLeaf(0);
+
+    const proof = merkleTree.getHexProof(leaf);
+
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    expect(
+      await seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          3,
+          mintParams,
+          proof,
+          { value: 30000000000000 }
+        )
+    )
+      .to.emit(seadrop, "SeaDropMint")
+      .withArgs(
+        token.address,
+        minter.address,
+        feeRecipient.address,
+        minter.address,
+        3,
+        ethers.BigNumber.from(mintParams.mintPrice),
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+  });
+
+  it("Should mint a free mint allow list stage", async () => {
+    const mintParams = {
+      mintPrice: "0",
+      maxTotalMintableByWallet: 10,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: 100,
+      restrictFeeRecipients: false,
+    };
+
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    const root = merkleTree.getHexRoot();
+
+    const leaf = merkleTree.getLeaf(0);
+
+    const proof = merkleTree.getHexProof(leaf);
+
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          3,
+          mintParams,
+          proof
+        )
+    )
+      .to.emit(seadrop, "SeaDropMint")
+      .withArgs(
+        token.address,
+        minter.address,
+        feeRecipient.address,
+        minter.address,
+        3,
+        ethers.BigNumber.from(mintParams.mintPrice),
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+  });
+
+  it("Should mint an allow list stage with a different payer than minter", async () => {
     const mintParams = {
       mintPrice: "10000000000000",
       maxTotalMintableByWallet: 10,
@@ -181,9 +355,10 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     };
     await token.updateAllowList(seadrop.address, allowListData);
 
+    // Mint an allow list stage with a different payer than minter.
     expect(
       await seadrop
-        .connect(minter)
+        .connect(deployer)
         .mintAllowList(
           token.address,
           feeRecipient.address,
@@ -199,132 +374,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         token.address,
         minter.address,
         feeRecipient.address,
-        minter.address,
-        3,
-        ethers.BigNumber.from(mintParams.mintPrice),
-        mintParams.feeBps,
-        mintParams.dropStageIndex
-      );
-  });
-
-  it("Should mint a free mint allow list stage", async () => {
-    const mintParams = {
-      mintPrice: "0",
-      maxTotalMintableByWallet: 10,
-      startTime: 1660154484,
-      endTime: 1760154484,
-      dropStageIndex: 1,
-      maxTokenSupplyForStage: 500,
-      feeBps: 100,
-      restrictFeeRecipients: false,
-    };
-
-    const elementsBuffer = [
-      Buffer.concat([
-        Buffer.from(
-          ethers.BigNumber.from(minter.address)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(mintParams.mintPrice)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(mintParams.maxTotalMintableByWallet)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(mintParams.startTime)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(mintParams.endTime)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(mintParams.dropStageIndex)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(mintParams.maxTokenSupplyForStage)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(mintParams.feeBps)
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-        Buffer.from(
-          ethers.BigNumber.from(
-            mintParams.restrictFeeRecipients === true ? 1 : 0
-          )
-            .toHexString()
-            .slice(2)
-            .padStart(64, "0"),
-          "hex"
-        ),
-      ]),
-    ];
-
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
-
-    const root = merkleTree.getHexRoot();
-
-    const leaf = merkleTree.getLeaf(0);
-
-    const proof = merkleTree.getHexProof(leaf);
-
-    const allowListData = {
-      merkleRoot: root,
-      publicKeyURIs: [],
-      allowListURI: "",
-    };
-    await token.updateAllowList(seadrop.address, allowListData);
-
-    await expect(
-      seadrop
-        .connect(minter)
-        .mintAllowList(
-          token.address,
-          feeRecipient.address,
-          minter.address,
-          3,
-          mintParams,
-          proof
-        )
-    )
-      .to.emit(seadrop, "SeaDropMint")
-      .withArgs(
-        token.address,
-        minter.address,
-        feeRecipient.address,
-        minter.address,
+        deployer.address,
         3,
         ethers.BigNumber.from(mintParams.mintPrice),
         mintParams.feeBps,
