@@ -63,10 +63,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     dropStage = {
       mintPrice: "10000000000000",
       maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000),
-      endTime: Math.round(Date.now() / 1000) + 400,
+      startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
       dropStageIndex: 1,
-      maxTokenSupplyForStage: 500,
+      maxTokenSupplyForStage: 100,
       feeBps: 100,
       restrictFeeRecipients: false,
     };
@@ -77,6 +77,13 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       allowedNftToken.address,
       dropStage
     );
+    await token
+      .connect(owner)
+      .updateTokenGatedDropFee(
+        seadrop.address,
+        allowedNftToken.address,
+        dropStage.feeBps
+      );
   });
 
   it("Should mint a token to a user with the allowed NFT token", async () => {
@@ -99,7 +106,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeRecipient.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     )
       .to.emit(seadrop, "SeaDropMint")
@@ -108,10 +115,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         minter.address,
         feeRecipient.address,
         minter.address,
-        1,
-        10000000000000,
-        0,
-        1
+        1, // mint quantity
+        dropStage.mintPrice,
+        dropStage.feeBps,
+        dropStage.dropStageIndex
       );
   });
 
@@ -132,7 +139,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeRecipient.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     )
       .to.emit(seadrop, "SeaDropMint")
@@ -141,10 +148,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         minter.address,
         feeRecipient.address,
         owner.address,
-        1,
-        10000000000000,
-        0,
-        1
+        1, // mint quantity
+        dropStage.mintPrice,
+        dropStage.feeBps,
+        dropStage.dropStageIndex
       );
 
     const minterBalance = await token.balanceOf(minter.address);
@@ -153,22 +160,13 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should mint a token to a user with the allowed NFT token when the mint is free", async () => {
     // Create the free mint drop stage object.
-    const dropStage = {
-      mintPrice: "0",
-      maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
-      dropStageIndex: 1,
-      maxTokenSupplyForStage: 500,
-      feeBps: 100,
-      restrictFeeRecipients: false,
-    };
+    const dropStageFreeMint = { ...dropStage, mintPrice: 0 };
 
     // Update the token gated drop for the deployed allowed NFT token.
     await token.updateTokenGatedDrop(
       seadrop.address,
       allowedNftToken.address,
-      dropStage
+      dropStageFreeMint
     );
 
     const mintParams = {
@@ -195,10 +193,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         minter.address,
         feeRecipient.address,
         owner.address,
-        1,
-        0,
-        0,
-        1
+        1, // mint quantity
+        0, // free
+        dropStage.feeBps,
+        dropStage.dropStageIndex
       );
 
     const minterBalance = await token.balanceOf(minter.address);
@@ -222,7 +220,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeRecipient.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     )
       .to.emit(seadrop, "SeaDropMint")
@@ -231,10 +229,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         minter.address,
         feeRecipient.address,
         minter.address,
-        1,
-        10000000000000,
-        0,
-        1
+        1, // mint quantity
+        dropStage.mintPrice,
+        dropStage.feeBps,
+        dropStage.dropStageIndex
       );
 
     await expect(
@@ -245,7 +243,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeRecipient.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     ).to.be.revertedWith(
       `TokenGatedTokenIdAlreadyRedeemed("${token.address}", "${allowedNftToken.address}", 0)`
@@ -269,7 +267,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeRecipient.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     ).to.be.revertedWith(
       `TokenGatedNotTokenOwner("${token.address}", "${allowedNftToken.address}", 0)`
@@ -278,22 +276,16 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should revert if the drop stage is not active", async () => {
     // Create the drop stage object.
-    const dropStage = {
-      mintPrice: "10000000000000",
-      maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 1000,
+    const dropStageExpired = {
+      ...dropStage,
       endTime: Math.round(Date.now() / 1000) - 500,
-      dropStageIndex: 1,
-      maxTokenSupplyForStage: 500,
-      feeBps: 100,
-      restrictFeeRecipients: false,
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
     await token.updateTokenGatedDrop(
       seadrop.address,
       allowedNftToken.address,
-      dropStage
+      dropStageExpired
     );
 
     const mintParams = {
@@ -321,7 +313,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         )
     ).to.be.revertedWith(
       `NotActive(${mostRecentBlockTimestamp + 1}, ${dropStage.startTime}, ${
-        dropStage.endTime
+        dropStageExpired.endTime
       })`
     );
   });
@@ -346,7 +338,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           creator.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     ).to.be.revertedWith("FeeRecipientNotAllowed()");
   });
@@ -396,7 +388,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeRecipient.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     ).to.be.revertedWith(`NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`);
   });
@@ -431,7 +423,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeRecipient.address,
           minter.address,
           mintParams,
-          { value: 10000000000000 }
+          { value: dropStage.mintPrice }
         )
     ).to.be.revertedWith(`NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`);
   });
@@ -453,7 +445,9 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     }
 
     // Calculate the value to send with the mint transaction.
-    const mintValue = 10000000000000 * tokenIds.length;
+    const mintValue = ethers.BigNumber.from(dropStage.mintPrice).mul(
+      tokenIds.length
+    );
 
     // Expect the transaction to revert since the mint quantity exceeds the
     // max total mintable by a wallet.
@@ -475,14 +469,9 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   it("Should not mint an allowed token holder stage after exceeding max token supply for stage", async () => {
     // Create a new drop stage object.
     const newDropStage = {
-      mintPrice: "10000000000000",
-      maxTotalMintableByWallet: 50,
-      startTime: Math.round(Date.now() / 1000),
-      endTime: Math.round(Date.now() / 1000) + 400,
-      dropStageIndex: 1,
+      ...dropStage,
+      maxTotalMintableByWallet: 20,
       maxTokenSupplyForStage: 5,
-      feeBps: 100,
-      restrictFeeRecipients: false,
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
@@ -508,7 +497,9 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     }
 
     // Calculate the value to send with the mint transaction.
-    const mintValue = 10000000000000 * tokenIds.length;
+    const mintValue = ethers.BigNumber.from(dropStage.mintPrice).mul(
+      tokenIds.length
+    );
 
     // Expect the transaction to revert since the mint quantity exceeds the
     // max total mintable by a wallet.
@@ -518,26 +509,20 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         .mintAllowedTokenHolder(
           token.address,
           feeRecipient.address,
-          minter.address,
+          ethers.constants.AddressZero,
           mintParams,
           { value: mintValue }
         )
     ).to.be.revertedWith(
-      `MintQuantityExceedsMaxTokenSupplyForStage(${tokenIds.length}, ${newDropStage.maxTokenSupplyForStage})`
+      `MintQuantityExceedsMaxTokenSupplyForStage(${tokenIds.length}, 5)`
     );
   });
 
   it("Should not mint an allowed token holder stage after exceeding max token supply", async () => {
-    // Create a new drop stage object.
     const newDropStage = {
-      mintPrice: "10000000000000",
+      ...dropStage,
       maxTotalMintableByWallet: 110,
-      startTime: Math.round(Date.now() / 1000),
-      endTime: Math.round(Date.now() / 1000) + 400,
-      dropStageIndex: 1,
-      maxTokenSupplyForStage: 100,
-      feeBps: 100,
-      restrictFeeRecipients: false,
+      maxTokenSupplyForStage: 110,
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
@@ -563,10 +548,12 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     }
 
     // Calculate the value to send with the mint transaction.
-    const mintValue = 10000000000000 * tokenIds.length;
+    const mintValue = ethers.BigNumber.from(dropStage.mintPrice).mul(
+      tokenIds.length
+    );
 
     // Expect the transaction to revert since the mint quantity exceeds the
-    // max total mintable by a wallet.
+    // max supply.
     await expect(
       seadrop
         .connect(minter)
