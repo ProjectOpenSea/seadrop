@@ -54,6 +54,17 @@ contract ERC721SeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     }
 
     /**
+     * @notice Modifier to restrict access exclusively to
+     *         allowed SeaDrop contracts.
+     */
+    modifier onlyAllowedSeaDrop(address seaDrop) {
+        if (_allowedSeaDrop[seaDrop] != true) {
+            revert OnlySeaDrop();
+        }
+        _;
+    }
+
+    /**
      * @notice Deploy the token contract with its name, symbol,
      *         administrator, and allowed SeaDrop addresses.
      */
