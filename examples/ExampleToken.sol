@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "../src/ERC721PartnerSeaDrop.sol";
 
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
@@ -9,7 +9,7 @@ import "openzeppelin-contracts/contracts/utils/Strings.sol";
  * @notice Example token with on-chain metadata that is compatible
  *         with SeaDrop.
  */
-contract ExampleToken is ERC721SeaDrop {
+contract ExampleToken is ERC721PartnerSeaDrop {
     /// @notice Store the int representation of this address as a
     ///         seed for its tokens' randomized output.
     uint160 private immutable thisUintAddress = uint160(address(this));
@@ -23,7 +23,7 @@ contract ExampleToken is ERC721SeaDrop {
         string memory symbol,
         address administrator,
         address[] memory allowedSeaDrop
-    ) ERC721SeaDrop(name, symbol, administrator, allowedSeaDrop) {}
+    ) ERC721PartnerSeaDrop(name, symbol, administrator, allowedSeaDrop) {}
 
     /**
      * @notice Returns the token URI for the token id.

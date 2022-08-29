@@ -6,13 +6,13 @@ import { MintParams } from "seadrop/lib/SeaDropStructs.sol";
 
 import { SeaDrop } from "seadrop/SeaDrop.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
 contract TestHelper is Test, SeaDropErrorsAndEvents {
     SeaDrop seadrop = new SeaDrop();
-    ERC721SeaDrop token;
+    ERC721PartnerSeaDrop token;
 
     address creator = makeAddr("creator");
     /// @notice Internal constants for EIP-712: Typed structured

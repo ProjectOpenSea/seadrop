@@ -3,9 +3,7 @@ pragma solidity ^0.8.13;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
-
-import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
 import { MintParams } from "seadrop/lib/SeaDropStructs.sol";
 
@@ -15,7 +13,7 @@ import {
 
 contract ERC721DropTest is TestHelper {
     using ECDSA for bytes32;
-    ERC721SeaDrop token2;
+    ERC721PartnerSeaDrop token2;
 
     event Transfer(
         address indexed from,
@@ -41,11 +39,16 @@ contract ERC721DropTest is TestHelper {
     }
 
     function setUp() public {
-        // Deploy the ERC721SeaDrop token.
+        // Deploy the ERC721PartnerSeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
-        token2 = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
+        token2 = new ERC721PartnerSeaDrop(
+            "",
+            "",
+            address(this),
+            allowedSeaDrop
+        );
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
