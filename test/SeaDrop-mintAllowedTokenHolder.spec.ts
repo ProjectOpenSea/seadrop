@@ -71,6 +71,22 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       restrictFeeRecipients: false,
     };
 
+    // Create a non-mintable drop stage object.
+    const zeroMintDropStage = {
+      ...dropStage,
+      maxTotalMintableByWallet: 0,
+      maxTokenSupplyForStage: 5,
+    };
+
+    // Expect the call to update the drop stage to revert since there is no existing drop stage.
+    await expect(
+      token.updateTokenGatedDrop(
+        seadrop.address,
+        allowedNftToken.address,
+        zeroMintDropStage
+      )
+    ).to.be.revertedWith("TokenGatedDropStageNotPresent()");
+
     // Update the token gated drop for the deployed allowed NFT token.
     await token.updateTokenGatedDrop(
       seadrop.address,
@@ -471,6 +487,20 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   });
 
   it("Should not mint an allowed token holder stage after exceeding max token supply for stage", async () => {
+    // Create a non-mintable drop stage object.
+    const zeroMintDropStage = {
+      ...dropStage,
+      maxTotalMintableByWallet: 0,
+      maxTokenSupplyForStage: 5,
+    };
+
+    // Call updateTokenGatedDrop with a non-mintable drop stage for branch coverage.
+    await token.updateTokenGatedDrop(
+      seadrop.address,
+      allowedNftToken.address,
+      zeroMintDropStage
+    );
+
     // Create a new drop stage object.
     const newDropStage = {
       ...dropStage,
