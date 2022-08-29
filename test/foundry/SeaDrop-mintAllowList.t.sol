@@ -445,11 +445,11 @@ contract ERC721DropTest is TestHelper {
             abi.encodeWithSelector(
                 MintQuantityExceedsMaxMintedPerWallet.selector,
                 100,
-                mintParams.maxMintsPerWallet
+                mintParams.maxTotalMintableByWallet
             )
         );
 
-        // Attempt to mint more than the maxMintsPerWallet.
+        // Attempt to mint more than the maxTotalMintableByWallet.
         seadrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
@@ -509,7 +509,7 @@ contract ERC721DropTest is TestHelper {
 
         hoax(args.allowList[0], 100 ether);
 
-        // Attempt to mint more than the maxMintsPerWallet.
+        // Attempt to mint more than the maxTotalMintableByWallet.
         seadrop.mintAllowList(
             address(token),
             args.feeRecipient,

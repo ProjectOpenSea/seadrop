@@ -77,7 +77,7 @@ contract SeaDrop is ISeaDrop {
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
         keccak256(
-            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxMintsPerWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
+            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
         );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
         keccak256(
@@ -166,7 +166,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            publicDrop.maxMintsPerWallet,
+            publicDrop.maxTotalMintableByWallet,
             0
         );
 
@@ -226,7 +226,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            mintParams.maxMintsPerWallet,
+            mintParams.maxTotalMintableByWallet,
             mintParams.maxTokenSupplyForStage
         );
 
@@ -295,7 +295,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            mintParams.maxMintsPerWallet,
+            mintParams.maxTotalMintableByWallet,
             mintParams.maxTokenSupplyForStage
         );
 
@@ -382,7 +382,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             mintQuantity,
-            dropStage.maxMintsPerWallet,
+            dropStage.maxTotalMintableByWallet,
             dropStage.maxTokenSupplyForStage
         );
 
@@ -481,14 +481,14 @@ contract SeaDrop is ISeaDrop {
      * @param nftContract            The nft contract.
      * @param minter                 The mint recipient.
      * @param quantity               The number of tokens to mint.
-     * @param maxMintsPerWallet      The max allowed mints per wallet.
+     * @param maxTotalMintableByWallet      The max allowed mints per wallet.
      * @param maxTokenSupplyForStage The max token supply for the drop stage.
      */
     function _checkMintQuantity(
         address nftContract,
         address minter,
         uint256 quantity,
-        uint256 maxMintsPerWallet,
+        uint256 maxTotalMintableByWallet,
         uint256 maxTokenSupplyForStage
     ) internal view {
         // Get the mint stats.
@@ -498,11 +498,11 @@ contract SeaDrop is ISeaDrop {
             uint256 maxSupply
         ) = IERC721SeaDrop(nftContract).getMintStats(minter);
 
-        // Ensure mint quantity doesn't exceed maxMintsPerWallet.
-        if (quantity + minterNumMinted > maxMintsPerWallet) {
+        // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
+        if (quantity + minterNumMinted > maxTotalMintableByWallet) {
             revert MintQuantityExceedsMaxMintedPerWallet(
                 quantity + minterNumMinted,
-                maxMintsPerWallet
+                maxTotalMintableByWallet
             );
         }
 
@@ -858,9 +858,9 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
-        // Use maxMintsPerWallet != 0 as a signal that this update should
+        // Use maxTotalMintableByWallet != 0 as a signal that this update should
         // add or update the drop stage, otherwise we will be removing.
-        bool addOrUpdateDropStage = dropStage.maxMintsPerWallet != 0;
+        bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
 
         // Get pointers to the token gated drop data and enumerated addresses.
         TokenGatedDropStage storage existingDropStageData = _tokenGatedDrops[

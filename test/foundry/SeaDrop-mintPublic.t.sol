@@ -101,7 +101,9 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
 
         assertEq(token.balanceOf(address(attacker)), 0);
         assertEq(
-            uint256(seadrop.getPublicDrop(address(token)).maxMintsPerWallet),
+            uint256(
+                seadrop.getPublicDrop(address(token)).maxTotalMintableByWallet
+            ),
             1
         );
 
