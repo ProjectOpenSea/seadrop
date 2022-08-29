@@ -229,17 +229,6 @@ contract TestSeaDropSnapshot is TestHelper {
         address _seadrop = address(seadrop);
     }
 
-    function testMintSigned2098_snapshot() public {
-        seadrop.mintSigned{ value: 0.1 ether }(
-            address(snapshotToken),
-            address(5),
-            address(0),
-            1,
-            mintParams,
-            signature2098
-        );
-    }
-
     function testMintSigned2098BaseStorageAccess_snapshot() public {
         MintParams memory _mintParams = mintParams;
         bytes memory _signature = signature2098;

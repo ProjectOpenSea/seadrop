@@ -614,14 +614,13 @@ contract SeaDrop is ISeaDrop {
         uint256 feeBps,
         address feeRecipient
     ) internal {
+        // Mint the token(s).
+        IERC721SeaDrop(nftContract).mintSeaDrop(minter, quantity);
+
         if (mintPrice != 0) {
             // Split the payment between the creator and fee recipient.
             _splitPayout(nftContract, feeRecipient, feeBps);
         }
-
-        // Mint the token(s).
-        IERC721SeaDrop(nftContract).mintSeaDrop(minter, quantity);
-
         // Emit an event for the mint.
         emit SeaDropMint(
             nftContract,

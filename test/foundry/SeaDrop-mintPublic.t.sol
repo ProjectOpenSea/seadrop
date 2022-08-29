@@ -11,8 +11,49 @@ import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
 import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
 
-contract ERC721DropTest is TestHelper {
+contract MaliciousRecipient {
+    bool public startAttack;
+    address public token;
+    SeaDrop public seaDrop;
+
+    fallback() external payable {
+        if (startAttack) {
+            startAttack = false;
+            seaDrop.mintPublic{ value: 1 ether }({
+                nftContract: token,
+                feeRecipient: address(this),
+                minterIfNotPayer: address(this),
+                quantity: 1
+            });
+        }
+    }
+
+    // Also receive some eth in the process
+    function setStartAttack() public payable {
+        startAttack = true;
+    }
+
+    function attack(SeaDrop _seaDrop, address _token) external payable {
+        token = _token;
+        seaDrop = _seaDrop;
+
+        _seaDrop.mintPublic{ value: 1 ether }({
+            nftContract: _token,
+            feeRecipient: address(this),
+            minterIfNotPayer: address(this),
+            quantity: 1
+        });
+
+        token = address(0);
+        seaDrop = SeaDrop(address(0));
+    }
+}
+
+contract ERC721SeaDropMintPublicTest is TestHelper {
+    MaliciousRecipient attacker;
+
     function setUp() public {
+        attacker = new MaliciousRecipient();
         // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
@@ -38,6 +79,35 @@ contract ERC721DropTest is TestHelper {
 
         // Set the public drop for the token contract.
         seadrop.updatePublicDrop(publicDrop);
+    }
+
+    function testMintPublicReenter() public payable {
+        // Create the public drop stage.
+        PublicDrop memory publicDrop = PublicDrop(
+            1 ether, // mint price
+            uint64(block.timestamp), // start time
+            1, // max mints per wallet
+            100, // fee (1%)
+            false // if false, allow any fee recipient
+            // If true, then only the fee recipient can perform the attack
+        );
+        vm.prank(address(token));
+        seadrop.updatePublicDrop(publicDrop);
+
+        assert(!attacker.startAttack());
+        // send some eth and set startAttack
+        attacker.setStartAttack{ value: 10 ether }();
+        assert(attacker.startAttack());
+
+        assertEq(token.balanceOf(address(attacker)), 0);
+        assertEq(
+            uint256(seadrop.getPublicDrop(address(token)).maxMintsPerWallet),
+            1
+        );
+
+        // expect fail on reentrancy
+        vm.expectRevert("ETH_TRANSFER_FAILED");
+        attacker.attack(seadrop, address(token));
     }
 
     function testMintPublic(FuzzInputs memory args) public validateArgs(args) {
