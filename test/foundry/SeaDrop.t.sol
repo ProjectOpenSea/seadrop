@@ -35,8 +35,8 @@ contract TestSeaDrop is TestHelper {
 
         // Deploy a vanilla ERC721 token.
         badToken = new TestERC721();
-        add.maxTotalMintableByWallet = 1;
-        update.maxTotalMintableByWallet = 2;
+        add.maxMintsPerWallet = 1;
+        update.maxMintsPerWallet = 2;
     }
 
     function testUpdateDropURI() public {
@@ -272,21 +272,15 @@ contract TestSeaDrop is TestHelper {
         assertEq(tokens.length, 1);
         assertEq(tokens[0], token1);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token1)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token1).maxMintsPerWallet,
             1
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token3)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token3).maxMintsPerWallet,
             0
         );
 
@@ -296,21 +290,15 @@ contract TestSeaDrop is TestHelper {
         assertEq(tokens[0], token1);
         assertEq(tokens[1], token2);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token1)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token1).maxMintsPerWallet,
             1
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             1
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token3)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token3).maxMintsPerWallet,
             0
         );
 
@@ -321,21 +309,15 @@ contract TestSeaDrop is TestHelper {
         assertEq(tokens[1], token2);
         assertEq(tokens[2], token3);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token1)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token1).maxMintsPerWallet,
             1
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             1
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token3)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token3).maxMintsPerWallet,
             1
         );
 
@@ -344,9 +326,7 @@ contract TestSeaDrop is TestHelper {
         tokens = seadrop.getTokenGatedAllowedTokens(address(token));
         assertEq(tokens.length, 3);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             2
         );
         // remove signer after
@@ -356,27 +336,19 @@ contract TestSeaDrop is TestHelper {
         assertEq(tokens[0], token1);
         assertEq(tokens[1], token3);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token1)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token1).maxMintsPerWallet,
             1
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token3)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token3).maxMintsPerWallet,
             1
         );
 
@@ -385,55 +357,39 @@ contract TestSeaDrop is TestHelper {
         assertEq(tokens.length, 1);
         assertEq(tokens[0], token3);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token1)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token1).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token3)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token3).maxMintsPerWallet,
             1
         );
 
         seadrop.updateTokenGatedDrop(token3, remove);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token3)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token3).maxMintsPerWallet,
             0
         );
         tokens = seadrop.getTokenGatedAllowedTokens(address(token));
         assertEq(tokens.length, 0);
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token1)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token1).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token2)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token2).maxMintsPerWallet,
             0
         );
         assertEq(
-            seadrop
-                .getTokenGatedDrop(address(token), token3)
-                .maxTotalMintableByWallet,
+            seadrop.getTokenGatedDrop(address(token), token3).maxMintsPerWallet,
             0
         );
     }

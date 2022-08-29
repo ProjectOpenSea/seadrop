@@ -35,7 +35,7 @@ struct PublicDrop {
  * 
  * @param mintPrice                The mint price per token.
  *                                 (Up to 1.2m of native token, e.g.: ETH, MATIC)
- * @param maxTotalMintableByWallet The limit of items this wallet can mint.
+ * @param maxMintsPerWallet        The limit of items this wallet can mint.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
  * @param dropStageIndex           The drop stage index to emit with the event
@@ -69,7 +69,7 @@ struct TokenGatedDropStage {
  *         that feeBps is acceptable before generating a proof.
  * 
  * @param mintPrice                The mint price per token.
- * @param maxTotalMintableByWallet The limit of items this wallet can mint.
+ * @param maxMintsPerWallet        The limit of items this wallet can mint.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
  * @param dropStageIndex           The drop stage index to emit with the event
@@ -85,7 +85,7 @@ struct TokenGatedDropStage {
  */
 struct MintParams {
     uint256 mintPrice; 
-    uint256 maxTotalMintableByWallet;
+    uint256 maxMintsPerWallet       ;
     uint256 startTime;
     uint256 endTime;
     uint256 dropStageIndex; // non-zero
@@ -121,7 +121,7 @@ struct AllowListData {
 
 struct SignedMintParams {
     uint80 minMintPrice;
-    uint24 maxMaxTotalMintableByWallet;
+    uint24 maxmaxMintsPerWallet       ;
     uint48 minStartTime;
     uint48 maxEndTime;
     uint40 maxMaxTokenSupplyForStage;

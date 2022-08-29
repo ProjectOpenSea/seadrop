@@ -77,7 +77,7 @@ contract SeaDrop is ISeaDrop {
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
         keccak256(
-            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
+            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxMintsPerWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
         );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
         keccak256(
@@ -226,7 +226,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            mintParams.maxTotalMintableByWallet,
+            mintParams.maxMintsPerWallet,
             mintParams.maxTokenSupplyForStage
         );
 
@@ -295,7 +295,7 @@ contract SeaDrop is ISeaDrop {
             nftContract,
             minter,
             quantity,
-            mintParams.maxTotalMintableByWallet,
+            mintParams.maxMintsPerWallet,
             mintParams.maxTokenSupplyForStage
         );
 
@@ -859,7 +859,7 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
-        // Use maxTotalMintableByWallet != 0 as a signal that this update should
+        // Use maxMintsPerWallet != 0 as a signal that this update should
         // add or update the drop stage, otherwise we will be removing.
         bool addOrUpdateDropStage = dropStage.maxMintsPerWallet != 0;
 

@@ -85,7 +85,7 @@ contract TestSeaDropSnapshot is TestHelper {
 
         mintParams = MintParams({
             mintPrice: 0.1 ether,
-            maxTotalMintableByWallet: 5,
+            maxMintsPerWallet: 5,
             startTime: block.timestamp,
             endTime: block.timestamp + 1000,
             dropStageIndex: 1,
@@ -120,7 +120,7 @@ contract TestSeaDropSnapshot is TestHelper {
     function _configureTokenGated() internal {
         TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage({
             mintPrice: 0.1 ether, // mint price
-            maxTotalMintableByWallet: 10, // max mints per wallet
+            maxMintsPerWallet: 10, // max mints per wallet
             startTime: uint48(block.timestamp), // start time
             endTime: uint48(block.timestamp) + 1000,
             dropStageIndex: 1,
