@@ -16,7 +16,6 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
-  let payer: Wallet;
   let minter: Wallet;
 
   after(async () => {
@@ -30,13 +29,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     owner = new ethers.Wallet(randomHex(32), provider);
     admin = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
-    payer = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
     await faucet(owner.address, provider);
     await faucet(admin.address, provider);
-    await faucet(payer.address, provider);
     await faucet(minter.address, provider);
     await faucet(creator.address, provider);
 
@@ -82,7 +79,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token
         .connect(owner)
         .updateCreatorPayoutAddress(seadrop.address, creator.address)
-    ).to.emit(seadrop, "CreatorPayoutAddressUpdated");
+    )
+      .to.emit(seadrop, "CreatorPayoutAddressUpdated")
+      .withArgs(token.address, creator.address);
 
     expect(await seadrop.getCreatorPayoutAddress(token.address)).to.equal(
       creator.address
@@ -96,11 +95,15 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     await expect(
       token.connect(owner).updateDropURI(seadrop.address, "http://test.com")
-    ).to.emit(seadrop, "DropURIUpdated");
+    )
+      .to.emit(seadrop, "DropURIUpdated")
+      .withArgs(token.address, "http://test.com");
 
     await expect(
       token.connect(admin).updateDropURI(seadrop.address, "http://test.com")
-    ).to.emit(seadrop, "DropURIUpdated");
+    )
+      .to.emit(seadrop, "DropURIUpdated")
+      .withArgs(token.address, "http://test.com");
   });
 
   it("Should only let the owner or admin update the public drop parameters", async () => {
@@ -125,20 +128,30 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     await expect(
       token.connect(owner).updatePublicDrop(seadrop.address, publicDrop)
-    ).to.emit(seadrop, "PublicDropUpdated");
+    )
+      .to.emit(seadrop, "PublicDropUpdated")
+      .withArgs(token.address, [
+        publicDrop.mintPrice,
+        publicDrop.startTime,
+        publicDrop.maxMintsPerWallet,
+        0, // Only the admin is allowed to change the fee, so it remains at its set value of 0.
+        publicDrop.restrictFeeRecipients,
+      ]);
 
-    // The owner should not be able to update the fee.
-    await expect(
-      token.connect(owner).updatePublicDrop(seadrop.address, publicDrop)
-    ).to.emit(seadrop, "PublicDropUpdated");
     // Ensure public drop fee parameters were not changed.
     expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(0);
     expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(true);
 
-    // Now try from the admin using `updatePublicDropFee`.
-    await expect(
-      token.connect(admin).updatePublicDropFee(seadrop.address, 50)
-    ).to.emit(seadrop, "PublicDropUpdated");
+    // Now from the admin using `updatePublicDropFee`.
+    await expect(token.connect(admin).updatePublicDropFee(seadrop.address, 50))
+      .to.emit(seadrop, "PublicDropUpdated")
+      .withArgs(token.address, [
+        publicDrop.mintPrice,
+        publicDrop.startTime,
+        publicDrop.maxMintsPerWallet,
+        50,
+        publicDrop.restrictFeeRecipients,
+      ]);
     // Ensure public drop fee parameters were updated.
     expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(50);
     expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(true);
@@ -178,7 +191,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token
         .connect(admin)
         .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true)
-    ).to.emit(seadrop, "AllowedFeeRecipientUpdated");
+    )
+      .to.emit(seadrop, "AllowedFeeRecipientUpdated")
+      .withArgs(token.address, feeRecipient.address, true);
 
     await expect(
       token
@@ -202,7 +217,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token
         .connect(admin)
         .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, false)
-    ).to.emit(seadrop, "AllowedFeeRecipientUpdated");
+    )
+      .to.emit(seadrop, "AllowedFeeRecipientUpdated")
+      .withArgs(token.address, feeRecipient.address, false);
 
     expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
 
@@ -223,10 +240,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   it("Should only let the owner set the provenance hash", async () => {
     expect(await token.provenanceHash()).to.equal(ethers.constants.HashZero);
 
-    const firstProvenanceHash =
-      "0x1111111111111111111111111111111111111111111111111111111111111111";
-    const secondProvenanceHash =
-      "0x2222222222222222222222222222222222222222222222222222222222222222";
+    const defaultProvenanceHash = `0x${"0".repeat(64)}`;
+    const firstProvenanceHash = `0x${"1".repeat(64)}`;
+    const secondProvenanceHash = `0x${"2".repeat(64)}`;
 
     await expect(
       token.connect(creator).setProvenanceHash(firstProvenanceHash)
@@ -236,11 +252,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token.connect(admin).setProvenanceHash(firstProvenanceHash)
     ).to.revertedWith("OnlyOwner");
 
-    await expect(
-      token.connect(owner).setProvenanceHash(firstProvenanceHash)
-    ).to.emit(token, "ProvenanceHashUpdated");
+    await expect(token.connect(owner).setProvenanceHash(firstProvenanceHash))
+      .to.emit(token, "ProvenanceHashUpdated")
+      .withArgs(defaultProvenanceHash, firstProvenanceHash);
 
-    // Provenance hash should not be updatable after the first token has minted
+    // Provenance hash should not be updatable after the first token has minted.
+    // Mint a token.
     await whileImpersonating(
       seadrop.address,
       provider,
@@ -262,11 +279,37 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     ).to.revertedWith("OnlyOwnerOrAdministrator");
 
     await expect(
-      token.connect(owner).updateAllowedSeaDrop([seadrop.address])
-    ).to.emit(token, "AllowedSeaDropUpdated");
+      token.connect(minter).updateAllowedSeaDrop([seadrop.address])
+    ).to.revertedWith("OnlyOwnerOrAdministrator");
+
+    await expect(token.connect(owner).updateAllowedSeaDrop([seadrop.address]))
+      .to.emit(token, "AllowedSeaDropUpdated")
+      .withArgs([seadrop.address]);
+
+    const address1 = `0x${"1".repeat(40)}`;
+    const address2 = `0x${"2".repeat(40)}`;
+    const address3 = `0x${"3".repeat(40)}`;
 
     await expect(
-      token.connect(admin).updateAllowedSeaDrop([seadrop.address])
-    ).to.emit(token, "AllowedSeaDropUpdated");
+      token.connect(admin).updateAllowedSeaDrop([seadrop.address, address1])
+    )
+      .to.emit(token, "AllowedSeaDropUpdated")
+      .withArgs([seadrop.address, address1]);
+
+    await expect(token.connect(admin).updateAllowedSeaDrop([address2]))
+      .to.emit(token, "AllowedSeaDropUpdated")
+      .withArgs([address2]);
+
+    await expect(
+      token
+        .connect(admin)
+        .updateAllowedSeaDrop([address3, seadrop.address, address2, address1])
+    )
+      .to.emit(token, "AllowedSeaDropUpdated")
+      .withArgs([address3, seadrop.address, address2, address1]);
+
+    await expect(token.connect(admin).updateAllowedSeaDrop([seadrop.address]))
+      .to.emit(token, "AllowedSeaDropUpdated")
+      .withArgs([seadrop.address]);
   });
 });

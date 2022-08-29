@@ -63,6 +63,8 @@ describe(`SeaDrop (v${VERSION})`, function () {
 
     await expect(
       token.connect(owner).updateDropURI(seadrop.address, "http://test.com")
-    ).to.emit(seadrop, "DropURIUpdated");
+    )
+      .to.emit(seadrop, "DropURIUpdated")
+      .withArgs(token.address, "http://test.com");
   });
 });
