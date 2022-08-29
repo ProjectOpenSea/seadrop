@@ -122,7 +122,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         token.address,
         minter.address,
         feeRecipient.address,
-        minter.address,
+        minter.address, // payer
         3, // mint quantity
         publicDrop.mintPrice,
         publicDrop.feeBps,
