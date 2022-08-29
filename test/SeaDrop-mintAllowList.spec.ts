@@ -92,7 +92,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   let seadrop: ISeaDrop;
   let token: IERC721SeaDrop;
   let creator: Wallet;
-  let deployer: Wallet;
+  let owner: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
   let feeBps: number;
@@ -105,13 +105,13 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   before(async () => {
     // Set the wallets.
-    deployer = new ethers.Wallet(randomHex(32), provider);
+    owner = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets.
-    await faucet(deployer.address, provider);
+    await faucet(owner.address, provider);
     await faucet(minter.address, provider);
 
     // Deploy Seadrop.
@@ -122,9 +122,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   beforeEach(async () => {
     // Deploy token.
     const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
-    token = await SeaDropToken.deploy("", "", deployer.address, [
-      seadrop.address,
-    ]);
+    token = await SeaDropToken.deploy("", "", owner.address, [seadrop.address]);
 
     // Set a random feeBps.
     feeBps = randomInt(1, 10000);
@@ -132,7 +130,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Update the fee recipient and creator payout address for the token.
     await token.setMaxSupply(1000);
     await token
-      .connect(deployer)
+      .connect(owner)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
 
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
@@ -331,7 +329,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Mint an allow list stage with a different payer than minter.
     await expect(
       seadrop
-        .connect(deployer)
+        .connect(owner)
         .mintAllowList(
           token.address,
           feeRecipient.address,
@@ -347,7 +345,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         token.address,
         minter.address,
         feeRecipient.address,
-        deployer.address,
+        owner.address,
         mintQuantity,
         ethers.BigNumber.from(mintParams.mintPrice),
         mintParams.feeBps,
@@ -402,7 +400,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(deployer)
+        .connect(owner)
         .mintAllowList(
           token.address,
           feeRecipient.address,
@@ -462,7 +460,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(deployer)
+        .connect(owner)
         .mintAllowList(
           token.address,
           invalidFeeRecipient.address,
@@ -520,21 +518,24 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     // Deploy a new ERC721SeaDrop.
     const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
-    const differentToken = await SeaDropToken.deploy("", "", deployer.address, [
+    const differentToken = await SeaDropToken.deploy("", "", owner.address, [
       seadrop.address,
     ]);
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
     await differentToken
-      .connect(deployer)
+      .connect(owner)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
 
-    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await differentToken.updateCreatorPayoutAddress(
+      seadrop.address,
+      creator.address
+    );
 
     await expect(
       seadrop
-        .connect(deployer)
+        .connect(owner)
         .mintAllowList(
           differentToken.address,
           feeRecipient.address,
@@ -604,7 +605,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(deployer)
+        .connect(owner)
         .mintAllowList(
           token.address,
           feeRecipient.address,
