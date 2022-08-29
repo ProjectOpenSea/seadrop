@@ -228,11 +228,4 @@ contract TestSeaDropSnapshot is TestHelper {
         address _snapshotTokenAddress = address(snapshotToken);
         address _seadrop = address(seadrop);
     }
-
-    function testMintSigned2098BaseStorageAccess_snapshot() public {
-        MintParams memory _mintParams = mintParams;
-        bytes memory _signature = signature2098;
-        address _snapshotTokenAddress = address(snapshotToken);
-        address _seadrop = address(seadrop);
-    }
 }
