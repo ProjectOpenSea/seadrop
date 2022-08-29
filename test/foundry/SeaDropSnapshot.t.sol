@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
 import { TestERC721 } from "test/foundry/utils/TestERC721.sol";
 import {
@@ -15,13 +15,13 @@ import {
 } from "seadrop/lib/SeaDropStructs.sol";
 import { Merkle } from "murky/Merkle.sol";
 
-contract ERC721SeaDropPlusRegularMint is ERC721SeaDrop {
+contract ERC721PartnerSeaDropPlusRegularMint is ERC721PartnerSeaDrop {
     constructor(
         string memory name,
         string memory symbol,
         address admin,
         address[] memory allowed
-    ) ERC721SeaDrop(name, symbol, admin, allowed) {}
+    ) ERC721PartnerSeaDrop(name, symbol, admin, allowed) {}
 
     function mint(address recip, uint256 quantity) public payable {
         _mint(recip, quantity);
@@ -29,9 +29,9 @@ contract ERC721SeaDropPlusRegularMint is ERC721SeaDrop {
 }
 
 contract TestSeaDropSnapshot is TestHelper {
-    TestERC721 badToken;
+    TestERC721 tokenGatedEligible;
     mapping(address => bool) seenAddresses;
-    ERC721SeaDropPlusRegularMint snapshotToken;
+    ERC721PartnerSeaDropPlusRegularMint snapshotToken;
 
     bytes32 merkleRoot;
     bytes32[] proof;
@@ -46,17 +46,17 @@ contract TestSeaDropSnapshot is TestHelper {
     }
 
     function setUp() public {
-        // Deploy the ERC721SeaDrop token.
+        // Deploy the ERC721PartnerSeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        snapshotToken = new ERC721SeaDropPlusRegularMint(
+        snapshotToken = new ERC721PartnerSeaDropPlusRegularMint(
             "",
             "",
             address(this),
             allowedSeaDrop
         );
         // Deploy a vanilla ERC721 token.
-        badToken = new TestERC721();
+        tokenGatedEligible = new TestERC721();
 
         // Set the max supply to 1000.
         snapshotToken.setMaxSupply(1000);
@@ -114,10 +114,15 @@ contract TestSeaDropSnapshot is TestHelper {
         _configureTokenGated();
         _configureSigner();
 
-        badToken.mint(address(this), 1);
+        tokenGatedEligible.mint(address(this), 1);
     }
 
     function _configureTokenGated() internal {
+        snapshotToken.updateTokenGatedDropFee(
+            address(seadrop),
+            address(tokenGatedEligible),
+            250
+        );
         TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage({
             mintPrice: 0.1 ether, // mint price
             maxTotalMintableByWallet: 10, // max mints per wallet
@@ -130,7 +135,7 @@ contract TestSeaDropSnapshot is TestHelper {
         });
         snapshotToken.updateTokenGatedDrop(
             address(seadrop),
-            address(badToken),
+            address(tokenGatedEligible),
             tokenGatedDropStage
         );
     }
@@ -192,9 +197,10 @@ contract TestSeaDropSnapshot is TestHelper {
     function testMintAllowedTokenHolder_snapshot() public {
         uint256[] memory ids = new uint256[](1);
         ids[0] = 1;
+
         TokenGatedMintParams
             memory tokenGatedMintParams = TokenGatedMintParams({
-                allowedNftToken: address(badToken),
+                allowedNftToken: address(tokenGatedEligible),
                 allowedNftTokenIds: ids
             });
         seadrop.mintAllowedTokenHolder{ value: 0.1 ether }(
@@ -206,7 +212,7 @@ contract TestSeaDropSnapshot is TestHelper {
     }
 
     function testMintAllowedTokenHolderBaseStorageAccess_snapshot() public {
-        address _badToken = address(badToken);
+        address _tokenGatedEligible = address(tokenGatedEligible);
         address _snapshotTokenAddress = address(snapshotToken);
         address _seadrop = address(seadrop);
     }

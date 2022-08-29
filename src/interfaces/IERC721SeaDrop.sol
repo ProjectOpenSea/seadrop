@@ -71,13 +71,6 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     ) external;
 
     /**
-     * @notice Update public drop fee for this nft contract on SeaDrop.
-     *
-     * @param feeBps The public drop fee basis points.
-     */
-    function updatePublicDropFee(address seaDropImpl, uint16 feeBps) external;
-
-    /**
      * @notice Update allow list data for this nft contract on SeaDrop.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
@@ -104,20 +97,6 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     ) external;
 
     /**
-     * @notice Update token gated drop stage fee basis points for this nft
-     *         contract on SeaDrop.
-     *
-     * @param seaDropImpl     The allowed SeaDrop contract.
-     * @param allowedNftToken The allowed nft token.
-     * @param feeBps          The token gated drop fee basis points.
-     */
-    function updateTokenGatedDropFee(
-        address seaDropImpl,
-        address allowedNftToken,
-        uint16 feeBps
-    ) external;
-
-    /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
@@ -128,7 +107,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
 
     /**
      * @notice Update the creator payout address for this nft contract on SeaDrop.
-     *         Only the owner can set the creator payout address.
+     *         Only an authorized user should be able to set the creator payout address.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
@@ -141,7 +120,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update the allowed fee recipient for this nft contract
      *         on SeaDrop.
-     *         Only the administrator can set the allowed fee recipient.
+     *         Only an authorized user should be able to set the allowed fee recipient.
      *
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
@@ -155,7 +134,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
-     *         Only the owner or administrator can update the signers.
+     *         Only an authorized user should be able to update the signers.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param signer      The signer to update.

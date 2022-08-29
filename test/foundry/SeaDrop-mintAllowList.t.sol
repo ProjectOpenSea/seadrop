@@ -5,7 +5,7 @@ import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
 import { SeaDrop } from "seadrop/SeaDrop.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
 import { AllowListData, MintParams } from "seadrop/lib/SeaDropStructs.sol";
 
@@ -28,7 +28,7 @@ contract ERC721DropTest is TestHelper {
         // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);

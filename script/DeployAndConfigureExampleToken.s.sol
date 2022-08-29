@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 
 import { ExampleToken } from "../examples/ExampleToken.sol";
 
-import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "../src/ERC721PartnerSeaDrop.sol";
 
 import { ISeaDrop } from "../src/interfaces/ISeaDrop.sol";
 
