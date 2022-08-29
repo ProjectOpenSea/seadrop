@@ -4,7 +4,6 @@ import "dotenv/config";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
-import "hardhat-preprocessor";
 import "solidity-coverage";
 
 // You need to export an object to set up your config
@@ -36,6 +35,7 @@ const config: HardhatUserConfig = {
   },
   paths: {
     sources: "./temp-src-coverage",
+    cache: "./hh-cache-coverage",
   },
 };
 
