@@ -1,5 +1,5 @@
 module.exports = {
-  skipFiles: [],
+  skipFiles: ["./shim/Shim.sol", "./test/TestERC721.sol"],
   configureYulOptimizer: true,
   solcOptimizerDetails: {
     yul: true,

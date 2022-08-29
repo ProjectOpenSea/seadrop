@@ -43,17 +43,6 @@ contract ERC721SeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     address[] internal _enumeratedAllowedSeaDrop;
 
     /**
-     * @notice Modifier to restrict sender exclusively to
-     *         allowed SeaDrop contracts.
-     */
-    modifier onlySeaDrop() {
-        if (_allowedSeaDrop[msg.sender] != true) {
-            revert OnlySeaDrop();
-        }
-        _;
-    }
-
-    /**
      * @notice Modifier to restrict access exclusively to
      *         allowed SeaDrop contracts.
      */
@@ -129,7 +118,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         external
         payable
         override
-        onlySeaDrop
+        onlyAllowedSeaDrop(msg.sender)
     {
         // Mint the quantity of tokens to the minter.
         _mint(minter, quantity);

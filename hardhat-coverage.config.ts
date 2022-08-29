@@ -33,7 +33,10 @@ const config: HardhatUserConfig = {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
   },
-  paths: { sources: "./temp-src-coverage" },
+  paths: {
+    sources: "./temp-src-coverage",
+    cache: "./hh-cache-coverage",
+  },
 };
 
 export default config;

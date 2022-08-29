@@ -1,6 +1,4 @@
 import fs from "fs";
-import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from "hardhat/builtin-tasks/task-names";
-import { subtask } from "hardhat/config";
 
 import type { HardhatUserConfig } from "hardhat/config";
 
@@ -11,16 +9,6 @@ import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "hardhat-preprocessor";
-import "solidity-coverage";
-
-// Filter Reference Contracts
-subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
-  async (_, __, runSuper) => {
-    const paths = await runSuper();
-
-    return paths.filter((p: any) => !p.includes("contracts/reference/"));
-  }
-);
 
 // Configure remappings.
 // https://book.getfoundry.sh/config/hardhat
@@ -43,7 +31,7 @@ const config: HardhatUserConfig = {
       {
         version: "0.8.14",
         settings: {
-          viaIR: true,
+          viaIR: false,
           optimizer: {
             enabled: true,
             runs: 19066,

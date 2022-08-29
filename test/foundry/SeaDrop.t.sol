@@ -5,7 +5,7 @@ import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
-import { TestERC721 } from "test/foundry/utils/TestERC721.sol";
+import { TestERC721 } from "seadrop/test/TestERC721.sol";
 import {
     AllowListData,
     MintParams,
