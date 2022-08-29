@@ -185,6 +185,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   it("Should only let the admin update the allowed fee recipients", async () => {
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
+    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
+
     expect(
       await seadrop.getFeeRecipientIsAllowed(
         token.address,
