@@ -1052,7 +1052,7 @@ contract SeaDrop is ISeaDrop {
         digest = keccak256(
             abi.encodePacked(
                 bytes2(0x1901),
-                _DOMAIN_SEPARATOR,
+                _domainSeparator(),
                 keccak256(
                     abi.encode(
                         _SIGNED_MINT_TYPEHASH,

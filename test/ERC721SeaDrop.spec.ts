@@ -7,6 +7,7 @@ import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
+import type { PublicDropStruct } from "../typechain-types/src/ERC721SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`ERC721SeaDrop (v${VERSION})`, function () {
@@ -17,6 +18,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   let admin: Wallet;
   let creator: Wallet;
   let minter: Wallet;
+  let publicDrop: PublicDropStruct;
 
   after(async () => {
     await network.provider.request({
@@ -49,6 +51,38 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     token = await ERC721SeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
+
+    publicDrop = {
+      mintPrice: "100000000000000000", // 0.1 ether
+      maxMintsPerWallet: 10,
+      startTime: Math.round(Date.now() / 1000) - 100,
+      feeBps: 1000,
+      restrictFeeRecipients: true,
+    };
+  });
+
+  it("Should not be able to mint until the creator address is updated to non-zero", async () => {
+    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
+    await token.setMaxSupply(5);
+
+    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
+    await token
+      .connect(admin)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+
+    await expect(
+      seadrop.mintPublic(
+        token.address,
+        feeRecipient.address,
+        ethers.constants.AddressZero,
+        1,
+        { value: publicDrop.mintPrice }
+      )
+    ).to.be.revertedWith("CreatorPayoutAddressCannotBeZeroAddress");
+
+    await token
+      .connect(admin)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, false);
   });
 
   it("Should only let the token owner update the creator payout address", async () => {
@@ -107,17 +141,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   });
 
   it("Should only let the owner or admin update the public drop parameters", async () => {
-    const publicDrop = {
-      mintPrice: "100000000000000000", // 0.1 ether
-      maxMintsPerWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      feeBps: 1000,
-      restrictFeeRecipients: true,
-    };
-
     // Only the owner should be able to call `updatePublicDrop`,
     // but they cannot update feeBps or restrictFeeRecipients.
-
     await expect(
       token.connect(creator).updatePublicDrop(seadrop.address, publicDrop)
     ).to.be.revertedWith("OnlyOwner");
@@ -159,8 +184,6 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   it("Should only let the admin update the allowed fee recipients", async () => {
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
-
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
 
     expect(
       await seadrop.getFeeRecipientIsAllowed(
@@ -311,5 +334,23 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await expect(token.connect(admin).updateAllowedSeaDrop([seadrop.address]))
       .to.emit(token, "AllowedSeaDropUpdated")
       .withArgs([seadrop.address]);
+  });
+
+  it("Should only let allowed seadrop call seaDropMint", async () => {
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(
+          token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
+        )
+          .to.emit(token, "Transfer")
+          .withArgs(ethers.constants.AddressZero, minter.address, 1);
+      }
+    );
+
+    await expect(
+      token.connect(owner).mintSeaDrop(minter.address, 1)
+    ).to.be.revertedWith("OnlySeaDrop");
   });
 });

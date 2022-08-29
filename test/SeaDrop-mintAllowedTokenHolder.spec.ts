@@ -120,6 +120,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         dropStage.feeBps,
         dropStage.dropStageIndex
       );
+
+    expect(await seadrop.getTokenGatedAllowedTokens(token.address)).to.deep.eq([
+      allowedNftToken.address,
+    ]);
   });
 
   it("Should mint a token to a user with the allowed NFT token when the payer is different from the minter", async () => {

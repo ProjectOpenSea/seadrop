@@ -276,6 +276,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     // Test with signer that is not allowed
     const signer2 = new ethers.Wallet(randomHex(32), provider);
     token.updateSigner(seadrop.address, signer2.address, false);
+    expect(
+      await seadrop.getSignerIsAllowed(token.address, signer2.address)
+    ).to.eq(false);
+    expect(await seadrop.getSigners(token.address)).to.deep.eq([
+      signer.address,
+    ]);
     const signature2 = await signMint(
       token.address,
       minter, // sign mint for minter

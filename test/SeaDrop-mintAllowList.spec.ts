@@ -195,6 +195,8 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     };
     await token.updateAllowList(seadrop.address, allowListData);
 
+    expect(await seadrop.getAllowListMerkleRoot(token.address)).to.eq(root);
+
     await expect(
       seadrop
         .connect(minter)
