@@ -445,7 +445,7 @@ contract ERC721DropTest is TestHelper {
             abi.encodeWithSelector(
                 MintQuantityExceedsMaxMintedPerWallet.selector,
                 100,
-                mintParams.maxTotalMintableByWallet
+                mintParams.maxMintsPerWallet
             )
         );
 
