@@ -11,7 +11,7 @@
     "test": "hardhat test --config ./hardhat.config.ts",
     "test:forge": "forge test -vvv",
     "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",
-    "coverage": "hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js",
+    "coverage": "hardhat preprocess --dest temp-src-coverage && hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js",
     "lint:check": "yarn lint:check:format && yarn lint:check:solhint && yarn lint:check:eslint",
     "lint:check:format": "prettier --check **.{sol,js,ts}",
     "lint:check:solhint": "yarn build && solhint --config ./config/.solhint.json --ignore-path ./config/.solhintignore contracts/**/*.sol",
@@ -28,8 +28,7 @@
   },
   "dependencies": {
     "ethers": "^5.5.3",
-    "ethers-eip712": "^0.2.0",
-    "hardhat": "https://github.com/0age/hardhat/releases/download/viaIR-2.9.3/hardhat-v2.9.3.tgz"
+    "hardhat": "^2.10.2"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.6",
@@ -54,8 +53,10 @@
     "eslint-plugin-promise": "^6.0.0",
     "ethereum-waffle": "^3.4.0",
     "hardhat-gas-reporter": "^1.0.7",
+    "hardhat-preprocessor": "^0.1.4",
     "husky": ">=6",
     "lint-staged": ">=10",
+    "merkletreejs": "^0.2.32",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "scuffed-abi": "^1.0.4",

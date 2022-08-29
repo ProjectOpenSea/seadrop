@@ -2,18 +2,24 @@
 pragma solidity ^0.8.11;
 
 import {
-    IERC721SeaDrop,
-    IERC721ContractMetadata
-} from "./interfaces/IERC721SeaDrop.sol";
-
-import {
     ERC721ContractMetadata,
     IERC721ContractMetadata
 } from "./ERC721ContractMetadata.sol";
 
-import { ERC721A } from "ERC721A/ERC721A.sol";
+import {
+    IERC721SeaDrop,
+    IERC721ContractMetadata
+} from "./interfaces/IERC721SeaDrop.sol";
 
-import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
+import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
+
+import {
+    AllowListData,
+    PublicDrop,
+    TokenGatedDropStage
+} from "./lib/SeaDropStructs.sol";
+
+import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import {
     IERC721
@@ -23,28 +29,13 @@ import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
-import { SeaDrop } from "./SeaDrop.sol";
-
-import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
-
-import { SeaDropErrorsAndEvents } from "./lib/SeaDropErrorsAndEvents.sol";
-import {
-    AllowListData,
-    PublicDrop,
-    TokenGatedDropStage
-} from "./lib/SeaDropStructs.sol";
-
 /**
  * @title  ERC721SeaDrop
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721SeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop.
  */
-contract ERC721SeaDrop is
-    ERC721ContractMetadata,
-    IERC721SeaDrop,
-    SeaDropErrorsAndEvents
-{
+contract ERC721SeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) private _allowedSeaDrop;
 
@@ -368,19 +359,6 @@ contract ERC721SeaDrop is
         minterNumMinted = _numberMinted(minter);
         currentTotalSupply = totalSupply();
         maxSupply = _maxSupply;
-    }
-
-    /**
-     * @notice Returns the total token supply.
-     */
-    function totalSupply()
-        public
-        view
-        virtual
-        override(IERC721ContractMetadata, ERC721ContractMetadata)
-        returns (uint256)
-    {
-        return ERC721A.totalSupply();
     }
 
     /**

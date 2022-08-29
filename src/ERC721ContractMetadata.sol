@@ -1,30 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
+import {
+    IERC721ContractMetadata
+} from "./interfaces/IERC721ContractMetadata.sol";
+
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
-import { MaxMintable } from "utility-contracts/MaxMintable.sol";
-
-import {
-    TwoStepAdministered,
-    TwoStepOwnable
-} from "utility-contracts/TwoStepAdministered.sol";
-
-import { AllowList } from "utility-contracts/AllowList.sol";
-
-import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
 import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
-
-import {
-    ConstructorInitializable
-} from "utility-contracts/ConstructorInitializable.sol";
-
-import {
-    IERC721ContractMetadata
-} from "./interfaces/IERC721ContractMetadata.sol";
 
 /**
  * @title  ERC721ContractMetadata
@@ -64,7 +51,7 @@ contract ERC721ContractMetadata is
      * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view override returns (string memory) {
-        return _theBaseURI;
+        return _baseURI();
     }
 
     /**
@@ -98,11 +85,10 @@ contract ERC721ContractMetadata is
      * @param startTokenId The start token id.
      * @param endTokenId   The end token id.
      */
-    function setBatchTokenURIs(
-        uint256 startTokenId,
-        uint256 endTokenId,
-        string calldata
-    ) external onlyOwner {
+    function setBatchTokenURIs(uint256 startTokenId, uint256 endTokenId)
+        external
+        onlyOwner
+    {
         // Emit an event with the update.
         emit TokenURIUpdated(startTokenId, endTokenId);
     }
@@ -112,19 +98,6 @@ contract ERC721ContractMetadata is
      */
     function maxSupply() public view returns (uint256) {
         return _maxSupply;
-    }
-
-    /**
-     * @notice Returns the total token supply.
-     */
-    function totalSupply()
-        public
-        view
-        virtual
-        override(ERC721A, IERC721ContractMetadata)
-        returns (uint256)
-    {
-        return ERC721A.totalSupply();
     }
 
     /**

@@ -4,9 +4,6 @@
 [submodule "lib/ERC721A"]
 	path = lib/ERC721A
 	url = https://github.com/chiru-labs/ERC721A
-[submodule "lib/solady"]
-	path = lib/solady
-	url = https://github.com/vectorized/solady
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate

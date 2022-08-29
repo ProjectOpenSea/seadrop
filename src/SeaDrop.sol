@@ -3,6 +3,8 @@ pragma solidity ^0.8.11;
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
+import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
+
 import {
     AllowListData,
     MintParams,
@@ -11,11 +13,7 @@ import {
     TokenGatedMintParams
 } from "./lib/SeaDropStructs.sol";
 
-import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
-
-import { ERC20, SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
-
-import { MerkleProofLib } from "solady/utils/MerkleProofLib.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 import {
     IERC721
@@ -28,6 +26,10 @@ import {
 import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+
+import {
+    MerkleProof
+} from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title  SeaDrop
@@ -73,11 +75,24 @@ contract SeaDrop is ISeaDrop {
 
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
-    bytes32 internal immutable _SIGNED_MINT_TYPEHASH =
+    bytes32 internal constant _SIGNED_MINT_TYPEHASH =
         keccak256(
-            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
+            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
         );
-    bytes32 internal immutable _EIP_712_DOMAIN_TYPEHASH =
+    bytes32 internal constant _MINT_PARAMS_TYPEHASH =
+        keccak256(
+            "MintParams("
+            "uint256 mintPrice,"
+            "uint256 maxTotalMintableByWallet,"
+            "uint256 startTime,"
+            "uint256 endTime,"
+            "uint256 dropStageIndex,"
+            "uint256 maxTokenSupplyForStage,"
+            "uint256 feeBps,"
+            "bool restrictFeeRecipients"
+            ")"
+        );
+    bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
         keccak256(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
         );
@@ -224,7 +239,7 @@ contract SeaDrop is ISeaDrop {
 
         // Verify the proof.
         if (
-            !MerkleProofLib.verify(
+            !MerkleProof.verify(
                 proof,
                 _allowListMerkleRoots[nftContract],
                 keccak256(abi.encode(minter, mintParams))
@@ -291,24 +306,12 @@ contract SeaDrop is ISeaDrop {
             mintParams.restrictFeeRecipients
         );
 
-        // Verify EIP-712 signature by recreating the data structure
-        // that we signed on the client side, and then using that to recover
-        // the address that signed the signature for this data.
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                // EIP-191: `0x19` as set prefix, `0x01` as version byte
-                bytes2(0x1901),
-                _domainSeparator(),
-                keccak256(
-                    abi.encode(
-                        _SIGNED_MINT_TYPEHASH,
-                        nftContract,
-                        minter,
-                        feeRecipient,
-                        mintParams
-                    )
-                )
-            )
+        // Get the digest to verify the EIP-712 signature.
+        bytes32 digest = _getDigest(
+            nftContract,
+            minter,
+            feeRecipient,
+            mintParams
         );
 
         // Use the recover method to see what address was used to create
@@ -1015,5 +1018,51 @@ contract SeaDrop is ISeaDrop {
                 ++i;
             }
         }
+    }
+
+    /**
+     * @notice Verify an EIP-712 signature by recreating the data structure
+     *         that we signed on the client side, and then using that to recover
+     *         the address that signed the signature for this data.
+     *
+     * @param nftContract  The nft contract.
+     * @param minter       The mint recipient.
+     * @param feeRecipient The fee recipient.
+     * @param mintParams   The mint params.
+     */
+    function _getDigest(
+        address nftContract,
+        address minter,
+        address feeRecipient,
+        MintParams memory mintParams
+    ) internal view returns (bytes32 digest) {
+        bytes32 mintParamsHashStruct = keccak256(
+            abi.encode(
+                _MINT_PARAMS_TYPEHASH,
+                mintParams.mintPrice,
+                mintParams.maxTotalMintableByWallet,
+                mintParams.startTime,
+                mintParams.endTime,
+                mintParams.dropStageIndex,
+                mintParams.maxTokenSupplyForStage,
+                mintParams.feeBps,
+                mintParams.restrictFeeRecipients
+            )
+        );
+        digest = keccak256(
+            abi.encodePacked(
+                bytes2(0x1901),
+                _DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        _SIGNED_MINT_TYPEHASH,
+                        nftContract,
+                        minter,
+                        feeRecipient,
+                        mintParamsHashStruct
+                    )
+                )
+            )
+        );
     }
 }

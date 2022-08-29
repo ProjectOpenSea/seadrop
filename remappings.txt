@@ -4,6 +4,5 @@ forge-std/=lib/forge-std/src/
 murky/=lib/murky/src/
 openzeppelin-contracts/=lib/openzeppelin-contracts/
 seadrop/=src/
-solady/=lib/solady/src/
 solmate/=lib/solmate/src/
 utility-contracts/=lib/utility-contracts/src/
