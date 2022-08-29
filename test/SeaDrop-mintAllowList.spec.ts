@@ -127,7 +127,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Set a random feeBps.
-    feeBps = Math.max(1, randomInt(10000));
+    feeBps = randomInt(1, 10000);
 
     // Update the fee recipient and creator payout address for the token.
     await token.setMaxSupply(1000);
@@ -138,9 +138,9 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
   });
 
-  // TODO: Test for MintQuantityExceedsMaxTokenSupplyForStage
-
-  it("Should mint an allow list stage", async () => {
+  it("Should mint to a minter on the allow list", async () => {
+    // Declare the mint params for the merkle proof and call to
+    // mintAllowList
     const mintParams = {
       mintPrice: "10000000000000",
       maxTotalMintableByWallet: 10,
@@ -158,31 +158,42 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       randomInt(mintParams.maxTotalMintableByWallet)
     );
 
+    // Encode the minter address and mintParams to a buffer to pass
+    // to MerkleTree
     const elementsBuffer = await allowListElementsBuffer([
       [minter.address, mintParams],
     ]);
 
+    // Construct a merkle tree from the allow list elements.
     const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
       hashLeaves: true,
       sortPairs: true,
     });
 
+    // Store the merkle root.
     const root = merkleTree.getHexRoot();
 
+    // Get the leaf at index 0.
     const leaf = merkleTree.getLeaf(0);
 
+    // Get the proof of the leaf to pass into the transaction.
     const proof = merkleTree.getHexProof(leaf);
 
+    // Declare the allow list data.
     const allowListData = {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
     };
+
+    // Update the allow list of the token.
     await token.updateAllowList(seadrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const mintValue = parseInt(mintParams.mintPrice) * mintQuantity;
 
+    // Mint the allow list stage to the minter and verify
+    // the expected event was emitted.
     await expect(
       seadrop
         .connect(minter)
@@ -402,5 +413,516 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           { value: mintValue }
         )
     ).to.be.revertedWith("InvalidProof()");
+  });
+
+  it("Should not mint an allow list stage with a different fee recipient", async () => {
+    const mintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 10,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: feeBps,
+      restrictFeeRecipients: true,
+    };
+
+    // Set a random mintQuantity under maxTotalMintableByWallet.
+    const mintQuantity = Math.max(
+      1,
+      randomInt(mintParams.maxTotalMintableByWallet)
+    );
+
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    const root = merkleTree.getHexRoot();
+
+    const leaf = merkleTree.getLeaf(0);
+
+    const proof = merkleTree.getHexProof(leaf);
+
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    // Calculate the value to send with the mint transaction.
+    const mintValue = parseInt(mintParams.mintPrice) * mintQuantity;
+
+    const invalidFeeRecipient = new ethers.Wallet(randomHex(32), provider);
+
+    await expect(
+      seadrop
+        .connect(deployer)
+        .mintAllowList(
+          token.address,
+          invalidFeeRecipient.address,
+          minter.address,
+          mintQuantity,
+          mintParams,
+          proof,
+          { value: mintValue }
+        )
+    ).to.be.revertedWith("FeeRecipientNotAllowed()");
+  });
+
+  it("Should not mint an allow list stage with a different token contract", async () => {
+    const mintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 10,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: feeBps,
+      restrictFeeRecipients: true,
+    };
+
+    // Set a random mintQuantity under maxTotalMintableByWallet.
+    const mintQuantity = Math.max(
+      1,
+      randomInt(mintParams.maxTotalMintableByWallet)
+    );
+
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    const root = merkleTree.getHexRoot();
+
+    const leaf = merkleTree.getLeaf(0);
+
+    const proof = merkleTree.getHexProof(leaf);
+
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    // Calculate the value to send with the mint transaction.
+    const mintValue = parseInt(mintParams.mintPrice) * mintQuantity;
+
+    // Deploy a new ERC721SeaDrop.
+    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
+    const differentToken = await SeaDropToken.deploy("", "", deployer.address, [
+      seadrop.address,
+    ]);
+
+    // Update the fee recipient and creator payout address for the new token.
+    await differentToken.setMaxSupply(1000);
+    await differentToken
+      .connect(deployer)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+
+    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+
+    await expect(
+      seadrop
+        .connect(deployer)
+        .mintAllowList(
+          differentToken.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          mintParams,
+          proof,
+          { value: mintValue }
+        )
+    ).to.be.revertedWith("InvalidProof()");
+  });
+
+  it("Should not mint an allow list stage with different mint params", async () => {
+    const mintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 10,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: feeBps,
+      restrictFeeRecipients: true,
+    };
+
+    // Set a random mintQuantity under maxTotalMintableByWallet.
+    const mintQuantity = Math.max(
+      1,
+      randomInt(mintParams.maxTotalMintableByWallet)
+    );
+
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    const root = merkleTree.getHexRoot();
+
+    const leaf = merkleTree.getLeaf(0);
+
+    const proof = merkleTree.getHexProof(leaf);
+
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    // Create different mint params to include in the mint.
+    const differentMintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 50,
+      startTime: 1660154484,
+      endTime: 1960154490,
+      dropStageIndex: 5,
+      maxTokenSupplyForStage: 200,
+      feeBps: feeBps - 100,
+      restrictFeeRecipients: true,
+    };
+
+    // Calculate the value to send with the mint transaction.
+    const mintValue = parseInt(mintParams.mintPrice) * mintQuantity;
+
+    await expect(
+      seadrop
+        .connect(deployer)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          differentMintParams,
+          proof,
+          { value: mintValue }
+        )
+    ).to.be.revertedWith("InvalidProof()");
+  });
+
+  it("Should not mint an allow list stage after exceeding max mints per wallet", async () => {
+    // Declare the mint params for the merkle proof and call to
+    // mintAllowList
+    const mintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 10,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 500,
+      feeBps: feeBps,
+      restrictFeeRecipients: false,
+    };
+
+    // Set a random mintQuantity between 1 and maxTotalMintableByWallet - 1.
+    const mintQuantity = randomInt(1, mintParams.maxTotalMintableByWallet - 1);
+
+    // Encode the minter address and mintParams to a buffer to pass
+    // to MerkleTree
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    // Construct a merkle tree from the allow list elements.
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    // Store the merkle root.
+    const root = merkleTree.getHexRoot();
+
+    // Get the leaf at index 0.
+    const leaf = merkleTree.getLeaf(0);
+
+    // Get the proof of the leaf to pass into the transaction.
+    const proof = merkleTree.getHexProof(leaf);
+
+    // Declare the allow list data.
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+
+    // Update the allow list of the token.
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    // Calculate the value to send with the mint transaction.
+    const mintValue = parseInt(mintParams.mintPrice) * mintQuantity;
+
+    // Mint the allow list stage to the minter and verify
+    // the expected event was emitted.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          mintParams,
+          proof,
+          { value: mintValue }
+        )
+    )
+      .to.emit(seadrop, "SeaDropMint")
+      .withArgs(
+        token.address,
+        minter.address,
+        feeRecipient.address,
+        minter.address,
+        mintQuantity,
+        ethers.BigNumber.from(mintParams.mintPrice),
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+
+    const maxTotalalMintableByWalletMintValue =
+      parseInt(mintParams.mintPrice) * mintParams.maxTotalMintableByWallet;
+
+    // Attempt to mint the maxTotalMintableByWallet to the minter.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams.maxTotalMintableByWallet,
+          mintParams,
+          proof,
+          { value: maxTotalalMintableByWalletMintValue }
+        )
+    ).to.be.revertedWith(
+      `MintQuantityExceedsMaxMintedPerWallet(${
+        mintParams.maxTotalMintableByWallet + mintQuantity
+      }, ${mintParams.maxTotalMintableByWallet})`
+    );
+  });
+
+  it("Should not mint an allow list stage after exceeding max token supply for stage", async () => {
+    // Declare the mint params for the merkle proof and call to
+    // mintAllowList
+    const mintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 50,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 90,
+      feeBps: feeBps,
+      restrictFeeRecipients: false,
+    };
+
+    // Encode the minter address and mintParams to a buffer to pass
+    // to MerkleTree
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    // Construct a merkle tree from the allow list elements.
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    // Store the merkle root.
+    const root = merkleTree.getHexRoot();
+
+    // Get the leaf at index 0.
+    const leaf = merkleTree.getLeaf(0);
+
+    // Get the proof of the leaf to pass into the transaction.
+    const proof = merkleTree.getHexProof(leaf);
+
+    // Declare the allow list data.
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+
+    // Update the allow list of the token.
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    // Calculate the cost of minting the maxTotalalMintableByWalletMintValue.
+    const maxTotalalMintableByWalletMintValue =
+      parseInt(mintParams.mintPrice) * mintParams.maxTotalMintableByWallet;
+
+    // Mint the maxTotalMintableByWallet to the minter and verify
+    // the expected event was emitted.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams.maxTotalMintableByWallet,
+          mintParams,
+          proof,
+          { value: maxTotalalMintableByWalletMintValue }
+        )
+    )
+      .to.emit(seadrop, "SeaDropMint")
+      .withArgs(
+        token.address,
+        minter.address,
+        feeRecipient.address,
+        minter.address,
+        mintParams.maxTotalMintableByWallet,
+        ethers.BigNumber.from(mintParams.mintPrice),
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+
+    // Create the second minter that will call the transaction exceeding
+    // the drop stage supply.
+    const secondMinter = new ethers.Wallet(randomHex(32), provider);
+
+    // Add eth to the second minter's wallet.
+    await faucet(secondMinter.address, provider);
+
+    // Attempt to mint the maxTotalMintableByWallet to the minter, exceeding
+    // the drop stage supply.
+    await expect(
+      seadrop
+        .connect(secondMinter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          secondMinter.address,
+          mintParams.maxTotalMintableByWallet,
+          mintParams,
+          proof,
+          { value: maxTotalalMintableByWalletMintValue }
+        )
+    ).to.be.revertedWith(
+      `MintQuantityExceedsMaxTokenSupplyForStage(${
+        2 * mintParams.maxTotalMintableByWallet
+      }, ${mintParams.maxTokenSupplyForStage})`
+    );
+  });
+
+  it("Should not mint an allow list stage after exceeding max token supply", async () => {
+    // Declare the mint params for the merkle proof and call to
+    // mintAllowList
+    const mintParams = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 50,
+      startTime: 1660154484,
+      endTime: 1760154484,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 90,
+      feeBps: feeBps,
+      restrictFeeRecipients: false,
+    };
+
+    // Encode the minter address and mintParams to a buffer to pass
+    // to MerkleTree
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    // Construct a merkle tree from the allow list elements.
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    // Store the merkle root.
+    const root = merkleTree.getHexRoot();
+
+    // Get the leaf at index 0.
+    const leaf = merkleTree.getLeaf(0);
+
+    // Get the proof of the leaf to pass into the transaction.
+    const proof = merkleTree.getHexProof(leaf);
+
+    // Declare the allow list data.
+    const allowListData = {
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+
+    // Update the allow list of the token.
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    // Calculate the cost of minting the maxTotalalMintableByWalletMintValue.
+    const maxTotalalMintableByWalletMintValue =
+      parseInt(mintParams.mintPrice) * mintParams.maxTotalMintableByWallet;
+
+    // Mint the maxTotalMintableByWallet to the minter and verify
+    // the expected event was emitted.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams.maxTotalMintableByWallet,
+          mintParams,
+          proof,
+          { value: maxTotalalMintableByWalletMintValue }
+        )
+    )
+      .to.emit(seadrop, "SeaDropMint")
+      .withArgs(
+        token.address,
+        minter.address,
+        feeRecipient.address,
+        minter.address,
+        mintParams.maxTotalMintableByWallet,
+        ethers.BigNumber.from(mintParams.mintPrice),
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+
+    // Create the second minter that will call the transaction exceeding
+    // the drop stage supply.
+    const secondMinter = new ethers.Wallet(randomHex(32), provider);
+
+    // Add eth to the second minter's wallet.
+    await faucet(secondMinter.address, provider);
+
+    // Attempt to mint the maxTotalMintableByWallet to the minter, exceeding
+    // the drop stage supply.
+    await expect(
+      seadrop
+        .connect(secondMinter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          secondMinter.address,
+          mintParams.maxTotalMintableByWallet,
+          mintParams,
+          proof,
+          { value: maxTotalalMintableByWalletMintValue }
+        )
+    ).to.be.revertedWith(
+      `MintQuantityExceedsMaxTokenSupplyForStage(${
+        2 * mintParams.maxTotalMintableByWallet
+      }, ${mintParams.maxTokenSupplyForStage})`
+    );
   });
 });
