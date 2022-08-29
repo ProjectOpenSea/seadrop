@@ -828,11 +828,11 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // mintAllowList
     const mintParams = {
       mintPrice: "10000000000000",
-      maxTotalMintableByWallet: 50,
+      maxTotalMintableByWallet: 600,
       startTime: 1660154484,
       endTime: 1760154484,
       dropStageIndex: 1,
-      maxTokenSupplyForStage: 90,
+      maxTokenSupplyForStage: 1000,
       feeBps: feeBps,
       restrictFeeRecipients: false,
     };
@@ -900,7 +900,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       );
 
     // Create the second minter that will call the transaction exceeding
-    // the drop stage supply.
+    // the max token supply.
     const secondMinter = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to the second minter's wallet.
@@ -921,9 +921,9 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           { value: maxTotalalMintableByWalletMintValue }
         )
     ).to.be.revertedWith(
-      `MintQuantityExceedsMaxTokenSupplyForStage(${
+      `MintQuantityExceedsMaxSupply(${
         2 * mintParams.maxTotalMintableByWallet
-      }, ${mintParams.maxTokenSupplyForStage})`
+      }, 1000)`
     );
   });
 });

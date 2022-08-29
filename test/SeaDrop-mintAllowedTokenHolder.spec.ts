@@ -6,6 +6,7 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
 import type { ERC721SeaDrop, ISeaDrop, TestERC721 } from "../typechain-types";
+import type { TokenGatedDropStageStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
@@ -17,6 +18,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   let creator: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
+  let dropStage: TokenGatedDropStageStruct;
 
   after(async () => {
     await network.provider.request({
@@ -58,11 +60,11 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
 
     // Create the drop stage object.
-    const dropStage = {
+    dropStage = {
       mintPrice: "10000000000000",
       maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
+      startTime: Math.round(Date.now() / 1000),
+      endTime: Math.round(Date.now() / 1000) + 400,
       dropStageIndex: 1,
       maxTokenSupplyForStage: 500,
       feeBps: 100,
@@ -77,9 +79,9 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     );
   });
 
-  // TODO: Test for MintQuantityExceedsMaxTokenSupplyForStage
-
   it("Should mint a token to a user with the allowed NFT token", async () => {
+    // Declare the mint params specifying the allowed NFT token addresses and
+    // corresponding tokenIds.
     const mintParams = {
       allowedNftToken: allowedNftToken.address,
       allowedNftTokenIds: [0],
@@ -88,6 +90,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
+    // Mint the token to the minter and verify the expected event was emitted.
     await expect(
       seadrop
         .connect(minter)
@@ -320,6 +323,262 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       `NotActive(${mostRecentBlockTimestamp + 1}, ${dropStage.startTime}, ${
         dropStage.endTime
       })`
+    );
+  });
+
+  it("Should not mint an allowed token holder stage with a different fee recipient", async () => {
+    // Declare the mint params specifying the allowed NFT token addresses and
+    // corresponding tokenIds.
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: [0],
+    };
+
+    // Mint an allowedNftToken to the minter.
+    await allowedNftToken.mint(minter.address, 0);
+
+    // Expect the transaction to revert since an incorrect fee recipient was given.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowedTokenHolder(
+          token.address,
+          creator.address,
+          minter.address,
+          mintParams,
+          { value: 10000000000000 }
+        )
+    ).to.be.revertedWith("FeeRecipientNotAllowed()");
+  });
+
+  it("Should not mint an allowed token holder stage with a different token contract", async () => {
+    // Declare the mint params specifying the allowed NFT token addresses and
+    // corresponding tokenIds.
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: [0],
+    };
+
+    // Mint an allowedNftToken to the minter.
+    await allowedNftToken.mint(minter.address, 0);
+
+    // Deploy a new ERC721SeaDrop.
+    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
+    const differentToken = await SeaDropToken.deploy("", "", owner.address, [
+      seadrop.address,
+    ]);
+
+    // Update the fee recipient and creator payout address for the new token.
+    await differentToken.setMaxSupply(1000);
+    await differentToken
+      .connect(owner)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+
+    await differentToken.updateCreatorPayoutAddress(
+      seadrop.address,
+      creator.address
+    );
+
+    // Get block.timestamp for custom error.
+    const mostRecentBlock = await ethers.provider.getBlock(
+      await ethers.provider.getBlockNumber()
+    );
+    const mostRecentBlockTimestamp = mostRecentBlock.timestamp;
+
+    // Expect the transaction to revert since a different token address was given.
+    // Transaction will revert with NotActive() because startTime and endTime for
+    // a nonexistent drop stage will be 0.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowedTokenHolder(
+          differentToken.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams,
+          { value: 10000000000000 }
+        )
+    ).to.be.revertedWith(`NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`);
+  });
+
+  it("Should not mint an allowed token holder stage with different mint params", async () => {
+    // Deploy a different allowed NFT token.
+    const AllowedNftToken = await ethers.getContractFactory("TestERC721");
+    const differentAllowedNftToken = await AllowedNftToken.deploy();
+
+    // Declare the mint params specifying the allowed NFT token addresses and
+    // corresponding tokenIds.
+    const mintParams = {
+      allowedNftToken: differentAllowedNftToken.address,
+      allowedNftTokenIds: [0],
+    };
+
+    // Mint an allowedNftToken to the minter with a tokenId not included in the mintParams.
+    await allowedNftToken.mint(minter.address, 0);
+
+    // Get block.timestamp for custom error.
+    const mostRecentBlock = await ethers.provider.getBlock(
+      await ethers.provider.getBlockNumber()
+    );
+    const mostRecentBlockTimestamp = mostRecentBlock.timestamp;
+
+    // Expect the transaction to revert since a different token address was passed to the mintParams.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowedTokenHolder(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams,
+          { value: 10000000000000 }
+        )
+    ).to.be.revertedWith(`NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`);
+  });
+
+  it("Should not mint an allowed token holder stage after exceeding max mints per wallet", async () => {
+    // Create an array of tokenIds with length exceeding maxTotalMintableByWallet.
+    const tokenIds = [...Array(20).keys()];
+
+    // Declare the mint params specifying the allowed NFT token addresses and
+    // corresponding tokenIds.
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: tokenIds,
+    };
+
+    // Mint the tokenIds in the mintParams to the minter.
+    for (const id of tokenIds) {
+      await allowedNftToken.mint(minter.address, id);
+    }
+
+    // Calculate the value to send with the mint transaction.
+    const mintValue = 10000000000000 * tokenIds.length;
+
+    // Expect the transaction to revert since the mint quantity exceeds the
+    // max total mintable by a wallet.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowedTokenHolder(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams,
+          { value: mintValue }
+        )
+    ).to.be.revertedWith(
+      `MintQuantityExceedsMaxMintedPerWallet(${tokenIds.length}, ${dropStage.maxTotalMintableByWallet})`
+    );
+  });
+
+  it("Should not mint an allowed token holder stage after exceeding max token supply for stage", async () => {
+    // Create a new drop stage object.
+    const newDropStage = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 50,
+      startTime: Math.round(Date.now() / 1000),
+      endTime: Math.round(Date.now() / 1000) + 400,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 5,
+      feeBps: 100,
+      restrictFeeRecipients: false,
+    };
+
+    // Update the token gated drop for the deployed allowed NFT token.
+    await token.updateTokenGatedDrop(
+      seadrop.address,
+      allowedNftToken.address,
+      newDropStage
+    );
+
+    // Create an array of tokenIds with length exceeding maxTotalMintableByWallet.
+    const tokenIds = [...Array(20).keys()];
+
+    // Declare the mint params specifying the allowed NFT token addresses and
+    // corresponding tokenIds.
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: tokenIds,
+    };
+
+    // Mint the tokenIds in the mintParams to the minter.
+    for (const id of tokenIds) {
+      await allowedNftToken.mint(minter.address, id);
+    }
+
+    // Calculate the value to send with the mint transaction.
+    const mintValue = 10000000000000 * tokenIds.length;
+
+    // Expect the transaction to revert since the mint quantity exceeds the
+    // max total mintable by a wallet.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowedTokenHolder(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams,
+          { value: mintValue }
+        )
+    ).to.be.revertedWith(
+      `MintQuantityExceedsMaxTokenSupplyForStage(${tokenIds.length}, ${newDropStage.maxTokenSupplyForStage})`
+    );
+  });
+
+  it("Should not mint an allowed token holder stage after exceeding max token supply", async () => {
+    // Create a new drop stage object.
+    const newDropStage = {
+      mintPrice: "10000000000000",
+      maxTotalMintableByWallet: 110,
+      startTime: Math.round(Date.now() / 1000),
+      endTime: Math.round(Date.now() / 1000) + 400,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 100,
+      feeBps: 100,
+      restrictFeeRecipients: false,
+    };
+
+    // Update the token gated drop for the deployed allowed NFT token.
+    await token.updateTokenGatedDrop(
+      seadrop.address,
+      allowedNftToken.address,
+      newDropStage
+    );
+
+    // Create an array of tokenIds with length exceeding maxTotalMintableByWallet.
+    const tokenIds = [...Array(110).keys()];
+
+    // Declare the mint params specifying the allowed NFT token addresses and
+    // corresponding tokenIds.
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: tokenIds,
+    };
+
+    // Mint the tokenIds in the mintParams to the minter.
+    for (const id of tokenIds) {
+      await allowedNftToken.mint(minter.address, id);
+    }
+
+    // Calculate the value to send with the mint transaction.
+    const mintValue = 10000000000000 * tokenIds.length;
+
+    // Expect the transaction to revert since the mint quantity exceeds the
+    // max total mintable by a wallet.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowedTokenHolder(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams,
+          { value: mintValue }
+        )
+    ).to.be.revertedWith(
+      `MintQuantityExceedsMaxSupply(${tokenIds.length}, 100)`
     );
   });
 });
