@@ -230,31 +230,6 @@ contract ERC721SeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     }
 
     /**
-     * @notice Update token gated drop stage fee basis points for this nft
-     *         contract on SeaDrop.
-     *
-     * @param seaDropImpl     The allowed SeaDrop contract.
-     * @param allowedNftToken The allowed nft token.
-     * @param feeBps          The token gated drop fee basis points.
-     */
-    function updateTokenGatedDropFee(
-        address seaDropImpl,
-        address allowedNftToken,
-        uint16 feeBps
-    ) external virtual override onlyAdministrator {
-        // Track the previous drop stage data.
-        TokenGatedDropStage memory retrieved = ISeaDrop(seaDropImpl)
-            .getTokenGatedDrop(address(this), allowedNftToken);
-
-        // Only the administrator (OpenSea) should be able to set feeBps.
-        retrieved.feeBps = feeBps;
-        retrieved.restrictFeeRecipients = true;
-
-        // Update the token gated drop stage.
-        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, retrieved);
-    }
-
-    /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
