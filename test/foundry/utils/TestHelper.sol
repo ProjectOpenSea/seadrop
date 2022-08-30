@@ -15,6 +15,7 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
     ERC721PartnerSeaDrop token;
 
     address creator = makeAddr("creator");
+
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
@@ -150,5 +151,18 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
                 address(seadrop)
             )
         );
+    }
+
+    function makeAddrAndKey(string memory name)
+        internal
+        returns (address addr, uint256 privateKey)
+    {
+        privateKey = uint256(keccak256(abi.encodePacked(name)));
+        addr = vm.addr(privateKey);
+        vm.label(addr, name);
+    }
+
+    function makeAddr(string memory name) internal returns (address addr) {
+        (addr, ) = makeAddrAndKey(name);
     }
 }
