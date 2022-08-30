@@ -66,8 +66,11 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         address administrator,
         address[] memory allowedSeaDrop
     ) ERC721ContractMetadata(name, symbol, administrator) {
+        // Put the length on the stack for more efficient access.
+        uint256 allowedSeaDropLength = allowedSeaDrop.length;
+
         // Set the mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDrop.length; ) {
+        for (uint256 i = 0; i < allowedSeaDropLength; ) {
             _allowedSeaDrop[allowedSeaDrop[i]] = true;
             unchecked {
                 ++i;
@@ -88,8 +91,13 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         override
         onlyOwnerOrAdministrator
     {
+        // Put the length on the stack for more efficient access.
+        uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
+            .length;
+        uint256 allowedSeaDropLength = allowedSeaDrop.length;
+
         // Reset the old mapping.
-        for (uint256 i = 0; i < _enumeratedAllowedSeaDrop.length; ) {
+        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength; ) {
             _allowedSeaDrop[_enumeratedAllowedSeaDrop[i]] = false;
             unchecked {
                 ++i;
@@ -97,7 +105,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         }
 
         // Set the new mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDrop.length; ) {
+        for (uint256 i = 0; i < allowedSeaDropLength; ) {
             _allowedSeaDrop[allowedSeaDrop[i]] = true;
             unchecked {
                 ++i;
