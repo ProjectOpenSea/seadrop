@@ -356,9 +356,12 @@ contract SeaDrop is ISeaDrop {
             ? minterIfNotPayer
             : msg.sender;
 
+        // Put the allowedNftToken on the stack for more efficient access.
+        address allowedNftToken = mintParams.allowedNftToken;
+
         // Set the dropStage to a variable.
         TokenGatedDropStage memory dropStage = _tokenGatedDrops[nftContract][
-            mintParams.allowedNftToken
+            allowedNftToken
         ];
 
         // Validate that the dropStage is active.
@@ -393,33 +396,25 @@ contract SeaDrop is ISeaDrop {
             uint256 tokenId = mintParams.allowedNftTokenIds[j];
 
             // Check that the sender is the owner of the allowedNftTokenId.
-            if (
-                IERC721(mintParams.allowedNftToken).ownerOf(tokenId) != minter
-            ) {
+            if (IERC721(allowedNftToken).ownerOf(tokenId) != minter) {
                 revert TokenGatedNotTokenOwner(
                     nftContract,
-                    mintParams.allowedNftToken,
+                    allowedNftToken,
                     tokenId
                 );
             }
 
             // Check that the token id has not already been redeemed.
-            if (
-                _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
-                    tokenId
-                ]
-            ) {
+            if (_tokenGatedRedeemed[nftContract][allowedNftToken][tokenId]) {
                 revert TokenGatedTokenIdAlreadyRedeemed(
                     nftContract,
-                    mintParams.allowedNftToken,
+                    allowedNftToken,
                     tokenId
                 );
             }
 
             // Mark the token id as redeemed.
-            _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
-                tokenId
-            ] = true;
+            _tokenGatedRedeemed[nftContract][allowedNftToken][tokenId] = true;
 
             unchecked {
                 ++j;
