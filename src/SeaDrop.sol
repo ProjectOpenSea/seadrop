@@ -53,7 +53,7 @@ contract SeaDrop is ISeaDrop {
     /// @notice Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
 
-    /// @notice Track the allowed fee recipients.
+    /// @notice Track the enumerated allowed fee recipients.
     mapping(address => address[]) private _enumeratedFeeRecipients;
 
     /// @notice Track the allowed signers for server-side drops.
