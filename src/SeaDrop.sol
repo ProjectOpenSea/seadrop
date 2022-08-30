@@ -576,6 +576,7 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Get the fee amount.
+        // Note that the fee amount is rounded down in favor of the creator.
         uint256 feeAmount = (msg.value * feeBps) / 10_000;
 
         // Get the creator payout amount. Fee amount is <= msg.value per above.
