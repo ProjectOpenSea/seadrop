@@ -772,4 +772,67 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       }, 11`
     );
   });
+
+  it("Should not mint with an uninitialized AllowList", async () => {
+    // Set a random mintQuantity under maxTotalMintableByWallet.
+    const mintQuantity = Math.max(
+      1,
+      randomInt(mintParams.maxTotalMintableByWallet as number)
+    );
+
+    // Encode the minter address and mintParams.
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParams],
+    ]);
+
+    // Construct a merkle tree from the allow list elements.
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    // Get the leaf at index 0.
+    const leaf = merkleTree.getLeaf(0);
+
+    // Get the proof of the leaf to pass into the transaction.
+    const proof = merkleTree.getHexProof(leaf);
+
+    // We are skipping updating the allow list, the root should be zero.
+    expect(await seadrop.getAllowListMerkleRoot(token.address)).to.eq(
+      `0x${"0".repeat(64)}`
+    );
+
+    // Calculate the value to send with the mint transaction.
+    const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
+
+    // Mint the allow list stage.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          mintParams,
+          proof,
+          { value }
+        )
+    ).to.be.revertedWith("InvalidProof()");
+
+    // Try with proof of zero.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          mintParams,
+          [`0x${"0".repeat(64)}`],
+          { value }
+        )
+    ).to.be.revertedWith("InvalidProof()");
+  });
 });
