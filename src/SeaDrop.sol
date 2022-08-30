@@ -124,6 +124,17 @@ contract SeaDrop is ISeaDrop {
     uint256 internal immutable _CHAIN_ID = block.chainid;
     bytes32 internal immutable _DOMAIN_SEPARATOR;
 
+    /// @notice Constant for an unlimited `maxTokenSupplyForStage`.
+    ///         Used in `mintPublic` where no `maxTokenSupplyForStage`
+    ///         is stored in the `PublicDrop` struct.
+    uint256 internal constant _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE =
+        type(uint256).max;
+
+    /// @notice Constant for a public mint's `dropStageIndex`.
+    ///         Used in `mintPublic` where no `dropStageIndex`
+    ///         is stored in the `PublicDrop` struct.
+    uint256 internal constant _PUBLIC_DROP_STAGE_INDEX = 0;
+
     /**
      * @notice Ensure only tokens implementing IERC721SeaDrop can
      *         call the update methods.
@@ -185,7 +196,7 @@ contract SeaDrop is ISeaDrop {
             minter,
             quantity,
             publicDrop.maxTotalMintableByWallet,
-            type(uint256).max // maxTokenSupplyForStage
+            _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE
         );
 
         // Check that the fee recipient is allowed if restricted.
@@ -201,7 +212,7 @@ contract SeaDrop is ISeaDrop {
             minter,
             quantity,
             mintPrice,
-            0,
+            _PUBLIC_DROP_STAGE_INDEX,
             publicDrop.feeBps,
             feeRecipient
         );
