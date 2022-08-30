@@ -45,7 +45,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply,
-     *         maxMintsPerWallet, and maxTokenSupplyForStage checks.
+     *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
      *
      * @param minter The minter address.
      */

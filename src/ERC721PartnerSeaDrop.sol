@@ -352,7 +352,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     /**
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply,
-     *         maxMintsPerWallet, and maxTokenSupplyForStage checks.
+     *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
      *
      * @param minter The minter address.
      */
