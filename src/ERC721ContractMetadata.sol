@@ -81,7 +81,7 @@ contract ERC721ContractMetadata is
      * @param startTokenId The start token id.
      * @param endTokenId   The end token id.
      */
-    function setBatchTokenURIs(uint256 startTokenId, uint256 endTokenId)
+    function emitBatchTokenURIUpdated(uint256 startTokenId, uint256 endTokenId)
         external
         onlyOwner
     {

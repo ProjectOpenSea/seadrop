@@ -81,10 +81,10 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
   it("Should only let the owner notify update of batch token URIs", async () => {
     await expect(
-      token.connect(admin).setBatchTokenURIs(5, 10)
+      token.connect(admin).emitBatchTokenURIUpdated(5, 10)
     ).to.be.revertedWith("OnlyOwner");
 
-    await expect(token.connect(owner).setBatchTokenURIs(5, 10))
+    await expect(token.connect(owner).emitBatchTokenURIUpdated(5, 10))
       .to.emit(token, "TokenURIUpdated")
       .withArgs(5, 10);
   });
