@@ -850,6 +850,12 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
+     * 
+     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         token gated drop promotions for each other, they can be
+     *         minted by the same actor until `maxTokenSupplyForStage`
+     *         is reached. Please ensure the `allowedNftToken` is not
+     *         running an active drop during the `dropStage` time period.
      *
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
@@ -858,6 +864,11 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
+        // Ensure the allowedNftToken cannot be the drop token itself.
+        if (allowedNftToken == msg.sender) {
+            revert TokenGatedDropAllowedNftTokenCannotBeDropToken();
+        }
+
         // Use maxTotalMintableByWallet != 0 as a signal that this update should
         // add or update the drop stage, otherwise we will be removing.
         bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;

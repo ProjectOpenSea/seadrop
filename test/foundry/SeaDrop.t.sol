@@ -259,6 +259,9 @@ contract TestSeaDrop is TestHelper {
         vm.assume(token1 != address(0));
         vm.assume(token2 != address(0));
         vm.assume(token3 != address(0));
+        vm.assume(address(token) != token1);
+        vm.assume(address(token) != token2);
+        vm.assume(address(token) != token3);
         vm.assume(token1 != token2);
         vm.assume(token1 != token3);
         vm.assume(token2 != token3);

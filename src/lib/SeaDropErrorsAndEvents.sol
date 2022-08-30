@@ -113,9 +113,16 @@ interface SeaDropErrorsAndEvents {
     error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);
 
     /**
-     * @dev Revert with an error if an empty TokenGatedDropStage is provided for an already-empty TokenGatedDropStage
+     * @dev Revert with an error if an empty TokenGatedDropStage is provided
+     *      for an already-empty TokenGatedDropStage.
      */
      error TokenGatedDropStageNotPresent();
+
+    /**
+     * @dev Revert with an error if an allowedNftToken is set for the
+     *      drop token itself.
+     */
+     error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.

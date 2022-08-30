@@ -179,8 +179,13 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
 
     /**
      * @notice Update token gated drop stage data for this nft contract
-     *         on SeaDrop.
-     *         Note: Only the administrator can update `feeBps`.
+     *         on SeaDrop. The administrator must first set `feeBps`.
+     * 
+     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         token gated drop promotions for each other, they can be
+     *         minted by the same actor until `maxTokenSupplyForStage`
+     *         is reached. Please ensure the `allowedNftToken` is not
+     *         running an active drop during the `dropStage` time period.
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -250,7 +255,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
      *
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
-     * @param allowed   updateTokenGatedDrop   If the fee recipient is allowed.
+     * @param allowed      If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(
         address seaDropImpl,

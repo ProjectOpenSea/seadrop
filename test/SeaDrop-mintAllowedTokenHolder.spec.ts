@@ -627,4 +627,12 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       `MintQuantityExceedsMaxSupply(${tokenIds.length}, 100)`
     );
   });
+
+  it("Should not be able to set an allowedNftToken to the drop token itself", async () => {
+    await expect(
+      token
+        .connect(admin)
+        .updateTokenGatedDrop(seadrop.address, token.address, dropStage)
+    ).to.be.revertedWith("TokenGatedDropAllowedNftTokenCannotBeDropToken()");
+  });
 });
