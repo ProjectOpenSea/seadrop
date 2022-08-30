@@ -391,9 +391,9 @@ contract SeaDrop is ISeaDrop {
 
         // Iterate through each allowedNftTokenId
         // to ensure it is not already redeemed.
-        for (uint256 j = 0; j < mintQuantity; ) {
+        for (uint256 i = 0; i < mintQuantity; ) {
             // Put the tokenId on the stack.
-            uint256 tokenId = mintParams.allowedNftTokenIds[j];
+            uint256 tokenId = mintParams.allowedNftTokenIds[i];
 
             // Check that the minter is the owner of the allowedNftTokenId.
             if (IERC721(allowedNftToken).ownerOf(tokenId) != minter) {
@@ -417,7 +417,7 @@ contract SeaDrop is ISeaDrop {
             _tokenGatedRedeemed[nftContract][allowedNftToken][tokenId] = true;
 
             unchecked {
-                ++j;
+                ++i;
             }
         }
 
