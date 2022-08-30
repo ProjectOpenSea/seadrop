@@ -19,25 +19,48 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
+        // prettier-ignore
         keccak256(
-            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
+             "SignedMint("
+                "address nftContract,"
+                "address minter,"
+                "address feeRecipient,"
+                "MintParams mintParams"
+            ")"
+            "MintParams("
+                "uint256 mintPrice,"
+                "uint256 maxTotalMintableByWallet,"
+                "uint256 startTime,"
+                "uint256 endTime,"
+                "uint256 dropStageIndex,"
+                "uint256 maxTokenSupplyForStage,"
+                "uint256 feeBps,"
+                "bool restrictFeeRecipients"
+            ")"
         );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
+        // prettier-ignore
         keccak256(
             "MintParams("
-            "uint256 mintPrice,"
-            "uint256 maxTotalMintableByWallet,"
-            "uint256 startTime,"
-            "uint256 endTime,"
-            "uint256 dropStageIndex,"
-            "uint256 maxTokenSupplyForStage,"
-            "uint256 feeBps,"
-            "bool restrictFeeRecipients"
+                "uint256 mintPrice,"
+                "uint256 maxTotalMintableByWallet,"
+                "uint256 startTime,"
+                "uint256 endTime,"
+                "uint256 dropStageIndex,"
+                "uint256 maxTokenSupplyForStage,"
+                "uint256 feeBps,"
+                "bool restrictFeeRecipients"
             ")"
         );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
+        // prettier-ignore
         keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+            "EIP712Domain("
+                "string name,"
+                "string version,"
+                "uint256 chainId,"
+                "address verifyingContract"
+            ")"
         );
     bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("1.0");
