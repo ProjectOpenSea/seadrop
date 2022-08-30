@@ -1002,12 +1002,12 @@ contract SeaDrop is ISeaDrop {
         address[] storage enumeration
     ) internal {
         // Cache the length.
-        uint256 enumeratedDropsLength = enumeration.length;
-        for (uint256 i = 0; i < enumeratedDropsLength; ) {
+        uint256 enumerationLength = enumeration.length;
+        for (uint256 i = 0; i < enumerationLength; ) {
             // Check if the enumerated element is the one we are deleting.
             if (enumeration[i] == toRemove) {
                 // Swap with the last element.
-                enumeration[i] = enumeration[enumeratedDropsLength - 1];
+                enumeration[i] = enumeration[enumerationLength - 1];
                 // Delete the (now duplicated) last element.
                 enumeration.pop();
                 // Exit the loop.
