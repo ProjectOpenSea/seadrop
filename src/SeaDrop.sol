@@ -167,7 +167,7 @@ contract SeaDrop is ISeaDrop {
             minter,
             quantity,
             publicDrop.maxTotalMintableByWallet,
-            0
+            type(uint256).max // maxTokenSupplyForStage
         );
 
         // Check that the fee recipient is allowed if restricted.
@@ -514,15 +514,12 @@ contract SeaDrop is ISeaDrop {
             );
         }
 
-        // Ensure mint quantity doesn't exceed maxTokenSupplyForStage
-        // when provided.
-        if (maxTokenSupplyForStage != 0) {
-            if (quantity + currentTotalSupply > maxTokenSupplyForStage) {
-                revert MintQuantityExceedsMaxTokenSupplyForStage(
-                    quantity + currentTotalSupply,
-                    maxTokenSupplyForStage
-                );
-            }
+        // Ensure mint quantity doesn't exceed maxTokenSupplyForStage.
+        if (quantity + currentTotalSupply > maxTokenSupplyForStage) {
+            revert MintQuantityExceedsMaxTokenSupplyForStage(
+                quantity + currentTotalSupply,
+                maxTokenSupplyForStage
+            );
         }
     }
 

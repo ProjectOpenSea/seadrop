@@ -28,8 +28,13 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev Revert with an error if the mint quantity exceeds the max token
      *      supply for the stage.
+     *      Note: The `maxTokenSupplyForStage` for public mint is
+     *      always `type(uint).max`.
      */
-    error MintQuantityExceedsMaxTokenSupplyForStage(uint256 total, uint256 maxTokenSupplyForStage);
+    error MintQuantityExceedsMaxTokenSupplyForStage(
+        uint256 total, 
+        uint256 maxTokenSupplyForStage
+    );
     
     /**
      * @dev Revert if the fee recipient is the zero address.
