@@ -288,20 +288,15 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     ).to.be.revertedWith("FeeRecipientNotAllowed");
   });
 
-  it("Should not mint with invalid fee bps", async () => {
-    await token
-      .connect(admin)
-      .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 15_000 });
-
-    const value = BigNumber.from(publicDrop.mintPrice);
+  it("Should not be able to set an invalid fee bps", async () => {
     await expect(
-      seadrop
-        .connect(payer)
-        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
-          value,
-        })
+      token
+        .connect(admin)
+        .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 15_000 })
     ).to.be.revertedWith("InvalidFeeBps");
+  });
 
+  it("Should mint when feeBps is zero", async () => {
     await token
       .connect(admin)
       .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 0 });
@@ -310,7 +305,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       seadrop
         .connect(payer)
         .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
-          value,
+          value: publicDrop.mintPrice,
         })
     )
       .to.emit(seadrop, "SeaDropMint")

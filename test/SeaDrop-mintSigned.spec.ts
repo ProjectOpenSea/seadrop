@@ -460,4 +460,33 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     expect(minterBalance).to.eq(3);
     expect(await token.totalSupply()).to.eq(3);
   });
+
+  it("Should not mint with invalid fee bps", async () => {
+    const mintParamsInvalidFeeBps = { ...mintParams, feeBps: 11_000 };
+
+    const signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParamsInvalidFeeBps,
+      signer
+    );
+
+    const value = BigNumber.from(mintParams.mintPrice);
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          1,
+          mintParamsInvalidFeeBps,
+          signature,
+          {
+            value,
+          }
+        )
+    ).to.be.revertedWith("InvalidFeeBps");
+  });
 });

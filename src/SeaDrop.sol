@@ -823,6 +823,11 @@ contract SeaDrop is ISeaDrop {
         override
         onlyIERC721SeaDrop
     {
+        // Revert if the fee basis points is greater than 10_000.
+        if (publicDrop.feeBps > 10_000) {
+            revert InvalidFeeBps(publicDrop.feeBps);
+        }
+
         // Set the public drop data.
         _publicDrops[msg.sender] = publicDrop;
 
@@ -882,6 +887,11 @@ contract SeaDrop is ISeaDrop {
         // Ensure the allowedNftToken cannot be the drop token itself.
         if (allowedNftToken == msg.sender) {
             revert TokenGatedDropAllowedNftTokenCannotBeDropToken();
+        }
+
+        // Revert if the fee basis points is greater than 10_000.
+        if (dropStage.feeBps > 10_000) {
+            revert InvalidFeeBps(dropStage.feeBps);
         }
 
         // Use maxTotalMintableByWallet != 0 as a signal that this update should

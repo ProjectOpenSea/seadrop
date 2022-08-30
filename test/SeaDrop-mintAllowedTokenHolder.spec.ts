@@ -645,4 +645,15 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         )
     ).to.be.revertedWith("TokenGatedDropAllowedNftTokenCannotBeZeroAddress()");
   });
+
+  it("Should not be able to set an invalid fee bps", async () => {
+    await expect(
+      token
+        .connect(admin)
+        .updateTokenGatedDrop(seadrop.address, allowedNftToken.address, {
+          ...dropStage,
+          feeBps: 15_000,
+        })
+    ).to.be.revertedWith("InvalidFeeBps");
+  });
 });
