@@ -474,7 +474,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Create different mint params to include in the mint.
     const differentMintParams = {
       ...mintParams,
-      feeBps: (mintParams.feeBps as number) - 100,
+      feeBps: (mintParams.feeBps as number) + 100,
     };
 
     // Calculate the value to send with the mint transaction.
