@@ -908,20 +908,20 @@ contract SeaDrop is ISeaDrop {
 
         // Stage struct packs to a single slot, so load it
         // as a uint256; if it is 0, it is empty.
-        bool dropStageExists;
+        bool dropStageDoesNotExist;
         assembly {
-            dropStageExists := iszero(eq(sload(existingDropStageData.slot), 0))
+            dropStageDoesNotExist := iszero(sload(existingDropStageData.slot))
         }
 
         if (addOrUpdateDropStage) {
             _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
             // Add to enumeration if it does not exist already.
-            if (!dropStageExists) {
+            if (dropStageDoesNotExist) {
                 enumeratedTokens.push(allowedNftToken);
             }
         } else {
             // Check we are not deleting a drop stage that does not exist.
-            if (!dropStageExists) {
+            if (dropStageDoesNotExist) {
                 revert TokenGatedDropStageNotPresent();
             }
             // Clear storage slot and remove from enumeration.
