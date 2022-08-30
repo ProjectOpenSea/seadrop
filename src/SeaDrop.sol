@@ -851,6 +851,11 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
+        // Ensure the allowedNftToken is not the zero address.
+        if (allowedNftToken == address(0)) {
+            revert TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
+        }
+
         // Ensure the allowedNftToken cannot be the drop token itself.
         if (allowedNftToken == msg.sender) {
             revert TokenGatedDropAllowedNftTokenCannotBeDropToken();

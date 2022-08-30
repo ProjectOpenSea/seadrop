@@ -134,8 +134,14 @@ interface SeaDropErrorsAndEvents {
      error TokenGatedDropStageNotPresent();
 
     /**
-     * @dev Revert with an error if an allowedNftToken is set for the
-     *      drop token itself.
+     * @dev Revert with an error if an allowedNftToken is set to
+     *      the zero address.
+     */
+     error TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
+
+    /**
+     * @dev Revert with an error if an allowedNftToken is set to
+     *      the drop token itself.
      */
      error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 

@@ -628,11 +628,21 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     );
   });
 
-  it("Should not be able to set an allowedNftToken to the drop token itself", async () => {
+  it("Should not be able to set an allowedNftToken to the drop token itself or zero address", async () => {
     await expect(
       token
         .connect(admin)
         .updateTokenGatedDrop(seadrop.address, token.address, dropStage)
     ).to.be.revertedWith("TokenGatedDropAllowedNftTokenCannotBeDropToken()");
+
+    await expect(
+      token
+        .connect(admin)
+        .updateTokenGatedDrop(
+          seadrop.address,
+          ethers.constants.AddressZero,
+          dropStage
+        )
+    ).to.be.revertedWith("TokenGatedDropAllowedNftTokenCannotBeZeroAddress()");
   });
 });
