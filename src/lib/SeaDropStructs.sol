@@ -119,11 +119,14 @@ struct AllowListData {
     string allowListURI;
 }
 
+/**
+ * @notice TODO add notice and param docs if this struct is added and used.
+ */
 struct SignedMintParams {
     uint80 minMintPrice;
-    uint24 maxmaxTotalMintableByWallet       ;
+    uint24 maxMaxTotalMintableByWallet;
     uint48 minStartTime;
     uint48 maxEndTime;
-    uint40 maxMaxTokenSupplyForStage;
+    uint32 maxMaxTokenSupplyForStage;
     uint16 maxFeeBps;
 }
