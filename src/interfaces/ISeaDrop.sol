@@ -211,7 +211,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
-     * 
+     *
      *         Note: If two IERC721SeaDrop tokens are doing simultaneous
      *         token gated drop promotions for each other, they can be
      *         minted by the same actor until `maxTokenSupplyForStage`

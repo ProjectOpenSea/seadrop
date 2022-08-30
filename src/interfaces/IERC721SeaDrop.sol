@@ -84,7 +84,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop. The administrator must first set `feeBps`.
-     * 
+     *
      *         Note: If two IERC721SeaDrop tokens are doing simultaneous
      *         token gated drop promotions for each other, they can be
      *         minted by the same actor until `maxTokenSupplyForStage`
