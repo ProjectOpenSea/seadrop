@@ -6,10 +6,7 @@ import {
     IERC721ContractMetadata
 } from "./ERC721ContractMetadata.sol";
 
-import {
-    IERC721SeaDrop,
-    IERC721ContractMetadata
-} from "./interfaces/IERC721SeaDrop.sol";
+import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 

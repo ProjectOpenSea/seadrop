@@ -9,10 +9,6 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
-import {
-    ECDSA
-} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
-
 /**
  * @title  ERC721ContractMetadata
  * @author jameswenzel, ryanio, stephankmin
