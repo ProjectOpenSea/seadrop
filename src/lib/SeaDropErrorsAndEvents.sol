@@ -109,13 +109,21 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert with an error if the sender of a token gated supplied
      *      drop stage redeem is not the owner of the token.
      */
-    error TokenGatedNotTokenOwner(address nftContract, address allowedNftContract, uint256 tokenId);
+    error TokenGatedNotTokenOwner(
+        address nftContract,
+        address allowedNftContract,
+        uint256 tokenId
+    );
 
     /**
      * @dev Revert with an error if the token id has already been used to
      *      redeem a token gated drop stage.
      */
-    error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);
+    error TokenGatedTokenIdAlreadyRedeemed(
+        address nftContract,
+        address allowedNftContract,
+        uint256 tokenId
+    );
 
     /**
      * @dev Revert with an error if an empty TokenGatedDropStage is provided
@@ -157,7 +165,10 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev An event with updated public drop data for an nft contract.
      */
-    event PublicDropUpdated(address indexed nftContract, PublicDrop publicDrop);
+    event PublicDropUpdated(
+        address indexed nftContract,
+        PublicDrop publicDrop
+    );
 
     /**
      * @dev An event with updated token gated drop stage data
@@ -194,7 +205,8 @@ event AllowListUpdated(
     event DropURIUpdated(address indexed nftContract, string newDropURI);
 
     /**
-     * @dev An event with the updated creator payout address for an nft contract.
+     * @dev An event with the updated creator payout address for an nft
+     *      contract.
      */
     event CreatorPayoutAddressUpdated(
         address indexed nftContract,
@@ -202,7 +214,8 @@ event AllowListUpdated(
     );
 
     /**
-     * @dev An event with the updated allowed fee recipient for an nft contract.
+     * @dev An event with the updated allowed fee recipient for an nft
+     *      contract.
      */
     event AllowedFeeRecipientUpdated(
         address indexed nftContract,
@@ -211,7 +224,8 @@ event AllowListUpdated(
     );
 
     /**
-     * @dev An event with the updated server-side signers for an nft contract.
+     * @dev An event with the updated server-side signers for an nft
+     *      contract.
      */
     event SignerUpdated(
         address indexed nftContract,
