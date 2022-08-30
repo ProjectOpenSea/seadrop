@@ -109,7 +109,7 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
             )
         );
         digest = keccak256(
-            abi.encodePacked(
+            bytes.concat(
                 bytes2(0x1901),
                 _DOMAIN_SEPARATOR,
                 keccak256(

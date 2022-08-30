@@ -1058,7 +1058,7 @@ contract SeaDrop is ISeaDrop {
             )
         );
         digest = keccak256(
-            abi.encodePacked(
+            bytes.concat(
                 bytes2(0x1901),
                 _domainSeparator(),
                 keccak256(
