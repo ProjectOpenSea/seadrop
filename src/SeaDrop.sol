@@ -421,8 +421,14 @@ contract SeaDrop is ISeaDrop {
                 );
             }
 
+            // Cache the storage pointer for cheaper access.
+            mapping(uint256 => bool)
+                storage redeemedTokenIds = _tokenGatedRedeemed[nftContract][
+                    allowedNftToken
+                ];
+
             // Check that the token id has not already been redeemed.
-            if (_tokenGatedRedeemed[nftContract][allowedNftToken][tokenId]) {
+            if (redeemedTokenIds[tokenId]) {
                 revert TokenGatedTokenIdAlreadyRedeemed(
                     nftContract,
                     allowedNftToken,
@@ -431,7 +437,7 @@ contract SeaDrop is ISeaDrop {
             }
 
             // Mark the token id as redeemed.
-            _tokenGatedRedeemed[nftContract][allowedNftToken][tokenId] = true;
+            redeemedTokenIds[tokenId] = true;
 
             unchecked {
                 ++i;
