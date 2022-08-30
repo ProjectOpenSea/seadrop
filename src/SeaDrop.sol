@@ -488,7 +488,7 @@ contract SeaDrop is ISeaDrop {
 
         // Revert if the fee recipient is restricted and not allowed.
         if (restrictFeeRecipients)
-            if (_allowedFeeRecipients[nftContract][feeRecipient] == false) {
+            if (!_allowedFeeRecipients[nftContract][feeRecipient]) {
                 revert FeeRecipientNotAllowed();
             }
     }
