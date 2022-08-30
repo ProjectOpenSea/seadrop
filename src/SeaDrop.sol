@@ -395,7 +395,7 @@ contract SeaDrop is ISeaDrop {
             // Put the tokenId on the stack.
             uint256 tokenId = mintParams.allowedNftTokenIds[j];
 
-            // Check that the sender is the owner of the allowedNftTokenId.
+            // Check that the minter is the owner of the allowedNftTokenId.
             if (IERC721(allowedNftToken).ownerOf(tokenId) != minter) {
                 revert TokenGatedNotTokenOwner(
                     nftContract,
