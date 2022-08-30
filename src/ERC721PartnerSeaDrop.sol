@@ -43,7 +43,9 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     /// @notice Track the enumerated allowed SeaDrop addresses.
     address[] internal _enumeratedAllowedSeaDrop;
 
-    /// @notice To prevent Owner from overriding TokenGatedDropStage fees, administrator must first initialize with fee
+    /// @notice To prevent Owner from overriding PublicDrop or
+    //          TokenGatedDropStage fees, administrator must first
+    //          initialize with fee.
     error AdministratorMustInitializeWithFee();
 
     /**
@@ -52,17 +54,6 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
      */
     modifier onlySeaDrop() {
         if (_allowedSeaDrop[msg.sender] != true) {
-            revert OnlySeaDrop();
-        }
-        _;
-    }
-
-    /**
-     * @notice Modifier to restrict access exclusively to
-     *         allowed SeaDrop contracts.
-     */
-    modifier onlyAllowedSeaDrop(address seaDrop) {
-        if (_allowedSeaDrop[seaDrop] != true) {
             revert OnlySeaDrop();
         }
         _;
@@ -141,7 +132,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
 
     /**
      * @notice Update public drop data for this nft contract on SeaDrop.
-     *         Use `updatePublicDropFee` to update the fee recipient or feeBps.
+     *         Note: Only the administrator can update `feeBps`.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
@@ -149,7 +140,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    ) external virtual override onlyOwnerOrAdministrator {
         // Track the previous public drop data.
         PublicDrop memory retrieved = ISeaDrop(seaDropImpl).getPublicDrop(
             address(this)
@@ -159,36 +150,17 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         PublicDrop memory supplied = publicDrop;
 
         // Only the administrator (OpenSea) should be able to set feeBps.
-        supplied.feeBps = retrieved.feeBps;
-        supplied.restrictFeeRecipients = true;
+        if (msg.sender != administrator) {
+            // Administrator must first set fee.
+            if (retrieved.maxTotalMintableByWallet == 0) {
+                revert AdministratorMustInitializeWithFee();
+            }
+            supplied.feeBps = retrieved.feeBps;
+            supplied.restrictFeeRecipients = true;
+        }
 
         // Update the public drop data on SeaDrop.
         ISeaDrop(seaDropImpl).updatePublicDrop(supplied);
-    }
-
-    /**
-     * @notice Update public drop fee for this nft contract on SeaDrop.
-     *
-     * @param seaDropImpl The allowed SeaDrop contract.
-     * @param feeBps      The public drop fee basis points.
-     */
-    function updatePublicDropFee(address seaDropImpl, uint16 feeBps)
-        external
-        virtual
-        onlyAdministrator
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
-        // Track the previous public drop data.
-        PublicDrop memory retrieved = ISeaDrop(seaDropImpl).getPublicDrop(
-            address(this)
-        );
-
-        // Only the administrator (OpenSea) should be able to set feeBps.
-        retrieved.feeBps = feeBps;
-        retrieved.restrictFeeRecipients = true;
-
-        // Update the public drop data on SeaDrop.
-        ISeaDrop(seaDropImpl).updatePublicDrop(retrieved);
     }
 
     /**
@@ -200,13 +172,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    )
-        external
-        virtual
-        override
-        onlyOwnerOrAdministrator
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
+    ) external virtual override onlyOwnerOrAdministrator {
         // Update the allow list on SeaDrop.
         ISeaDrop(seaDropImpl).updateAllowList(allowListData);
     }
@@ -214,7 +180,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     /**
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop.
-     *         Use `updateTokenGatedDropFee` to update the fee basis points.
+     *         Note: Only the administrator can update `feeBps`.
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -224,56 +190,26 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    ) external virtual override onlyOwnerOrAdministrator {
         // Track the previous drop stage data.
         TokenGatedDropStage memory retrieved = ISeaDrop(seaDropImpl)
             .getTokenGatedDrop(address(this), allowedNftToken);
-
-        if (retrieved.maxTotalMintableByWallet == 0) {
-            revert AdministratorMustInitializeWithFee();
-        }
 
         // Track the newly supplied drop data.
         TokenGatedDropStage memory supplied = dropStage;
 
         // Only the administrator (OpenSea) should be able to set feeBps.
-        supplied.feeBps = retrieved.feeBps;
-        supplied.restrictFeeRecipients = true;
+        if (msg.sender != administrator) {
+            // Administrator must first set fee.
+            if (retrieved.maxTotalMintableByWallet == 0) {
+                revert AdministratorMustInitializeWithFee();
+            }
+            supplied.feeBps = retrieved.feeBps;
+            supplied.restrictFeeRecipients = true;
+        }
 
         // Update the token gated drop stage.
         ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, supplied);
-    }
-
-    /**
-     * @notice Update token gated drop stage fee basis points for this nft
-     *         contract on SeaDrop.
-     *
-     * @param seaDropImpl     The allowed SeaDrop contract.
-     * @param allowedNftToken The allowed nft token.
-     * @param feeBps          The token gated drop fee basis points.
-     */
-    function updateTokenGatedDropFee(
-        address seaDropImpl,
-        address allowedNftToken,
-        uint16 feeBps
-    ) external virtual onlyAdministrator onlyAllowedSeaDrop(seaDropImpl) {
-        // Track the previous drop stage data.
-        TokenGatedDropStage memory retrieved = ISeaDrop(seaDropImpl)
-            .getTokenGatedDrop(address(this), allowedNftToken);
-
-        // params will only be stored if maxTotalMintableByWallet is not zero
-        bool initialized = retrieved.maxTotalMintableByWallet != 0;
-        if (!initialized) {
-            // initialize
-            retrieved.maxTotalMintableByWallet = 1;
-        }
-
-        // Only the administrator (ie, OpenSea) should be able to set feeBps.
-        retrieved.feeBps = feeBps;
-        retrieved.restrictFeeRecipients = true;
-
-        // Update the token gated drop stage.
-        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, retrieved);
     }
 
     /**
@@ -287,7 +223,6 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         virtual
         override
         onlyOwnerOrAdministrator
-        onlyAllowedSeaDrop(seaDropImpl)
     {
         // Update the drop URI.
         ISeaDrop(seaDropImpl).updateDropURI(dropURI);
@@ -303,7 +238,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     function updateCreatorPayoutAddress(
         address seaDropImpl,
         address payoutAddress
-    ) external onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    ) external onlyOwner {
         // Update the creator payout address.
         ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
     }
@@ -315,13 +250,13 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
      *
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
-     * @param allowed      If the fee recipient is allowed.
+     * @param allowed   updateTokenGatedDrop   If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external onlyAdministrator onlyAllowedSeaDrop(seaDropImpl) {
+    ) external onlyAdministrator {
         // Update the allowed fee recipient.
         ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
@@ -338,13 +273,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         address seaDropImpl,
         address signer,
         bool allowed
-    )
-        external
-        virtual
-        override
-        onlyOwnerOrAdministrator
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
+    ) external virtual override onlyOwnerOrAdministrator {
         // Update the signers.
         ISeaDrop(seaDropImpl).updateSigner(signer, allowed);
     }

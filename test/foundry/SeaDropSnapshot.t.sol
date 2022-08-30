@@ -118,11 +118,6 @@ contract TestSeaDropSnapshot is TestHelper {
     }
 
     function _configureTokenGated() internal {
-        snapshotToken.updateTokenGatedDropFee(
-            address(seadrop),
-            address(tokenGatedEligible),
-            250
-        );
         TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage({
             mintPrice: 0.1 ether, // mint price
             maxTotalMintableByWallet: 10, // max mints per wallet

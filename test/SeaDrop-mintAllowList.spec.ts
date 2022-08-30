@@ -22,17 +22,19 @@ const allowListElementsBuffer = (
   leaves: Array<[minter: string, mintParams: MintParamsStruct]>
 ) =>
   leaves.map(([minter, mintParams]) =>
-    Buffer.concat([
-      toPaddedBuffer(minter),
-      toPaddedBuffer(mintParams.mintPrice),
-      toPaddedBuffer(mintParams.maxTotalMintableByWallet),
-      toPaddedBuffer(mintParams.startTime),
-      toPaddedBuffer(mintParams.endTime),
-      toPaddedBuffer(mintParams.dropStageIndex),
-      toPaddedBuffer(mintParams.maxTokenSupplyForStage),
-      toPaddedBuffer(mintParams.feeBps),
-      toPaddedBuffer(mintParams.restrictFeeRecipients ? 1 : 0),
-    ])
+    Buffer.concat(
+      [
+        minter,
+        mintParams.mintPrice,
+        mintParams.maxTotalMintableByWallet,
+        mintParams.startTime,
+        mintParams.endTime,
+        mintParams.dropStageIndex,
+        mintParams.maxTokenSupplyForStage,
+        mintParams.feeBps,
+        mintParams.restrictFeeRecipients ? 1 : 0,
+      ].map(toPaddedBuffer)
+    )
   );
 
 describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
@@ -41,6 +43,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   let token: IERC721SeaDrop;
   let creator: Wallet;
   let owner: Wallet;
+  let admin: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
   let feeBps: number;
@@ -55,13 +58,15 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   before(async () => {
     // Set the wallets.
     owner = new ethers.Wallet(randomHex(32), provider);
+    admin = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets.
-    await faucet(owner.address, provider);
-    await faucet(minter.address, provider);
+    for (const wallet of [owner, admin, minter]) {
+      await faucet(wallet.address, provider);
+    }
 
     // Deploy Seadrop.
     const SeaDrop = await ethers.getContractFactory("SeaDrop");
@@ -70,8 +75,10 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token.
-    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
-    token = await SeaDropToken.deploy("", "", owner.address, [seadrop.address]);
+    const SeaDropToken = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop"
+    );
+    token = await SeaDropToken.deploy("", "", admin.address, [seadrop.address]);
 
     // Set a random feeBps.
     feeBps = randomInt(1, 10000);
@@ -79,7 +86,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Update the fee recipient and creator payout address for the token.
     await token.setMaxSupply(1000);
     await token
-      .connect(owner)
+      .connect(admin)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
 
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
@@ -403,8 +410,10 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
-    // Deploy a new ERC721SeaDrop.
-    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
+    // Deploy a new ERC721PartnerSeaDrop.
+    const SeaDropToken = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop"
+    );
     const differentToken = await SeaDropToken.deploy("", "", owner.address, [
       seadrop.address,
     ]);

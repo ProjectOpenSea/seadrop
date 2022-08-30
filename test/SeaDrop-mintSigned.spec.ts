@@ -6,14 +6,14 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
+import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
 import type { MintParamsStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
@@ -79,11 +79,11 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", admin.address, [
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
 
@@ -249,11 +249,11 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWith("InvalidSignature");
 
     // Test with different token contract
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    const token2 = await ERC721SeaDrop.deploy("", "", admin.address, [
+    const token2 = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
     await token2.setMaxSupply(100);

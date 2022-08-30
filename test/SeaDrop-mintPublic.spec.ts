@@ -6,14 +6,14 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
+import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
 import type { PublicDropStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
@@ -38,10 +38,9 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    await faucet(owner.address, provider);
-    await faucet(admin.address, provider);
-    await faucet(payer.address, provider);
-    await faucet(minter.address, provider);
+    for (const wallet of [owner, admin, payer, minter]) {
+      await faucet(wallet.address, provider);
+    }
 
     // Deploy SeaDrop
     const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
@@ -50,11 +49,11 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", admin.address, [
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
 
@@ -66,17 +65,12 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       feeBps: 1000,
-      restrictFeeRecipients: false,
+      restrictFeeRecipients: true,
     };
-    await token.updatePublicDrop(seadrop.address, publicDrop);
-
-    // Only the admin can update fee bps and fee recipient.
+    await token.connect(admin).updatePublicDrop(seadrop.address, publicDrop);
     await token
       .connect(admin)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
-    await token
-      .connect(admin)
-      .updatePublicDropFee(seadrop.address, publicDrop.feeBps);
   });
 
   it("Should mint a public stage", async () => {
@@ -295,7 +289,9 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   });
 
   it("Should not mint with invalid fee bps", async () => {
-    await token.connect(admin).updatePublicDropFee(seadrop.address, 15_000);
+    await token
+      .connect(admin)
+      .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 15_000 });
 
     const value = BigNumber.from(publicDrop.mintPrice);
     await expect(
@@ -306,7 +302,9 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         })
     ).to.be.revertedWith("InvalidFeeBps");
 
-    await token.connect(admin).updatePublicDropFee(seadrop.address, 0);
+    await token
+      .connect(admin)
+      .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 0 });
 
     await expect(
       seadrop

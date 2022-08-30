@@ -6,14 +6,14 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
-import type { PublicDropStruct } from "../typechain-types/src/ERC721SeaDrop";
+import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
+import type { PublicDropStruct } from "../typechain-types/src/ERC721PartnerSeaDrop";
 import type { Wallet } from "ethers";
 
-describe(`ERC721SeaDrop (v${VERSION})`, function () {
+describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
@@ -42,13 +42,15 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     // Deploy SeaDrop
     const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
     seadrop = await SeaDrop.deploy();
+  });
 
+  beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", admin.address, [
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
 
@@ -62,7 +64,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   });
 
   it("Should not be able to mint until the creator address is updated to non-zero", async () => {
-    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
+    await token.connect(admin).updatePublicDrop(seadrop.address, publicDrop);
     await token.setMaxSupply(5);
 
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
@@ -141,44 +143,53 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   });
 
   it("Should only let the owner or admin update the public drop parameters", async () => {
-    // Only the owner should be able to call `updatePublicDrop`,
-    // but they cannot update feeBps or restrictFeeRecipients.
+    // Only the admin should be able to set `feeBps`.
     await expect(
       token.connect(creator).updatePublicDrop(seadrop.address, publicDrop)
     ).to.be.revertedWith("OnlyOwner");
 
     await expect(
-      token.connect(admin).updatePublicDrop(seadrop.address, publicDrop)
-    ).to.be.revertedWith("OnlyOwner");
-
-    await expect(
       token.connect(owner).updatePublicDrop(seadrop.address, publicDrop)
+    ).to.be.revertedWith("AdministratorMustInitializeWithFee()");
+
+    // Ensure public drop fee parameters were not changed.
+    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(0);
+    expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(false);
+
+    // Now from the admin.
+    await expect(
+      token.connect(admin).updatePublicDrop(seadrop.address, publicDrop)
     )
       .to.emit(seadrop, "PublicDropUpdated")
       .withArgs(token.address, [
         publicDrop.mintPrice,
         publicDrop.startTime,
         publicDrop.maxTotalMintableByWallet,
-        0, // Only the admin is allowed to change the fee, so it remains at its set value of 0.
+        1000,
         publicDrop.restrictFeeRecipients,
       ]);
 
-    // Ensure public drop fee parameters were not changed.
-    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(0);
+    // Ensure public drop fee parameters were updated.
+    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(1000);
     expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(true);
 
-    // Now from the admin using `updatePublicDropFee`.
-    await expect(token.connect(admin).updatePublicDropFee(seadrop.address, 50))
+    // Now the owner should be able to update freely (without changing feeBps)
+    await expect(
+      token
+        .connect(owner)
+        .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 1 })
+    )
       .to.emit(seadrop, "PublicDropUpdated")
       .withArgs(token.address, [
         publicDrop.mintPrice,
         publicDrop.startTime,
         publicDrop.maxTotalMintableByWallet,
-        50,
+        1000,
         publicDrop.restrictFeeRecipients,
       ]);
-    // Ensure public drop fee parameters were updated.
-    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(50);
+
+    // Ensure public drop fee parameters were not updated.
+    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(1000);
     expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(true);
   });
 
@@ -347,7 +358,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
         )
           .to.emit(token, "Transfer")
-          .withArgs(ethers.constants.AddressZero, minter.address, 1);
+          .withArgs(ethers.constants.AddressZero, minter.address, 0);
       }
     );
 

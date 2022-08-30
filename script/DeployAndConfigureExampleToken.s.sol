@@ -44,7 +44,6 @@ contract DeployAndConfigureExampleToken is Script {
         token.updateCreatorPayoutAddress(seadrop, creator);
 
         token.updateAllowedFeeRecipient(seadrop, feeRecipient, true);
-        token.updatePublicDropFee(seadrop, feeBps);
 
         token.updatePublicDrop(
             seadrop,

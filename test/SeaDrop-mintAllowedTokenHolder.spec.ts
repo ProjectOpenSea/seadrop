@@ -5,16 +5,21 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { ERC721SeaDrop, ISeaDrop, TestERC721 } from "../typechain-types";
+import type {
+  ERC721PartnerSeaDrop,
+  ISeaDrop,
+  TestERC721,
+} from "../typechain-types";
 import type { TokenGatedDropStageStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let allowedNftToken: TestERC721;
   let owner: Wallet;
+  let admin: Wallet;
   let creator: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
@@ -29,13 +34,15 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   before(async () => {
     // Set the wallets.
     owner = new ethers.Wallet(randomHex(32), provider);
+    admin = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets.
-    await faucet(owner.address, provider);
-    await faucet(minter.address, provider);
+    for (const wallet of [owner, admin, minter]) {
+      await faucet(wallet.address, provider);
+    }
 
     // Deploy Seadrop.
     const SeaDrop = await ethers.getContractFactory("SeaDrop");
@@ -44,8 +51,11 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token.
-    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
-    token = await SeaDropToken.deploy("", "", owner.address, [seadrop.address]);
+    const SeaDropToken = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
+      owner
+    );
+    token = await SeaDropToken.deploy("", "", admin.address, [seadrop.address]);
 
     // Deploy the allowed NFT token.
     const AllowedNftToken = await ethers.getContractFactory("TestERC721");
@@ -53,11 +63,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Configure token.
     await token.setMaxSupply(100);
-    await token
-      .connect(owner)
-      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
-
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await token
+      .connect(admin)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
 
     // Create the drop stage object.
     dropStage = {
@@ -68,7 +77,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
       feeBps: 100,
-      restrictFeeRecipients: false,
+      restrictFeeRecipients: true,
     };
 
     // Create a non-mintable drop stage object.
@@ -78,27 +87,37 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       maxTokenSupplyForStage: 5,
     };
 
-    // Expect the call to update the drop stage to revert since there is no existing drop stage.
+    // Expect the call to update the drop stage to revert since
+    // there is no existing drop stage.
     await expect(
-      token.updateTokenGatedDrop(
-        seadrop.address,
-        allowedNftToken.address,
-        zeroMintDropStage
-      )
+      token
+        .connect(admin)
+        .updateTokenGatedDrop(
+          seadrop.address,
+          allowedNftToken.address,
+          zeroMintDropStage
+        )
     ).to.be.revertedWith("TokenGatedDropStageNotPresent()");
 
+    // Expect the call to update the drop stage to revert since
+    // the admin must first initialize with fee.
+    await expect(
+      token
+        .connect(owner)
+        .updateTokenGatedDrop(
+          seadrop.address,
+          allowedNftToken.address,
+          zeroMintDropStage
+        )
+    ).to.be.revertedWith("AdministratorMustInitializeWithFee()");
+
     // Update the token gated drop for the deployed allowed NFT token.
-    await token.updateTokenGatedDrop(
-      seadrop.address,
-      allowedNftToken.address,
-      dropStage
-    );
     await token
-      .connect(owner)
-      .updateTokenGatedDropFee(
+      .connect(admin)
+      .updateTokenGatedDrop(
         seadrop.address,
         allowedNftToken.address,
-        dropStage.feeBps
+        dropStage
       );
   });
 
@@ -374,8 +393,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
-    // Deploy a new ERC721SeaDrop.
-    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
+    // Deploy a new ERC721PartnerSeaDrop.
+    const SeaDropToken = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop"
+    );
     const differentToken = await SeaDropToken.deploy("", "", owner.address, [
       seadrop.address,
     ]);
@@ -495,11 +516,13 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     };
 
     // Call updateTokenGatedDrop with a non-mintable drop stage for branch coverage.
-    await token.updateTokenGatedDrop(
-      seadrop.address,
-      allowedNftToken.address,
-      zeroMintDropStage
-    );
+    await token
+      .connect(admin)
+      .updateTokenGatedDrop(
+        seadrop.address,
+        allowedNftToken.address,
+        zeroMintDropStage
+      );
 
     // Create a new drop stage object.
     const newDropStage = {
@@ -509,11 +532,13 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
-    await token.updateTokenGatedDrop(
-      seadrop.address,
-      allowedNftToken.address,
-      newDropStage
-    );
+    await token
+      .connect(admin)
+      .updateTokenGatedDrop(
+        seadrop.address,
+        allowedNftToken.address,
+        newDropStage
+      );
 
     // Create an array of tokenIds with length exceeding maxTotalMintableByWallet.
     const tokenIds = [...Array(20).keys()];

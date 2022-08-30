@@ -54,7 +54,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
 
     function setUp() public {
         attacker = new MaliciousRecipient();
-        // Deploy the ERC721SeaDrop token.
+        // Deploy the ERC721PartnerSeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
         token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
