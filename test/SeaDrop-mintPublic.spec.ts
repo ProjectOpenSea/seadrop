@@ -63,7 +63,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
     publicDrop = {
       mintPrice: "100000000000000000", // 0.1 ether
-      maxMintsPerWallet: 10,
+      maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       feeBps: 1000,
       restrictFeeRecipients: false,
@@ -165,7 +165,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   it("Should respect limit for max mints per wallet and max supply", async () => {
     // Update max limit per wallet to 2.
-    publicDrop.maxMintsPerWallet = 2;
+    publicDrop.maxTotalMintableByWallet = 2;
     await token.updatePublicDrop(seadrop.address, publicDrop);
 
     // Update max supply to 1.

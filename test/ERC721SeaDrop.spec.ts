@@ -54,7 +54,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     publicDrop = {
       mintPrice: "100000000000000000", // 0.1 ether
-      maxMintsPerWallet: 10,
+      maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       feeBps: 1000,
       restrictFeeRecipients: true,
@@ -158,7 +158,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       .withArgs(token.address, [
         publicDrop.mintPrice,
         publicDrop.startTime,
-        publicDrop.maxMintsPerWallet,
+        publicDrop.maxTotalMintableByWallet,
         0, // Only the admin is allowed to change the fee, so it remains at its set value of 0.
         publicDrop.restrictFeeRecipients,
       ]);
@@ -173,7 +173,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       .withArgs(token.address, [
         publicDrop.mintPrice,
         publicDrop.startTime,
-        publicDrop.maxMintsPerWallet,
+        publicDrop.maxTotalMintableByWallet,
         50,
         publicDrop.restrictFeeRecipients,
       ]);
