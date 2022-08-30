@@ -180,24 +180,24 @@ interface SeaDropErrorsAndEvents {
         TokenGatedDropStage dropStage
     );
 
-/**
- * @dev An event with updated allow list data for an nft contract.
- * 
- * @param nftContract        The nft contract.
- * @param previousMerkleRoot The previous allow list merkle root.
- * @param newMerkleRoot      The new allow list merkle root.
- * @param publicKeyURI       If the allow list is encrypted, the public key
- *                           URIs that can decrypt the list.
- *                           Empty if unencrypted.
- * @param allowListURI       The URI for the allow list.
- */
-event AllowListUpdated(
-    address indexed nftContract,
-    bytes32 indexed previousMerkleRoot,
-    bytes32 indexed newMerkleRoot,
-    string[] publicKeyURI,
-    string allowListURI
-);
+    /**
+     * @dev An event with updated allow list data for an nft contract.
+     * 
+     * @param nftContract        The nft contract.
+     * @param previousMerkleRoot The previous allow list merkle root.
+     * @param newMerkleRoot      The new allow list merkle root.
+     * @param publicKeyURI       If the allow list is encrypted, the public key
+     *                           URIs that can decrypt the list.
+     *                           Empty if unencrypted.
+     * @param allowListURI       The URI for the allow list.
+     */
+    event AllowListUpdated(
+        address indexed nftContract,
+        bytes32 indexed previousMerkleRoot,
+        bytes32 indexed newMerkleRoot,
+        string[] publicKeyURI,
+        string allowListURI
+    );
 
     /**
      * @dev An event with updated drop URI for an nft contract.
