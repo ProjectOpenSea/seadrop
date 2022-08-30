@@ -165,6 +165,7 @@ contract SeaDrop is ISeaDrop {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
 
         // Ensure that the drop has started.
+        // Since publicDrop has no endTime, `type(uint64).max` is passed.
         _checkActive(publicDrop.startTime, type(uint64).max);
 
         // Put the mint price on the stack.
