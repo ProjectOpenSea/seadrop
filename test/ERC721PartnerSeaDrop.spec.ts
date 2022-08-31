@@ -1,7 +1,14 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
-import { randomHex } from "./utils/encoding";
+import {
+  IERC165__factory,
+  IERC721ContractMetadata__factory,
+  IERC721SeaDrop__factory,
+  IERC721__factory,
+} from "../typechain-types";
+
+import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
@@ -365,5 +372,37 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
     await expect(
       token.connect(owner).mintSeaDrop(minter.address, 1)
     ).to.be.revertedWith("OnlySeaDrop");
+  });
+
+  it("Should return supportsInterface true for supported interfaces", async () => {
+    const supportedInterfacesERC721PartnerSeaDrop = [
+      [
+        IERC721SeaDrop__factory,
+        IERC721ContractMetadata__factory,
+        IERC165__factory,
+      ],
+      [IERC721ContractMetadata__factory],
+    ];
+    const supportedInterfacesERC721A = [
+      [IERC721__factory, IERC165__factory],
+      [IERC165__factory],
+    ];
+
+    for (const factories of [
+      ...supportedInterfacesERC721PartnerSeaDrop,
+      ...supportedInterfacesERC721A,
+    ]) {
+      const interfaceId = factories
+        .map((factory) => getInterfaceID(factory.createInterface()))
+        .reduce((prev, curr) => prev.xor(curr))
+        .toHexString();
+      expect(await token.supportsInterface(interfaceId)).to.be.true;
+    }
+
+    // Ensure invalid interfaces return false.
+    const invalidInterfaceIds = ["0x00000000", "0x10000000", "0x00000001"];
+    for (const interfaceId of invalidInterfaceIds) {
+      expect(await token.supportsInterface(interfaceId)).to.be.false;
+    }
   });
 });

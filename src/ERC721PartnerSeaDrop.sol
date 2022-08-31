@@ -19,10 +19,6 @@ import {
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import {
-    IERC721
-} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
-
-import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
@@ -322,9 +318,10 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         returns (bool)
     {
         return
-            interfaceId == this.supportsInterface.selector || // ERC165
-            interfaceId == type(IERC721).interfaceId || // IERC721
-            interfaceId == type(IERC721ContractMetadata).interfaceId || // IERC721ContractMetadata
-            interfaceId == type(IERC721SeaDrop).interfaceId; // IERC721SeaDrop
+            interfaceId == type(IERC721SeaDrop).interfaceId ||
+            interfaceId == type(IERC721ContractMetadata).interfaceId ||
+            // ERC721A returns supportsInterface true for
+            // ERC165, ERC721, ERC721Metadata
+            super.supportsInterface(interfaceId);
     }
 }
