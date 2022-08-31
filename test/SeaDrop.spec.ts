@@ -6,13 +6,17 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721SeaDrop, IERC721, ISeaDrop } from "../typechain-types";
+import type {
+  ERC721PartnerSeaDrop,
+  IERC721,
+  ISeaDrop,
+} from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let vanillaToken: IERC721;
   let owner: Wallet;
   let admin: Wallet;
@@ -37,11 +41,11 @@ describe(`SeaDrop (v${VERSION})`, function () {
     seadrop = await SeaDrop.deploy();
 
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", admin.address, [
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
 

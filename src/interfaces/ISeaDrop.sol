@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 import {
     AllowListData,
@@ -204,6 +204,9 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the allow list merkle root for the nft contract
      *         and emits an event.
      *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement IERC721SeaDrop.
+     *
      * @param allowListData The allow list data.
      */
     function updateAllowList(AllowListData calldata allowListData) external;
@@ -211,6 +214,12 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
+     *
+     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         token gated drop promotions for each other, they can be
+     *         minted by the same actor until `maxTokenSupplyForStage`
+     *         is reached. Please ensure the `allowedNftToken` is not
+     *         running an active drop during the `dropStage` time period.
      *
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.

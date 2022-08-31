@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.16;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
 import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
-import { TestERC721 } from "test/foundry/utils/TestERC721.sol";
+import { TestERC721 } from "seadrop/test/TestERC721.sol";
 import {
     AllowListData,
     MintParams,
@@ -259,6 +259,9 @@ contract TestSeaDrop is TestHelper {
         vm.assume(token1 != address(0));
         vm.assume(token2 != address(0));
         vm.assume(token3 != address(0));
+        vm.assume(address(token) != token1);
+        vm.assume(address(token) != token2);
+        vm.assume(address(token) != token3);
         vm.assume(token1 != token2);
         vm.assume(token1 != token3);
         vm.assume(token2 != token3);

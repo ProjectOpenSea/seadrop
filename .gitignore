@@ -30,4 +30,3 @@ __pycache__
 # use typescript instead of javascript
 *.js
 *.txt
-.*

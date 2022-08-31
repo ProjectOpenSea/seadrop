@@ -24,7 +24,7 @@ contract DeployAndConfigureExampleToken is Script {
     // Drop config
     uint16 feeBps = 100;
     uint80 mintPrice = 10000000000000; // 0.00001 ether
-    uint40 maxMintsPerWallet = 10;
+    uint40 maxTotalMintableByWallet = 10;
 
     function run() external {
         vm.startBroadcast();
@@ -44,14 +44,13 @@ contract DeployAndConfigureExampleToken is Script {
         token.updateCreatorPayoutAddress(seadrop, creator);
 
         token.updateAllowedFeeRecipient(seadrop, feeRecipient, true);
-        token.updatePublicDropFee(seadrop, feeBps);
 
         token.updatePublicDrop(
             seadrop,
             PublicDrop(
                 mintPrice,
                 uint64(block.timestamp),
-                maxMintsPerWallet,
+                maxTotalMintableByWallet,
                 feeBps,
                 true
             )

@@ -1,17 +1,24 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 import { PublicDrop, TokenGatedDropStage } from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     /**
      * @dev Revert with an error if the drop stage is not active.
+     *      Note: publicDrop stores no end time, so it will emit
+     *      with endTimestamp of `type(uint64).max`.
      */
     error NotActive(
         uint256 currentTimestamp,
         uint256 startTimestamp,
         uint256 endTimestamp
     );
+
+    /**
+     * @dev Revert with an error if the mint quantity is zero.
+     */
+    error MintQuantityCannotBeZero();
 
     /**
      * @dev Revert with an error if the mint quantity exceeds the max allowed
@@ -28,8 +35,13 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev Revert with an error if the mint quantity exceeds the max token
      *      supply for the stage.
+     *      Note: The `maxTokenSupplyForStage` for public mint is
+     *      always `type(uint).max`.
      */
-    error MintQuantityExceedsMaxTokenSupplyForStage(uint256 total, uint256 maxTokenSupplyForStage);
+    error MintQuantityExceedsMaxTokenSupplyForStage(
+        uint256 total, 
+        uint256 maxTokenSupplyForStage
+    );
     
     /**
      * @dev Revert if the fee recipient is the zero address.
@@ -104,18 +116,39 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert with an error if the sender of a token gated supplied
      *      drop stage redeem is not the owner of the token.
      */
-    error TokenGatedNotTokenOwner(address nftContract, address allowedNftContract, uint256 tokenId);
+    error TokenGatedNotTokenOwner(
+        address nftContract,
+        address allowedNftContract,
+        uint256 tokenId
+    );
 
     /**
      * @dev Revert with an error if the token id has already been used to
      *      redeem a token gated drop stage.
      */
-    error TokenGatedTokenIdAlreadyRedeemed(address nftContract, address allowedNftContract, uint256 tokenId);
+    error TokenGatedTokenIdAlreadyRedeemed(
+        address nftContract,
+        address allowedNftContract,
+        uint256 tokenId
+    );
 
     /**
-     * @dev Revert with an error if an empty TokenGatedDropStage is provided for an already-empty TokenGatedDropStage
+     * @dev Revert with an error if an empty TokenGatedDropStage is provided
+     *      for an already-empty TokenGatedDropStage.
      */
      error TokenGatedDropStageNotPresent();
+
+    /**
+     * @dev Revert with an error if an allowedNftToken is set to
+     *      the zero address.
+     */
+     error TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
+
+    /**
+     * @dev Revert with an error if an allowedNftToken is set to
+     *      the drop token itself.
+     */
+     error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
@@ -145,7 +178,10 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev An event with updated public drop data for an nft contract.
      */
-    event PublicDropUpdated(address indexed nftContract, PublicDrop publicDrop);
+    event PublicDropUpdated(
+        address indexed nftContract,
+        PublicDrop publicDrop
+    );
 
     /**
      * @dev An event with updated token gated drop stage data
@@ -157,24 +193,24 @@ interface SeaDropErrorsAndEvents {
         TokenGatedDropStage dropStage
     );
 
-/**
- * @dev An event with updated allow list data for an nft contract.
- * 
- * @param nftContract        The nft contract.
- * @param previousMerkleRoot The previous allow list merkle root.
- * @param newMerkleRoot      The new allow list merkle root.
- * @param publicKeyURI       If the allow list is encrypted, the public key
- *                           URIs that can decrypt the list.
- *                           Empty if unencrypted.
- * @param allowListURI       The URI for the allow list.
- */
-event AllowListUpdated(
-    address indexed nftContract,
-    bytes32 indexed previousMerkleRoot,
-    bytes32 indexed newMerkleRoot,
-    string[] publicKeyURI,
-    string allowListURI
-);
+    /**
+     * @dev An event with updated allow list data for an nft contract.
+     * 
+     * @param nftContract        The nft contract.
+     * @param previousMerkleRoot The previous allow list merkle root.
+     * @param newMerkleRoot      The new allow list merkle root.
+     * @param publicKeyURI       If the allow list is encrypted, the public key
+     *                           URIs that can decrypt the list.
+     *                           Empty if unencrypted.
+     * @param allowListURI       The URI for the allow list.
+     */
+    event AllowListUpdated(
+        address indexed nftContract,
+        bytes32 indexed previousMerkleRoot,
+        bytes32 indexed newMerkleRoot,
+        string[] publicKeyURI,
+        string allowListURI
+    );
 
     /**
      * @dev An event with updated drop URI for an nft contract.
@@ -182,7 +218,8 @@ event AllowListUpdated(
     event DropURIUpdated(address indexed nftContract, string newDropURI);
 
     /**
-     * @dev An event with the updated creator payout address for an nft contract.
+     * @dev An event with the updated creator payout address for an nft
+     *      contract.
      */
     event CreatorPayoutAddressUpdated(
         address indexed nftContract,
@@ -190,7 +227,8 @@ event AllowListUpdated(
     );
 
     /**
-     * @dev An event with the updated allowed fee recipient for an nft contract.
+     * @dev An event with the updated allowed fee recipient for an nft
+     *      contract.
      */
     event AllowedFeeRecipientUpdated(
         address indexed nftContract,
@@ -199,7 +237,8 @@ event AllowListUpdated(
     );
 
     /**
-     * @dev An event with the updated server-side signers for an nft contract.
+     * @dev An event with the updated server-side signers for an nft
+     *      contract.
      */
     event SignerUpdated(
         address indexed nftContract,

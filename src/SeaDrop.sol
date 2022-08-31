@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
@@ -53,7 +53,7 @@ contract SeaDrop is ISeaDrop {
     /// @notice Track the allowed fee recipients.
     mapping(address => mapping(address => bool)) private _allowedFeeRecipients;
 
-    /// @notice Track the allowed fee recipients.
+    /// @notice Track the enumerated allowed fee recipients.
     mapping(address => address[]) private _enumeratedFeeRecipients;
 
     /// @notice Track the allowed signers for server-side drops.
@@ -76,30 +76,64 @@ contract SeaDrop is ISeaDrop {
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
+        // prettier-ignore
         keccak256(
-            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
+             "SignedMint("
+                "address nftContract,"
+                "address minter,"
+                "address feeRecipient,"
+                "MintParams mintParams"
+            ")"
+            "MintParams("
+                "uint256 mintPrice,"
+                "uint256 maxTotalMintableByWallet,"
+                "uint256 startTime,"
+                "uint256 endTime,"
+                "uint256 dropStageIndex,"
+                "uint256 maxTokenSupplyForStage,"
+                "uint256 feeBps,"
+                "bool restrictFeeRecipients"
+            ")"
         );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
+        // prettier-ignore
         keccak256(
             "MintParams("
-            "uint256 mintPrice,"
-            "uint256 maxTotalMintableByWallet,"
-            "uint256 startTime,"
-            "uint256 endTime,"
-            "uint256 dropStageIndex,"
-            "uint256 maxTokenSupplyForStage,"
-            "uint256 feeBps,"
-            "bool restrictFeeRecipients"
+                "uint256 mintPrice,"
+                "uint256 maxTotalMintableByWallet,"
+                "uint256 startTime,"
+                "uint256 endTime,"
+                "uint256 dropStageIndex,"
+                "uint256 maxTokenSupplyForStage,"
+                "uint256 feeBps,"
+                "bool restrictFeeRecipients"
             ")"
         );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
+        // prettier-ignore
         keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+            "EIP712Domain("
+                "string name,"
+                "string version,"
+                "uint256 chainId,"
+                "address verifyingContract"
+            ")"
         );
     bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("1.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
     bytes32 internal immutable _DOMAIN_SEPARATOR;
+
+    /// @notice Constant for an unlimited `maxTokenSupplyForStage`.
+    ///         Used in `mintPublic` where no `maxTokenSupplyForStage`
+    ///         is stored in the `PublicDrop` struct.
+    uint256 internal constant _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE =
+        type(uint256).max;
+
+    /// @notice Constant for a public mint's `dropStageIndex`.
+    ///         Used in `mintPublic` where no `dropStageIndex`
+    ///         is stored in the `PublicDrop` struct.
+    uint256 internal constant _PUBLIC_DROP_STAGE_INDEX = 0;
 
     /**
      * @notice Ensure only tokens implementing IERC721SeaDrop can
@@ -142,13 +176,8 @@ contract SeaDrop is ISeaDrop {
         PublicDrop memory publicDrop = _publicDrops[nftContract];
 
         // Ensure that the drop has started.
-        if (block.timestamp < publicDrop.startTime) {
-            revert NotActive(
-                block.timestamp,
-                publicDrop.startTime,
-                type(uint64).max
-            );
-        }
+        // Since publicDrop has no endTime, `type(uint64).max` is passed.
+        _checkActive(publicDrop.startTime, type(uint64).max);
 
         // Put the mint price on the stack.
         uint256 mintPrice = publicDrop.mintPrice;
@@ -167,7 +196,7 @@ contract SeaDrop is ISeaDrop {
             minter,
             quantity,
             publicDrop.maxTotalMintableByWallet,
-            0
+            _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE
         );
 
         // Check that the fee recipient is allowed if restricted.
@@ -183,7 +212,7 @@ contract SeaDrop is ISeaDrop {
             minter,
             quantity,
             mintPrice,
-            0,
+            _PUBLIC_DROP_STAGE_INDEX,
             publicDrop.feeBps,
             feeRecipient
         );
@@ -356,9 +385,12 @@ contract SeaDrop is ISeaDrop {
             ? minterIfNotPayer
             : msg.sender;
 
+        // Put the allowedNftToken on the stack for more efficient access.
+        address allowedNftToken = mintParams.allowedNftToken;
+
         // Set the dropStage to a variable.
         TokenGatedDropStage memory dropStage = _tokenGatedDrops[nftContract][
-            mintParams.allowedNftToken
+            allowedNftToken
         ];
 
         // Validate that the dropStage is active.
@@ -388,41 +420,39 @@ contract SeaDrop is ISeaDrop {
 
         // Iterate through each allowedNftTokenId
         // to ensure it is not already redeemed.
-        for (uint256 j = 0; j < mintQuantity; ) {
+        for (uint256 i = 0; i < mintQuantity; ) {
             // Put the tokenId on the stack.
-            uint256 tokenId = mintParams.allowedNftTokenIds[j];
+            uint256 tokenId = mintParams.allowedNftTokenIds[i];
 
-            // Check that the sender is the owner of the allowedNftTokenId.
-            if (
-                IERC721(mintParams.allowedNftToken).ownerOf(tokenId) != minter
-            ) {
+            // Check that the minter is the owner of the allowedNftTokenId.
+            if (IERC721(allowedNftToken).ownerOf(tokenId) != minter) {
                 revert TokenGatedNotTokenOwner(
                     nftContract,
-                    mintParams.allowedNftToken,
+                    allowedNftToken,
                     tokenId
                 );
             }
 
+            // Cache the storage pointer for cheaper access.
+            mapping(uint256 => bool)
+                storage redeemedTokenIds = _tokenGatedRedeemed[nftContract][
+                    allowedNftToken
+                ];
+
             // Check that the token id has not already been redeemed.
-            if (
-                _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
-                    tokenId
-                ]
-            ) {
+            if (redeemedTokenIds[tokenId]) {
                 revert TokenGatedTokenIdAlreadyRedeemed(
                     nftContract,
-                    mintParams.allowedNftToken,
+                    allowedNftToken,
                     tokenId
                 );
             }
 
             // Mark the token id as redeemed.
-            _tokenGatedRedeemed[nftContract][mintParams.allowedNftToken][
-                tokenId
-            ] = true;
+            redeemedTokenIds[tokenId] = true;
 
             unchecked {
-                ++j;
+                ++i;
             }
         }
 
@@ -470,7 +500,7 @@ contract SeaDrop is ISeaDrop {
 
         // Revert if the fee recipient is restricted and not allowed.
         if (restrictFeeRecipients)
-            if (_allowedFeeRecipients[nftContract][feeRecipient] == false) {
+            if (!_allowedFeeRecipients[nftContract][feeRecipient]) {
                 revert FeeRecipientNotAllowed();
             }
     }
@@ -478,11 +508,11 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Check that the wallet is allowed to mint the desired quantity.
      *
-     * @param nftContract            The nft contract.
-     * @param minter                 The mint recipient.
-     * @param quantity               The number of tokens to mint.
-     * @param maxTotalMintableByWallet      The max allowed mints per wallet.
-     * @param maxTokenSupplyForStage The max token supply for the drop stage.
+     * @param nftContract              The nft contract.
+     * @param minter                   The mint recipient.
+     * @param quantity                 The number of tokens to mint.
+     * @param maxTotalMintableByWallet The max allowed mints per wallet.
+     * @param maxTokenSupplyForStage   The max token supply for the drop stage.
      */
     function _checkMintQuantity(
         address nftContract,
@@ -491,6 +521,11 @@ contract SeaDrop is ISeaDrop {
         uint256 maxTotalMintableByWallet,
         uint256 maxTokenSupplyForStage
     ) internal view {
+        // Mint quantity of zero is not valid.
+        if (quantity == 0) {
+            revert MintQuantityCannotBeZero();
+        }
+
         // Get the mint stats.
         (
             uint256 minterNumMinted,
@@ -514,15 +549,12 @@ contract SeaDrop is ISeaDrop {
             );
         }
 
-        // Ensure mint quantity doesn't exceed maxTokenSupplyForStage
-        // when provided.
-        if (maxTokenSupplyForStage != 0) {
-            if (quantity + currentTotalSupply > maxTokenSupplyForStage) {
-                revert MintQuantityExceedsMaxTokenSupplyForStage(
-                    quantity + currentTotalSupply,
-                    maxTokenSupplyForStage
-                );
-            }
+        // Ensure mint quantity doesn't exceed maxTokenSupplyForStage.
+        if (quantity + currentTotalSupply > maxTokenSupplyForStage) {
+            revert MintQuantityExceedsMaxTokenSupplyForStage(
+                quantity + currentTotalSupply,
+                maxTokenSupplyForStage
+            );
         }
     }
 
@@ -576,6 +608,7 @@ contract SeaDrop is ISeaDrop {
         }
 
         // Get the fee amount.
+        // Note that the fee amount is rounded down in favor of the creator.
         uint256 feeAmount = (msg.value * feeBps) / 10_000;
 
         // Get the creator payout amount. Fee amount is <= msg.value per above.
@@ -813,6 +846,11 @@ contract SeaDrop is ISeaDrop {
         override
         onlyIERC721SeaDrop
     {
+        // Revert if the fee basis points is greater than 10_000.
+        if (publicDrop.feeBps > 10_000) {
+            revert InvalidFeeBps(publicDrop.feeBps);
+        }
+
         // Set the public drop data.
         _publicDrops[msg.sender] = publicDrop;
 
@@ -823,6 +861,9 @@ contract SeaDrop is ISeaDrop {
     /**
      * @notice Updates the allow list merkle root for the nft contract
      *         and emits an event.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement IERC721SeaDrop.
      *
      * @param allowListData The allow list data.
      */
@@ -851,6 +892,12 @@ contract SeaDrop is ISeaDrop {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
+     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         token gated drop promotions for each other, they can be
+     *         minted by the same actor until `maxTokenSupplyForStage`
+     *         is reached. Please ensure the `allowedNftToken` is not
+     *         running an active drop during the `dropStage` time period.
+     *
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
      */
@@ -858,6 +905,21 @@ contract SeaDrop is ISeaDrop {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external override onlyIERC721SeaDrop {
+        // Ensure the allowedNftToken is not the zero address.
+        if (allowedNftToken == address(0)) {
+            revert TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
+        }
+
+        // Ensure the allowedNftToken cannot be the drop token itself.
+        if (allowedNftToken == msg.sender) {
+            revert TokenGatedDropAllowedNftTokenCannotBeDropToken();
+        }
+
+        // Revert if the fee basis points is greater than 10_000.
+        if (dropStage.feeBps > 10_000) {
+            revert InvalidFeeBps(dropStage.feeBps);
+        }
+
         // Use maxTotalMintableByWallet != 0 as a signal that this update should
         // add or update the drop stage, otherwise we will be removing.
         bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
@@ -872,20 +934,20 @@ contract SeaDrop is ISeaDrop {
 
         // Stage struct packs to a single slot, so load it
         // as a uint256; if it is 0, it is empty.
-        bool dropStageExists;
+        bool dropStageDoesNotExist;
         assembly {
-            dropStageExists := iszero(eq(sload(existingDropStageData.slot), 0))
+            dropStageDoesNotExist := iszero(sload(existingDropStageData.slot))
         }
 
         if (addOrUpdateDropStage) {
             _tokenGatedDrops[msg.sender][allowedNftToken] = dropStage;
             // Add to enumeration if it does not exist already.
-            if (!dropStageExists) {
+            if (dropStageDoesNotExist) {
                 enumeratedTokens.push(allowedNftToken);
             }
         } else {
             // Check we are not deleting a drop stage that does not exist.
-            if (!dropStageExists) {
+            if (dropStageDoesNotExist) {
                 revert TokenGatedDropStageNotPresent();
             }
             // Clear storage slot and remove from enumeration.
@@ -1002,12 +1064,12 @@ contract SeaDrop is ISeaDrop {
         address[] storage enumeration
     ) internal {
         // Cache the length.
-        uint256 enumeratedDropsLength = enumeration.length;
-        for (uint256 i = 0; i < enumeratedDropsLength; ) {
+        uint256 enumerationLength = enumeration.length;
+        for (uint256 i = 0; i < enumerationLength; ) {
             // Check if the enumerated element is the one we are deleting.
             if (enumeration[i] == toRemove) {
                 // Swap with the last element.
-                enumeration[i] = enumeration[enumeratedDropsLength - 1];
+                enumeration[i] = enumeration[enumerationLength - 1];
                 // Delete the (now duplicated) last element.
                 enumeration.pop();
                 // Exit the loop.
@@ -1049,9 +1111,9 @@ contract SeaDrop is ISeaDrop {
             )
         );
         digest = keccak256(
-            abi.encodePacked(
+            bytes.concat(
                 bytes2(0x1901),
-                _DOMAIN_SEPARATOR,
+                _domainSeparator(),
                 keccak256(
                     abi.encode(
                         _SIGNED_MINT_TYPEHASH,

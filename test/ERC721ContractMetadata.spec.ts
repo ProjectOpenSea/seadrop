@@ -5,12 +5,12 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { ERC721SeaDrop } from "../typechain-types";
+import type { ERC721PartnerSeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
   let admin: Wallet;
 
@@ -30,11 +30,11 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     await faucet(admin.address, provider);
 
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", admin.address, []);
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, []);
   });
 
   it("Should only let the owner set and get the base URI", async () => {
@@ -81,10 +81,10 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
   it("Should only let the owner notify update of batch token URIs", async () => {
     await expect(
-      token.connect(admin).setBatchTokenURIs(5, 10)
+      token.connect(admin).emitBatchTokenURIUpdated(5, 10)
     ).to.be.revertedWith("OnlyOwner");
 
-    await expect(token.connect(owner).setBatchTokenURIs(5, 10))
+    await expect(token.connect(owner).emitBatchTokenURIUpdated(5, 10))
       .to.emit(token, "TokenURIUpdated")
       .withArgs(5, 10);
   });

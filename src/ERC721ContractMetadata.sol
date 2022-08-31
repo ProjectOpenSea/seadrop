@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 import {
     IERC721ContractMetadata
@@ -8,10 +8,6 @@ import {
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
-
-import {
-    ECDSA
-} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title  ERC721ContractMetadata
@@ -85,7 +81,7 @@ contract ERC721ContractMetadata is
      * @param startTokenId The start token id.
      * @param endTokenId   The end token id.
      */
-    function setBatchTokenURIs(uint256 startTokenId, uint256 endTokenId)
+    function emitBatchTokenURIUpdated(uint256 startTokenId, uint256 endTokenId)
         external
         onlyOwner
     {

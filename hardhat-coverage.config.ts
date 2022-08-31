@@ -13,7 +13,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.14",
+        version: "0.8.16",
         settings: {
           viaIR: false,
           optimizer: {
@@ -33,7 +33,10 @@ const config: HardhatUserConfig = {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
   },
-  paths: { sources: "./temp-src-coverage" },
+  paths: {
+    sources: "./temp-src-coverage",
+    cache: "./hh-cache-coverage",
+  },
 };
 
 export default config;

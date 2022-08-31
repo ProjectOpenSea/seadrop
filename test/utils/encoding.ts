@@ -1,4 +1,7 @@
 import { randomBytes as nodeRandomBytes } from "crypto";
+import { ethers } from "ethers";
+
+import type { utils } from "ethers";
 
 const SeededRNG = require("./seeded-rng");
 
@@ -13,3 +16,12 @@ if (GAS_REPORT_MODE) {
 }
 
 export const randomHex = (bytes = 32) => `0x${randomBytes(bytes)}`;
+
+export const getInterfaceID = (contractInterface: utils.Interface) => {
+  let interfaceID = ethers.constants.Zero;
+  const functions: string[] = Object.keys(contractInterface.functions);
+  for (let i = 0; i < functions.length; i++) {
+    interfaceID = interfaceID.xor(contractInterface.getSighash(functions[i]));
+  }
+  return interfaceID;
+};
