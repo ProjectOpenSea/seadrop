@@ -175,17 +175,4 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
             )
         );
     }
-
-    function makeAddrAndKey(string memory name)
-        internal
-        returns (address addr, uint256 privateKey)
-    {
-        privateKey = uint256(keccak256(abi.encodePacked(name)));
-        addr = vm.addr(privateKey);
-        vm.label(addr, name);
-    }
-
-    function makeAddr(string memory name) internal returns (address addr) {
-        (addr, ) = makeAddrAndKey(name);
-    }
 }

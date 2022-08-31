@@ -42,11 +42,11 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     error AdministratorMustInitializeWithFee();
 
     /**
-     * @notice Modifier to restrict sender exclusively to
+     * @notice Modifier to restrict access exclusively to
      *         allowed SeaDrop contracts.
      */
-    modifier onlySeaDrop() {
-        if (_allowedSeaDrop[msg.sender] != true) {
+    modifier onlyAllowedSeaDrop(address seaDrop) {
+        if (_allowedSeaDrop[seaDrop] != true) {
             revert OnlySeaDrop();
         }
         _;
@@ -125,7 +125,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         external
         payable
         override
-        onlySeaDrop
+        onlyAllowedSeaDrop(msg.sender)
     {
         // Mint the quantity of tokens to the minter.
         _mint(minter, quantity);
@@ -158,6 +158,17 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
             }
             supplied.feeBps = retrieved.feeBps;
             supplied.restrictFeeRecipients = true;
+        } else {
+            // administrator should only be able to initialize (maxtotalmintablebywallet > 0)
+            // and/or set feeBps/restrictFeeRecipients
+            uint40 maxTotalMintableByWallet = retrieved
+                .maxTotalMintableByWallet;
+            retrieved.maxTotalMintableByWallet = maxTotalMintableByWallet > 0
+                ? maxTotalMintableByWallet
+                : 1;
+            retrieved.feeBps = supplied.feeBps;
+            retrieved.restrictFeeRecipients = true;
+            supplied = retrieved;
         }
 
         // Update the public drop data on SeaDrop.
@@ -206,7 +217,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         // Track the newly supplied drop data.
         TokenGatedDropStage memory supplied = dropStage;
 
-        // Only the administrator (OpenSea) should be able to set feeBps.
+        // Only the administrator (OpenSea) should be able to set feeBps on Partner contracts
         if (msg.sender != administrator) {
             // Administrator must first set fee.
             if (retrieved.maxTotalMintableByWallet == 0) {
@@ -214,6 +225,18 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
             }
             supplied.feeBps = retrieved.feeBps;
             supplied.restrictFeeRecipients = true;
+        } else {
+            // administrator should only be able to initialize (maxtotalmintablebywallet > 0)
+            // and/or set feeBps/restrictFeeRecipients
+
+            uint16 maxTotalMintableByWallet = retrieved
+                .maxTotalMintableByWallet;
+            retrieved.maxTotalMintableByWallet = maxTotalMintableByWallet > 0
+                ? maxTotalMintableByWallet
+                : 1;
+            retrieved.feeBps = supplied.feeBps;
+            retrieved.restrictFeeRecipients = true;
+            supplied = retrieved;
         }
 
         // Update the token gated drop stage.

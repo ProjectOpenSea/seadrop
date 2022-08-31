@@ -40,6 +40,8 @@ contract TestSeaDropSnapshot is TestHelper {
     bytes signature2098;
     MintParams mintParams;
 
+    address admin = makeAddr("admin");
+
     struct FuzzSelector {
         address targetAddress;
         bytes4[] targetSelectors;
@@ -52,7 +54,7 @@ contract TestSeaDropSnapshot is TestHelper {
         snapshotToken = new ERC721PartnerSeaDropPlusRegularMint(
             "",
             "",
-            address(this),
+            admin,
             allowedSeaDrop
         );
         // Deploy a vanilla ERC721 token.
@@ -74,7 +76,11 @@ contract TestSeaDropSnapshot is TestHelper {
         );
 
         // Set the public drop for the token contract.
+        vm.prank(admin);
         snapshotToken.updatePublicDrop(address(seadrop), publicDrop);
+        snapshotToken.updatePublicDrop(address(seadrop), publicDrop);
+
+        vm.prank(admin);
         snapshotToken.updateAllowedFeeRecipient(
             address(seadrop),
             address(5),
@@ -118,11 +124,6 @@ contract TestSeaDropSnapshot is TestHelper {
     }
 
     function _configureTokenGated() internal {
-        snapshotToken.updateTokenGatedDropFee(
-            address(seadrop),
-            address(tokenGatedEligible),
-            250
-        );
         TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage({
             mintPrice: 0.1 ether, // mint price
             maxTotalMintableByWallet: 10, // max mints per wallet
@@ -133,6 +134,12 @@ contract TestSeaDropSnapshot is TestHelper {
             feeBps: 100, // fee (1%)
             restrictFeeRecipients: false // if false, allow any fee recipient
         });
+        vm.prank(admin);
+        snapshotToken.updateTokenGatedDrop(
+            address(seadrop),
+            address(tokenGatedEligible),
+            tokenGatedDropStage
+        );
         snapshotToken.updateTokenGatedDrop(
             address(seadrop),
             address(tokenGatedEligible),
