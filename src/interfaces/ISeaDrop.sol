@@ -203,7 +203,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the allow list merkle root for the nft contract
      *         and emits an event.
-     * 
+     *
      *         Note: Be sure only authorized users can call this from
      *         token contracts that implement IERC721SeaDrop.
      *

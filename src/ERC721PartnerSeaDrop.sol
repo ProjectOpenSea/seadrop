@@ -166,7 +166,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
 
     /**
      * @notice Update allow list data for this nft contract on SeaDrop.
-     * 
+     *
      *         Note: Only authorized users can call this.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
