@@ -26,8 +26,9 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     admin = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    await faucet(owner.address, provider);
-    await faucet(admin.address, provider);
+    for (const wallet of [owner, admin]) {
+      await faucet(wallet.address, provider);
+    }
 
     // Deploy token
     const ERC721PartnerSeaDrop = await ethers.getContractFactory(
