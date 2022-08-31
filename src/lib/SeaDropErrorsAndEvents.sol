@@ -16,6 +16,11 @@ interface SeaDropErrorsAndEvents {
     );
 
     /**
+     * @dev Revert with an error if the mint quantity is zero.
+     */
+    error MintQuantityCannotBeZero();
+
+    /**
      * @dev Revert with an error if the mint quantity exceeds the max allowed
      *      to be minted per wallet.
      */

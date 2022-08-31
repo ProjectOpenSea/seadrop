@@ -521,6 +521,11 @@ contract SeaDrop is ISeaDrop {
         uint256 maxTotalMintableByWallet,
         uint256 maxTokenSupplyForStage
     ) internal view {
+        // Mint quantity of zero is not valid.
+        if (quantity == 0) {
+            revert MintQuantityCannotBeZero();
+        }
+
         // Get the mint stats.
         (
             uint256 minterNumMinted,

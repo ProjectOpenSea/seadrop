@@ -320,4 +320,12 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         0 // drop stage index (0 for public)
       );
   });
+
+  it("Should not be able to mint zero quantity", async () => {
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 0)
+    ).to.be.revertedWith("MintQuantityCannotBeZero");
+  });
 });
