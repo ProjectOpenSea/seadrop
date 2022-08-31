@@ -2,8 +2,8 @@
 pragma solidity 0.8.16;
 
 import {
-    IERC721ContractMetadata
-} from "../interfaces/IERC721ContractMetadata.sol";
+    ISeaDropTokenContractMetadata
+} from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
 import {
     AllowListData,
@@ -15,7 +15,7 @@ import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
-interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
+interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
      * @dev Revert with an error if a contract other than an allowed
      *      SeaDrop address calls an update function.
@@ -87,7 +87,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop. The administrator must first set `feeBps`.
      *
-     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
      *         token gated drop promotions for each other, they can be
      *         minted by the same actor until `maxTokenSupplyForStage`
      *         is reached. Please ensure the `allowedNftToken` is not

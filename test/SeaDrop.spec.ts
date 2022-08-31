@@ -54,14 +54,14 @@ describe(`SeaDrop (v${VERSION})`, function () {
     vanillaToken = (await ERC721A.deploy("", "")) as unknown as IERC721;
   });
 
-  it("Should not let a non-IERC721SeaDrop token contract use the token methods", async () => {
+  it("Should not let a non-INonFungibleSeaDropToken token contract use the token methods", async () => {
     await whileImpersonating(
       vanillaToken.address,
       provider,
       async (impersonatedSigner) => {
         await expect(
           seadrop.connect(impersonatedSigner).updateDropURI("http://test.com")
-        ).to.be.revertedWith("OnlyIERC721SeaDrop");
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
       }
     );
 

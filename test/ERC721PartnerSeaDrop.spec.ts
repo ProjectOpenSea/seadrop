@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import {
   IERC165__factory,
   IERC721ContractMetadata__factory,
-  IERC721SeaDrop__factory,
+  INonFungibleSeaDropToken__factory,
   IERC721__factory,
 } from "../typechain-types";
 
@@ -377,7 +377,7 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
   it("Should return supportsInterface true for supported interfaces", async () => {
     const supportedInterfacesERC721PartnerSeaDrop = [
       [
-        IERC721SeaDrop__factory,
+        INonFungibleSeaDropToken__factory,
         IERC721ContractMetadata__factory,
         IERC165__factory,
       ],

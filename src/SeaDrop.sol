@@ -3,7 +3,9 @@ pragma solidity 0.8.16;
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
-import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
+import {
+    INonFungibleSeaDropToken
+} from "./interfaces/INonFungibleSeaDropToken.sol";
 
 import {
     AllowListData,
@@ -136,16 +138,16 @@ contract SeaDrop is ISeaDrop {
     uint256 internal constant _PUBLIC_DROP_STAGE_INDEX = 0;
 
     /**
-     * @notice Ensure only tokens implementing IERC721SeaDrop can
+     * @notice Ensure only tokens implementing INonFungibleSeaDropToken can
      *         call the update methods.
      */
-    modifier onlyIERC721SeaDrop() virtual {
+    modifier onlyINonFungibleSeaDropToken() virtual {
         if (
             !IERC165(msg.sender).supportsInterface(
-                type(IERC721SeaDrop).interfaceId
+                type(INonFungibleSeaDropToken).interfaceId
             )
         ) {
-            revert OnlyIERC721SeaDrop(msg.sender);
+            revert OnlyINonFungibleSeaDropToken(msg.sender);
         }
         _;
     }
@@ -531,7 +533,7 @@ contract SeaDrop is ISeaDrop {
             uint256 minterNumMinted,
             uint256 currentTotalSupply,
             uint256 maxSupply
-        ) = IERC721SeaDrop(nftContract).getMintStats(minter);
+        ) = INonFungibleSeaDropToken(nftContract).getMintStats(minter);
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
         if (quantity + minterNumMinted > maxTotalMintableByWallet) {
@@ -648,7 +650,7 @@ contract SeaDrop is ISeaDrop {
         address feeRecipient
     ) internal {
         // Mint the token(s).
-        IERC721SeaDrop(nftContract).mintSeaDrop(minter, quantity);
+        INonFungibleSeaDropToken(nftContract).mintSeaDrop(minter, quantity);
 
         if (mintPrice != 0) {
             // Split the payment between the creator and fee recipient.
@@ -830,7 +832,7 @@ contract SeaDrop is ISeaDrop {
      */
     function updateDropURI(string calldata dropURI)
         external
-        onlyIERC721SeaDrop
+        onlyINonFungibleSeaDropToken
     {
         // Emit an event with the update.
         emit DropURIUpdated(msg.sender, dropURI);
@@ -844,7 +846,7 @@ contract SeaDrop is ISeaDrop {
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external
         override
-        onlyIERC721SeaDrop
+        onlyINonFungibleSeaDropToken
     {
         // Revert if the fee basis points is greater than 10_000.
         if (publicDrop.feeBps > 10_000) {
@@ -863,14 +865,14 @@ contract SeaDrop is ISeaDrop {
      *         and emits an event.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement IERC721SeaDrop.
+     *         token contracts that implement INonFungibleSeaDropToken.
      *
      * @param allowListData The allow list data.
      */
     function updateAllowList(AllowListData calldata allowListData)
         external
         override
-        onlyIERC721SeaDrop
+        onlyINonFungibleSeaDropToken
     {
         // Track the previous root.
         bytes32 prevRoot = _allowListMerkleRoots[msg.sender];
@@ -892,7 +894,7 @@ contract SeaDrop is ISeaDrop {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
      *         token gated drop promotions for each other, they can be
      *         minted by the same actor until `maxTokenSupplyForStage`
      *         is reached. Please ensure the `allowedNftToken` is not
@@ -904,7 +906,7 @@ contract SeaDrop is ISeaDrop {
     function updateTokenGatedDrop(
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external override onlyIERC721SeaDrop {
+    ) external override onlyINonFungibleSeaDropToken {
         // Ensure the allowedNftToken is not the zero address.
         if (allowedNftToken == address(0)) {
             revert TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
@@ -966,7 +968,7 @@ contract SeaDrop is ISeaDrop {
      */
     function updateCreatorPayoutAddress(address _payoutAddress)
         external
-        onlyIERC721SeaDrop
+        onlyINonFungibleSeaDropToken
     {
         if (_payoutAddress == address(0)) {
             revert CreatorPayoutAddressCannotBeZeroAddress();
@@ -986,7 +988,7 @@ contract SeaDrop is ISeaDrop {
      */
     function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
         external
-        onlyIERC721SeaDrop
+        onlyINonFungibleSeaDropToken
     {
         if (feeRecipient == address(0)) {
             revert FeeRecipientCannotBeZeroAddress();
@@ -1025,7 +1027,7 @@ contract SeaDrop is ISeaDrop {
      */
     function updateSigner(address signer, bool allowed)
         external
-        onlyIERC721SeaDrop
+        onlyINonFungibleSeaDropToken
     {
         if (signer == address(0)) {
             revert SignerCannotBeZeroAddress();

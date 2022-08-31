@@ -2,23 +2,23 @@
 pragma solidity 0.8.16;
 
 import {
-    IERC721ContractMetadata
-} from "./interfaces/IERC721ContractMetadata.sol";
+    ISeaDropTokenContractMetadata
+} from "./interfaces/ISeaDropTokenContractMetadata.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
-import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
+import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 /**
  * @title  ERC721ContractMetadata
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721ContractMetadata is a token contract that extends ERC721A
- *         with additional metadata and administrator capabilities.
+ *         with additional metadata and ownership capabilities.
  */
 contract ERC721ContractMetadata is
     ERC721A,
-    TwoStepAdministered,
-    IERC721ContractMetadata
+    TwoStepOwnable,
+    ISeaDropTokenContractMetadata
 {
     /// @notice Track the max supply.
     uint256 _maxSupply;
@@ -37,11 +37,9 @@ contract ERC721ContractMetadata is
      * @notice Deploy the token contract with its name, symbol,
      *         and an administrator.
      */
-    constructor(
-        string memory name,
-        string memory symbol,
-        address administrator
-    ) ERC721A(name, symbol) TwoStepAdministered(administrator) {}
+    constructor(string memory name, string memory symbol)
+        ERC721A(name, symbol)
+    {}
 
     /**
      * @notice Returns the base URI for token metadata.

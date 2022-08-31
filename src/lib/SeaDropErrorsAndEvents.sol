@@ -108,9 +108,9 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev Revert with an error if the sender does not
-     *      match the IERC721SeaDrop interface.
+     *      match the INonFungibleSeaDropToken interface.
      */
-    error OnlyIERC721SeaDrop(address sender);
+    error OnlyINonFungibleSeaDropToken(address sender);
 
     /**
      * @dev Revert with an error if the sender of a token gated supplied

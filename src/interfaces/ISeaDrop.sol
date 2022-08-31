@@ -182,7 +182,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
 
     /**
      * The following methods assume msg.sender is an nft contract
-     * and its ERC165 interface id matches IERC721SeaDrop.
+     * and its ERC165 interface id matches INonFungibleSeaDropToken.
      */
 
     /**
@@ -205,7 +205,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *         and emits an event.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement IERC721SeaDrop.
+     *         token contracts that implement INonFungibleSeaDropToken.
      *
      * @param allowListData The allow list data.
      */
@@ -215,7 +215,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
      *         token gated drop promotions for each other, they can be
      *         minted by the same actor until `maxTokenSupplyForStage`
      *         is reached. Please ensure the `allowedNftToken` is not

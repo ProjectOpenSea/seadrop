@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {
-    ERC721ContractMetadata,
-    IERC721ContractMetadata
-} from "./ERC721ContractMetadata.sol";
-
-import { IERC721SeaDrop } from "./interfaces/IERC721SeaDrop.sol";
+import { ERC721SeaDrop } from "./ERC721SeaDrop.sol";
 
 import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 
@@ -21,36 +16,31 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
 /**
  * @title  ERC721PartnerSeaDrop
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721PartnerSeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop, with additional administrative
- *         functionality for requirements around partnered drops.
+ *         functionality tailored for business requirements around partnered
+ *         mints with off-chain agreements in place between two parties.
+ *
+ *         The "Owner" should control mint specifics such as price and start
+ *         The "Administrator" should control fee parameters
+ *
+ *         Otherwise, for ease of administration, either Owner or Administrator
+ *         should be able to configure mint parameters. They have the ability
+ *         to override each other's actions in many circumstances, which is
+ *         why the establishment of off-chain trust is important.
+ *
+ *         Note: An Administrator is not required to interface with SeaDrop.
  */
-contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
-    /// @notice Track the allowed SeaDrop addresses.
-    mapping(address => bool) private _allowedSeaDrop;
-
-    /// @notice Track the enumerated allowed SeaDrop addresses.
-    address[] internal _enumeratedAllowedSeaDrop;
-
+contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     /// @notice To prevent Owner from overriding PublicDrop or
     //          TokenGatedDropStage fees, administrator must first
     //          initialize with fee.
     error AdministratorMustInitializeWithFee();
-
-    /**
-     * @notice Modifier to restrict access exclusively to
-     *         allowed SeaDrop contracts.
-     */
-    modifier onlyAllowedSeaDrop(address seaDrop) {
-        if (_allowedSeaDrop[seaDrop] != true) {
-            revert OnlySeaDrop();
-        }
-        _;
-    }
 
     /**
      * @notice Deploy the token contract with its name, symbol,
@@ -61,21 +51,10 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         string memory symbol,
         address administrator,
         address[] memory allowedSeaDrop
-    ) ERC721ContractMetadata(name, symbol, administrator) {
-        // Put the length on the stack for more efficient access.
-        uint256 allowedSeaDropLength = allowedSeaDrop.length;
-
-        // Set the mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            _allowedSeaDrop[allowedSeaDrop[i]] = true;
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Set the enumeration.
-        _enumeratedAllowedSeaDrop = allowedSeaDrop;
-    }
+    )
+        ERC721SeaDrop(name, symbol, allowedSeaDrop)
+        TwoStepAdministered(administrator)
+    {}
 
     /**
      * @notice Update the allowed SeaDrop contracts.
@@ -87,48 +66,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         override
         onlyOwnerOrAdministrator
     {
-        // Put the length on the stack for more efficient access.
-        uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
-            .length;
-        uint256 allowedSeaDropLength = allowedSeaDrop.length;
-
-        // Reset the old mapping.
-        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength; ) {
-            _allowedSeaDrop[_enumeratedAllowedSeaDrop[i]] = false;
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Set the new mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            _allowedSeaDrop[allowedSeaDrop[i]] = true;
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Set the enumeration.
-        _enumeratedAllowedSeaDrop = allowedSeaDrop;
-
-        // Emit an event for the update.
-        emit AllowedSeaDropUpdated(allowedSeaDrop);
-    }
-
-    /**
-     * @notice Mint tokens, restricted to the SeaDrop contract.
-     *
-     * @param minter   The address to mint to.
-     * @param quantity The number of tokens to mint.
-     */
-    function mintSeaDrop(address minter, uint256 quantity)
-        external
-        payable
-        override
-        onlyAllowedSeaDrop(msg.sender)
-    {
-        // Mint the quantity of tokens to the minter.
-        _mint(minter, quantity);
+        _updateAllowedSeaDrop(allowedSeaDrop);
     }
 
     /**
@@ -195,7 +133,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop. The administrator must first set `feeBps`.
      *
-     *         Note: If two IERC721SeaDrop tokens are doing simultaneous
+     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
      *         token gated drop promotions for each other, they can be
      *         minted by the same actor until `maxTokenSupplyForStage`
      *         is reached. Please ensure the `allowedNftToken` is not
@@ -260,21 +198,6 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     }
 
     /**
-     * @notice Update the creator payout address for this nft contract on SeaDrop.
-     *         Only the owner can set the creator payout address.
-     *
-     * @param seaDropImpl   The allowed SeaDrop contract.
-     * @param payoutAddress The new payout address.
-     */
-    function updateCreatorPayoutAddress(
-        address seaDropImpl,
-        address payoutAddress
-    ) external onlyOwner {
-        // Update the creator payout address.
-        ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
-    }
-
-    /**
      * @notice Update the allowed fee recipient for this nft contract
      *         on SeaDrop.
      *         Only the administrator can set the allowed fee recipient.
@@ -287,7 +210,7 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external onlyAdministrator {
+    ) external override onlyAdministrator {
         // Update the allowed fee recipient.
         ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
@@ -307,46 +230,5 @@ contract ERC721PartnerSeaDrop is ERC721ContractMetadata, IERC721SeaDrop {
     ) external virtual override onlyOwnerOrAdministrator {
         // Update the signers.
         ISeaDrop(seaDropImpl).updateSigner(signer, allowed);
-    }
-
-    /**
-     * @notice Returns a set of mint stats for the address.
-     *         This assists SeaDrop in enforcing maxSupply,
-     *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
-     *
-     * @param minter The minter address.
-     */
-    function getMintStats(address minter)
-        external
-        view
-        returns (
-            uint256 minterNumMinted,
-            uint256 currentTotalSupply,
-            uint256 maxSupply
-        )
-    {
-        minterNumMinted = _numberMinted(minter);
-        currentTotalSupply = totalSupply();
-        maxSupply = _maxSupply;
-    }
-
-    /**
-     * @notice Returns whether the interface is supported.
-     *
-     * @param interfaceId The interface id to check against.
-     */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(IERC165, ERC721A)
-        returns (bool)
-    {
-        return
-            interfaceId == type(IERC721SeaDrop).interfaceId ||
-            interfaceId == type(IERC721ContractMetadata).interfaceId ||
-            // ERC721A returns supportsInterface true for
-            // ERC165, ERC721, ERC721Metadata
-            super.supportsInterface(interfaceId);
     }
 }

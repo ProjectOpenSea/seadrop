@@ -52,7 +52,7 @@ contract TestSeaDrop is TestHelper {
         vm.startPrank(address(badToken));
         vm.expectRevert(
             abi.encodeWithSelector(
-                OnlyIERC721SeaDrop.selector,
+                OnlyINonFungibleSeaDropToken.selector,
                 address(badToken)
             )
         );

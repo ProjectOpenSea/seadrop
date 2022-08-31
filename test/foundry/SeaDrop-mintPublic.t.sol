@@ -7,7 +7,9 @@ import { SeaDrop } from "seadrop/SeaDrop.sol";
 
 import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
-import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+import {
+    INonFungibleSeaDropToken
+} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
 
 import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
 
@@ -249,7 +251,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
         vm.deal(args.minter, 100 ether);
-        vm.expectRevert(IERC721SeaDrop.OnlySeaDrop.selector);
+        vm.expectRevert(INonFungibleSeaDropToken.OnlySeaDrop.selector);
 
         token.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }
