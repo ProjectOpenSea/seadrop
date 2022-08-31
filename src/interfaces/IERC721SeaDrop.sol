@@ -72,6 +72,8 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
 
     /**
      * @notice Update allow list data for this nft contract on SeaDrop.
+     * 
+     *         Note: Be sure only authorized users can call this.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
