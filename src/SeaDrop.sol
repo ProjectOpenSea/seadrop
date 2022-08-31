@@ -17,6 +17,8 @@ import {
 
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
+import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
+
 import {
     IERC721
 } from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
@@ -40,7 +42,7 @@ import {
  *         with functionality for public, allow list, server-side signed,
  *         and token-gated drops.
  */
-contract SeaDrop is ISeaDrop {
+contract SeaDrop is ISeaDrop, ReentrancyGuard {
     using ECDSA for bytes32;
 
     /// @notice Track the public drops.
@@ -208,8 +210,8 @@ contract SeaDrop is ISeaDrop {
             publicDrop.restrictFeeRecipients
         );
 
-        // Split the payout, mint the token, emit an event.
-        _payAndMint(
+        // Mint the token(s), split the payout, emit an event.
+        _mintAndPay(
             nftContract,
             minter,
             quantity,
@@ -279,8 +281,8 @@ contract SeaDrop is ISeaDrop {
             revert InvalidProof();
         }
 
-        // Split the payout, mint the token, emit an event.
-        _payAndMint(
+        // Mint the token(s), split the payout, emit an event.
+        _mintAndPay(
             nftContract,
             minter,
             quantity,
@@ -354,8 +356,8 @@ contract SeaDrop is ISeaDrop {
             revert InvalidSignature(recoveredAddress);
         }
 
-        // Split the payout, mint the token, emit an event.
-        _payAndMint(
+        // Mint the token(s), split the payout, emit an event.
+        _mintAndPay(
             nftContract,
             minter,
             quantity,
@@ -458,8 +460,8 @@ contract SeaDrop is ISeaDrop {
             }
         }
 
-        // Split the payout, mint the token, emit an event.
-        _payAndMint(
+        // Mint the token(s), split the payout, emit an event.
+        _mintAndPay(
             nftContract,
             minter,
             mintQuantity,
@@ -629,7 +631,7 @@ contract SeaDrop is ISeaDrop {
     }
 
     /**
-     * @notice Splits the payment, mints a number of tokens,
+     * @notice Mints a number of tokens, splits the payment,
      *         and emits an event.
      *
      * @param nftContract    The nft contract.
@@ -640,7 +642,7 @@ contract SeaDrop is ISeaDrop {
      * @param feeBps         The fee basis points.
      * @param feeRecipient   The fee recipient.
      */
-    function _payAndMint(
+    function _mintAndPay(
         address nftContract,
         address minter,
         uint256 quantity,
@@ -648,7 +650,7 @@ contract SeaDrop is ISeaDrop {
         uint256 dropStageIndex,
         uint256 feeBps,
         address feeRecipient
-    ) internal {
+    ) internal nonReentrant {
         // Mint the token(s).
         INonFungibleSeaDropToken(nftContract).mintSeaDrop(minter, quantity);
 
@@ -656,6 +658,7 @@ contract SeaDrop is ISeaDrop {
             // Split the payment between the creator and fee recipient.
             _splitPayout(nftContract, feeRecipient, feeBps);
         }
+
         // Emit an event for the mint.
         emit SeaDropMint(
             nftContract,

@@ -7,3 +7,4 @@ pragma solidity 0.8.16;
  * feedback than running an extra yarn build.
  */
 import { TestERC721 } from "../test/TestERC721.sol";
+import { MaliciousRecipient } from "../test/MaliciousRecipient.sol";

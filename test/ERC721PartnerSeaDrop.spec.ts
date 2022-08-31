@@ -41,10 +41,9 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
     minter = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    await faucet(owner.address, provider);
-    await faucet(admin.address, provider);
-    await faucet(minter.address, provider);
-    await faucet(creator.address, provider);
+    for (const wallet of [owner, admin, minter, creator]) {
+      await faucet(wallet.address, provider);
+    }
 
     // Deploy SeaDrop
     const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
