@@ -10,7 +10,8 @@ pragma solidity 0.8.16;
  * @param startTime                The start time, ensure this is not zero.
  * @param endTIme                  The end time, ensure this is not zero.
  * @param maxTotalMintableByWallet Maximum total number of mints a user is
- *                                 allowed.
+ *                                 allowed. (The limit for this field is
+ *                                 2^16 - 1)
  * @param feeBps                   Fee out of 10_000 basis points to be
  *                                 collected.
  * @param restrictFeeRecipients    If false, allow any fee recipient;
@@ -38,7 +39,9 @@ struct PublicDrop {
  * 
  * @param mintPrice                The mint price per token. (Up to 1.2m 
  *                                 of native token, e.g.: ETH, MATIC)
- * @param maxTotalMintableByWallet The limit of items this wallet can mint.
+ * @param maxTotalMintableByWallet Maximum total number of mints a user is
+ *                                 allowed. (The limit for this field is
+ *                                 2^16 - 1)
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
  * @param dropStageIndex           The drop stage index to emit with the event
@@ -46,7 +49,8 @@ struct PublicDrop {
  *                                 non-zero since the public mint emits
  *                                 with index zero.
  * @param maxTokenSupplyForStage   The limit of token supply this stage can
- *                                 mint within.
+ *                                 mint within. (The limit for this field is
+ *                                 2^16 - 1)
  * @param feeBps                   Fee out of 10_000 basis points to be
  *                                 collected.
  * @param restrictFeeRecipients    If false, allow any fee recipient;
@@ -72,7 +76,8 @@ struct TokenGatedDropStage {
  *         that feeBps is acceptable before generating a proof.
  * 
  * @param mintPrice                The mint price per token.
- * @param maxTotalMintableByWallet The limit of items this wallet can mint.
+ * @param maxTotalMintableByWallet Maximum total number of mints a user is
+ *                                 allowed.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
  * @param dropStageIndex           The drop stage index to emit with the event
