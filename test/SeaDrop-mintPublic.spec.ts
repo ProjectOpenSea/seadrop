@@ -132,8 +132,10 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   it("Should not mint a public stage that hasn't started", async () => {
     // Set start time in the future.
-    publicDrop.startTime = Math.round(Date.now() / 1000) + 100;
-    await token.updatePublicDrop(seadrop.address, publicDrop);
+    await token.updatePublicDrop(seadrop.address, {
+      ...publicDrop,
+      startTime: Math.round(Date.now() / 1000) + 100,
+    });
 
     // Mint public with payer for minter.
     const value = BigNumber.from(publicDrop.mintPrice).mul(3);
@@ -161,8 +163,10 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   it("Should not mint a public stage that has ended", async () => {
     // Set start time in the future.
-    publicDrop.endTime = Math.round(Date.now() / 1000) - 10;
-    await token.updatePublicDrop(seadrop.address, publicDrop);
+    await token.updatePublicDrop(seadrop.address, {
+      ...publicDrop,
+      endTime: Math.round(Date.now() / 1000) - 100,
+    });
 
     // Mint public with payer for minter.
     const value = BigNumber.from(publicDrop.mintPrice).mul(3);
