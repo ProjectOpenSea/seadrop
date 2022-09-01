@@ -26,8 +26,8 @@ import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
  *         functionality tailored for business requirements around partnered
  *         mints with off-chain agreements in place between two parties.
  *
- *         The "Owner" should control mint specifics such as price and start
- *         The "Administrator" should control fee parameters
+ *         The "Owner" should control mint specifics such as price and start.
+ *         The "Administrator" should control fee parameters.
  *
  *         Otherwise, for ease of administration, either Owner or Administrator
  *         should be able to configure mint parameters. They have the ability
@@ -71,7 +71,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
 
     /**
      * @notice Update public drop data for this nft contract on SeaDrop.
-     *         Note: Only the administrator can update `feeBps`.
+     *         The administrator must first set `feeBps`.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
@@ -88,7 +88,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         // Track the newly supplied drop data.
         PublicDrop memory supplied = publicDrop;
 
-        // Only the administrator (OpenSea) should be able to set feeBps.
+        // Only the administrator (OpenSea) can set feeBps.
         if (msg.sender != administrator) {
             // Administrator must first set fee.
             if (retrieved.maxTotalMintableByWallet == 0) {
@@ -97,8 +97,9 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
             supplied.feeBps = retrieved.feeBps;
             supplied.restrictFeeRecipients = true;
         } else {
-            // administrator should only be able to initialize (maxtotalmintablebywallet > 0)
-            // and/or set feeBps/restrictFeeRecipients
+            // Administrator can only initialize
+            // (maxTotalMintableByWallet > 0) and set
+            // feeBps/restrictFeeRecipients.
             uint40 maxTotalMintableByWallet = retrieved
                 .maxTotalMintableByWallet;
             retrieved.maxTotalMintableByWallet = maxTotalMintableByWallet > 0
@@ -115,8 +116,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
 
     /**
      * @notice Update allow list data for this nft contract on SeaDrop.
-     *
-     *         Note: Only authorized users can call this.
+     *         Note: Only owner or administrator can call this.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
@@ -133,11 +133,12 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
      * @notice Update token gated drop stage data for this nft contract
      *         on SeaDrop. The administrator must first set `feeBps`.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
-     *         token gated drop promotions for each other, they can be
-     *         minted by the same actor until `maxTokenSupplyForStage`
-     *         is reached. Please ensure the `allowedNftToken` is not
-     *         running an active drop during the `dropStage` time period.
+     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         simultaneous token gated drop promotions for each other,
+     *         they can be minted by the same actor until
+     *         `maxTokenSupplyForStage` is reached. Please ensure the
+     *         `allowedNftToken` is not running an active drop during
+     *         the `dropStage` time period.
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -155,7 +156,8 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         // Track the newly supplied drop data.
         TokenGatedDropStage memory supplied = dropStage;
 
-        // Only the administrator (OpenSea) should be able to set feeBps on Partner contracts
+        // Only the administrator (OpenSea) can set feeBps on Partner
+        // contracts.
         if (msg.sender != administrator) {
             // Administrator must first set fee.
             if (retrieved.maxTotalMintableByWallet == 0) {
@@ -164,9 +166,9 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
             supplied.feeBps = retrieved.feeBps;
             supplied.restrictFeeRecipients = true;
         } else {
-            // administrator should only be able to initialize (maxtotalmintablebywallet > 0)
-            // and/or set feeBps/restrictFeeRecipients
-
+            // Administrator can only initialize
+            // (maxTotalMintableByWallet > 0) and set
+            // feeBps/restrictFeeRecipients.
             uint16 maxTotalMintableByWallet = retrieved
                 .maxTotalMintableByWallet;
             retrieved.maxTotalMintableByWallet = maxTotalMintableByWallet > 0

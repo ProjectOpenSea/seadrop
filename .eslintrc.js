@@ -27,8 +27,8 @@ module.exports = {
         allow: [
           "IERC165__factory",
           "IERC721__factory",
-          "IERC721SeaDrop__factory",
           "IERC721ContractMetadata__factory",
+          "INonFungibleSeaDropToken__factory",
         ],
       },
     ],

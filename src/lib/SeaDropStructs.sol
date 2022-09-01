@@ -70,7 +70,7 @@ struct TokenGatedDropStage {
  *         that feeBps is acceptable before generating a proof.
  * 
  * @param mintPrice                The mint price per token.
- * @param maxTotalMintableByWallet        The limit of items this wallet can mint.
+ * @param maxTotalMintableByWallet The limit of items this wallet can mint.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
  * @param dropStageIndex           The drop stage index to emit with the event
@@ -86,7 +86,7 @@ struct TokenGatedDropStage {
  */
 struct MintParams {
     uint256 mintPrice; 
-    uint256 maxTotalMintableByWallet       ;
+    uint256 maxTotalMintableByWallet;
     uint256 startTime;
     uint256 endTime;
     uint256 dropStageIndex; // non-zero

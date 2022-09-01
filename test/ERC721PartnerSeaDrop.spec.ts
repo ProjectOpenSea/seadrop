@@ -4,8 +4,8 @@ import { ethers, network } from "hardhat";
 import {
   IERC165__factory,
   IERC721ContractMetadata__factory,
-  INonFungibleSeaDropToken__factory,
   IERC721__factory,
+  INonFungibleSeaDropToken__factory,
 } from "../typechain-types";
 
 import { getInterfaceID, randomHex } from "./utils/encoding";
