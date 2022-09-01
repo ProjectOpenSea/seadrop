@@ -87,7 +87,13 @@ describe(`SeaDrop (v${VERSION})`, function () {
       feeBps: 1000,
       restrictFeeRecipients: false,
     };
-    await token.connect(admin).updatePublicDrop(seadrop.address, publicDrop);
+    await whileImpersonating(
+      token.address,
+      provider,
+      async (impersonatedSigner) => {
+        await seadrop.connect(impersonatedSigner).updatePublicDrop(publicDrop);
+      }
+    );
 
     const MaliciousRecipientFactory = await ethers.getContractFactory(
       "MaliciousRecipient",
@@ -101,10 +107,9 @@ describe(`SeaDrop (v${VERSION})`, function () {
       .updateCreatorPayoutAddress(seadrop.address, maliciousRecipient.address);
 
     // Should not be able to mint with reentrancy.
+    await maliciousRecipient.setStartAttack({ value: oneEther.mul(10) });
     await expect(
-      maliciousRecipient.attack(seadrop.address, token.address, {
-        value: oneEther.mul(2),
-      })
+      maliciousRecipient.attack(seadrop.address, token.address)
     ).to.be.revertedWith("ETH_TRANSFER_FAILED");
     expect(await token.totalSupply()).to.eq(0);
   });

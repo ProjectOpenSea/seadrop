@@ -4,6 +4,7 @@ import { ethers, network } from "hardhat";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
+import { whileImpersonating } from "./utils/impersonate";
 
 import type {
   ERC721PartnerSeaDrop,
@@ -70,7 +71,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Create the drop stage object.
     dropStage = {
-      mintPrice: "10000000000000",
+      mintPrice: "10000000000000000", // 0.01 ether
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
@@ -80,40 +81,16 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       restrictFeeRecipients: true,
     };
 
-    // Create a non-mintable drop stage object.
-    const zeroMintDropStage = {
-      ...dropStage,
-      maxTotalMintableByWallet: 0,
-      maxTokenSupplyForStage: 5,
-    };
-
-    // Expect the call to update the drop stage to revert since
-    // there is no existing drop stage.
-    await expect(
-      token
-        .connect(admin)
-        .updateTokenGatedDrop(
-          seadrop.address,
-          allowedNftToken.address,
-          zeroMintDropStage
-        )
-    ).to.be.revertedWith("TokenGatedDropStageNotPresent()");
-
-    // Expect the call to update the drop stage to revert since
-    // the admin must first initialize with fee.
-    await expect(
-      token
-        .connect(owner)
-        .updateTokenGatedDrop(
-          seadrop.address,
-          allowedNftToken.address,
-          zeroMintDropStage
-        )
-    ).to.be.revertedWith("AdministratorMustInitializeWithFee()");
-
     // Update the token gated drop for the deployed allowed NFT token.
     await token
       .connect(admin)
+      .updateTokenGatedDrop(
+        seadrop.address,
+        allowedNftToken.address,
+        dropStage
+      );
+    await token
+      .connect(owner)
       .updateTokenGatedDrop(
         seadrop.address,
         allowedNftToken.address,
@@ -508,22 +485,6 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   });
 
   it("Should not mint an allowed token holder stage after exceeding max token supply for stage", async () => {
-    // Create a non-mintable drop stage object.
-    const zeroMintDropStage = {
-      ...dropStage,
-      maxTotalMintableByWallet: 0,
-      maxTokenSupplyForStage: 5,
-    };
-
-    // Call updateTokenGatedDrop with a non-mintable drop stage for branch coverage.
-    await token
-      .connect(admin)
-      .updateTokenGatedDrop(
-        seadrop.address,
-        allowedNftToken.address,
-        zeroMintDropStage
-      );
-
     // Create a new drop stage object.
     const newDropStage = {
       ...dropStage,
@@ -534,6 +495,13 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     // Update the token gated drop for the deployed allowed NFT token.
     await token
       .connect(admin)
+      .updateTokenGatedDrop(
+        seadrop.address,
+        allowedNftToken.address,
+        newDropStage
+      );
+    await token
+      .connect(owner)
       .updateTokenGatedDrop(
         seadrop.address,
         allowedNftToken.address,
@@ -655,5 +623,38 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           feeBps: 15_000,
         })
     ).to.be.revertedWith("InvalidFeeBps");
+  });
+
+  it("Should revert when stage not present or fee not set", async () => {
+    // Create a non-mintable drop stage object.
+    const zeroMintDropStage = {
+      ...dropStage,
+      maxTotalMintableByWallet: 0,
+      maxTokenSupplyForStage: 5,
+    };
+
+    const token2 = `0x${"2".repeat(40)}`;
+
+    await whileImpersonating(
+      token.address,
+      provider,
+      async (impersonatedSigner) => {
+        // Expect the call to update the drop stage to revert since
+        // there is no existing drop stage.
+        await expect(
+          seadrop
+            .connect(impersonatedSigner)
+            .updateTokenGatedDrop(token2, zeroMintDropStage)
+        ).to.be.revertedWith("TokenGatedDropStageNotPresent()");
+      }
+    );
+
+    // Expect the call to update the drop stage to revert since
+    // the admin must first initialize with fee.
+    await expect(
+      token
+        .connect(owner)
+        .updateTokenGatedDrop(seadrop.address, token2, zeroMintDropStage)
+    ).to.be.revertedWith("AdministratorMustInitializeWithFee()");
   });
 });

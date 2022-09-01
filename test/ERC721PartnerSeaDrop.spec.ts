@@ -3,9 +3,9 @@ import { ethers, network } from "hardhat";
 
 import {
   IERC165__factory,
-  IERC721ContractMetadata__factory,
   IERC721__factory,
   INonFungibleSeaDropToken__factory,
+  ISeaDropTokenContractMetadata__factory,
 } from "../typechain-types";
 
 import { getInterfaceID, randomHex } from "./utils/encoding";
@@ -71,6 +71,7 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
 
   it("Should not be able to mint until the creator address is updated to non-zero", async () => {
     await token.connect(admin).updatePublicDrop(seadrop.address, publicDrop);
+    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
     await token.setMaxSupply(5);
 
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
@@ -168,11 +169,11 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
     )
       .to.emit(seadrop, "PublicDropUpdated")
       .withArgs(token.address, [
-        publicDrop.mintPrice,
-        publicDrop.startTime,
-        publicDrop.maxTotalMintableByWallet,
-        1000,
-        publicDrop.restrictFeeRecipients,
+        0, // mint price
+        0, // start time
+        1, // maxTotalMintableByWallet (1 = initialized)
+        1000, // fee bps
+        true, // restrict fee recipients
       ]);
 
     // Ensure public drop fee parameters were updated.
@@ -190,8 +191,8 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
         publicDrop.mintPrice,
         publicDrop.startTime,
         publicDrop.maxTotalMintableByWallet,
-        1000,
-        publicDrop.restrictFeeRecipients,
+        1000, // fee bps
+        true, // restrict fee recipients
       ]);
 
     // Ensure public drop fee parameters were not updated.
@@ -377,10 +378,10 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
     const supportedInterfacesERC721PartnerSeaDrop = [
       [
         INonFungibleSeaDropToken__factory,
-        IERC721ContractMetadata__factory,
+        ISeaDropTokenContractMetadata__factory,
         IERC165__factory,
       ],
-      [IERC721ContractMetadata__factory],
+      [ISeaDropTokenContractMetadata__factory],
     ];
     const supportedInterfacesERC721A = [
       [IERC721__factory, IERC165__factory],

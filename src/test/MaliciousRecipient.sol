@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import { ISeaDrop } from "../SeaDrop.sol";
+import { SeaDrop } from "../SeaDrop.sol";
 
 contract MaliciousRecipient {
     bool public startAttack;
     address public token;
-    ISeaDrop public seaDrop;
+    SeaDrop public seaDrop;
 
-    receive() external payable {
+    fallback() external payable {
         if (startAttack) {
             startAttack = false;
             seaDrop.mintPublic{ value: 1 ether }({
@@ -20,11 +20,14 @@ contract MaliciousRecipient {
         }
     }
 
-    // Call `attack` with at least 2 ether.
-    function attack(ISeaDrop _seaDrop, address _token) external payable {
+    // Also receive some eth in the process
+    function setStartAttack() public payable {
+        startAttack = true;
+    }
+
+    function attack(SeaDrop _seaDrop, address _token) external payable {
         token = _token;
         seaDrop = _seaDrop;
-        startAttack = true;
 
         _seaDrop.mintPublic{ value: 1 ether }({
             nftContract: _token,
@@ -34,6 +37,6 @@ contract MaliciousRecipient {
         });
 
         token = address(0);
-        seaDrop = ISeaDrop(address(0));
+        seaDrop = SeaDrop(address(0));
     }
 }

@@ -68,6 +68,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       restrictFeeRecipients: true,
     };
     await token.connect(admin).updatePublicDrop(seadrop.address, publicDrop);
+    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
     await token
       .connect(admin)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
