@@ -8,6 +8,7 @@ pragma solidity 0.8.16;
  * @param mintPrice                The mint price per token. (Up to 1.2m
  *                                 of native token, e.g. ETH, MATIC)
  * @param startTime                The start time, ensure this is not zero.
+ * @param endTIme                  The end time, ensure this is not zero.
  * @param maxTotalMintableByWallet Maximum total number of mints a user is
  *                                 allowed.
  * @param feeBps                   Fee out of 10_000 basis points to be
@@ -17,10 +18,11 @@ pragma solidity 0.8.16;
  */
 struct PublicDrop {
     uint80 mintPrice; // 80/256 bits
-    uint64 startTime; // 144/256 bits
-    uint40 maxTotalMintableByWallet; // 184/256 bits
-    uint16 feeBps; // 200/256 bits
-    bool restrictFeeRecipients; // 208/256 bits
+    uint48 startTime; // 128/256 bits
+    uint48 endTime; // 176/256 bits
+    uint16 maxTotalMintableByWallet; // 224/256 bits
+    uint16 feeBps; // 240/256 bits
+    bool restrictFeeRecipients; // 248/256 bits
 }
 
 /**
@@ -52,13 +54,13 @@ struct PublicDrop {
  */
 struct TokenGatedDropStage {
     uint80 mintPrice; // 80/256 bits
-    uint16 maxTotalMintableByWallet;
-    uint48 startTime;
-    uint48 endTime;
-    uint8 dropStageIndex; // non-zero
-    uint32 maxTokenSupplyForStage;
-    uint16 feeBps;
-    bool restrictFeeRecipients;
+    uint16 maxTotalMintableByWallet; // 96/256 bits
+    uint48 startTime; // 144/256 bits
+    uint48 endTime; // 192/256 bits
+    uint8 dropStageIndex; // non-zero. 200/256 bits
+    uint32 maxTokenSupplyForStage; // 232/256 bits
+    uint16 feeBps; // 248/256 bits
+    bool restrictFeeRecipients; // 256/256 bits
 }
 
 /**

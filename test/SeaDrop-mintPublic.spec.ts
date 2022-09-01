@@ -64,6 +64,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       mintPrice: "100000000000000000", // 0.1 ether
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 100,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -132,6 +133,35 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   it("Should not mint a public stage that hasn't started", async () => {
     // Set start time in the future.
     publicDrop.startTime = Math.round(Date.now() / 1000) + 100;
+    await token.updatePublicDrop(seadrop.address, publicDrop);
+
+    // Mint public with payer for minter.
+    const value = BigNumber.from(publicDrop.mintPrice).mul(3);
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 3, {
+          value,
+        })
+    ).to.be.revertedWith("NotActive");
+
+    // Mint public with minter being payer.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintPublic(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          3,
+          { value }
+        )
+    ).to.be.revertedWith("NotActive");
+  });
+
+  it("Should not mint a public stage that has ended", async () => {
+    // Set start time in the future.
+    publicDrop.endTime = Math.round(Date.now() / 1000) - 10;
     await token.updatePublicDrop(seadrop.address, publicDrop);
 
     // Mint public with payer for minter.

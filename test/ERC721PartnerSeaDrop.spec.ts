@@ -57,6 +57,7 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       mintPrice: "100000000000000000", // 0.1 ether
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 100,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -153,8 +154,8 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
     ).to.be.revertedWith("AdministratorMustInitializeWithFee()");
 
     // Ensure public drop fee parameters were not changed.
-    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(0);
-    expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(false);
+    expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(0);
+    expect((await seadrop.getPublicDrop(token.address))[5]).to.eq(false);
 
     // Now from the admin.
     await expect(
@@ -164,14 +165,15 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       .withArgs(token.address, [
         0, // mint price
         0, // start time
+        0, // end time
         1, // maxTotalMintableByWallet (1 = initialized)
         1000, // fee bps
         true, // restrict fee recipients
       ]);
 
     // Ensure public drop fee parameters were updated.
-    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(1000);
-    expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(true);
+    expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(1000);
+    expect((await seadrop.getPublicDrop(token.address))[5]).to.eq(true);
 
     // Now the owner should be able to update freely (without changing feeBps)
     await expect(
@@ -183,14 +185,15 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       .withArgs(token.address, [
         publicDrop.mintPrice,
         publicDrop.startTime,
+        publicDrop.endTime,
         publicDrop.maxTotalMintableByWallet,
         1000, // fee bps
         true, // restrict fee recipients
       ]);
 
     // Ensure public drop fee parameters were not updated.
-    expect((await seadrop.getPublicDrop(token.address))[3]).to.eq(1000);
-    expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(true);
+    expect((await seadrop.getPublicDrop(token.address))[4]).to.eq(1000);
+    expect((await seadrop.getPublicDrop(token.address))[5]).to.eq(true);
   });
 
   it("Should only let the admin update the allowed fee recipients", async () => {

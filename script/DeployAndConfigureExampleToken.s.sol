@@ -14,17 +14,17 @@ import { PublicDrop } from "../src/lib/SeaDropStructs.sol";
 contract DeployAndConfigureExampleToken is Script {
     // Addresses
     address seadrop = 0x2fb6FEB663c481E9854a251002C772FEad3974d6;
-    address creator = 0x8252cAcDf4318A65Fb061B0AFe127afe770b8067;
-    address feeRecipient = 0xf0E16c071E2cd421974dCb76d9af4DeDB578E059;
-    address minter = 0x6C1C4f642ab5611A46ee6F3ED95Bbf2E3Caf4D1c;
+    address creator = 0x26faf8AE18d15Ed1CA0563727Ad6D4Aa02fb2F80;
+    address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
+    address minter = 0xf0E16c071E2cd421974dCb76d9af4DeDB578E059;
 
     // Token config
-    uint256 maxSupply = 1000;
+    uint256 maxSupply = 100;
 
     // Drop config
-    uint16 feeBps = 100;
-    uint80 mintPrice = 10000000000000; // 0.00001 ether
-    uint40 maxTotalMintableByWallet = 10;
+    uint16 feeBps = 1000; // 10%
+    uint80 mintPrice = 100000000000000; // 0.0001 ether
+    uint16 maxTotalMintableByWallet = 10;
 
     function run() external {
         vm.startBroadcast();
@@ -49,7 +49,8 @@ contract DeployAndConfigureExampleToken is Script {
             seadrop,
             PublicDrop(
                 mintPrice,
-                uint64(block.timestamp),
+                uint48(block.timestamp),
+                uint48(block.timestamp) + 1000,
                 maxTotalMintableByWallet,
                 feeBps,
                 true

@@ -67,8 +67,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -119,8 +119,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -198,8 +198,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -272,8 +272,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0 ether, // mint price (free)
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -320,8 +320,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -376,8 +376,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -434,8 +434,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)

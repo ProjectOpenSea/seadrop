@@ -6,8 +6,6 @@ import { PublicDrop, TokenGatedDropStage } from "./SeaDropStructs.sol";
 interface SeaDropErrorsAndEvents {
     /**
      * @dev Revert with an error if the drop stage is not active.
-     *      Note: publicDrop stores no end time, so it will emit
-     *      with endTimestamp of `type(uint64).max`.
      */
     error NotActive(
         uint256 currentTimestamp,

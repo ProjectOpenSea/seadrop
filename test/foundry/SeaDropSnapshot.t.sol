@@ -69,7 +69,8 @@ contract TestSeaDropSnapshot is TestHelper {
         // Create the public drop stage.
         PublicDrop memory publicDrop = PublicDrop(
             0.1 ether, // mint price
-            uint64(block.timestamp), // start time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 100, // end time
             10, // max mints per wallet
             100, // fee (1%)
             false // if false, allow any fee recipient

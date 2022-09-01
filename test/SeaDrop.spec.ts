@@ -84,6 +84,7 @@ describe(`SeaDrop (v${VERSION})`, function () {
       mintPrice: oneEther,
       maxTotalMintableByWallet: 1,
       startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 100,
       feeBps: 1000,
       restrictFeeRecipients: false,
     };

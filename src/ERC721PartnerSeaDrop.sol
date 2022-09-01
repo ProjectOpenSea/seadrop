@@ -100,7 +100,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
             // Administrator can only initialize
             // (maxTotalMintableByWallet > 0) and set
             // feeBps/restrictFeeRecipients.
-            uint40 maxTotalMintableByWallet = retrieved
+            uint16 maxTotalMintableByWallet = retrieved
                 .maxTotalMintableByWallet;
             retrieved.maxTotalMintableByWallet = maxTotalMintableByWallet > 0
                 ? maxTotalMintableByWallet
