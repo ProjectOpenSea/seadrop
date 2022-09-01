@@ -1,14 +1,7 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
-import {
-  IERC165__factory,
-  IERC721__factory,
-  INonFungibleSeaDropToken__factory,
-  ISeaDropTokenContractMetadata__factory,
-} from "../typechain-types";
-
-import { getInterfaceID, randomHex } from "./utils/encoding";
+import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
@@ -354,55 +347,5 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
     await expect(token.connect(admin).updateAllowedSeaDrop([seadrop.address]))
       .to.emit(token, "AllowedSeaDropUpdated")
       .withArgs([seadrop.address]);
-  });
-
-  it("Should only let allowed seadrop call seaDropMint", async () => {
-    await whileImpersonating(
-      seadrop.address,
-      provider,
-      async (impersonatedSigner) => {
-        await expect(
-          token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
-        )
-          .to.emit(token, "Transfer")
-          .withArgs(ethers.constants.AddressZero, minter.address, 0);
-      }
-    );
-
-    await expect(
-      token.connect(owner).mintSeaDrop(minter.address, 1)
-    ).to.be.revertedWith("OnlySeaDrop");
-  });
-
-  it("Should return supportsInterface true for supported interfaces", async () => {
-    const supportedInterfacesERC721PartnerSeaDrop = [
-      [
-        INonFungibleSeaDropToken__factory,
-        ISeaDropTokenContractMetadata__factory,
-        IERC165__factory,
-      ],
-      [ISeaDropTokenContractMetadata__factory],
-    ];
-    const supportedInterfacesERC721A = [
-      [IERC721__factory, IERC165__factory],
-      [IERC165__factory],
-    ];
-
-    for (const factories of [
-      ...supportedInterfacesERC721PartnerSeaDrop,
-      ...supportedInterfacesERC721A,
-    ]) {
-      const interfaceId = factories
-        .map((factory) => getInterfaceID(factory.createInterface()))
-        .reduce((prev, curr) => prev.xor(curr))
-        .toHexString();
-      expect(await token.supportsInterface(interfaceId)).to.be.true;
-    }
-
-    // Ensure invalid interfaces return false.
-    const invalidInterfaceIds = ["0x00000000", "0x10000000", "0x00000001"];
-    for (const interfaceId of invalidInterfaceIds) {
-      expect(await token.supportsInterface(interfaceId)).to.be.false;
-    }
   });
 });

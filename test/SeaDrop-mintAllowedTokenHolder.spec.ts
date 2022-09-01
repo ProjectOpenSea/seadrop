@@ -657,4 +657,19 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         .updateTokenGatedDrop(seadrop.address, token2, zeroMintDropStage)
     ).to.be.revertedWith("AdministratorMustInitializeWithFee()");
   });
+
+  it("Should clear from enumeration when deleted", async () => {
+    await token
+      .connect(owner)
+      .updateTokenGatedDrop(seadrop.address, allowedNftToken.address, {
+        ...dropStage,
+        maxTotalMintableByWallet: 0,
+      });
+    expect(await seadrop.getTokenGatedAllowedTokens(token.address)).to.deep.eq(
+      []
+    );
+    expect(
+      await seadrop.getTokenGatedDrop(token.address, allowedNftToken.address)
+    ).to.deep.eq([ethers.BigNumber.from(0), 0, 0, 0, 0, 0, 0, false]);
+  });
 });
