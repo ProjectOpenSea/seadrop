@@ -28,7 +28,7 @@ contract ERC721ContractMetadata is
     uint256 _maxSupply;
 
     /// @notice Track the base URI for token metadata.
-    string _theBaseURI;
+    string _tokenBaseURI;
 
     /// @notice Track the contract URI for contract metadata.
     string _contractURI;
@@ -161,7 +161,7 @@ contract ERC721ContractMetadata is
         onlyOwner
     {
         // Set the new base URI.
-        _theBaseURI = newBaseURI;
+        _tokenBaseURI = newBaseURI;
 
         // Emit an event with the update.
         emit BaseURIUpdated(newBaseURI);
@@ -172,6 +172,6 @@ contract ERC721ContractMetadata is
      *         to return tokenURI.
      */
     function _baseURI() internal view virtual override returns (string memory) {
-        return _theBaseURI;
+        return _tokenBaseURI;
     }
 }

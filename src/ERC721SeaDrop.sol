@@ -86,6 +86,11 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         _updateAllowedSeaDrop(allowedSeaDrop);
     }
 
+    /**
+     * @notice Internal function to update the allowed SeaDrop contracts.
+     *
+     * @param allowedSeaDrop The allowed SeaDrop addresses.
+     */
     function _updateAllowedSeaDrop(address[] calldata allowedSeaDrop) internal {
         // Put the length on the stack for more efficient access.
         uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
