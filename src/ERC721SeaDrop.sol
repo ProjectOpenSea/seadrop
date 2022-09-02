@@ -264,7 +264,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
     ) external virtual override onlyOwner {
-        // Update the signers.
+        // Update the signer.
         ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
             signer,
             signedMintValidationParams

@@ -233,11 +233,11 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
     ) external virtual override onlyOwnerOrAdministrator {
-        // Track the previous drop stage data.
+        // Track the previous signed mint validation params.
         SignedMintValidationParams memory retrieved = ISeaDrop(seaDropImpl)
             .getSignedMintValidationParams(address(this), signer);
 
-        // Track the newly supplied drop data.
+        // Track the newly supplied params.
         SignedMintValidationParams memory supplied = signedMintValidationParams;
 
         // Only the administrator (OpenSea) can set feeBps on Partner
@@ -264,7 +264,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
             supplied = retrieved;
         }
 
-        // Update the token gated drop stage.
+        // Update the signed mint validation params.
         ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
             signer,
             supplied

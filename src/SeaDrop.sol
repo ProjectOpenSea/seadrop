@@ -395,7 +395,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     }
 
     /**
-     * @notice Enforce stored parameters for signed mints to mitigate the effects of a malicious signer
+     * @notice Enforce stored parameters for signed mints to mitigate
+     *         the effects of a malicious signer.
      */
     function _validateSignerAndParams(
         address nftContract,
@@ -406,12 +407,14 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             memory signedMintValidationParams = _signedMintValidationParams[
                 nftContract
             ][signer];
-        // check that SignedMintValidationParams have been initialized; if not,
-        // this is an invalid signer
+
+        // Check that SignedMintValidationParams have been initialized; if not,
+        // this is an invalid signer.
         if (signedMintValidationParams.maxMaxTotalMintableByWallet == 0) {
             revert InvalidSignature(signer);
         }
-        // validate individual params
+
+        // Validate individual params.
         if (mintParams.mintPrice < signedMintValidationParams.minMintPrice) {
             revert InvalidSignedMintPrice(
                 mintParams.mintPrice,
@@ -890,7 +893,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     }
 
     /**
-     * @notice Returns the struct of SignedMintValidationParams for a signer, if any
+     * @notice Returns the struct of SignedMintValidationParams for a signer.
      *
      * @param nftContract The nft contract.
      * @param signer      The signer.
@@ -1168,10 +1171,10 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             revert SignerCannotBeZeroAddress();
         }
 
-        if (signedMintValidationParams.minFeeBps > 10000) {
+        if (signedMintValidationParams.minFeeBps > 10_000) {
             revert InvalidFeeBps(signedMintValidationParams.minFeeBps);
         }
-        if (signedMintValidationParams.maxFeeBps > 10000) {
+        if (signedMintValidationParams.maxFeeBps > 10_000) {
             revert InvalidFeeBps(signedMintValidationParams.maxFeeBps);
         }
 

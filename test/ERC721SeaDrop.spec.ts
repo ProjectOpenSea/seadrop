@@ -343,13 +343,31 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         .updateTokenGatedDrop(seadrop.address, `0x${"4".repeat(40)}`, dropStage)
     ).to.be.revertedWith("OnlyOwner");
 
+    const signedMintValidationParams = {
+      minMintPrice: 10,
+      maxMaxTotalMintableByWallet: 5,
+      minStartTime: 50,
+      maxEndTime: 100,
+      maxMaxTokenSupplyForStage: 100,
+      minFeeBps: 5,
+      maxFeeBps: 1000,
+    };
+
     // Test `updateSigner` for coverage.
-    await token.updateSigner(seadrop.address, `0x${"5".repeat(40)}`, true);
+    await token.updateSignedMintValidationParams(
+      seadrop.address,
+      `0x${"5".repeat(40)}`,
+      signedMintValidationParams
+    );
 
     await expect(
       token
         .connect(creator)
-        .updateSigner(seadrop.address, `0x${"5".repeat(40)}`, true)
+        .updateSignedMintValidationParams(
+          seadrop.address,
+          `0x${"5".repeat(40)}`,
+          signedMintValidationParams
+        )
     ).to.be.revertedWith("OnlyOwner");
 
     // Test `updatePayer` for coverage.
@@ -358,7 +376,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await expect(
       token
         .connect(creator)
-        .updateSigner(seadrop.address, `0x${"6".repeat(40)}`, true)
+        .updateSignedMintValidationParams(
+          seadrop.address,
+          `0x${"6".repeat(40)}`,
+          signedMintValidationParams
+        )
     ).to.be.revertedWith("OnlyOwner");
   });
 

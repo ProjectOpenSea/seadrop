@@ -169,43 +169,43 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev Revert with an error if supplied signed mint price is less than
-     *      minimum specified
+     *      the minimum specified.
      */
     error InvalidSignedMintPrice(uint256 got, uint256 minimum);
 
     /**
      * @dev Revert with an error if supplied signed maxTotalMintableByWallet
-     *      is greater than maximum specified
+     *      is greater than the maximum specified.
      */
     error InvalidSignedMaxTotalMintableByWallet(uint256 got, uint256 maximum);
 
     /**
      * @dev Revert with an error if supplied signed start time is less than
-     *      minimum specified
+     *      the minimum specified.
      */
     error InvalidSignedStartTime(uint256 got, uint256 minimum);
     
     /**
      * @dev Revert with an error if supplied signed end time is greater than
-     *      maximum specified
+     *      the maximum specified.
      */
     error InvalidSignedEndTime(uint256 got, uint256 maximum);
 
     /**
      * @dev Revert with an error if supplied signed maxTokenSupplyForStage
-     *      is greater than maximum specified
+     *      is greater than the maximum specified.
      */
      error InvalidSignedMaxTokenSupplyForStage(uint256 got, uint256 maximum);
     
      /**
      * @dev Revert with an error if supplied signed feeBps is greater than
-     *      maximum specified, or less than the minimum
+     *      the maximum specified, or less than the minimum.
      */
     error InvalidSignedFeeBps(uint256 got, uint256 minimumOrMaximum);
 
     /**
      * @dev Revert with an error if signed mint did not specify to restrict
-     *      fee recipients
+     *      fee recipients.
      */
     error SignedMintsMustRestrictFeeRecipients();
 
