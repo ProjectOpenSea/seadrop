@@ -143,6 +143,7 @@ contract ERC721ContractMetadata is
         if (newMaxSupply > 2**64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
+
         // Set the new max supply.
         _maxSupply = newMaxSupply;
 
