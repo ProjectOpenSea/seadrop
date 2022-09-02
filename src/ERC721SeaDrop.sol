@@ -121,6 +121,17 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
     }
 
     /**
+     * @dev Overrides the `_startTokenId` function from ERC721A
+     *      to start at token id `1`.
+     *
+     *      This is to avoid future possible problems since `0` is usually
+     *      used to signal values that have not been set or have been removed.
+     */
+    function _startTokenId() internal view virtual override returns (uint256) {
+        return 1;
+    }
+
+    /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
      *
      * @param minter   The address to mint to.

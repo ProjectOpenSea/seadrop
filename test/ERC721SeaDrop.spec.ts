@@ -225,7 +225,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
         )
           .to.emit(token, "Transfer")
-          .withArgs(ethers.constants.AddressZero, minter.address, 0);
+          .withArgs(ethers.constants.AddressZero, minter.address, 1);
       }
     );
 
