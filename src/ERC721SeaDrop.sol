@@ -31,10 +31,6 @@ import {
  *         to properly interact with SeaDrop
  */
 contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
-    /// @notice Throw if the mint quantity plus the current supply exceeds
-    ///         the max supply of the token.
-    error CannotExceedMaxSupply(uint256 quantity, uint256 maxSupply);
-
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) internal _allowedSeaDrop;
 
@@ -131,12 +127,6 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         override
         onlyAllowedSeaDrop(msg.sender)
     {
-        // Ensure the total supply of the token following mint is less than
-        // 2**64.
-        if (quantity + totalSupply() > 2**64 - 1) {
-            revert CannotExceedMaxSupply(quantity + totalSupply(), 2**64 - 1);
-        }
-
         // Mint the quantity of tokens to the minter.
         _mint(minter, quantity);
     }

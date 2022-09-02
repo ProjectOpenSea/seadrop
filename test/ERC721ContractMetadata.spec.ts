@@ -80,6 +80,14 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.maxSupply()).to.equal(5);
   });
 
+  it("Should not let the owner set the max supply over 2**64", async () => {
+    await expect(
+      token.connect(owner).setMaxSupply(ethers.BigNumber.from(2).pow(70))
+    ).to.be.revertedWith(
+      `CannotExceedMaxSupplyOfUint64(${ethers.BigNumber.from(2).pow(70)})`
+    );
+  });
+
   it("Should only let the owner notify update of batch token URIs", async () => {
     await expect(
       token.connect(admin).emitBatchTokenURIUpdated(5, 10)

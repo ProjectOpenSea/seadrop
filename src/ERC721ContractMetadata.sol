@@ -20,6 +20,10 @@ contract ERC721ContractMetadata is
     TwoStepOwnable,
     ISeaDropTokenContractMetadata
 {
+    /// @notice Throw if the mint quantity plus the current supply exceeds
+    ///         the max supply of the token.
+    error CannotExceedMaxSupplyOfUint64(uint256 quantity);
+
     /// @notice Track the max supply.
     uint256 _maxSupply;
 
@@ -135,6 +139,10 @@ contract ERC721ContractMetadata is
      * @param newMaxSupply The new max supply to set.
      */
     function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
+        // Ensure the max supply does not exceed the maximum value of uint64.
+        if (newMaxSupply > 2**64) {
+            revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
+        }
         // Set the new max supply.
         _maxSupply = newMaxSupply;
 
