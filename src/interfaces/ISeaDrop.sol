@@ -159,6 +159,28 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (SignedMintValidationParams memory);
 
     /**
+     * @notice Returns the payers for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getPayers(address nftContract)
+        external
+        view
+        returns (address[] memory);
+
+    /**
+     * @notice Returns if the specified payer is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     * @param payer       The payer.
+     */
+    function getPayerIsAllowed(address nftContract, address payer)
+        external
+        view
+        returns (bool);
+
+    /**
      * @notice Returns the allowed token gated drop tokens for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -249,10 +271,19 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the allowed server-side signers and emits an event.
      *
      * @param signer                     The signer to update.
-     * @param signedMintValidationParams Struct of minimum and maximum mint params to enforce.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
      */
     function updateSignedMintValidationParams(
         address signer,
         SignedMintValidationParams calldata signedMintValidationParams
     ) external;
+
+    /**
+     * @notice Updates the allowed payer and emits an event.
+     *
+     * @param payer  The payer to add or remove.
+     * @param allowed Whether to add or remove the payer.
+     */
+    function updatePayer(address payer, bool allowed) external;
 }

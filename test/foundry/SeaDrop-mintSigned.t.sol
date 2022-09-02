@@ -38,7 +38,7 @@ contract SeaDropMintSignedTest is TestHelper {
         vm.assume(
             args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
         );
-        vm.assume(args.minter != address(0));
+        vm.assume(args.minter != address(0) && args.payer != address(0));
         _;
     }
 
@@ -108,6 +108,9 @@ contract SeaDropMintSignedTest is TestHelper {
         seadrop.updateAllowedFeeRecipient(args.feeRecipient, true);
         vm.stopPrank();
 
+        // Allow the payer.
+        token.updatePayer(address(seadrop), args.payer, true);
+
         hoax(args.payer, 100 ether);
 
         // Calculate the value to send with the transaction.
@@ -173,11 +176,14 @@ contract SeaDropMintSignedTest is TestHelper {
 
         vm.stopPrank();
 
-        hoax(args.payer, 100 ether);
+        // Allow the payer.
+        token.updatePayer(address(seadrop), args.payer, true);
+        token2.updatePayer(address(seadrop), args.payer, true);
 
         // Calculate the value to send with the transaction.
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
+        hoax(args.payer, 100 ether);
         seadrop.mintSigned{ value: mintValue }(
             address(token),
             args.feeRecipient,
@@ -203,6 +209,7 @@ contract SeaDropMintSignedTest is TestHelper {
                 )
             );
         }
+        hoax(args.payer, 100 ether);
         seadrop.mintSigned{ value: mintValue }(
             address(token2),
             args.feeRecipient,
@@ -256,7 +263,8 @@ contract SeaDropMintSignedTest is TestHelper {
             vm.stopPrank();
         }
 
-        hoax(args.payer, 100 ether);
+        // Allow the payer.
+        token.updatePayer(address(seadrop), args.payer, true);
 
         // Calculate the value to send with the transaction.
         address badFeeRecipient;
@@ -282,6 +290,7 @@ contract SeaDropMintSignedTest is TestHelper {
             abi.encodeWithSelector(InvalidSignature.selector, expectedRecovered)
         );
 
+        hoax(args.payer, 100 ether);
         seadrop.mintSigned{ value: args.numMints * mintParams.mintPrice }(
             address(token),
             badFeeRecipient,
@@ -330,6 +339,9 @@ contract SeaDropMintSignedTest is TestHelper {
         );
         seadrop.updateAllowedFeeRecipient(args.feeRecipient, true);
         vm.stopPrank();
+
+        // Allow the payer.
+        token.updatePayer(address(seadrop), args.payer, true);
 
         hoax(args.payer, 100 ether);
 
@@ -381,6 +393,9 @@ contract SeaDropMintSignedTest is TestHelper {
             signer,
             signedMintValidationParams
         );
+
+        // Allow the payer.
+        token.updatePayer(address(seadrop), args.payer, true);
 
         hoax(args.payer, 100 ether);
 
@@ -442,7 +457,7 @@ contract SeaDropMintSignedTest is TestHelper {
 
         address expectedRecovered = makeAddr(signerSeed);
 
-        vm.deal(msg.sender, 100 ether);
+        hoax(msg.sender, 100 ether);
 
         // Expect the subsequent call to mintSigned to revert with error
         // InvalidSignature
@@ -503,6 +518,9 @@ contract SeaDropMintSignedTest is TestHelper {
         );
         seadrop.updateAllowedFeeRecipient(feeRecipient, true);
         vm.stopPrank();
+
+        // Allow the payer.
+        token.updatePayer(address(seadrop), payer, true);
 
         hoax(payer, 100 ether);
 

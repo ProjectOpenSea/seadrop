@@ -259,6 +259,24 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
+    // The payer needs to be allowed first.
+    await expect(
+      seadrop
+        .connect(owner)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          mintParams,
+          proof,
+          { value }
+        )
+    ).to.be.revertedWith("PayerNotAllowed");
+
+    // Allow the payer.
+    await token.updatePayer(seadrop.address, owner.address, true);
+
     // Mint an allow list stage with a different payer than minter.
     await expect(
       seadrop
@@ -317,14 +335,29 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
     const nonMinter = new ethers.Wallet(randomHex(32), provider);
+    await faucet(nonMinter.address, provider);
 
     await expect(
       seadrop
-        .connect(owner)
+        .connect(nonMinter)
         .mintAllowList(
           token.address,
           feeRecipient.address,
           nonMinter.address,
+          mintQuantity,
+          mintParams,
+          proof,
+          { value }
+        )
+    ).to.be.revertedWith("InvalidProof()");
+
+    await expect(
+      seadrop
+        .connect(nonMinter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
           mintQuantity,
           mintParams,
           proof,
@@ -367,7 +400,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(owner)
+        .connect(minter)
         .mintAllowList(
           token.address,
           invalidFeeRecipient.address,
@@ -431,11 +464,11 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(owner)
+        .connect(minter)
         .mintAllowList(
           differentToken.address,
           feeRecipient.address,
-          minter.address,
+          ethers.constants.AddressZero,
           mintQuantity,
           mintParams,
           proof,
@@ -482,7 +515,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(owner)
+        .connect(minter)
         .mintAllowList(
           token.address,
           feeRecipient.address,

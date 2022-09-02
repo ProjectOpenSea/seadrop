@@ -351,5 +351,54 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         .connect(creator)
         .updateSigner(seadrop.address, `0x${"5".repeat(40)}`, true)
     ).to.be.revertedWith("OnlyOwner");
+
+    // Test `updatePayer` for coverage.
+    await token.updatePayer(seadrop.address, `0x${"6".repeat(40)}`, true);
+
+    await expect(
+      token
+        .connect(creator)
+        .updateSigner(seadrop.address, `0x${"6".repeat(40)}`, true)
+    ).to.be.revertedWith("OnlyOwner");
+  });
+
+  it("Should be able to update the allowed payers", async () => {
+    const payer = new ethers.Wallet(randomHex(32), provider);
+    const payer2 = new ethers.Wallet(randomHex(32), provider);
+    await faucet(payer.address, provider);
+    await faucet(payer2.address, provider);
+
+    await expect(
+      token.updatePayer(seadrop.address, payer.address, false)
+    ).to.be.revertedWith("PayerNotPresent");
+
+    await token.updatePayer(seadrop.address, payer.address, true);
+
+    // Ensure that the same payer cannot be added twice.
+    await expect(
+      token.updatePayer(seadrop.address, payer.address, true)
+    ).to.be.revertedWith("DuplicatePayer()");
+
+    // Ensure that the zero address cannot be added as a payer.
+    await expect(
+      token.updatePayer(seadrop.address, ethers.constants.AddressZero, true)
+    ).to.be.revertedWith("PayerCannotBeZeroAddress()");
+
+    // Remove the original payer for branch coverage.
+    await token.updatePayer(seadrop.address, payer.address, false);
+    expect(await seadrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
+      false
+    );
+
+    // Add two signers and remove the second for branch coverage.
+    await token.updatePayer(seadrop.address, payer.address, true);
+    await token.updatePayer(seadrop.address, payer2.address, true);
+    await token.updatePayer(seadrop.address, payer2.address, false);
+    expect(await seadrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
+      true
+    );
+    expect(
+      await seadrop.getPayerIsAllowed(token.address, payer2.address)
+    ).to.eq(false);
   });
 });

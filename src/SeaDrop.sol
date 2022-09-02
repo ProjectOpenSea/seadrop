@@ -68,6 +68,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /// @notice Track the signers for each server-side drop.
     mapping(address => address[]) private _enumeratedSigners;
 
+    /// @notice Track the allowed payers.
+    mapping(address => mapping(address => bool)) private _allowedPayers;
+
+    /// @notice Track the enumerated allowed payers.
+    mapping(address => address[]) private _enumeratedPayers;
+
     /// @notice Track the token gated drop stages.
     mapping(address => mapping(address => TokenGatedDropStage))
         private _tokenGatedDrops;
@@ -195,6 +201,13 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             ? minterIfNotPayer
             : msg.sender;
 
+        // Ensure the payer is allowed if not the minter.
+        if (minter != msg.sender) {
+            if (!_allowedPayers[nftContract][msg.sender]) {
+                revert PayerNotAllowed();
+            }
+        }
+
         // Check that the minter is allowed to mint the desired quantity.
         _checkMintQuantity(
             nftContract,
@@ -254,6 +267,13 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         address minter = minterIfNotPayer != address(0)
             ? minterIfNotPayer
             : msg.sender;
+
+        // Ensure the payer is allowed if not the minter.
+        if (minter != msg.sender) {
+            if (!_allowedPayers[nftContract][msg.sender]) {
+                revert PayerNotAllowed();
+            }
+        }
 
         // Check that the minter is allowed to mint the desired quantity.
         _checkMintQuantity(
@@ -323,6 +343,13 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         address minter = minterIfNotPayer != address(0)
             ? minterIfNotPayer
             : msg.sender;
+
+        // Ensure the payer is allowed if not the minter.
+        if (minter != msg.sender) {
+            if (!_allowedPayers[nftContract][msg.sender]) {
+                revert PayerNotAllowed();
+            }
+        }
 
         // Check that the minter is allowed to mint the desired quantity.
         _checkMintQuantity(
@@ -458,6 +485,13 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         address minter = minterIfNotPayer != address(0)
             ? minterIfNotPayer
             : msg.sender;
+
+        // Ensure the payer is allowed if not the minter.
+        if (minter != msg.sender) {
+            if (!_allowedPayers[nftContract][msg.sender]) {
+                revert PayerNotAllowed();
+            }
+        }
 
         // Put the allowedNftToken on the stack for more efficient access.
         address allowedNftToken = mintParams.allowedNftToken;
@@ -870,6 +904,34 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     }
 
     /**
+     * @notice Returns the payers for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getPayers(address nftContract)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _enumeratedPayers[nftContract];
+    }
+
+    /**
+     * @notice Returns if the specified payer is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     * @param payer       The payer.
+     */
+    function getPayerIsAllowed(address nftContract, address payer)
+        external
+        view
+        returns (bool)
+    {
+        return _allowedPayers[nftContract][payer];
+    }
+
+    /**
      * @notice Returns the allowed token gated drop tokens for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -1095,7 +1157,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @notice Updates the allowed server-side signers and emits an event.
      *
      * @param signer                     The signer to update.
-     * @param signedMintValidationParams Struct of minimum and maximum mint params to enforce.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
      */
     function updateSignedMintValidationParams(
         address signer,
@@ -1156,6 +1219,42 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             signer,
             signedMintValidationParams
         );
+    }
+
+    /**
+     * @notice Updates the allowed payer and emits an event.
+     *
+     * @param payer  The payer to add or remove.
+     * @param allowed Whether to add or remove the payer.
+     */
+    function updatePayer(address payer, bool allowed)
+        external
+        onlyINonFungibleSeaDropToken
+    {
+        if (payer == address(0)) {
+            revert PayerCannotBeZeroAddress();
+        }
+
+        // Track the enumerated storage.
+        address[] storage enumeratedStorage = _enumeratedPayers[msg.sender];
+        mapping(address => bool) storage payersMap = _allowedPayers[msg.sender];
+
+        if (allowed) {
+            if (payersMap[payer]) {
+                revert DuplicatePayer();
+            }
+            payersMap[payer] = true;
+            enumeratedStorage.push(payer);
+        } else {
+            if (!payersMap[payer]) {
+                revert PayerNotPresent();
+            }
+            delete _allowedPayers[msg.sender][payer];
+            _removeFromEnumeration(payer, enumeratedStorage);
+        }
+
+        // Emit an event with the update.
+        emit PayerUpdated(msg.sender, payer, allowed);
     }
 
     /**

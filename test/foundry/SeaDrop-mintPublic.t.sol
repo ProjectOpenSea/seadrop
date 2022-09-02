@@ -173,6 +173,9 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
 
         address payer = makeAddr("payer");
 
+        // Allow the payer.
+        token.updatePayer(address(seadrop), payer, true);
+
         vm.assume(
             payer != creator &&
                 payer != args.minter &&

@@ -82,9 +82,10 @@ interface SeaDropErrorsAndEvents {
     error InvalidProof();
 
     /**
-     * @dev Revert if a supplied signer address is the zero address
+     * @dev Revert if a supplied signer address is the zero address.
      */
     error SignerCannotBeZeroAddress();
+
     /**
      * @dev Revert with an error if signer's signature is invalid.
      */
@@ -95,6 +96,31 @@ interface SeaDropErrorsAndEvents {
      *      the enumeration when removing.
      */
     error SignerNotPresent();
+
+    /**
+     * @dev Revert with an error if a payer is not included in
+     *      the enumeration when removing.
+     */
+    error PayerNotPresent();
+
+    /**
+     * @dev Revert with an error if a payer is already included in mapping
+     *      when adding.
+     *      Note: only applies when adding a single payer, as duplicates in
+     *      enumeration can be removed with updatePayer.
+     */
+    error DuplicatePayer();
+
+    /**
+     * @dev Revert with an error if the payer is not allowed. The minter must
+     *      pay for their own mint.
+     */
+    error PayerNotAllowed();
+
+    /**
+     * @dev Revert if a supplied payer address is the zero address.
+     */
+    error PayerCannotBeZeroAddress();
 
     /**
      * @dev Revert with an error if the sender does not
@@ -271,11 +297,20 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev An event with the updated validation parameters for server-side
-     *      signers
+     *      signers.
      */
     event SignedMintValidationParamsUpdated(
         address indexed nftContract,
         address indexed signer,
         SignedMintValidationParams signedMintValidationParams
     );   
+
+    /**
+     * @dev An event with the updated payer for an nft contract.
+     */
+    event PayerUpdated(
+        address indexed nftContract,
+        address indexed payer,
+        bool indexed allowed
+    );
 }

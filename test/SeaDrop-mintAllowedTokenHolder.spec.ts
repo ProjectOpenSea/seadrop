@@ -147,6 +147,24 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
+    // The payer must be allowed first.
+    await expect(
+      seadrop
+        .connect(owner)
+        .mintAllowedTokenHolder(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintParams,
+          { value: dropStage.mintPrice }
+        )
+    ).to.be.revertedWith("PayerNotAllowed");
+
+    // Allow the payer.
+    await token
+      .connect(owner)
+      .updatePayer(seadrop.address, owner.address, true);
+
     await expect(
       seadrop
         .connect(owner)
@@ -195,7 +213,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(owner)
+        .connect(minter)
         .mintAllowedTokenHolder(
           token.address,
           feeRecipient.address,
@@ -208,7 +226,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         token.address,
         minter.address,
         feeRecipient.address,
-        owner.address,
+        minter.address,
         1, // mint quantity
         0, // free
         dropStage.feeBps,
@@ -319,14 +337,12 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const mostRecentBlockTimestamp = mostRecentBlock.timestamp;
 
     await expect(
-      seadrop
-        .connect(owner)
-        .mintAllowedTokenHolder(
-          token.address,
-          feeRecipient.address,
-          minter.address,
-          mintParams
-        )
+      seadrop.mintAllowedTokenHolder(
+        token.address,
+        feeRecipient.address,
+        ethers.constants.AddressZero,
+        mintParams
+      )
     ).to.be.revertedWith(
       `NotActive(${mostRecentBlockTimestamp + 1}, ${dropStage.startTime}, ${
         dropStageExpired.endTime

@@ -108,9 +108,8 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
-
         // Mint a token to the first address of the allowList.
+        hoax(args.allowList[0], 100 ether);
         seadrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
@@ -236,7 +235,9 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        // Allow the payer.
+        token.updatePayer(address(seadrop), args.allowList[0], true);
+        hoax(args.allowList[0], 100 ether);
 
         // Proof refers to address at allowList[0], so assume
         // it is not the same address as minting for allowList[4]
@@ -305,7 +306,7 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        hoax(args.allowList[0], 100 ether);
 
         // Expect the subsequent call to mintAllowList to revert with error
         // FeeRecipientCannotBeZeroAddress
@@ -371,7 +372,7 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        hoax(args.allowList[0], 100 ether);
 
         // Expect the subsequent call to mintAllowList to revert with error
         // FeeRecipientNotAllowed
@@ -437,7 +438,7 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = 100 * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        hoax(args.allowList[0], 100 ether);
 
         // Expect the subsequent call to mintAllowList to revert with error
         // MintQuantityExceedsMaxMintedPerWallet
@@ -522,6 +523,4 @@ contract ERC721DropTest is TestHelper {
         // Check minter token balance increased.
         assertEq(token.balanceOf(args.allowList[0]), args.numMints);
     }
-
-    // testMintAllowList_differentPayerThanMinter
 }

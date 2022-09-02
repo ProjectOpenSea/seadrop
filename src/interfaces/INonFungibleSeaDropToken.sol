@@ -146,12 +146,25 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
      *
      * @param seaDropImpl                The allowed SeaDrop contract.
      * @param signer                     The signer to update.
-     * @param signedMintValidationParams Minimum and maximum parameters to enforce
-     *                                   for signed mints.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
      */
     function updateSignedMintValidationParams(
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
+    ) external;
+
+    /**
+     * @notice Update the allowed payers for this nft contract on SeaDrop.
+     *
+     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param payer       The payer to update.
+     * @param allowed     Whether the payer is allowed.
+     */
+    function updatePayer(
+        address seaDropImpl,
+        address payer,
+        bool allowed
     ) external;
 }

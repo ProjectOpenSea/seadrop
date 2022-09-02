@@ -159,6 +159,9 @@ contract ERC721DropTest is TestHelper {
         // Derive an address to call the transaction with.
         address payer = makeAddr("payer");
 
+        // Allow the payer.
+        token.updatePayer(address(seadrop), payer, true);
+
         hoax(payer, 100 ether);
 
         // Call mintAllowedTokenHolder as the payer.
@@ -211,6 +214,7 @@ contract ERC721DropTest is TestHelper {
         uint256 mintValue = args.numMints * dropStage.mintPrice;
 
         // Call mintAllowedTokenHolder.
+        hoax(args.minter, 100 ether);
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
@@ -233,6 +237,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to call mintAllowedTokenHolder with the
         // TokenGatedMintParams from the previous call.
+        hoax(args.minter, 100 ether);
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
@@ -277,6 +282,7 @@ contract ERC721DropTest is TestHelper {
         );
 
         // Call mintAllowedTokenHolder.
+        hoax(args.minter, 100 ether);
         seadrop.mintAllowedTokenHolder(
             address(token),
             args.feeRecipient,
@@ -329,6 +335,7 @@ contract ERC721DropTest is TestHelper {
         // Create an address to attempt to mint the tokens to, that doesn't
         // own the allowed NFT tokens.
         address notOwner = makeAddr("not owner");
+        hoax(notOwner, 100 ether);
 
         // Expect the call to fail since the notOwner address does not own
         // the allowed NFT tokens.
@@ -392,6 +399,7 @@ contract ERC721DropTest is TestHelper {
             abi.encodeWithSelector(FeeRecipientNotAllowed.selector)
         );
         // Attempt to call mintAllowedTokenHolder with a fee recipient.
+        hoax(args.minter, 100 ether);
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
