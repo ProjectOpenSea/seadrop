@@ -11,7 +11,8 @@ import {
     MintParams,
     PublicDrop,
     TokenGatedDropStage,
-    TokenGatedMintParams
+    TokenGatedMintParams,
+    SignedMintValidationParams
 } from "seadrop/lib/SeaDropStructs.sol";
 import { Merkle } from "murky/Merkle.sol";
 
@@ -39,6 +40,7 @@ contract TestSeaDropSnapshot is TestHelper {
     bytes signature;
     bytes signature2098;
     MintParams mintParams;
+    SignedMintValidationParams signedMintValidationParams;
 
     address admin = makeAddr("admin");
 
@@ -119,9 +121,15 @@ contract TestSeaDropSnapshot is TestHelper {
         snapshotToken.updateAllowList(address(seadrop), allowListData);
 
         _configureTokenGated();
-        _configureSigner();
 
         tokenGatedEligible.mint(address(this), 1);
+
+        signedMintValidationParams.maxEndTime = type(uint40).max;
+        signedMintValidationParams.maxMaxTotalMintableByWallet = type(uint16)
+            .max;
+        signedMintValidationParams.maxMaxTokenSupplyForStage = type(uint16).max;
+        signedMintValidationParams.maxFeeBps = 10000;
+        _configureSigner();
     }
 
     function _configureTokenGated() internal {
@@ -150,7 +158,17 @@ contract TestSeaDropSnapshot is TestHelper {
 
     function _configureSigner() internal {
         address signer = makeAddr("signer");
-        snapshotToken.updateSigner(address(seadrop), signer, true);
+        vm.prank(admin);
+        snapshotToken.updateSignedMintValidationParams(
+            address(seadrop),
+            signer,
+            signedMintValidationParams
+        );
+        snapshotToken.updateSignedMintValidationParams(
+            address(seadrop),
+            signer,
+            signedMintValidationParams
+        );
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
             "signer",
             address(snapshotToken),

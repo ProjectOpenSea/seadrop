@@ -8,7 +8,8 @@ import {
 import {
     AllowListData,
     PublicDrop,
-    TokenGatedDropStage
+    TokenGatedDropStage,
+    SignedMintValidationParams
 } from "../lib/SeaDropStructs.sol";
 
 import {
@@ -143,13 +144,14 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
      *         on SeaDrop.
      *         Only an authorized user should be able to update the signers.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
-     * @param signer      The signer to update.
-     * @param allowed     Whether signatures are allowed from this signer.
+     * @param seaDropImpl                The allowed SeaDrop contract.
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters to enforce
+     *                                   for signed mints.
      */
-    function updateSigner(
+    function updateSignedMintValidationParams(
         address seaDropImpl,
         address signer,
-        bool allowed
+        SignedMintValidationParams memory signedMintValidationParams
     ) external;
 }

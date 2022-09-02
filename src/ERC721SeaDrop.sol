@@ -15,7 +15,8 @@ import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 import {
     AllowListData,
     PublicDrop,
-    TokenGatedDropStage
+    TokenGatedDropStage,
+    SignedMintValidationParams
 } from "./lib/SeaDropStructs.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
@@ -235,17 +236,22 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
     /**
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
-     * @param seaDropImpl The allowed SeaDrop contract.
-     * @param signer      The signer to update.
-     * @param allowed     Whether signatures are allowed from this signer.
+     *         Only the owner or administrator can update the signers.
+     * @param seaDropImpl                The allowed SeaDrop contract.
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters to enforce
+     *                                   for signed mints.
      */
-    function updateSigner(
+    function updateSignedMintValidationParams(
         address seaDropImpl,
         address signer,
-        bool allowed
+        SignedMintValidationParams memory signedMintValidationParams
     ) external virtual override onlyOwner {
         // Update the signers.
-        ISeaDrop(seaDropImpl).updateSigner(signer, allowed);
+        ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
     }
 
     /**

@@ -128,13 +128,23 @@ struct AllowListData {
 }
 
 /**
- * @notice TODO add notice and param docs if this struct is added and used.
+ * @notice A struct defining minimum and maximum parameters to validate for 
+ *         signed mints, to minimize negative affects of a compromised signer.
+ *
+ * @param minMintPrice                The minimum mint price allowed.
+ * @param maxMaxTotalMintableByWallet The maximum total number of mints allowed
+ *                                    by a wallet.
+ * @param minStartTime                The minimum start time allowed.
+ * @param maxEndTime                  The maximum end time allowed.
+ * @param maxMaxtokenSupplyForStage   The maximum token supply allowed.
+ * @param maxFeeBps                   The maximum fee allowed.
  */
-struct SignedMintParams {
-    uint80 minMintPrice;
-    uint24 maxMaxTotalMintableByWallet;
-    uint48 minStartTime;
-    uint48 maxEndTime;
-    uint32 maxMaxTokenSupplyForStage;
-    uint16 maxFeeBps;
+struct SignedMintValidationParams {
+    uint80 minMintPrice; // 80/256
+    uint24 maxMaxTotalMintableByWallet; // 104/256
+    uint40 minStartTime; // 144/256
+    uint40 maxEndTime; // 184/256
+    uint40 maxMaxTokenSupplyForStage; // 224/256
+    uint16 minFeeBps; // 240/256
+    uint16 maxFeeBps; // 256/256
 }

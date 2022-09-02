@@ -8,7 +8,8 @@ import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
 import {
     AllowListData,
     PublicDrop,
-    TokenGatedDropStage
+    TokenGatedDropStage,
+    SignedMintValidationParams
 } from "./lib/SeaDropStructs.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
@@ -221,16 +222,51 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
      *         Only the owner or administrator can update the signers.
-     * @param seaDropImpl The allowed SeaDrop contract.
-     * @param signer      The signer to update.
-     * @param allowed     Whether signatures are allowed from this signer.
+     * @param seaDropImpl                The allowed SeaDrop contract.
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters to enforce
+     *                                   for signed mints.
      */
-    function updateSigner(
+    function updateSignedMintValidationParams(
         address seaDropImpl,
         address signer,
-        bool allowed
+        SignedMintValidationParams memory signedMintValidationParams
     ) external virtual override onlyOwnerOrAdministrator {
-        // Update the signers.
-        ISeaDrop(seaDropImpl).updateSigner(signer, allowed);
+        // Track the previous drop stage data.
+        SignedMintValidationParams memory retrieved = ISeaDrop(seaDropImpl)
+            .getSignedMintValidationParams(address(this), signer);
+
+        // Track the newly supplied drop data.
+        SignedMintValidationParams memory supplied = signedMintValidationParams;
+
+        // Only the administrator (OpenSea) can set feeBps on Partner
+        // contracts.
+        if (msg.sender != administrator) {
+            // Administrator must first set fee.
+            if (retrieved.maxMaxTotalMintableByWallet == 0) {
+                revert AdministratorMustInitializeWithFee();
+            }
+            supplied.minFeeBps = retrieved.minFeeBps;
+            supplied.maxFeeBps = retrieved.maxFeeBps;
+        } else {
+            // Administrator can only initialize
+            // (maxTotalMintableByWallet > 0) and set
+            // feeBps/restrictFeeRecipients.
+            uint24 maxMaxTotalMintableByWallet = retrieved
+                .maxMaxTotalMintableByWallet;
+            retrieved
+                .maxMaxTotalMintableByWallet = maxMaxTotalMintableByWallet > 0
+                ? maxMaxTotalMintableByWallet
+                : 1;
+            retrieved.minFeeBps = supplied.minFeeBps;
+            retrieved.maxFeeBps = supplied.maxFeeBps;
+            supplied = retrieved;
+        }
+
+        // Update the token gated drop stage.
+        ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
+            signer,
+            supplied
+        );
     }
 }

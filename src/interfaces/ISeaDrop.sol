@@ -6,7 +6,8 @@ import {
     MintParams,
     PublicDrop,
     TokenGatedDropStage,
-    TokenGatedMintParams
+    TokenGatedMintParams,
+    SignedMintValidationParams
 } from "../lib/SeaDropStructs.sol";
 
 import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
@@ -147,16 +148,15 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (address[] memory);
 
     /**
-     * @notice Returns if the specified signer is allowed
-     *         for the nft contract.
+     * @notice Returns the struct of SignedMintValidationParams for a signer, if any
      *
      * @param nftContract The nft contract.
      * @param signer      The signer.
      */
-    function getSignerIsAllowed(address nftContract, address signer)
+    function getSignedMintValidationParams(address nftContract, address signer)
         external
         view
-        returns (bool);
+        returns (SignedMintValidationParams memory);
 
     /**
      * @notice Returns the allowed token gated drop tokens for the nft contract.
@@ -248,8 +248,11 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     * @param signer  The signer to update.
-     * @param allowed Whether signatures are allowed from this signer.
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Struct of minimum and maximum mint params to enforce.
      */
-    function updateSigner(address signer, bool allowed) external;
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams calldata signedMintValidationParams
+    ) external;
 }

@@ -12,7 +12,8 @@ import {
     MintParams,
     PublicDrop,
     TokenGatedDropStage,
-    TokenGatedMintParams
+    TokenGatedMintParams,
+    SignedMintValidationParams
 } from "./lib/SeaDropStructs.sol";
 
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
@@ -60,8 +61,9 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /// @notice Track the enumerated allowed fee recipients.
     mapping(address => address[]) private _enumeratedFeeRecipients;
 
-    /// @notice Track the allowed signers for server-side drops.
-    mapping(address => mapping(address => bool)) private _signers;
+    /// @notice Track the parameters for allowed signers for server-side drops.
+    mapping(address => mapping(address => SignedMintValidationParams))
+        private _signedMintValidationParams;
 
     /// @notice Track the signers for each server-side drop.
     mapping(address => address[]) private _enumeratedSigners;
@@ -351,9 +353,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         // Note that if the digest doesn't exactly match what was signed we'll
         // get a random recovered address.
         address recoveredAddress = digest.recover(signature);
-        if (!_signers[nftContract][recoveredAddress]) {
-            revert InvalidSignature(recoveredAddress);
-        }
+        _validateSignerAndParams(nftContract, mintParams, recoveredAddress);
 
         // Mint the token(s), split the payout, emit an event.
         _mintAndPay(
@@ -365,6 +365,77 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             mintParams.feeBps,
             feeRecipient
         );
+    }
+
+    /**
+     * @notice Enforce stored parameters for signed mints to mitigate the effects of a malicious signer
+     */
+    function _validateSignerAndParams(
+        address nftContract,
+        MintParams memory mintParams,
+        address signer
+    ) internal view {
+        SignedMintValidationParams
+            memory signedMintValidationParams = _signedMintValidationParams[
+                nftContract
+            ][signer];
+        // check that SignedMintValidationParams have been initialized; if not,
+        // this is an invalid signer
+        if (signedMintValidationParams.maxMaxTotalMintableByWallet == 0) {
+            revert InvalidSignature(signer);
+        }
+        // validate individual params
+        if (mintParams.mintPrice < signedMintValidationParams.minMintPrice) {
+            revert InvalidSignedMintPrice(
+                mintParams.mintPrice,
+                signedMintValidationParams.minMintPrice
+            );
+        }
+        if (
+            mintParams.maxTotalMintableByWallet >
+            signedMintValidationParams.maxMaxTotalMintableByWallet
+        ) {
+            revert InvalidSignedMaxTotalMintableByWallet(
+                mintParams.maxTotalMintableByWallet,
+                signedMintValidationParams.maxMaxTotalMintableByWallet
+            );
+        }
+        if (mintParams.startTime < signedMintValidationParams.minStartTime) {
+            revert InvalidSignedStartTime(
+                mintParams.startTime,
+                signedMintValidationParams.minStartTime
+            );
+        }
+        if (mintParams.endTime > signedMintValidationParams.maxEndTime) {
+            revert InvalidSignedEndTime(
+                mintParams.endTime,
+                signedMintValidationParams.maxEndTime
+            );
+        }
+        if (
+            mintParams.maxTokenSupplyForStage >
+            signedMintValidationParams.maxMaxTokenSupplyForStage
+        ) {
+            revert InvalidSignedMaxTokenSupplyForStage(
+                mintParams.maxTokenSupplyForStage,
+                signedMintValidationParams.maxMaxTokenSupplyForStage
+            );
+        }
+        if (mintParams.feeBps > signedMintValidationParams.maxFeeBps) {
+            revert InvalidSignedFeeBps(
+                mintParams.feeBps,
+                signedMintValidationParams.maxFeeBps
+            );
+        }
+        if (mintParams.feeBps < signedMintValidationParams.minFeeBps) {
+            revert InvalidSignedFeeBps(
+                mintParams.feeBps,
+                signedMintValidationParams.minFeeBps
+            );
+        }
+        if (!mintParams.restrictFeeRecipients) {
+            revert SignedMintsMustRestrictFeeRecipients();
+        }
     }
 
     /**
@@ -785,18 +856,17 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     }
 
     /**
-     * @notice Returns if the specified signer is allowed
-     *         for the nft contract.
+     * @notice Returns the struct of SignedMintValidationParams for a signer, if any
      *
      * @param nftContract The nft contract.
      * @param signer      The signer.
      */
-    function getSignerIsAllowed(address nftContract, address signer)
+    function getSignedMintValidationParams(address nftContract, address signer)
         external
         view
-        returns (bool)
+        returns (SignedMintValidationParams memory)
     {
-        return _signers[nftContract][signer];
+        return _signedMintValidationParams[nftContract][signer];
     }
 
     /**
@@ -1024,37 +1094,68 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     * @param signer  The signer to add or remove.
-     * @param allowed Whether to add or remove the signer.
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Struct of minimum and maximum mint params to enforce.
      */
-    function updateSigner(address signer, bool allowed)
-        external
-        onlyINonFungibleSeaDropToken
-    {
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams calldata signedMintValidationParams
+    ) external onlyINonFungibleSeaDropToken {
         if (signer == address(0)) {
             revert SignerCannotBeZeroAddress();
         }
 
+        if (signedMintValidationParams.minFeeBps > 10000) {
+            revert InvalidFeeBps(signedMintValidationParams.minFeeBps);
+        }
+        if (signedMintValidationParams.maxFeeBps > 10000) {
+            revert InvalidFeeBps(signedMintValidationParams.maxFeeBps);
+        }
+
         // Track the enumerated storage.
         address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
-        mapping(address => bool) storage signersMap = _signers[msg.sender];
+        mapping(address => SignedMintValidationParams)
+            storage signedMintValidationParamsMap = _signedMintValidationParams[
+                msg.sender
+            ];
 
-        if (allowed) {
-            if (signersMap[signer]) {
-                revert DuplicateSigner();
+        SignedMintValidationParams
+            storage existingSignedMintValidationParams = signedMintValidationParamsMap[
+                signer
+            ];
+
+        bool signedMintValidationParamsDoNotExist;
+        assembly {
+            signedMintValidationParamsDoNotExist := iszero(
+                sload(existingSignedMintValidationParams.slot)
+            )
+        }
+        // use maxMaxTotalMintableByWallet as sentry for add/update or delete
+        bool addOrUpdate = signedMintValidationParams
+            .maxMaxTotalMintableByWallet > 0;
+
+        if (addOrUpdate) {
+            signedMintValidationParamsMap[signer] = signedMintValidationParams;
+            if (signedMintValidationParamsDoNotExist) {
+                enumeratedStorage.push(signer);
             }
-            signersMap[signer] = true;
-            enumeratedStorage.push(signer);
         } else {
-            if (!signersMap[signer]) {
+            if (
+                signedMintValidationParamsMap[signer]
+                    .maxMaxTotalMintableByWallet == 0
+            ) {
                 revert SignerNotPresent();
             }
-            delete _signers[msg.sender][signer];
+            delete _signedMintValidationParams[msg.sender][signer];
             _removeFromEnumeration(signer, enumeratedStorage);
         }
 
         // Emit an event with the update.
-        emit SignerUpdated(msg.sender, signer, allowed);
+        emit SignedMintValidationParamsUpdated(
+            msg.sender,
+            signer,
+            signedMintValidationParams
+        );
     }
 
     /**

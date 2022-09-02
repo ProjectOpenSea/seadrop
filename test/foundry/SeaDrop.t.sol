@@ -11,7 +11,8 @@ import {
     MintParams,
     PublicDrop,
     TokenGatedDropStage,
-    TokenGatedMintParams
+    TokenGatedMintParams,
+    SignedMintValidationParams
 } from "seadrop/lib/SeaDropStructs.sol";
 
 contract TestSeaDrop is TestHelper {
@@ -21,6 +22,9 @@ contract TestSeaDrop is TestHelper {
     TokenGatedDropStage remove;
     TokenGatedDropStage add;
     TokenGatedDropStage update;
+    SignedMintValidationParams addSigned;
+    SignedMintValidationParams updateSigned;
+    SignedMintValidationParams removeSigned;
 
     struct FuzzSelector {
         address targetAddress;
@@ -37,6 +41,8 @@ contract TestSeaDrop is TestHelper {
         badToken = new TestERC721();
         add.maxTotalMintableByWallet = 1;
         update.maxTotalMintableByWallet = 2;
+        addSigned.maxMaxTotalMintableByWallet = 1;
+        updateSigned.maxMaxTotalMintableByWallet = 2;
     }
 
     function testUpdateDropURI() public {
@@ -64,10 +70,10 @@ contract TestSeaDrop is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(SignerCannotBeZeroAddress.selector)
         );
-        seadrop.updateSigner(address(0), true);
+        seadrop.updateSignedMintValidationParams(address(0), addSigned);
     }
 
-    function testUpdateSigner(
+    function testupdateSignedMintValidationParams(
         address signer1,
         address signer2,
         address signer3
@@ -81,60 +87,147 @@ contract TestSeaDrop is TestHelper {
 
         vm.startPrank(address(token));
 
-        seadrop.updateSigner(signer1, true);
+        seadrop.updateSignedMintValidationParams(signer1, addSigned);
         address[] memory signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 1);
         assertEq(signers[0], signer1);
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer1)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer2)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer3)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
 
-        seadrop.updateSigner(signer2, true);
+        seadrop.updateSignedMintValidationParams(signer2, addSigned);
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 2);
         assertEq(signers[0], signer1);
         assertEq(signers[1], signer2);
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer1)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer2)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer3)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
 
-        seadrop.updateSigner(signer3, true);
+        seadrop.updateSignedMintValidationParams(signer3, addSigned);
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 3);
         assertEq(signers[0], signer1);
         assertEq(signers[1], signer2);
         assertEq(signers[2], signer3);
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer3));
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer1)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer2)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer3)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
 
         // remove signer after
-        seadrop.updateSigner(signer2, false);
+        seadrop.updateSignedMintValidationParams(signer2, removeSigned);
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 2);
         assertEq(signers[0], signer1);
         assertEq(signers[1], signer3);
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer1));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer3));
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer1)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer2)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer3)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
 
-        seadrop.updateSigner(signer1, false);
+        seadrop.updateSignedMintValidationParams(signer1, removeSigned);
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 1);
         assertEq(signers[0], signer3);
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer1));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertTrue(seadrop.getSignerIsAllowed(address(token), signer3));
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer1)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer2)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer3)
+                .maxMaxTotalMintableByWallet,
+            1
+        );
 
-        seadrop.updateSigner(signer3, false);
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
+        seadrop.updateSignedMintValidationParams(signer3, removeSigned);
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer1)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer2)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
+        assertEq(
+            seadrop
+                .getSignedMintValidationParams(address(token), signer3)
+                .maxMaxTotalMintableByWallet,
+            0
+        );
         signers = seadrop.getSigners(address(token));
         assertEq(signers.length, 0);
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer1));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer2));
-        assertFalse(seadrop.getSignerIsAllowed(address(token), signer3));
     }
 
     function testUpdateAllowedFeeRecipient(

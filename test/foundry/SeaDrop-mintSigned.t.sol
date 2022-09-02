@@ -5,15 +5,19 @@ import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
 import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
-import { MintParams } from "seadrop/lib/SeaDropStructs.sol";
+import {
+    MintParams,
+    SignedMintValidationParams
+} from "seadrop/lib/SeaDropStructs.sol";
 
 import {
     ECDSA
 } from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 
-contract ERC721DropTest is TestHelper {
+contract SeaDropMintSignedTest is TestHelper {
     using ECDSA for bytes32;
     ERC721PartnerSeaDrop token2;
+    SignedMintValidationParams signedMintValidationParams;
 
     event Transfer(
         address indexed from,
@@ -57,6 +61,11 @@ contract ERC721DropTest is TestHelper {
         // Set the creator payout address.
         token.updateCreatorPayoutAddress(address(seadrop), creator);
         token2.updateCreatorPayoutAddress(address(seadrop), creator);
+        signedMintValidationParams.maxEndTime = type(uint40).max;
+        signedMintValidationParams.maxMaxTotalMintableByWallet = type(uint24)
+            .max;
+        signedMintValidationParams.maxMaxTokenSupplyForStage = type(uint24).max;
+        signedMintValidationParams.maxFeeBps = 10000;
     }
 
     function testMintSigned(FuzzInputsSigners memory args)
@@ -72,7 +81,7 @@ contract ERC721DropTest is TestHelper {
             1,
             1000,
             100, // fee (1%)
-            false // if false, allow any fee recipient
+            true // if false, allow any fee recipient
         );
 
         // Get the signature components.
@@ -91,9 +100,13 @@ contract ERC721DropTest is TestHelper {
 
         // Update the approved signers of the token contract.
         address signer = makeAddr(args.signerNameSeed);
-        vm.prank(address(token));
-
-        seadrop.updateSigner(signer, true);
+        vm.startPrank(address(token));
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(args.feeRecipient, true);
+        vm.stopPrank();
 
         hoax(args.payer, 100 ether);
 
@@ -124,7 +137,7 @@ contract ERC721DropTest is TestHelper {
             1,
             1000,
             100, // fee (1%)
-            false // if false, allow any fee recipient
+            true // if false, allow any fee recipient
         );
 
         // Get the signature components.
@@ -143,12 +156,22 @@ contract ERC721DropTest is TestHelper {
 
         // Update the approved signers of the token contract.
         address signer = makeAddr(args.signerNameSeed);
-        vm.prank(address(token));
+        vm.startPrank(address(token));
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(args.feeRecipient, true);
+        vm.stopPrank();
 
-        seadrop.updateSigner(signer, true);
+        vm.startPrank(address(token2));
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(args.feeRecipient, true);
 
-        vm.prank(address(token2));
-        seadrop.updateSigner(signer, true);
+        vm.stopPrank();
 
         hoax(args.payer, 100 ether);
 
@@ -223,9 +246,14 @@ contract ERC721DropTest is TestHelper {
         // Update the approved signers of the token contract.
         {
             address signer = makeAddr(args.signerNameSeed);
-            vm.prank(address(token));
+            vm.startPrank(address(token));
 
-            seadrop.updateSigner(signer, true);
+            seadrop.updateSignedMintValidationParams(
+                signer,
+                signedMintValidationParams
+            );
+            seadrop.updateAllowedFeeRecipient(args.feeRecipient, true);
+            vm.stopPrank();
         }
 
         hoax(args.payer, 100 ether);
@@ -277,7 +305,7 @@ contract ERC721DropTest is TestHelper {
             1,
             1000,
             100, // fee (1%)
-            false // if false, allow any fee recipient
+            true // if false, allow any fee recipient
         );
 
         // Get the signature components.
@@ -293,11 +321,15 @@ contract ERC721DropTest is TestHelper {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         // Impersonate the token contract to update the signers.
-        vm.prank(address(token));
-
+        vm.startPrank(address(token));
         // Update the approved signers of the token contract.
         address signer = makeAddr(args.signerNameSeed);
-        seadrop.updateSigner(signer, true);
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(args.feeRecipient, true);
+        vm.stopPrank();
 
         hoax(args.payer, 100 ether);
 
@@ -345,7 +377,10 @@ contract ERC721DropTest is TestHelper {
 
         // Update the approved signers of the token contract.
         address signer = makeAddr(args.signerNameSeed);
-        seadrop.updateSigner(signer, true);
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
 
         hoax(args.payer, 100 ether);
 
@@ -400,7 +435,10 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
         // Update the approved signers of the token contract.
         address signer = makeAddr("good seed");
-        seadrop.updateSigner(signer, true);
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
 
         address expectedRecovered = makeAddr(signerSeed);
 
@@ -439,7 +477,7 @@ contract ERC721DropTest is TestHelper {
             1,
             1000,
             100, // fee (1%)
-            false // restrictFeeRecipient
+            true // restrictFeeRecipient
         );
         address feeRecipient = address(1);
 
@@ -456,10 +494,15 @@ contract ERC721DropTest is TestHelper {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         // Impersonate the token contract to update the signers.
-        vm.prank(address(token));
+        vm.startPrank(address(token));
         // Update the approved signers of the token contract.
         address signer = makeAddr("good seed");
-        seadrop.updateSigner(signer, true);
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
 
         hoax(payer, 100 ether);
 
@@ -473,6 +516,480 @@ contract ERC721DropTest is TestHelper {
             address(token),
             feeRecipient,
             minter,
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_invalidMintPrice() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            10, // max mints per wallet
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.11 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 0,
+            maxEndTime: 1001,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 0,
+            maxFeeBps: 100
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidSignedMintPrice.selector,
+                .1 ether,
+                .11 ether
+            )
+        );
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_invalidMaxTotalMintableByWallet() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            1001, // max mints per wallet
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.1 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 0,
+            maxEndTime: 1001,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 0,
+            maxFeeBps: 100
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidSignedMaxTotalMintableByWallet.selector,
+                1001,
+                1000
+            )
+        );
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_invalidStartTime() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            5, // max mints per wallet
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.1 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 2,
+            maxEndTime: 1001,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 0,
+            maxFeeBps: 100
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(InvalidSignedStartTime.selector, 1, 2)
+        );
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_invalidEndTime() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            5, // max mints per wallet
+            uint48(block.timestamp), // start time
+            1001, // end time
+            1,
+            1000,
+            100, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.1 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 0,
+            maxEndTime: 1000,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 0,
+            maxFeeBps: 100
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(InvalidSignedEndTime.selector, 1001, 1000)
+        );
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_invalidMaxTokenSupplyForStage() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            5, // max mints per wallet
+            uint48(block.timestamp), // start time
+            1000, // end time
+            1, // ignore drop stage index
+            1001, // max token supply for stage
+            100, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.1 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 0,
+            maxEndTime: 1000,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 0,
+            maxFeeBps: 100
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidSignedMaxTokenSupplyForStage.selector,
+                1001,
+                1000
+            )
+        );
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_invalidMinFeeBps() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            5, // max mints per wallet
+            uint48(block.timestamp), // start time
+            1000, // end time
+            1, // ignore drop stage index
+            1000, // max token supply for stage
+            0, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.1 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 0,
+            maxEndTime: 1000,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 1,
+            maxFeeBps: 100
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(InvalidSignedFeeBps.selector, 0, 1)
+        );
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_invalidMaxFeeBps() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            5, // max mints per wallet
+            uint48(block.timestamp), // start time
+            1000, // end time
+            1, // ignore drop stage index
+            1000, // max token supply for stage
+            1, // fee (1%)
+            true // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.1 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 0,
+            maxEndTime: 1000,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 0,
+            maxFeeBps: 0
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(InvalidSignedFeeBps.selector, 1, 0)
+        );
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
+            2,
+            mintParams,
+            signature
+        );
+    }
+
+    function testMintSigned_mustRestrictFeeRecipients() public {
+        // Create a MintParams object.
+        MintParams memory mintParams = MintParams(
+            0.1 ether, // mint price
+            5, // max mints per wallet
+            uint48(block.timestamp), // start time
+            1000, // end time
+            1, // ignore drop stage index
+            1000, // max token supply for stage
+            1, // fee (1%)
+            false // restrictFeeRecipient
+        );
+
+        signedMintValidationParams = SignedMintValidationParams({
+            minMintPrice: 0.1 ether,
+            maxMaxTotalMintableByWallet: 1000,
+            minStartTime: 0,
+            maxEndTime: 1000,
+            maxMaxTokenSupplyForStage: 1000,
+            minFeeBps: 0,
+            maxFeeBps: 1
+        });
+        address feeRecipient = address(1234);
+
+        vm.startPrank(address(token));
+        address signer = makeAddr("good seed");
+        seadrop.updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
+        seadrop.updateAllowedFeeRecipient(feeRecipient, true);
+        vm.stopPrank();
+
+        // Get the signature components with a valid signer
+        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+            "good seed",
+            address(token),
+            address(this),
+            feeRecipient,
+            mintParams
+        );
+
+        // Create the signature from the components.
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert(SignedMintsMustRestrictFeeRecipients.selector);
+        seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
+            address(token),
+            feeRecipient,
+            address(0),
             2,
             mintParams,
             signature

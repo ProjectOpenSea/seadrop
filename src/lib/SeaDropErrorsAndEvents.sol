@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import { PublicDrop, TokenGatedDropStage } from "./SeaDropStructs.sol";
+import { PublicDrop, TokenGatedDropStage, SignedMintValidationParams } from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     /**
@@ -97,14 +97,6 @@ interface SeaDropErrorsAndEvents {
     error SignerNotPresent();
 
     /**
-     * @dev Revert with an error if a signer is already included in mapping
-     *      when adding.
-     *      Note: only applies when adding a single signer, as duplicates in
-     *      enumeration can be removed with removeSigner.
-     */
-    error DuplicateSigner();
-
-    /**
      * @dev Revert with an error if the sender does not
      *      match the INonFungibleSeaDropToken interface.
      */
@@ -147,6 +139,49 @@ interface SeaDropErrorsAndEvents {
      *      the drop token itself.
      */
      error TokenGatedDropAllowedNftTokenCannotBeDropToken();
+
+
+    /**
+     * @dev Revert with an error if supplied signed mint price is less than
+     *      minimum specified
+     */
+    error InvalidSignedMintPrice(uint256 got, uint256 minimum);
+
+    /**
+     * @dev Revert with an error if supplied signed maxTotalMintableByWallet
+     *      is greater than maximum specified
+     */
+    error InvalidSignedMaxTotalMintableByWallet(uint256 got, uint256 maximum);
+
+    /**
+     * @dev Revert with an error if supplied signed start time is less than
+     *      minimum specified
+     */
+    error InvalidSignedStartTime(uint256 got, uint256 minimum);
+    
+    /**
+     * @dev Revert with an error if supplied signed end time is greater than
+     *      maximum specified
+     */
+    error InvalidSignedEndTime(uint256 got, uint256 maximum);
+
+    /**
+     * @dev Revert with an error if supplied signed maxTokenSupplyForStage
+     *      is greater than maximum specified
+     */
+     error InvalidSignedMaxTokenSupplyForStage(uint256 got, uint256 maximum);
+    
+     /**
+     * @dev Revert with an error if supplied signed feeBps is greater than
+     *      maximum specified, or less than the minimum
+     */
+    error InvalidSignedFeeBps(uint256 got, uint256 minimumOrMaximum);
+
+    /**
+     * @dev Revert with an error if signed mint did not specify to restrict
+     *      fee recipients
+     */
+    error SignedMintsMustRestrictFeeRecipients();
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
@@ -235,12 +270,12 @@ interface SeaDropErrorsAndEvents {
     );
 
     /**
-     * @dev An event with the updated server-side signers for an nft
-     *      contract.
+     * @dev An event with the updated validation parameters for server-side
+     *      signers
      */
-    event SignerUpdated(
+    event SignedMintValidationParamsUpdated(
         address indexed nftContract,
         address indexed signer,
-        bool indexed allowed
-    );
+        SignedMintValidationParams signedMintValidationParams
+    );   
 }
