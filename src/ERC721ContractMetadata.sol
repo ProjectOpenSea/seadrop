@@ -20,9 +20,9 @@ contract ERC721ContractMetadata is
     TwoStepOwnable,
     ISeaDropTokenContractMetadata
 {
-    /// @notice Throw if the mint quantity plus the current supply exceeds
-    ///         the max supply of the token.
-    error CannotExceedMaxSupplyOfUint64(uint256 quantity);
+    /// @notice Throw if the max supply exceeds uint64, a limit
+    //          due to the storage of bit-packed variables in ERC721A.
+    error CannotExceedMaxSupplyOfUint64(uint256 newMaxSupply);
 
     /// @notice Track the max supply.
     uint256 _maxSupply;
