@@ -140,7 +140,7 @@ contract ERC721ContractMetadata is
      */
     function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
         // Ensure the max supply does not exceed the maximum value of uint64.
-        if (newMaxSupply > 2**64) {
+        if (newMaxSupply > 2**64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
         // Set the new max supply.
