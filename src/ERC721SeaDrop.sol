@@ -87,6 +87,11 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         _updateAllowedSeaDrop(allowedSeaDrop);
     }
 
+    /**
+     * @notice Internal function to update the allowed SeaDrop contracts.
+     *
+     * @param allowedSeaDrop The allowed SeaDrop addresses.
+     */
     function _updateAllowedSeaDrop(address[] calldata allowedSeaDrop) internal {
         // Put the length on the stack for more efficient access.
         uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
@@ -114,6 +119,17 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
 
         // Emit an event for the update.
         emit AllowedSeaDropUpdated(allowedSeaDrop);
+    }
+
+    /**
+     * @dev Overrides the `_startTokenId` function from ERC721A
+     *      to start at token id `1`.
+     *
+     *      This is to avoid future possible problems since `0` is usually
+     *      used to signal values that have not been set or have been removed.
+     */
+    function _startTokenId() internal view virtual override returns (uint256) {
+        return 1;
     }
 
     /**

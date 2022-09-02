@@ -68,14 +68,14 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /// @notice Track the signers for each server-side drop.
     mapping(address => address[]) private _enumeratedSigners;
 
-    /// @notice Track token gated drop stages.
+    /// @notice Track the token gated drop stages.
     mapping(address => mapping(address => TokenGatedDropStage))
         private _tokenGatedDrops;
 
     /// @notice Track the tokens for token gated drops.
     mapping(address => address[]) private _enumeratedTokenGatedTokens;
 
-    /// @notice Track redeemed token IDs for token gated drop stages.
+    /// @notice Track the redeemed token IDs for token gated drop stages.
     mapping(address => mapping(address => mapping(uint256 => bool)))
         private _tokenGatedRedeemed;
 

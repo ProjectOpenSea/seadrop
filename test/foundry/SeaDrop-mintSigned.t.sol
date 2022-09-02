@@ -506,11 +506,11 @@ contract SeaDropMintSignedTest is TestHelper {
 
         hoax(payer, 100 ether);
 
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, true, true, false);
         emit Transfer(address(0), minter, 1);
 
         vm.expectEmit(true, true, true, false, address(token));
-        emit Transfer(address(0), minter, 1);
+        emit Transfer(address(0), minter, 2);
 
         seadrop.mintSigned{ value: mintParams.mintPrice * 2 }(
             address(token),

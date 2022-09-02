@@ -20,15 +20,15 @@ contract ERC721ContractMetadata is
     TwoStepOwnable,
     ISeaDropTokenContractMetadata
 {
-    /// @notice Throw if the mint quantity plus the current supply exceeds
-    ///         the max supply of the token.
-    error CannotExceedMaxSupplyOfUint64(uint256 quantity);
+    /// @notice Throw if the max supply exceeds uint64, a limit
+    //          due to the storage of bit-packed variables in ERC721A.
+    error CannotExceedMaxSupplyOfUint64(uint256 newMaxSupply);
 
     /// @notice Track the max supply.
     uint256 _maxSupply;
 
     /// @notice Track the base URI for token metadata.
-    string _theBaseURI;
+    string _tokenBaseURI;
 
     /// @notice Track the contract URI for contract metadata.
     string _contractURI;
@@ -140,9 +140,10 @@ contract ERC721ContractMetadata is
      */
     function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
         // Ensure the max supply does not exceed the maximum value of uint64.
-        if (newMaxSupply > 2**64) {
+        if (newMaxSupply > 2**64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
+
         // Set the new max supply.
         _maxSupply = newMaxSupply;
 
@@ -161,7 +162,7 @@ contract ERC721ContractMetadata is
         onlyOwner
     {
         // Set the new base URI.
-        _theBaseURI = newBaseURI;
+        _tokenBaseURI = newBaseURI;
 
         // Emit an event with the update.
         emit BaseURIUpdated(newBaseURI);
@@ -172,6 +173,6 @@ contract ERC721ContractMetadata is
      *         to return tokenURI.
      */
     function _baseURI() internal view virtual override returns (string memory) {
-        return _theBaseURI;
+        return _tokenBaseURI;
     }
 }
