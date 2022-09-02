@@ -234,6 +234,27 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     ).to.be.revertedWith("OnlySeaDrop");
   });
 
+  it("Should not let the minter exceed the max supply", async () => {
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(
+          token
+            .connect(impersonatedSigner)
+            .mintSeaDrop(
+              minter.address,
+              ethers.BigNumber.from(2).pow(64).add(1)
+            )
+        ).to.be.revertedWith(
+          `CannotExceedMaxSupply(${ethers.BigNumber.from(
+            "18446744073709551617"
+          )}, ${ethers.BigNumber.from("18446744073709551615")})`
+        );
+      }
+    );
+  });
+
   it("Should return supportsInterface true for supported interfaces", async () => {
     const supportedInterfacesERC721SeaDrop = [
       [

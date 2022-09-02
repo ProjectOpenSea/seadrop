@@ -31,10 +31,6 @@ import {
  *         to properly interact with SeaDrop
  */
 contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
-    /// @notice Due to bitpacked state variables in parent contract ERC721A,
-    ///         mint quantity plus the minter's balance cannot exceed 2**64.
-    error CannotExceedMaxBalance(uint256 quantity, uint256 maxMinterBalance);
-
     /// @notice Throw if the mint quantity plus the current supply exceeds
     ///         the max supply of the token.
     error CannotExceedMaxSupply(uint256 quantity, uint256 maxSupply);
@@ -141,13 +137,6 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
             revert CannotExceedMaxSupply(quantity + totalSupply(), 2**64 - 1);
         }
 
-        // Ensure the minter's balance following mint is less than 2**64.
-        if (quantity + balanceOf(minter) > 2**64 - 1) {
-            revert CannotExceedMaxBalance(
-                quantity + balanceOf(minter),
-                2**64 - 1
-            );
-        }
         // Mint the quantity of tokens to the minter.
         _mint(minter, quantity);
     }
