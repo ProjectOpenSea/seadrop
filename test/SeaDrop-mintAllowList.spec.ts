@@ -868,4 +868,59 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         )
     ).to.be.revertedWith("InvalidProof()");
   });
+
+  it("Should not mint with feeBps > 10_000", async () => {
+    // Set a random mintQuantity under maxTotalMintableByWallet.
+    const mintQuantity = Math.max(
+      1,
+      randomInt(mintParams.maxTotalMintableByWallet as number)
+    );
+
+    const mintParamsInvalidFeeBps = { ...mintParams, feeBps: 10_100 };
+
+    // Encode the minter address and mintParams.
+    const elementsBuffer = await allowListElementsBuffer([
+      [minter.address, mintParamsInvalidFeeBps],
+    ]);
+
+    // Construct a merkle tree from the allow list elements.
+    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
+      hashLeaves: true,
+      sortPairs: true,
+    });
+
+    // Get the leaf at index 0.
+    const leaf = merkleTree.getLeaf(0);
+
+    // Get the proof of the leaf to pass into the transaction.
+    const proof = merkleTree.getHexProof(leaf);
+
+    // Declare the allow list data.
+    const allowListData = {
+      merkleRoot: merkleTree.getRoot(),
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+
+    // Update the allow list of the token.
+    await token.updateAllowList(seadrop.address, allowListData);
+
+    // Calculate the value to send with the mint transaction.
+    const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
+
+    // Mint the allow list stage.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintAllowList(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          mintQuantity,
+          mintParamsInvalidFeeBps,
+          proof,
+          { value }
+        )
+    ).to.be.revertedWith("InvalidFeeBps(10100)");
+  });
 });

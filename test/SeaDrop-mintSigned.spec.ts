@@ -5,6 +5,7 @@ import { ethers, network } from "hardhat";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
+import { whileImpersonating } from "./utils/impersonate";
 
 import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
 import type { SignedMintValidationParamsStruct } from "../typechain-types/src/ERC721SeaDrop";
@@ -91,7 +92,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     signedMintValidationParams = {
       minMintPrice: 1,
-      maxMaxTotalMintableByWallet: 500,
+      maxMaxTotalMintableByWallet: 11,
       minStartTime: 50,
       maxEndTime: "100000000000",
       maxMaxTokenSupplyForStage: 10000,
@@ -264,7 +265,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     expect(await token.totalSupply()).to.eq(6);
   });
 
-  it("Should not mint a signed mint with a different params", async () => {
+  it("Should not mint a signed mint with different params", async () => {
     const signature = await signMint(
       token.address,
       minter, // sign mint for minter
@@ -321,6 +322,23 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await token2
       .connect(admin)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+
+    // Test coverage for error SignerNotPresent()
+    await whileImpersonating(
+      token2.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(
+          seadrop
+            .connect(impersonatedSigner)
+            .updateSignedMintValidationParams(
+              `0x${"8".repeat(40)}`,
+              emptySignedMintValidationParams
+            )
+        ).to.be.revertedWith("SignerNotPresent()");
+      }
+    );
+
     await token2
       .connect(admin)
       .updateSignedMintValidationParams(
@@ -607,5 +625,259 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           }
         )
     ).to.be.revertedWith("InvalidSignedFeeBps");
+  });
+
+  it("Should not mint a signed mint that violates the validation params", async () => {
+    let newMintParams: any = { ...mintParams, mintPrice: 0 };
+
+    let signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          2,
+          newMintParams,
+          signature,
+          {
+            value: 0, // testing free mint price
+          }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedMintPrice(${newMintParams.mintPrice}, ${signedMintValidationParams.minMintPrice})`
+    );
+
+    newMintParams = { ...mintParams, maxTotalMintableByWallet: 12 };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    const mintQuantity = 2;
+    const value = ethers.BigNumber.from(newMintParams.mintPrice).mul(
+      mintQuantity
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedMaxTotalMintableByWallet(${newMintParams.maxTotalMintableByWallet}, ${signedMintValidationParams.maxMaxTotalMintableByWallet})`
+    );
+
+    newMintParams = { ...mintParams, startTime: 30 };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedStartTime(${newMintParams.startTime}, ${signedMintValidationParams.minStartTime})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      endTime: ethers.BigNumber.from(signedMintValidationParams.maxEndTime).add(
+        1
+      ),
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedEndTime(${newMintParams.endTime}, ${signedMintValidationParams.maxEndTime})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      maxTokenSupplyForStage: 10001,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedMaxTokenSupplyForStage(${newMintParams.maxTokenSupplyForStage}, ${signedMintValidationParams.maxMaxTokenSupplyForStage})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      feeBps: 0,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedFeeBps(${newMintParams.feeBps}, ${signedMintValidationParams.minFeeBps})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      feeBps: 9010,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedFeeBps(${newMintParams.feeBps}, ${signedMintValidationParams.maxFeeBps})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      restrictFeeRecipients: false,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(`SignedMintsMustRestrictFeeRecipients()`);
+
+    expect(await token.totalSupply()).to.eq(0);
+  });
+
+  it("Should not update SignedMintValidationParams with invalid fee bps", async () => {
+    await expect(
+      token
+        .connect(admin)
+        .updateSignedMintValidationParams(seadrop.address, signer.address, {
+          ...signedMintValidationParams,
+          minFeeBps: 11_000,
+        })
+    ).to.be.revertedWith(`InvalidFeeBps(11000)`);
+
+    await expect(
+      token
+        .connect(admin)
+        .updateSignedMintValidationParams(seadrop.address, signer.address, {
+          ...signedMintValidationParams,
+          maxFeeBps: 12_000,
+        })
+    ).to.be.revertedWith(`InvalidFeeBps(12000)`);
   });
 });

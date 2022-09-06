@@ -1196,7 +1196,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
                 sload(existingSignedMintValidationParams.slot)
             )
         }
-        // use maxMaxTotalMintableByWallet as sentry for add/update or delete
+        // Use maxMaxTotalMintableByWallet as sentry for add/update or delete.
         bool addOrUpdate = signedMintValidationParams
             .maxMaxTotalMintableByWallet > 0;
 
@@ -1207,7 +1207,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             }
         } else {
             if (
-                signedMintValidationParamsMap[signer]
+                existingSignedMintValidationParams
                     .maxMaxTotalMintableByWallet == 0
             ) {
                 revert SignerNotPresent();
