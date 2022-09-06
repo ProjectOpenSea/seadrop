@@ -14,8 +14,13 @@ import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
-import type { PublicDropStruct } from "../typechain-types/src/ERC721PartnerSeaDrop";
+import type {
+  AllowListDataStruct,
+  PublicDropStruct,
+  TokenGatedDropStageStruct,
+} from "../typechain-types/src/ERC721PartnerSeaDrop";
 import type { Wallet } from "ethers";
+import { SeaDrop } from "../typechain-types/temp-src-coverage";
 
 describe(`ERC721SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
@@ -422,5 +427,74 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     expect(
       await seadrop.getPayerIsAllowed(token.address, payer2.address)
     ).to.eq(false);
+  });
+
+  it("Should only let the owner call update functions", async () => {
+    const onlyOwnerMethods = [
+      "updateAllowedSeaDrop",
+      "updatePublicDrop",
+      "updateAllowList",
+      "updateTokenGatedDrop",
+      "updateDropURI",
+      "updateCreatorPayoutAddress",
+      "updateAllowedFeeRecipient",
+      "updateSignedMintValidationParams",
+      "updatePayer",
+    ];
+
+    const allowListData = {
+      merkleRoot: `0x${"3".repeat(64)}`,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+
+    const dropStage = {
+      mintPrice: "10000000000000000", // 0.01 ether
+      maxTotalMintableByWallet: 10,
+      startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 100,
+      feeBps: 100,
+      restrictFeeRecipients: true,
+    };
+
+    const signedMintValidationParams = {
+      minMintPrice: 10,
+      maxMaxTotalMintableByWallet: 5,
+      minStartTime: 50,
+      maxEndTime: 100,
+      maxMaxTokenSupplyForStage: 100,
+      minFeeBps: 5,
+      maxFeeBps: 1000,
+    };
+
+    const methodParams = {
+      updateAllowedSeaDrop: [[seadrop.address]],
+      updatePublicDrop: [seadrop.address, publicDrop],
+      updateAllowList: [seadrop.address, allowListData],
+      updateTokenGatedDrop: [seadrop.address, `0x${"4".repeat(40)}`, dropStage],
+      updateDropURI: [seadrop.address, "http://test.com"],
+      updateCreatorPayoutAddress: [seadrop.address, `0x${"4".repeat(40)}`],
+      updateAllowedFeeRecipient: [seadrop.address, `0x${"4".repeat(40)}`, true],
+      updateSignedMintValidationParams: [
+        seadrop.address,
+        `0x${"4".repeat(40)}`,
+        signedMintValidationParams,
+      ],
+      updatePayer: [seadrop.address, `0x${"4".repeat(40)}`, true],
+    };
+
+    for (const method of onlyOwnerMethods) {
+      await (token as any)
+        .connect(owner)
+        [method](...(methodParams as any)[method]);
+
+      await expect(
+        (token as any)
+          .connect(creator)
+          [method](...(methodParams as any)[method])
+      ).to.be.revertedWith("OnlyOwner()");
+    }
   });
 });
