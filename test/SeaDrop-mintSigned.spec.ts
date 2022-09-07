@@ -28,6 +28,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
   let signer: Wallet;
   let eip712Domain: { [key: string]: string | number };
   let eip712Types: Record<string, Array<{ name: string; type: string }>>;
+  let salt: BigNumber;
 
   after(async () => {
     await network.provider.request({
@@ -67,6 +68,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         { name: "minter", type: "address" },
         { name: "feeRecipient", type: "address" },
         { name: "mintParams", type: "MintParams" },
+        { name: "salt", type: "uint256" },
       ],
       MintParams: [
         { name: "mintPrice", type: "uint256" },
@@ -142,6 +144,9 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       signer.address,
       signedMintValidationParams
     );
+
+    // Set a random salt.
+    salt = BigNumber.from(randomHex(32));
   });
 
   const signMint = async (
@@ -149,6 +154,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     minter: Wallet,
     feeRecipient: Wallet,
     mintParams: MintParamsStruct,
+    salt: BigNumber,
     signer: Wallet
   ) => {
     const signedMint = {
@@ -156,6 +162,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter: minter.address,
       feeRecipient: feeRecipient.address,
       mintParams,
+      salt,
     };
     const signature = await signer._signTypedData(
       eip712Domain,
@@ -180,6 +187,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       mintParams,
+      salt,
       signer
     );
 
@@ -193,6 +201,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           minter.address,
           3,
           mintParams,
+          salt,
           signature,
           {
             value,
@@ -212,6 +221,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           minter.address,
           3,
           mintParams,
+          salt,
           signature,
           {
             value,
@@ -245,6 +255,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           minter.address,
           3,
           mintParams,
+          salt,
           signature,
           {
             value,
@@ -253,13 +264,14 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWith("SignatureAlreadyUsed()");
 
     // Mint signed with minter being payer.
-    // Change a parameter to use a new digest.
-    const newMintParams = { ...mintParams, startTime: 100 };
+    // Change the salt to use a new digest.
+    const newSalt = salt.add(1);
     signature = await signMint(
       token.address,
       minter,
       feeRecipient,
-      newMintParams,
+      mintParams,
+      newSalt,
       signer
     );
     await expect(
@@ -270,7 +282,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           feeRecipient.address,
           ethers.constants.AddressZero,
           3,
-          newMintParams,
+          mintParams,
+          newSalt,
           signature,
           { value }
         )
@@ -298,6 +311,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter, // sign mint for minter
       feeRecipient,
       mintParams,
+      salt,
       signer
     );
 
@@ -310,6 +324,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         payer.address, // payer different than minter
         3,
         mintParams,
+        salt,
         signature,
         {
           value,
@@ -329,6 +344,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         minter.address,
         3,
         mintParams,
+        salt,
         signature,
         {
           value,
@@ -385,6 +401,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         ethers.constants.AddressZero,
         3,
         mintParams,
+        salt,
         signature,
         {
           value,
@@ -420,6 +437,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter, // sign mint for minter
       feeRecipient,
       mintParams,
+      salt,
       signer2
     );
     await expect(
@@ -429,6 +447,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         ethers.constants.AddressZero,
         3,
         mintParams,
+        salt,
         signature2, // different signature
         {
           value,
@@ -448,6 +467,23 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         minter.address,
         3,
         differentMintParams,
+        salt,
+        signature,
+        {
+          value,
+        }
+      )
+    ).to.be.revertedWith("InvalidSignature");
+
+    // Test with different salt
+    await expect(
+      seadrop.connect(minter).mintSigned(
+        token.address, // different token contract
+        feeRecipient.address,
+        minter.address,
+        3,
+        mintParams,
+        salt.sub(1),
         signature,
         {
           value,
@@ -520,6 +556,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       mintParams,
+      salt,
       signer
     );
 
@@ -533,6 +570,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           10,
           mintParams,
+          salt,
           signature,
           {
             value: BigNumber.from(mintParams.mintPrice).mul(10),
@@ -561,6 +599,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           1,
           mintParams,
+          salt,
           signature,
           { value: mintParams.mintPrice }
         )
@@ -576,6 +615,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           1,
           { ...mintParams, maxTotalMintableByWallet: 11 },
+          salt,
           signature,
           { value: mintParams.mintPrice }
         )
@@ -590,6 +630,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       mintParamsZeroFee,
+      salt,
       signer
     );
 
@@ -602,6 +643,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           minter.address,
           3,
           mintParamsZeroFee,
+          salt,
           signature,
           {
             value: 3,
@@ -633,6 +675,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       mintParamsInvalidFeeBps,
+      salt,
       signer
     );
 
@@ -646,6 +689,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           1,
           mintParamsInvalidFeeBps,
+          salt,
           signature,
           {
             value,
@@ -662,6 +706,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
@@ -674,6 +719,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           2,
           newMintParams,
+          salt,
           signature,
           {
             value: 0, // testing free mint price
@@ -690,13 +736,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
     const mintQuantity = 2;
-    const value = ethers.BigNumber.from(newMintParams.mintPrice).mul(
-      mintQuantity
-    );
+    const value = BigNumber.from(newMintParams.mintPrice).mul(mintQuantity);
 
     await expect(
       seadrop
@@ -707,6 +752,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           mintQuantity,
           newMintParams,
+          salt,
           signature,
           { value }
         )
@@ -721,6 +767,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
@@ -733,6 +780,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           mintQuantity,
           newMintParams,
+          salt,
           signature,
           { value }
         )
@@ -742,9 +790,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     newMintParams = {
       ...mintParams,
-      endTime: ethers.BigNumber.from(signedMintValidationParams.maxEndTime).add(
-        1
-      ),
+      endTime: BigNumber.from(signedMintValidationParams.maxEndTime).add(1),
     };
 
     signature = await signMint(
@@ -752,6 +798,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
@@ -764,6 +811,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           mintQuantity,
           newMintParams,
+          salt,
           signature,
           { value }
         )
@@ -781,6 +829,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
@@ -793,6 +842,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           mintQuantity,
           newMintParams,
+          salt,
           signature,
           { value }
         )
@@ -810,6 +860,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
@@ -822,6 +873,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           mintQuantity,
           newMintParams,
+          salt,
           signature,
           { value }
         )
@@ -839,6 +891,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
@@ -851,6 +904,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           mintQuantity,
           newMintParams,
+          salt,
           signature,
           { value }
         )
@@ -868,6 +922,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       newMintParams,
+      salt,
       signer
     );
 
@@ -880,6 +935,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           mintQuantity,
           newMintParams,
+          salt,
           signature,
           { value }
         )

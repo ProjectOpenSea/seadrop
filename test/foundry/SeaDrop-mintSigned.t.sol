@@ -31,6 +31,7 @@ contract SeaDropMintSignedTest is TestHelper {
         uint40 numMints;
         address feeRecipient;
         string signerNameSeed;
+        uint256 salt;
     }
 
     modifier validateFuzzInputsSigners(FuzzInputsSigners memory args) {
@@ -90,7 +91,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             args.minter,
             args.feeRecipient,
-            mintParams
+            mintParams,
+            args.salt
         );
 
         // Create the signature from the components.
@@ -122,6 +124,7 @@ contract SeaDropMintSignedTest is TestHelper {
             args.minter,
             args.numMints,
             mintParams,
+            args.salt,
             signature
         );
 
@@ -149,7 +152,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             args.minter,
             args.feeRecipient,
-            mintParams
+            mintParams,
+            args.salt
         );
 
         // Create the signature from the components.
@@ -190,6 +194,7 @@ contract SeaDropMintSignedTest is TestHelper {
             args.minter,
             args.numMints,
             mintParams,
+            args.salt,
             signature
         );
 
@@ -198,7 +203,8 @@ contract SeaDropMintSignedTest is TestHelper {
                 address(token2),
                 args.minter,
                 args.feeRecipient,
-                mintParams
+                mintParams,
+                args.salt
             );
             address expectedRecovered = digest.recover(signature);
 
@@ -216,6 +222,7 @@ contract SeaDropMintSignedTest is TestHelper {
             args.minter,
             args.numMints,
             mintParams,
+            args.salt,
             signature
         );
     }
@@ -242,7 +249,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             args.minter,
             args.feeRecipient,
-            mintParams
+            mintParams,
+            args.salt
         );
 
         // Create the signature from the components.
@@ -282,7 +290,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             args.minter,
             badFeeRecipient,
-            mintParams
+            mintParams,
+            args.salt
         );
         address expectedRecovered = badDigest.recover(signature);
 
@@ -297,6 +306,7 @@ contract SeaDropMintSignedTest is TestHelper {
             args.minter,
             args.numMints,
             mintParams,
+            args.salt,
             signature
         );
     }
@@ -323,7 +333,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             args.minter,
             args.feeRecipient,
-            mintParams
+            mintParams,
+            args.salt
         );
 
         // Create the signature from the components.
@@ -351,6 +362,7 @@ contract SeaDropMintSignedTest is TestHelper {
             args.minter,
             args.numMints,
             mintParams,
+            args.salt,
             signature
         );
 
@@ -378,7 +390,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             args.minter,
             args.feeRecipient,
-            mintParams
+            mintParams,
+            args.salt
         );
 
         // Create the signature from the components.
@@ -414,6 +427,7 @@ contract SeaDropMintSignedTest is TestHelper {
             args.minter,
             args.numMints,
             mintParams,
+            args.salt,
             signature
         );
     }
@@ -440,7 +454,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             msg.sender,
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -471,6 +486,7 @@ contract SeaDropMintSignedTest is TestHelper {
             msg.sender,
             1,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -502,7 +518,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             minter,
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -536,6 +553,7 @@ contract SeaDropMintSignedTest is TestHelper {
             minter,
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -579,7 +597,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -598,6 +617,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -641,7 +661,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -660,6 +681,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -703,7 +725,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -718,6 +741,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -761,7 +785,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -776,6 +801,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -819,7 +845,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -838,6 +865,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -881,7 +909,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -896,6 +925,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -939,7 +969,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -954,6 +985,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }
@@ -997,7 +1029,8 @@ contract SeaDropMintSignedTest is TestHelper {
             address(token),
             address(this),
             feeRecipient,
-            mintParams
+            mintParams,
+            101010101010101
         );
 
         // Create the signature from the components.
@@ -1010,6 +1043,7 @@ contract SeaDropMintSignedTest is TestHelper {
             address(0),
             2,
             mintParams,
+            101010101010101,
             signature
         );
     }

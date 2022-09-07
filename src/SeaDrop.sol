@@ -97,7 +97,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
                 "address nftContract,"
                 "address minter,"
                 "address feeRecipient,"
-                "MintParams mintParams"
+                "MintParams mintParams,"
+                "uint256 salt"
             ")"
             "MintParams("
                 "uint256 mintPrice,"
@@ -326,6 +327,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @param minterIfNotPayer The mint recipient if different than the payer.
      * @param quantity         The number of tokens to mint.
      * @param mintParams       The mint parameters.
+     * @param salt             The salt for the signed mint.
      * @param signature        The server-side signature, must be an allowed
      *                         signer.
      */
@@ -335,6 +337,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         address minterIfNotPayer,
         uint256 quantity,
         MintParams calldata mintParams,
+        uint256 salt,
         bytes calldata signature
     ) external payable override {
         // Check that the drop stage is active.
@@ -376,7 +379,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             nftContract,
             minter,
             feeRecipient,
-            mintParams
+            mintParams,
+            salt
         );
 
         // Ensure the digest has not already been used.
@@ -1328,12 +1332,14 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @param minter       The mint recipient.
      * @param feeRecipient The fee recipient.
      * @param mintParams   The mint params.
+     * @param salt         The salt for the signed mint.
      */
     function _getDigest(
         address nftContract,
         address minter,
         address feeRecipient,
-        MintParams memory mintParams
+        MintParams memory mintParams,
+        uint256 salt
     ) internal view returns (bytes32 digest) {
         bytes32 mintParamsHashStruct = keccak256(
             abi.encode(
@@ -1358,7 +1364,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
                         nftContract,
                         minter,
                         feeRecipient,
-                        mintParamsHashStruct
+                        mintParamsHashStruct,
+                        salt
                     )
                 )
             )

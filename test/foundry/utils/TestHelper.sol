@@ -25,7 +25,8 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
                 "address nftContract,"
                 "address minter,"
                 "address feeRecipient,"
-                "MintParams mintParams"
+                "MintParams mintParams,"
+                "uint256 salt"
             ")"
             "MintParams("
                 "uint256 mintPrice,"
@@ -93,7 +94,8 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
         address nftContract,
         address minter,
         address feeRecipient,
-        MintParams memory mintParams
+        MintParams memory mintParams,
+        uint256 salt
     )
         internal
         returns (
@@ -106,7 +108,8 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
             nftContract,
             minter,
             feeRecipient,
-            mintParams
+            mintParams,
+            salt
         );
         (, uint256 pk) = makeAddrAndKey(name);
         (v, r, s) = vm.sign(pk, digest);
@@ -116,7 +119,8 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
         address nftContract,
         address minter,
         address feeRecipient,
-        MintParams memory mintParams
+        MintParams memory mintParams,
+        uint256 salt
     ) internal view returns (bytes32 digest) {
         bytes32 mintParamsHashStruct = keccak256(
             abi.encode(
@@ -141,7 +145,8 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
                         nftContract,
                         minter,
                         feeRecipient,
-                        mintParamsHashStruct
+                        mintParamsHashStruct,
+                        salt
                     )
                 )
             )

@@ -174,7 +174,8 @@ contract TestSeaDropSnapshot is TestHelper {
             address(snapshotToken),
             address(this),
             address(5),
-            mintParams
+            mintParams,
+            1010101
         );
         signature = abi.encodePacked(r, s, v);
         signature2098 = _encodeSignature2098(r, s, v);
@@ -250,6 +251,7 @@ contract TestSeaDropSnapshot is TestHelper {
             address(0),
             1,
             mintParams,
+            1010101,
             signature
         );
     }

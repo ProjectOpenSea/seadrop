@@ -56,6 +56,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @param minterIfNotPayer The mint recipient if different than the payer.
      * @param quantity         The number of tokens to mint.
      * @param mintParams       The mint parameters.
+     * @param salt             The sale for the signed mint.
      * @param signature        The server-side signature, must be an allowed
      *                         signer.
      */
@@ -65,6 +66,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         address minterIfNotPayer,
         uint256 quantity,
         MintParams calldata mintParams,
+        uint256 salt,
         bytes calldata signature
     ) external payable;
 
