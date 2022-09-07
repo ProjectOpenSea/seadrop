@@ -14,13 +14,8 @@ import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
-import type {
-  AllowListDataStruct,
-  PublicDropStruct,
-  TokenGatedDropStageStruct,
-} from "../typechain-types/src/ERC721PartnerSeaDrop";
+import type { PublicDropStruct } from "../typechain-types/src/ERC721PartnerSeaDrop";
 import type { Wallet } from "ethers";
-import { SeaDrop } from "../typechain-types/temp-src-coverage";
 
 describe(`ERC721SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
@@ -469,7 +464,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       maxFeeBps: 1000,
     };
 
-    const methodParams = {
+    const methodParams: any = {
       updateAllowedSeaDrop: [[seadrop.address]],
       updatePublicDrop: [seadrop.address, publicDrop],
       updateAllowList: [seadrop.address, allowListData],
@@ -486,14 +481,10 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     };
 
     for (const method of onlyOwnerMethods) {
-      await (token as any)
-        .connect(owner)
-        [method](...(methodParams as any)[method]);
+      await (token as any).connect(owner)[method](...methodParams[method]);
 
       await expect(
-        (token as any)
-          .connect(creator)
-          [method](...(methodParams as any)[method])
+        (token as any).connect(creator)[method](...methodParams[method])
       ).to.be.revertedWith("OnlyOwner()");
     }
   });
