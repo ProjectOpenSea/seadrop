@@ -157,7 +157,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    ) external virtual override onlyOwner {
+    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
         // Update the public drop data on SeaDrop.
         ISeaDrop(seaDropImpl).updatePublicDrop(publicDrop);
     }
@@ -173,7 +173,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    ) external virtual override onlyOwner {
+    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
         // Update the allow list on SeaDrop.
         ISeaDrop(seaDropImpl).updateAllowList(allowListData);
     }
@@ -196,7 +196,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external virtual override onlyOwner {
+    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
         // Update the token gated drop stage.
         ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
     }
@@ -212,6 +212,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         virtual
         override
         onlyOwner
+        onlyAllowedSeaDrop(seaDropImpl)
     {
         // Update the drop URI.
         ISeaDrop(seaDropImpl).updateDropURI(dropURI);
@@ -227,7 +228,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
     function updateCreatorPayoutAddress(
         address seaDropImpl,
         address payoutAddress
-    ) external onlyOwner {
+    ) external onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
         // Update the creator payout address.
         ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
     }
@@ -244,7 +245,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external virtual onlyOwner {
+    ) external virtual onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
         // Update the allowed fee recipient.
         ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
@@ -263,7 +264,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
-    ) external virtual override onlyOwner {
+    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
         // Update the signer.
         ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
             signer,
@@ -282,7 +283,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         address seaDropImpl,
         address payer,
         bool allowed
-    ) external virtual override onlyOwner {
+    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
         // Update the signers.
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }

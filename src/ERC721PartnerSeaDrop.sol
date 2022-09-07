@@ -80,7 +80,13 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    ) external virtual override onlyOwnerOrAdministrator {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrAdministrator
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Track the previous public drop data.
         PublicDrop memory retrieved = ISeaDrop(seaDropImpl).getPublicDrop(
             address(this)
@@ -125,7 +131,13 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    ) external virtual override onlyOwnerOrAdministrator {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrAdministrator
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Update the allow list on SeaDrop.
         ISeaDrop(seaDropImpl).updateAllowList(allowListData);
     }
@@ -149,7 +161,13 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external virtual override onlyOwnerOrAdministrator {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrAdministrator
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Track the previous drop stage data.
         TokenGatedDropStage memory retrieved = ISeaDrop(seaDropImpl)
             .getTokenGatedDrop(address(this), allowedNftToken);
@@ -195,6 +213,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         virtual
         override
         onlyOwnerOrAdministrator
+        onlyAllowedSeaDrop(seaDropImpl)
     {
         // Update the drop URI.
         ISeaDrop(seaDropImpl).updateDropURI(dropURI);
@@ -213,7 +232,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external override onlyAdministrator {
+    ) external override onlyAdministrator onlyAllowedSeaDrop(seaDropImpl) {
         // Update the allowed fee recipient.
         ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
@@ -232,7 +251,13 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
-    ) external virtual override onlyOwnerOrAdministrator {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrAdministrator
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Track the previous signed mint validation params.
         SignedMintValidationParams memory retrieved = ISeaDrop(seaDropImpl)
             .getSignedMintValidationParams(address(this), signer);
@@ -283,7 +308,13 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         address seaDropImpl,
         address payer,
         bool allowed
-    ) external virtual override onlyOwnerOrAdministrator {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrAdministrator
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Update the signers.
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
