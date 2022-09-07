@@ -5,15 +5,17 @@ import { ethers, network } from "hardhat";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
+import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
+import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
+import type { SignedMintValidationParamsStruct } from "../typechain-types/src/ERC721SeaDrop";
 import type { MintParamsStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
@@ -21,9 +23,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
   let minter: Wallet;
   let feeRecipient: Wallet;
   let mintParams: MintParamsStruct;
+  let signedMintValidationParams: SignedMintValidationParamsStruct;
+  let emptySignedMintValidationParams: SignedMintValidationParamsStruct;
   let signer: Wallet;
   let eip712Domain: { [key: string]: string | number };
   let eip712Types: Record<string, Array<{ name: string; type: string }>>;
+  let salt: BigNumber;
 
   after(async () => {
     await network.provider.request({
@@ -63,6 +68,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         { name: "minter", type: "address" },
         { name: "feeRecipient", type: "address" },
         { name: "mintParams", type: "MintParams" },
+        { name: "salt", type: "uint256" },
       ],
       MintParams: [
         { name: "mintPrice", type: "uint256" },
@@ -75,21 +81,44 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         { name: "restrictFeeRecipients", type: "bool" },
       ],
     };
+
+    emptySignedMintValidationParams = {
+      minMintPrice: 0,
+      maxMaxTotalMintableByWallet: 0,
+      minStartTime: 0,
+      maxEndTime: 0,
+      maxMaxTokenSupplyForStage: 0,
+      minFeeBps: 0,
+      maxFeeBps: 0,
+    };
+
+    signedMintValidationParams = {
+      minMintPrice: 1,
+      maxMaxTotalMintableByWallet: 11,
+      minStartTime: 50,
+      maxEndTime: "100000000000",
+      maxMaxTokenSupplyForStage: 10000,
+      minFeeBps: 1,
+      maxFeeBps: 9000,
+    };
   });
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", admin.address, [
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
 
     // Configure token
     await token.setMaxSupply(100);
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await token
+      .connect(admin)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
 
     mintParams = {
       mintPrice: "100000000000000000", // 0.1 ether
@@ -99,11 +128,25 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
       feeBps: 1000,
-      restrictFeeRecipients: false,
+      restrictFeeRecipients: true,
     };
 
-    // Add signer
-    await token.updateSigner(seadrop.address, signer.address, true);
+    // Add signer.
+    await token
+      .connect(admin)
+      .updateSignedMintValidationParams(
+        seadrop.address,
+        signer.address,
+        signedMintValidationParams
+      );
+    await token.updateSignedMintValidationParams(
+      seadrop.address,
+      signer.address,
+      signedMintValidationParams
+    );
+
+    // Set a random salt.
+    salt = BigNumber.from(randomHex(32));
   });
 
   const signMint = async (
@@ -111,6 +154,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     minter: Wallet,
     feeRecipient: Wallet,
     mintParams: MintParamsStruct,
+    salt: BigNumber,
     signer: Wallet
   ) => {
     const signedMint = {
@@ -118,6 +162,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter: minter.address,
       feeRecipient: feeRecipient.address,
       mintParams,
+      salt,
     };
     const signature = await signer._signTypedData(
       eip712Domain,
@@ -137,11 +182,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   it("Should mint a signed mint", async () => {
     // Mint signed with payer for minter.
-    const signature = await signMint(
+    let signature = await signMint(
       token.address,
       minter,
       feeRecipient,
       mintParams,
+      salt,
       signer
     );
 
@@ -155,6 +201,27 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           minter.address,
           3,
           mintParams,
+          salt,
+          signature,
+          {
+            value,
+          }
+        )
+    ).to.be.revertedWith("PayerNotAllowed");
+
+    // Allow the payer.
+    await token.updatePayer(seadrop.address, payer.address, true);
+
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          3,
+          mintParams,
+          salt,
           signature,
           {
             value,
@@ -177,7 +244,36 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     expect(minterBalance).to.eq(3);
     expect(await token.totalSupply()).to.eq(3);
 
+    // Ensure a signature can only be used once.
+    // Mint again with the same params.
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          3,
+          mintParams,
+          salt,
+          signature,
+          {
+            value,
+          }
+        )
+    ).to.be.revertedWith("SignatureAlreadyUsed()");
+
     // Mint signed with minter being payer.
+    // Change the salt to use a new digest.
+    const newSalt = salt.add(1);
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      newSalt,
+      signer
+    );
     await expect(
       seadrop
         .connect(minter)
@@ -187,6 +283,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           3,
           mintParams,
+          newSalt,
           signature,
           { value }
         )
@@ -208,12 +305,13 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     expect(await token.totalSupply()).to.eq(6);
   });
 
-  it("Should not mint a signed mint with a different params", async () => {
+  it("Should not mint a signed mint with different params", async () => {
     const signature = await signMint(
       token.address,
       minter, // sign mint for minter
       feeRecipient,
       mintParams,
+      salt,
       signer
     );
 
@@ -226,6 +324,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         payer.address, // payer different than minter
         3,
         mintParams,
+        salt,
         signature,
         {
           value,
@@ -234,6 +333,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWith("InvalidSignature");
 
     // Test with different fee recipient
+    await token
+      .connect(admin)
+      .updateAllowedFeeRecipient(seadrop.address, payer.address, true);
+    await token.updatePayer(seadrop.address, payer.address, true);
     await expect(
       seadrop.connect(payer).mintSigned(
         token.address,
@@ -241,6 +344,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         minter.address,
         3,
         mintParams,
+        salt,
         signature,
         {
           value,
@@ -249,23 +353,55 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWith("InvalidSignature");
 
     // Test with different token contract
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    const token2 = await ERC721SeaDrop.deploy("", "", admin.address, [
+    const token2 = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
     await token2.setMaxSupply(100);
     await token2.updateCreatorPayoutAddress(seadrop.address, creator.address);
-    await token2.updateSigner(seadrop.address, signer.address, true);
+    await token2
+      .connect(admin)
+      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+
+    // Test coverage for error SignerNotPresent()
+    await whileImpersonating(
+      token2.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(
+          seadrop
+            .connect(impersonatedSigner)
+            .updateSignedMintValidationParams(
+              `0x${"8".repeat(40)}`,
+              emptySignedMintValidationParams
+            )
+        ).to.be.revertedWith("SignerNotPresent()");
+      }
+    );
+
+    await token2
+      .connect(admin)
+      .updateSignedMintValidationParams(
+        seadrop.address,
+        signer.address,
+        signedMintValidationParams
+      );
+    await token2.updateSignedMintValidationParams(
+      seadrop.address,
+      signer.address,
+      signedMintValidationParams
+    );
     await expect(
       seadrop.connect(payer).mintSigned(
         token2.address, // different token contract
         feeRecipient.address,
-        minter.address,
+        ethers.constants.AddressZero,
         3,
         mintParams,
+        salt,
         signature,
         {
           value,
@@ -275,10 +411,24 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Test with signer that is not allowed
     const signer2 = new ethers.Wallet(randomHex(32), provider);
-    token.updateSigner(seadrop.address, signer2.address, false);
+    await token
+      .connect(admin)
+      .updateSignedMintValidationParams(
+        seadrop.address,
+        signer2.address,
+        signedMintValidationParams
+      );
+    await token.updateSignedMintValidationParams(
+      seadrop.address,
+      signer2.address,
+      emptySignedMintValidationParams
+    );
     expect(
-      await seadrop.getSignerIsAllowed(token.address, signer2.address)
-    ).to.eq(false);
+      await seadrop.getSignedMintValidationParams(
+        token.address,
+        signer2.address
+      )
+    ).to.deep.eq([BigNumber.from(0), 0, 0, 0, 0, 0, 0]);
     expect(await seadrop.getSigners(token.address)).to.deep.eq([
       signer.address,
     ]);
@@ -287,15 +437,17 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter, // sign mint for minter
       feeRecipient,
       mintParams,
+      salt,
       signer2
     );
     await expect(
       seadrop.connect(payer).mintSigned(
         token.address,
         feeRecipient.address,
-        minter.address,
+        ethers.constants.AddressZero,
         3,
         mintParams,
+        salt,
         signature2, // different signature
         {
           value,
@@ -309,12 +461,13 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       maxTokenSupplyForStage: 10000,
     };
     await expect(
-      seadrop.connect(payer).mintSigned(
+      seadrop.connect(minter).mintSigned(
         token.address, // different token contract
         feeRecipient.address,
         minter.address,
         3,
         differentMintParams,
+        salt,
         signature,
         {
           value,
@@ -322,32 +475,79 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       )
     ).to.be.revertedWith("InvalidSignature");
 
-    // Ensure that the same signer cannot be added twice.
+    // Test with different salt
     await expect(
-      token.updateSigner(seadrop.address, signer.address, true)
-    ).to.be.revertedWith("DuplicateSigner()");
+      seadrop.connect(minter).mintSigned(
+        token.address, // different token contract
+        feeRecipient.address,
+        minter.address,
+        3,
+        mintParams,
+        salt.sub(1),
+        signature,
+        {
+          value,
+        }
+      )
+    ).to.be.revertedWith("InvalidSignature");
 
     // Ensure that the zero address cannot be added as a signer.
     await expect(
-      token.updateSigner(seadrop.address, ethers.constants.AddressZero, true)
+      token
+        .connect(admin)
+        .updateSignedMintValidationParams(
+          seadrop.address,
+          ethers.constants.AddressZero,
+          signedMintValidationParams
+        )
     ).to.be.revertedWith("SignerCannotBeZeroAddress()");
 
     // Remove the original signer for branch coverage.
-    await token.updateSigner(seadrop.address, signer.address, false);
+    await token.updateSignedMintValidationParams(
+      seadrop.address,
+      signer.address,
+      emptySignedMintValidationParams
+    );
     expect(
-      await seadrop.getSignerIsAllowed(token.address, signer.address)
-    ).to.eq(false);
+      await seadrop.getSignedMintValidationParams(token.address, signer.address)
+    ).to.deep.eq([BigNumber.from(0), 0, 0, 0, 0, 0, 0]);
 
     // Add two signers and remove the second for branch coverage.
-    await token.updateSigner(seadrop.address, signer.address, true);
-    await token.updateSigner(seadrop.address, signer2.address, true);
-    await token.updateSigner(seadrop.address, signer2.address, false);
+    await expect(
+      token.updateSignedMintValidationParams(
+        seadrop.address,
+        signer.address,
+        signedMintValidationParams
+      )
+    ).to.be.revertedWith("AdministratorMustInitializeWithFee");
+    await token
+      .connect(admin)
+      .updateSignedMintValidationParams(
+        seadrop.address,
+        signer.address,
+        signedMintValidationParams
+      );
+    await token
+      .connect(admin)
+      .updateSignedMintValidationParams(
+        seadrop.address,
+        signer2.address,
+        signedMintValidationParams
+      );
+    await token.updateSignedMintValidationParams(
+      seadrop.address,
+      signer2.address,
+      emptySignedMintValidationParams
+    );
     expect(
-      await seadrop.getSignerIsAllowed(token.address, signer.address)
-    ).to.eq(true);
+      await seadrop.getSignedMintValidationParams(token.address, signer.address)
+    ).to.deep.eq([BigNumber.from(0), 1, 0, 0, 0, 1, 9000]);
     expect(
-      await seadrop.getSignerIsAllowed(token.address, signer2.address)
-    ).to.eq(false);
+      await seadrop.getSignedMintValidationParams(
+        token.address,
+        signer2.address
+      )
+    ).to.deep.eq([BigNumber.from(0), 0, 0, 0, 0, 0, 0]);
   });
 
   it("Should not mint a signed mint after exceeding max mints per wallet.", async () => {
@@ -356,6 +556,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       mintParams,
+      salt,
       signer
     );
 
@@ -369,6 +570,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           10,
           mintParams,
+          salt,
           signature,
           {
             value: BigNumber.from(mintParams.mintPrice).mul(10),
@@ -397,6 +599,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           1,
           mintParams,
+          salt,
           signature,
           { value: mintParams.mintPrice }
         )
@@ -412,6 +615,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           1,
           { ...mintParams, maxTotalMintableByWallet: 11 },
+          salt,
           signature,
           { value: mintParams.mintPrice }
         )
@@ -426,18 +630,20 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       minter,
       feeRecipient,
       mintParamsZeroFee,
+      salt,
       signer
     );
 
     await expect(
       seadrop
-        .connect(payer)
+        .connect(minter)
         .mintSigned(
           token.address,
           feeRecipient.address,
           minter.address,
           3,
           mintParamsZeroFee,
+          salt,
           signature,
           {
             value: 3,
@@ -449,7 +655,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         token.address,
         minter.address,
         feeRecipient.address,
-        payer.address,
+        minter.address, // payer
         3, // mint quantity
         mintParamsZeroFee.mintPrice,
         mintParamsZeroFee.feeBps,
@@ -459,5 +665,302 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     const minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(3);
     expect(await token.totalSupply()).to.eq(3);
+  });
+
+  it("Should not mint with invalid fee bps", async () => {
+    const mintParamsInvalidFeeBps = { ...mintParams, feeBps: 11_000 };
+
+    const signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParamsInvalidFeeBps,
+      salt,
+      signer
+    );
+
+    const value = BigNumber.from(mintParams.mintPrice);
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          1,
+          mintParamsInvalidFeeBps,
+          salt,
+          signature,
+          {
+            value,
+          }
+        )
+    ).to.be.revertedWith("InvalidSignedFeeBps");
+  });
+
+  it("Should not mint a signed mint that violates the validation params", async () => {
+    let newMintParams: any = { ...mintParams, mintPrice: 0 };
+
+    let signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          2,
+          newMintParams,
+          salt,
+          signature,
+          {
+            value: 0, // testing free mint price
+          }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedMintPrice(${newMintParams.mintPrice}, ${signedMintValidationParams.minMintPrice})`
+    );
+
+    newMintParams = { ...mintParams, maxTotalMintableByWallet: 12 };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    const mintQuantity = 2;
+    const value = BigNumber.from(newMintParams.mintPrice).mul(mintQuantity);
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          salt,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedMaxTotalMintableByWallet(${newMintParams.maxTotalMintableByWallet}, ${signedMintValidationParams.maxMaxTotalMintableByWallet})`
+    );
+
+    newMintParams = { ...mintParams, startTime: 30 };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          salt,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedStartTime(${newMintParams.startTime}, ${signedMintValidationParams.minStartTime})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      endTime: BigNumber.from(signedMintValidationParams.maxEndTime).add(1),
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          salt,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedEndTime(${newMintParams.endTime}, ${signedMintValidationParams.maxEndTime})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      maxTokenSupplyForStage: 10001,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          salt,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedMaxTokenSupplyForStage(${newMintParams.maxTokenSupplyForStage}, ${signedMintValidationParams.maxMaxTokenSupplyForStage})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      feeBps: 0,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          salt,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedFeeBps(${newMintParams.feeBps}, ${signedMintValidationParams.minFeeBps})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      feeBps: 9010,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          salt,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(
+      `InvalidSignedFeeBps(${newMintParams.feeBps}, ${signedMintValidationParams.maxFeeBps})`
+    );
+
+    newMintParams = {
+      ...mintParams,
+      restrictFeeRecipients: false,
+    };
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      salt,
+      signer
+    );
+
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          mintQuantity,
+          newMintParams,
+          salt,
+          signature,
+          { value }
+        )
+    ).to.be.revertedWith(`SignedMintsMustRestrictFeeRecipients()`);
+
+    expect(await token.totalSupply()).to.eq(0);
+  });
+
+  it("Should not update SignedMintValidationParams with invalid fee bps", async () => {
+    await expect(
+      token
+        .connect(admin)
+        .updateSignedMintValidationParams(seadrop.address, signer.address, {
+          ...signedMintValidationParams,
+          minFeeBps: 11_000,
+        })
+    ).to.be.revertedWith(`InvalidFeeBps(11000)`);
+
+    await expect(
+      token
+        .connect(admin)
+        .updateSignedMintValidationParams(seadrop.address, signer.address, {
+          ...signedMintValidationParams,
+          maxFeeBps: 12_000,
+        })
+    ).to.be.revertedWith(`InvalidFeeBps(12000)`);
   });
 });

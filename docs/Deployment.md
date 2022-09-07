@@ -28,4 +28,4 @@ If you would like to deploy your own instance, you can do so with:
 1. Set a public drop stage with `token.updatePublicDrop()`
    1. Following required to be sent by token `administrator`:
       1. Set allowed fee recipient with `token.updateAllowedFeeRecipient()`
-      1. Update public drop fee with `token.updatePublicDropFee()`
+      1. Update public drop feeBps with `token.updatePublicDrop()`

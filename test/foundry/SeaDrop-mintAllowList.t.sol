@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.16;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
 import { SeaDrop } from "seadrop/SeaDrop.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
 import { AllowListData, MintParams } from "seadrop/lib/SeaDropStructs.sol";
 
@@ -25,10 +25,10 @@ contract ERC721DropTest is TestHelper {
     }
 
     function setUp() public {
-        // Deploy the ERC721SeaDrop token.
+        // Deploy the ERC721PartnerSeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
@@ -77,8 +77,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -108,9 +108,8 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
-
         // Mint a token to the first address of the allowList.
+        hoax(args.allowList[0], 100 ether);
         seadrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
@@ -132,8 +131,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -196,8 +195,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -236,7 +235,9 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        // Allow the payer.
+        token.updatePayer(address(seadrop), args.allowList[0], true);
+        hoax(args.allowList[0], 100 ether);
 
         // Proof refers to address at allowList[0], so assume
         // it is not the same address as minting for allowList[4]
@@ -265,8 +266,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -305,7 +306,7 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        hoax(args.allowList[0], 100 ether);
 
         // Expect the subsequent call to mintAllowList to revert with error
         // FeeRecipientCannotBeZeroAddress
@@ -331,8 +332,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -371,7 +372,7 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        hoax(args.allowList[0], 100 ether);
 
         // Expect the subsequent call to mintAllowList to revert with error
         // FeeRecipientNotAllowed
@@ -397,8 +398,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0.1 ether, // mint price
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -437,7 +438,7 @@ contract ERC721DropTest is TestHelper {
 
         uint256 mintValue = 100 * mintParams.mintPrice;
 
-        hoax(args.minter, 100 ether);
+        hoax(args.allowList[0], 100 ether);
 
         // Expect the subsequent call to mintAllowList to revert with error
         // MintQuantityExceedsMaxMintedPerWallet
@@ -449,7 +450,7 @@ contract ERC721DropTest is TestHelper {
             )
         );
 
-        // Attempt to mint more than the maxMintsPerWallet.
+        // Attempt to mint more than the maxTotalMintableByWallet.
         seadrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
@@ -469,8 +470,8 @@ contract ERC721DropTest is TestHelper {
         MintParams memory mintParams = MintParams(
             0 ether, // mint price (free)
             10, // max mints per wallet
-            uint64(block.timestamp), // start time
-            uint64(block.timestamp) + 1000, // end time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 1000, // end time
             1,
             1000,
             100, // fee (1%)
@@ -509,7 +510,7 @@ contract ERC721DropTest is TestHelper {
 
         hoax(args.allowList[0], 100 ether);
 
-        // Attempt to mint more than the maxMintsPerWallet.
+        // Attempt to mint more than the maxTotalMintableByWallet.
         seadrop.mintAllowList(
             address(token),
             args.feeRecipient,
@@ -522,6 +523,4 @@ contract ERC721DropTest is TestHelper {
         // Check minter token balance increased.
         assertEq(token.balanceOf(args.allowList[0]), args.numMints);
     }
-
-    // testMintAllowList_differentPayerThanMinter
 }

@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 import {
-    IERC721ContractMetadata
-} from "../interfaces/IERC721ContractMetadata.sol";
+    ISeaDropTokenContractMetadata
+} from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
 import {
     AllowListData,
     PublicDrop,
-    TokenGatedDropStage
+    TokenGatedDropStage,
+    SignedMintValidationParams
 } from "../lib/SeaDropStructs.sol";
 
 import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
-interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
+interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
      * @dev Revert with an error if a contract other than an allowed
      *      SeaDrop address calls an update function.
@@ -45,7 +46,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply,
-     *         maxMintsPerWallet, and maxTokenSupplyForStage checks.
+     *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
      *
      * @param minter The minter address.
      */
@@ -60,7 +61,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
 
     /**
      * @notice Update public drop data for this nft contract on SeaDrop.
-     *         Use `updatePublicDropFee` to update the fee recipient or feeBps.
+     *         Note: Only the administrator can update `feeBps`.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
@@ -71,14 +72,9 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     ) external;
 
     /**
-     * @notice Update public drop fee for this nft contract on SeaDrop.
-     *
-     * @param feeBps The public drop fee basis points.
-     */
-    function updatePublicDropFee(address seaDropImpl, uint16 feeBps) external;
-
-    /**
      * @notice Update allow list data for this nft contract on SeaDrop.
+     *
+     *         Note: Be sure only authorized users can call this.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
@@ -90,8 +86,13 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
 
     /**
      * @notice Update token gated drop stage data for this nft contract
-     *         on SeaDrop.
-     *         Use `updateTokenGatedDropFee` to update the fee basis points.
+     *         on SeaDrop. The administrator must first set `feeBps`.
+     *
+     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
+     *         token gated drop promotions for each other, they can be
+     *         minted by the same actor until `maxTokenSupplyForStage`
+     *         is reached. Please ensure the `allowedNftToken` is not
+     *         running an active drop during the `dropStage` time period.
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -101,20 +102,6 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external;
-
-    /**
-     * @notice Update token gated drop stage fee basis points for this nft
-     *         contract on SeaDrop.
-     *
-     * @param seaDropImpl     The allowed SeaDrop contract.
-     * @param allowedNftToken The allowed nft token.
-     * @param feeBps          The token gated drop fee basis points.
-     */
-    function updateTokenGatedDropFee(
-        address seaDropImpl,
-        address allowedNftToken,
-        uint16 feeBps
     ) external;
 
     /**
@@ -128,7 +115,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
 
     /**
      * @notice Update the creator payout address for this nft contract on SeaDrop.
-     *         Only the owner can set the creator payout address.
+     *         Only an authorized user should be able to set the creator payout address.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
@@ -141,7 +128,7 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update the allowed fee recipient for this nft contract
      *         on SeaDrop.
-     *         Only the administrator can set the allowed fee recipient.
+     *         Only an authorized user should be able to set the allowed fee recipient.
      *
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
@@ -155,15 +142,29 @@ interface IERC721SeaDrop is IERC721ContractMetadata, IERC165 {
     /**
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
-     *         Only the owner or administrator can update the signers.
+     *         Only an authorized user should be able to update the signers.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
-     * @param signer      The signer to update.
-     * @param allowed     Whether signatures are allowed from this signer.
+     * @param seaDropImpl                The allowed SeaDrop contract.
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
      */
-    function updateSigner(
+    function updateSignedMintValidationParams(
         address seaDropImpl,
         address signer,
+        SignedMintValidationParams memory signedMintValidationParams
+    ) external;
+
+    /**
+     * @notice Update the allowed payers for this nft contract on SeaDrop.
+     *
+     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param payer       The payer to update.
+     * @param allowed     Whether the payer is allowed.
+     */
+    function updatePayer(
+        address seaDropImpl,
+        address payer,
         bool allowed
     ) external;
 }

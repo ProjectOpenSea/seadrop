@@ -6,14 +6,14 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
+import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
 import type { PublicDropStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
@@ -38,10 +38,9 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    await faucet(owner.address, provider);
-    await faucet(admin.address, provider);
-    await faucet(payer.address, provider);
-    await faucet(minter.address, provider);
+    for (const wallet of [owner, admin, payer, minter]) {
+      await faucet(wallet.address, provider);
+    }
 
     // Deploy SeaDrop
     const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
@@ -50,11 +49,11 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
+      "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", admin.address, [
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
       seadrop.address,
     ]);
 
@@ -63,25 +62,43 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
     publicDrop = {
       mintPrice: "100000000000000000", // 0.1 ether
-      maxMintsPerWallet: 10,
+      maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 100,
       feeBps: 1000,
-      restrictFeeRecipients: false,
+      restrictFeeRecipients: true,
     };
-    await token.updatePublicDrop(seadrop.address, publicDrop);
-
-    // Only the admin can update fee bps and fee recipient.
+    await token.connect(admin).updatePublicDrop(seadrop.address, publicDrop);
+    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
     await token
       .connect(admin)
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
-    await token
-      .connect(admin)
-      .updatePublicDropFee(seadrop.address, publicDrop.feeBps);
   });
 
   it("Should mint a public stage", async () => {
     // Mint public with payer for minter.
     const value = BigNumber.from(publicDrop.mintPrice).mul(3);
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 3, {
+          value,
+        })
+    ).to.be.revertedWith("PayerNotAllowed");
+
+    expect(await seadrop.getPayers(token.address)).to.deep.eq([]);
+    expect(await seadrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
+      false
+    );
+
+    // Allow the payer.
+    await token.updatePayer(seadrop.address, payer.address, true);
+
+    expect(await seadrop.getPayers(token.address)).to.deep.eq([payer.address]);
+    expect(await seadrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
+      true
+    );
+
     await expect(
       seadrop
         .connect(payer)
@@ -136,8 +153,41 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   it("Should not mint a public stage that hasn't started", async () => {
     // Set start time in the future.
-    publicDrop.startTime = Math.round(Date.now() / 1000) + 100;
-    await token.updatePublicDrop(seadrop.address, publicDrop);
+    await token.updatePublicDrop(seadrop.address, {
+      ...publicDrop,
+      startTime: Math.round(Date.now() / 1000) + 100,
+    });
+
+    // Mint public with payer for minter.
+    const value = BigNumber.from(publicDrop.mintPrice).mul(3);
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 3, {
+          value,
+        })
+    ).to.be.revertedWith("NotActive");
+
+    // Mint public with minter being payer.
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintPublic(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          3,
+          { value }
+        )
+    ).to.be.revertedWith("NotActive");
+  });
+
+  it("Should not mint a public stage that has ended", async () => {
+    // Set start time in the future.
+    await token.updatePublicDrop(seadrop.address, {
+      ...publicDrop,
+      endTime: Math.round(Date.now() / 1000) - 100,
+    });
 
     // Mint public with payer for minter.
     const value = BigNumber.from(publicDrop.mintPrice).mul(3);
@@ -165,7 +215,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   it("Should respect limit for max mints per wallet and max supply", async () => {
     // Update max limit per wallet to 2.
-    publicDrop.maxMintsPerWallet = 2;
+    publicDrop.maxTotalMintableByWallet = 2;
     await token.updatePublicDrop(seadrop.address, publicDrop);
 
     // Update max supply to 1.
@@ -175,7 +225,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     const value = publicDrop.mintPrice;
     await expect(
       seadrop
-        .connect(payer)
+        .connect(minter)
         .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
           value,
         })
@@ -185,7 +235,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         token.address,
         minter.address,
         feeRecipient.address,
-        payer.address,
+        minter.address, // payer
         1, // mint quantity
         publicDrop.mintPrice,
         publicDrop.feeBps,
@@ -195,7 +245,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     // Minting the next should throw MintQuantityExceedsMaxSupply.
     await expect(
       seadrop
-        .connect(payer)
+        .connect(minter)
         .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
           value,
         })
@@ -207,17 +257,23 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     // Mint one.
     await expect(
       seadrop
-        .connect(payer)
-        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
-          value,
-        })
+        .connect(minter)
+        .mintPublic(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          1,
+          {
+            value,
+          }
+        )
     )
       .to.emit(seadrop, "SeaDropMint")
       .withArgs(
         token.address,
         minter.address,
         feeRecipient.address,
-        payer.address,
+        minter.address, // payer
         1, // mint quantity
         publicDrop.mintPrice,
         publicDrop.feeBps,
@@ -227,7 +283,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     // Minting the next should throw MintQuantityExceedsMaxMintedPerWallet.
     await expect(
       seadrop
-        .connect(payer)
+        .connect(minter)
         .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
           value,
         })
@@ -273,7 +329,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     const value = BigNumber.from(publicDrop.mintPrice);
     await expect(
       seadrop
-        .connect(payer)
+        .connect(minter)
         .mintPublic(
           token.address,
           ethers.constants.AddressZero,
@@ -287,44 +343,57 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
     await expect(
       seadrop
-        .connect(payer)
+        .connect(minter)
         .mintPublic(token.address, creator.address, minter.address, 1, {
           value,
         })
     ).to.be.revertedWith("FeeRecipientNotAllowed");
   });
 
-  it("Should not mint with invalid fee bps", async () => {
-    await token.connect(admin).updatePublicDropFee(seadrop.address, 15_000);
-
-    const value = BigNumber.from(publicDrop.mintPrice);
+  it("Should not be able to set an invalid fee bps", async () => {
     await expect(
-      seadrop
-        .connect(payer)
-        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
-          value,
-        })
+      token
+        .connect(admin)
+        .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 15_000 })
     ).to.be.revertedWith("InvalidFeeBps");
+  });
 
-    await token.connect(admin).updatePublicDropFee(seadrop.address, 0);
+  it("Should mint when feeBps is zero", async () => {
+    await token
+      .connect(admin)
+      .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 0 });
 
     await expect(
       seadrop
-        .connect(payer)
-        .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
-          value,
-        })
+        .connect(minter)
+        .mintPublic(
+          token.address,
+          feeRecipient.address,
+          ethers.constants.AddressZero,
+          1,
+          {
+            value: publicDrop.mintPrice,
+          }
+        )
     )
       .to.emit(seadrop, "SeaDropMint")
       .withArgs(
         token.address,
         minter.address,
         feeRecipient.address,
-        payer.address,
+        minter.address, // payer
         1, // mint quantity
         publicDrop.mintPrice,
         0, // fee bps
         0 // drop stage index (0 for public)
       );
+  });
+
+  it("Should not be able to mint zero quantity", async () => {
+    await expect(
+      seadrop
+        .connect(minter)
+        .mintPublic(token.address, feeRecipient.address, minter.address, 0)
+    ).to.be.revertedWith("MintQuantityCannotBeZero");
   });
 });

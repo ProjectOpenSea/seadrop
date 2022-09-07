@@ -2,7 +2,7 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
-solc_version = '0.8.15'
+solc_version = '0.8.16'
 remappings = [
     'openzeppelin-contracts/=lib/openzeppelin-contracts/',
     'ds-test/=lib/forge-std/lib/ds-test/src/',

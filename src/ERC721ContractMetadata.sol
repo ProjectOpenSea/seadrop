@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 import {
-    IERC721ContractMetadata
-} from "./interfaces/IERC721ContractMetadata.sol";
+    ISeaDropTokenContractMetadata
+} from "./interfaces/ISeaDropTokenContractMetadata.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
-import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
-
-import {
-    ECDSA
-} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 /**
  * @title  ERC721ContractMetadata
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721ContractMetadata is a token contract that extends ERC721A
- *         with additional metadata and administrator capabilities.
+ *         with additional metadata and ownership capabilities.
  */
 contract ERC721ContractMetadata is
     ERC721A,
-    TwoStepAdministered,
-    IERC721ContractMetadata
+    TwoStepOwnable,
+    ISeaDropTokenContractMetadata
 {
+    /// @notice Throw if the max supply exceeds uint64, a limit
+    //          due to the storage of bit-packed variables in ERC721A.
+    error CannotExceedMaxSupplyOfUint64(uint256 newMaxSupply);
+
     /// @notice Track the max supply.
     uint256 _maxSupply;
 
     /// @notice Track the base URI for token metadata.
-    string _theBaseURI;
+    string _tokenBaseURI;
 
     /// @notice Track the contract URI for contract metadata.
     string _contractURI;
@@ -41,11 +41,9 @@ contract ERC721ContractMetadata is
      * @notice Deploy the token contract with its name, symbol,
      *         and an administrator.
      */
-    constructor(
-        string memory name,
-        string memory symbol,
-        address administrator
-    ) ERC721A(name, symbol) TwoStepAdministered(administrator) {}
+    constructor(string memory name, string memory symbol)
+        ERC721A(name, symbol)
+    {}
 
     /**
      * @notice Returns the base URI for token metadata.
@@ -85,7 +83,7 @@ contract ERC721ContractMetadata is
      * @param startTokenId The start token id.
      * @param endTokenId   The end token id.
      */
-    function setBatchTokenURIs(uint256 startTokenId, uint256 endTokenId)
+    function emitBatchTokenURIUpdated(uint256 startTokenId, uint256 endTokenId)
         external
         onlyOwner
     {
@@ -141,6 +139,11 @@ contract ERC721ContractMetadata is
      * @param newMaxSupply The new max supply to set.
      */
     function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
+        // Ensure the max supply does not exceed the maximum value of uint64.
+        if (newMaxSupply > 2**64 - 1) {
+            revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
+        }
+
         // Set the new max supply.
         _maxSupply = newMaxSupply;
 
@@ -159,7 +162,7 @@ contract ERC721ContractMetadata is
         onlyOwner
     {
         // Set the new base URI.
-        _theBaseURI = newBaseURI;
+        _tokenBaseURI = newBaseURI;
 
         // Emit an event with the update.
         emit BaseURIUpdated(newBaseURI);
@@ -170,6 +173,6 @@ contract ERC721ContractMetadata is
      *         to return tokenURI.
      */
     function _baseURI() internal view virtual override returns (string memory) {
-        return _theBaseURI;
+        return _tokenBaseURI;
     }
 }

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 import {
     AllowListData,
     MintParams,
     PublicDrop,
     TokenGatedDropStage,
-    TokenGatedMintParams
+    TokenGatedMintParams,
+    SignedMintValidationParams
 } from "../lib/SeaDropStructs.sol";
 
 import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
@@ -48,12 +49,14 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
 
     /**
      * @notice Mint with a server-side signature.
+     *         Note that a signature can only be used once.
      *
      * @param nftContract      The nft contract to mint.
      * @param feeRecipient     The fee recipient.
      * @param minterIfNotPayer The mint recipient if different than the payer.
      * @param quantity         The number of tokens to mint.
      * @param mintParams       The mint parameters.
+     * @param salt             The sale for the signed mint.
      * @param signature        The server-side signature, must be an allowed
      *                         signer.
      */
@@ -63,6 +66,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         address minterIfNotPayer,
         uint256 quantity,
         MintParams calldata mintParams,
+        uint256 salt,
         bytes calldata signature
     ) external payable;
 
@@ -147,13 +151,34 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (address[] memory);
 
     /**
-     * @notice Returns if the specified signer is allowed
-     *         for the nft contract.
+     * @notice Returns the struct of SignedMintValidationParams for a signer.
      *
      * @param nftContract The nft contract.
      * @param signer      The signer.
      */
-    function getSignerIsAllowed(address nftContract, address signer)
+    function getSignedMintValidationParams(address nftContract, address signer)
+        external
+        view
+        returns (SignedMintValidationParams memory);
+
+    /**
+     * @notice Returns the payers for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     */
+    function getPayers(address nftContract)
+        external
+        view
+        returns (address[] memory);
+
+    /**
+     * @notice Returns if the specified payer is allowed
+     *         for the nft contract.
+     *
+     * @param nftContract The nft contract.
+     * @param payer       The payer.
+     */
+    function getPayerIsAllowed(address nftContract, address payer)
         external
         view
         returns (bool);
@@ -181,8 +206,22 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (TokenGatedDropStage memory);
 
     /**
+     * @notice Returns whether the token id for a token gated drop has been
+     *         redeemed.
+     *
+     * @param nftContract       The nft contract.
+     * @param allowedNftToken   The token gated nft token.
+     * @param allowedNftTokenId The token gated nft token id to check.
+     */
+    function getAllowedNftTokenIdIsRedeemed(
+        address nftContract,
+        address allowedNftToken,
+        uint256 allowedNftTokenId
+    ) external view returns (bool);
+
+    /**
      * The following methods assume msg.sender is an nft contract
-     * and its ERC165 interface id matches IERC721SeaDrop.
+     * and its ERC165 interface id matches INonFungibleSeaDropToken.
      */
 
     /**
@@ -204,6 +243,9 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the allow list merkle root for the nft contract
      *         and emits an event.
      *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
      * @param allowListData The allow list data.
      */
     function updateAllowList(AllowListData calldata allowListData) external;
@@ -211,6 +253,12 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
+     *
+     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
+     *         token gated drop promotions for each other, they can be
+     *         minted by the same actor until `maxTokenSupplyForStage`
+     *         is reached. Please ensure the `allowedNftToken` is not
+     *         running an active drop during the `dropStage` time period.
      *
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
@@ -239,8 +287,20 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     * @param signer  The signer to update.
-     * @param allowed Whether signatures are allowed from this signer.
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
      */
-    function updateSigner(address signer, bool allowed) external;
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams calldata signedMintValidationParams
+    ) external;
+
+    /**
+     * @notice Updates the allowed payer and emits an event.
+     *
+     * @param payer  The payer to add or remove.
+     * @param allowed Whether to add or remove the payer.
+     */
+    function updatePayer(address payer, bool allowed) external;
 }

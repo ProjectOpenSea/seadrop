@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
 /**
  * @dev HardHat doesn't support multiple source folders; so import everything
@@ -7,3 +7,4 @@ pragma solidity ^0.8.11;
  * feedback than running an extra yarn build.
  */
 import { TestERC721 } from "../test/TestERC721.sol";
+import { MaliciousRecipient } from "../test/MaliciousRecipient.sol";

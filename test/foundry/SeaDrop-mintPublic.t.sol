@@ -1,22 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.16;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
 import { SeaDrop } from "seadrop/SeaDrop.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
 
-import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+import {
+    INonFungibleSeaDropToken
+} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
 
 import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
 
-contract ERC721DropTest is TestHelper {
+import { MaliciousRecipient } from "seadrop/test/MaliciousRecipient.sol";
+
+contract ERC721SeaDropMintPublicTest is TestHelper {
+    MaliciousRecipient attacker;
+
     function setUp() public {
-        // Deploy the ERC721SeaDrop token.
+        attacker = new MaliciousRecipient();
+        // Deploy the ERC721PartnerSeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", address(this), allowedSeaDrop);
+        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
@@ -27,7 +34,8 @@ contract ERC721DropTest is TestHelper {
         // Create the public drop stage.
         PublicDrop memory publicDrop = PublicDrop(
             0.1 ether, // mint price
-            uint64(block.timestamp), // start time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 100, // end time
             10, // max mints per wallet
             100, // fee (1%)
             false // if false, allow any fee recipient
@@ -38,6 +46,38 @@ contract ERC721DropTest is TestHelper {
 
         // Set the public drop for the token contract.
         seadrop.updatePublicDrop(publicDrop);
+    }
+
+    function testMintPublicReenter() public payable {
+        // Create the public drop stage.
+        PublicDrop memory publicDrop = PublicDrop(
+            1 ether, // mint price
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 100, // end time
+            1, // max mints per wallet
+            100, // fee (1%)
+            false // if false, allow any fee recipient
+            // If true, then only the fee recipient can perform the attack
+        );
+        vm.prank(address(token));
+        seadrop.updatePublicDrop(publicDrop);
+
+        assert(!attacker.startAttack());
+        // send some eth and set startAttack
+        attacker.setStartAttack{ value: 10 ether }();
+        assert(attacker.startAttack());
+
+        assertEq(token.balanceOf(address(attacker)), 0);
+        assertEq(
+            uint256(
+                seadrop.getPublicDrop(address(token)).maxTotalMintableByWallet
+            ),
+            1
+        );
+
+        // expect fail on reentrancy
+        vm.expectRevert("ETH_TRANSFER_FAILED");
+        attacker.attack(seadrop, address(token));
     }
 
     function testMintPublic(FuzzInputs memory args) public validateArgs(args) {
@@ -101,7 +141,8 @@ contract ERC721DropTest is TestHelper {
         // Create public drop object with free mint.
         PublicDrop memory publicDrop = PublicDrop(
             0 ether, // mint price (free)
-            uint64(block.timestamp), // start time
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp) + 100, // end time
             10, // max mints per wallet
             100, // fee (1%)
             false // if false, allow any fee recipient
@@ -131,6 +172,9 @@ contract ERC721DropTest is TestHelper {
         PublicDrop memory publicDrop = seadrop.getPublicDrop(address(token));
 
         address payer = makeAddr("payer");
+
+        // Allow the payer.
+        token.updatePayer(address(seadrop), payer, true);
 
         vm.assume(
             payer != creator &&
@@ -177,7 +221,7 @@ contract ERC721DropTest is TestHelper {
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
         vm.deal(args.minter, 100 ether);
-        vm.expectRevert(IERC721SeaDrop.OnlySeaDrop.selector);
+        vm.expectRevert(INonFungibleSeaDropToken.OnlySeaDrop.selector);
 
         token.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }
