@@ -116,9 +116,8 @@ contract SeaDropMintSignedTest is TestHelper {
         hoax(args.payer, 100 ether);
 
         // Calculate the value to send with the transaction.
-        uint256 mintValue = args.numMints * mintParams.mintPrice;
 
-        seadrop.mintSigned{ value: mintValue }(
+        seadrop.mintSigned{ value: args.numMints * mintParams.mintPrice }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -146,18 +145,21 @@ contract SeaDropMintSignedTest is TestHelper {
             true // if false, allow any fee recipient
         );
 
-        // Get the signature components.
-        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
-            args.signerNameSeed,
-            address(token),
-            args.minter,
-            args.feeRecipient,
-            mintParams,
-            args.salt
-        );
+        bytes memory signature;
+        {
+            // Get the signature components.
+            (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+                args.signerNameSeed,
+                address(token),
+                args.minter,
+                args.feeRecipient,
+                mintParams,
+                args.salt
+            );
 
-        // Create the signature from the components.
-        bytes memory signature = abi.encodePacked(r, s, v);
+            // Create the signature from the components.
+            signature = abi.encodePacked(r, s, v);
+        }
 
         // Impersonate the token contract to update the signers.
 
@@ -243,18 +245,21 @@ contract SeaDropMintSignedTest is TestHelper {
             false // if false, allow any fee recipient
         );
 
-        // Get the signature components.
-        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
-            args.signerNameSeed,
-            address(token),
-            args.minter,
-            args.feeRecipient,
-            mintParams,
-            args.salt
-        );
+        bytes memory signature;
+        {
+            // Get the signature components.
+            (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+                args.signerNameSeed,
+                address(token),
+                args.minter,
+                args.feeRecipient,
+                mintParams,
+                args.salt
+            );
 
-        // Create the signature from the components.
-        bytes memory signature = abi.encodePacked(r, s, v);
+            // Create the signature from the components.
+            signature = abi.encodePacked(r, s, v);
+        }
 
         // Impersonate the token contract to update the signers.
 
@@ -285,15 +290,17 @@ contract SeaDropMintSignedTest is TestHelper {
             }
             badFeeRecipient = address(addressVal);
         }
-
-        bytes32 badDigest = _getDigest(
-            address(token),
-            args.minter,
-            badFeeRecipient,
-            mintParams,
-            args.salt
-        );
-        address expectedRecovered = badDigest.recover(signature);
+        address expectedRecovered;
+        {
+            bytes32 badDigest = _getDigest(
+                address(token),
+                args.minter,
+                badFeeRecipient,
+                mintParams,
+                args.salt
+            );
+            expectedRecovered = badDigest.recover(signature);
+        }
 
         vm.expectRevert(
             abi.encodeWithSelector(InvalidSignature.selector, expectedRecovered)
@@ -384,18 +391,22 @@ contract SeaDropMintSignedTest is TestHelper {
             true // restrictFeeRecipient
         );
 
-        // Get the signature components.
-        (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
-            args.signerNameSeed,
-            address(token),
-            args.minter,
-            args.feeRecipient,
-            mintParams,
-            args.salt
-        );
+        bytes memory signature;
 
-        // Create the signature from the components.
-        bytes memory signature = abi.encodePacked(r, s, v);
+        // Get the signature components.
+        {
+            (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
+                args.signerNameSeed,
+                address(token),
+                args.minter,
+                args.feeRecipient,
+                mintParams,
+                args.salt
+            );
+
+            // Create the signature from the components.
+            signature = abi.encodePacked(r, s, v);
+        }
 
         // Impersonate the token contract to update the signers.
         vm.prank(address(token));

@@ -373,31 +373,32 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             feeRecipient,
             mintParams.restrictFeeRecipients
         );
+        // avoid stack-too-deep
+        {
+            // Get the digest to verify the EIP-712 signature.
+            bytes32 digest = _getDigest(
+                nftContract,
+                minter,
+                feeRecipient,
+                mintParams,
+                salt
+            );
 
-        // Get the digest to verify the EIP-712 signature.
-        bytes32 digest = _getDigest(
-            nftContract,
-            minter,
-            feeRecipient,
-            mintParams,
-            salt
-        );
+            // Ensure the digest has not already been used.
+            if (_usedDigests[digest]) {
+                revert SignatureAlreadyUsed();
+            }
 
-        // Ensure the digest has not already been used.
-        if (_usedDigests[digest]) {
-            revert SignatureAlreadyUsed();
+            // Mark the digest as used.
+            _usedDigests[digest] = true;
+
+            // Use the recover method to see what address was used to create
+            // the signature on this data.
+            // Note that if the digest doesn't exactly match what was signed we'll
+            // get a random recovered address.
+            address recoveredAddress = digest.recover(signature);
+            _validateSignerAndParams(nftContract, mintParams, recoveredAddress);
         }
-
-        // Mark the digest as used.
-        _usedDigests[digest] = true;
-
-        // Use the recover method to see what address was used to create
-        // the signature on this data.
-        // Note that if the digest doesn't exactly match what was signed we'll
-        // get a random recovered address.
-        address recoveredAddress = digest.recover(signature);
-        _validateSignerAndParams(nftContract, mintParams, recoveredAddress);
-
         // Mint the token(s), split the payout, emit an event.
         _mintAndPay(
             nftContract,
