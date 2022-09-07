@@ -115,7 +115,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
 
     /**
      * @notice Update the creator payout address for this nft contract on SeaDrop.
-     *         Only an authorized user should be able to set the creator payout address.
+     *         Only an authorized user can set the creator payout address.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
@@ -128,7 +128,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
      * @notice Update the allowed fee recipient for this nft contract
      *         on SeaDrop.
-     *         Only an authorized user should be able to set the allowed fee recipient.
+     *         Only an authorized user can set the allowed fee recipient.
      *
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
@@ -142,7 +142,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
-     *         Only an authorized user should be able to update the signers.
+     *         Only an authorized user can update the signers.
      *
      * @param seaDropImpl                The allowed SeaDrop contract.
      * @param signer                     The signer to update.
