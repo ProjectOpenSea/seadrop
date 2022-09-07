@@ -151,7 +151,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (address[] memory);
 
     /**
-     * @notice Returns the struct of SignedMintValidationParams for a signer, if any
+     * @notice Returns the struct of SignedMintValidationParams for a signer.
      *
      * @param nftContract The nft contract.
      * @param signer      The signer.

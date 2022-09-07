@@ -17,6 +17,7 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
 /**
@@ -38,9 +39,8 @@ import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
  *         Note: An Administrator is not required to interface with SeaDrop.
  */
 contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
-    /// @notice To prevent Owner from overriding PublicDrop or
-    //          TokenGatedDropStage fees, administrator must first
-    //          initialize with fee.
+    /// @notice To prevent Owner from overriding fees, Administrator must
+    ///         first initialize with fee.
     error AdministratorMustInitializeWithFee();
 
     /**

@@ -29,7 +29,7 @@ import {
  * @title  ERC721SeaDrop
  * @author jameswenzel, ryanio, stephankmin
  * @notice ERC721SeaDrop is a token contract that contains methods
- *         to properly interact with SeaDrop
+ *         to properly interact with SeaDrop.
  */
 contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
     /// @notice Track the allowed SeaDrop addresses.

@@ -134,8 +134,8 @@ interface SeaDropErrorsAndEvents {
      */
     error TokenGatedNotTokenOwner(
         address nftContract,
-        address allowedNftContract,
-        uint256 tokenId
+        address allowedNftToken,
+        uint256 allowedNftTokenId
     );
 
     /**
@@ -144,8 +144,8 @@ interface SeaDropErrorsAndEvents {
      */
     error TokenGatedTokenIdAlreadyRedeemed(
         address nftContract,
-        address allowedNftContract,
-        uint256 tokenId
+        address allowedNftToken,
+        uint256 allowedNftTokenId
     );
 
     /**
