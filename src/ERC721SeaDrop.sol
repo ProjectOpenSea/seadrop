@@ -20,7 +20,9 @@ import {
 } from "./lib/SeaDropStructs.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
+
 import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
+
 import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
@@ -148,12 +150,13 @@ contract ERC721SeaDrop is
      *         contract.
      *         This is dangerous if an implementing token does not correctly
      *         update the minterNumMinted and currentTotalSupply values before
-     *         transferring minted tokens, as SeaDrop references these values to
-     *         enforce token limits on a per-wallet and per-stage basis.
+     *         transferring minted tokens, as SeaDrop references these values
+     *         to enforce token limits on a per-wallet and per-stage basis.
      *
      *         ERC721A tracks these values automatically, and this contract
-     *         does not use _safeMint(), but the note and modifier are left
-     *         here to encourage best-practices when referencing this contract.
+     *         does not use _safeMint(), but this note and nonReentrant
+     *         modifier are left here to encourage best-practices when
+     *         referencing this contract.
      *
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.

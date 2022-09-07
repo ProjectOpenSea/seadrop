@@ -47,8 +47,8 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
      *         contract.
      *         This is dangerous if an implementing token does not correctly
      *         update the minterNumMinted and currentTotalSupply values before
-     *         transferring minted tokens, as SeaDrop references these values to
-     *         enforce token limits on a per-wallet and per-stage basis.
+     *         transferring minted tokens, as SeaDrop references these values
+     *         to enforce token limits on a per-wallet and per-stage basis.
      *
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
