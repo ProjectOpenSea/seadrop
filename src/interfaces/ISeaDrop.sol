@@ -203,6 +203,20 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         returns (TokenGatedDropStage memory);
 
     /**
+     * @notice Returns whether the token id for a token gated drop has been
+     *         redeemed.
+     *
+     * @param nftContract       The nft contract.
+     * @param allowedNftToken   The token gated nft token.
+     * @param allowedNftTokenId The token gated nft token id to check.
+     */
+    function getAllowedNftTokenIdIsRedeemed(
+        address nftContract,
+        address allowedNftToken,
+        uint256 allowedNftTokenId
+    ) external view returns (bool);
+
+    /**
      * The following methods assume msg.sender is an nft contract
      * and its ERC165 interface id matches INonFungibleSeaDropToken.
      */

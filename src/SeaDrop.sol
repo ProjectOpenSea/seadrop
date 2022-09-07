@@ -963,6 +963,25 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     }
 
     /**
+     * @notice Returns whether the token id for a token gated drop has been
+     *         redeemed.
+     *
+     * @param nftContract       The nft contract.
+     * @param allowedNftToken   The token gated nft token.
+     * @param allowedNftTokenId The token gated nft token id to check.
+     */
+    function getAllowedNftTokenIdIsRedeemed(
+        address nftContract,
+        address allowedNftToken,
+        uint256 allowedNftTokenId
+    ) external view returns (bool) {
+        return
+            _tokenGatedRedeemed[nftContract][allowedNftToken][
+                allowedNftTokenId
+            ];
+    }
+
+    /**
      * @notice Emits an event to notify update of the drop URI.
      *
      * @param dropURI The new drop URI.

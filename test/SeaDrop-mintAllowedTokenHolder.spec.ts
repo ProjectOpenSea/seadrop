@@ -109,6 +109,15 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
+    // Ensure the token id is not already redeemed.
+    expect(
+      await seadrop.getAllowedNftTokenIdIsRedeemed(
+        token.address,
+        mintParams.allowedNftToken,
+        mintParams.allowedNftTokenIds[0]
+      )
+    ).to.be.false;
+
     // Mint the token to the minter and verify the expected event was emitted.
     await expect(
       seadrop
@@ -132,6 +141,15 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         dropStage.feeBps,
         dropStage.dropStageIndex
       );
+
+    // Ensure the token id was redeemed.
+    expect(
+      await seadrop.getAllowedNftTokenIdIsRedeemed(
+        token.address,
+        mintParams.allowedNftToken,
+        mintParams.allowedNftTokenIds[0]
+      )
+    ).to.be.true;
 
     expect(await seadrop.getTokenGatedAllowedTokens(token.address)).to.deep.eq([
       allowedNftToken.address,
