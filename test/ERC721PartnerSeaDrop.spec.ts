@@ -351,4 +351,100 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       .to.emit(token, "AllowedSeaDropUpdated")
       .withArgs([seadrop.address]);
   });
+
+  it("Should only let the owner and administrator call update functions", async () => {
+    const onlyOwnerOrAdministratorMethods = [
+      "updateAllowedSeaDrop",
+      "updatePublicDrop",
+      "updateAllowList",
+      "updateTokenGatedDrop",
+      "updateDropURI",
+      "updateSignedMintValidationParams",
+      "updatePayer",
+    ];
+
+    const OnlyAdministratorMethods = ["updateAllowedFeeRecipient"];
+
+    const onlyOwnerMethods = ["updateCreatorPayoutAddress"];
+
+    const allowListData = {
+      merkleRoot: `0x${"3".repeat(64)}`,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+
+    const dropStage = {
+      mintPrice: "10000000000000000", // 0.01 ether
+      maxTotalMintableByWallet: 10,
+      startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 100,
+      feeBps: 100,
+      restrictFeeRecipients: true,
+    };
+
+    const signedMintValidationParams = {
+      minMintPrice: 10,
+      maxMaxTotalMintableByWallet: 5,
+      minStartTime: 50,
+      maxEndTime: 100,
+      maxMaxTokenSupplyForStage: 100,
+      minFeeBps: 5,
+      maxFeeBps: 1000,
+    };
+
+    const methodParams: any = {
+      updateAllowedSeaDrop: [[seadrop.address]],
+      updatePublicDrop: [seadrop.address, publicDrop],
+      updateAllowList: [seadrop.address, allowListData],
+      updateTokenGatedDrop: [seadrop.address, `0x${"4".repeat(40)}`, dropStage],
+      updateDropURI: [seadrop.address, "http://test.com"],
+      updateCreatorPayoutAddress: [seadrop.address, `0x${"4".repeat(40)}`],
+      updateAllowedFeeRecipient: [seadrop.address, `0x${"4".repeat(40)}`, true],
+      updateSignedMintValidationParams: [
+        seadrop.address,
+        `0x${"4".repeat(40)}`,
+        signedMintValidationParams,
+      ],
+      updatePayer: [seadrop.address, `0x${"4".repeat(40)}`, true],
+    };
+
+    for (const method of onlyOwnerOrAdministratorMethods) {
+      await (token as any).connect(admin)[method](...methodParams[method]);
+
+      // Set to a new random payer to avoid error `DuplicatePayer()`
+      if (method === "updatePayer") methodParams.updatePayer[1] = randomHex(20);
+
+      await (token as any).connect(owner)[method](...methodParams[method]);
+
+      await expect(
+        (token as any).connect(creator)[method](...methodParams[method])
+      ).to.be.revertedWith("OnlyOwnerOrAdministrator()");
+    }
+
+    for (const method of OnlyAdministratorMethods) {
+      await (token as any).connect(admin)[method](...methodParams[method]);
+
+      await expect(
+        (token as any).connect(owner)[method](...methodParams[method])
+      ).to.be.revertedWith("OnlyAdministrator()");
+
+      await expect(
+        (token as any).connect(creator)[method](...methodParams[method])
+      ).to.be.revertedWith("OnlyAdministrator()");
+    }
+
+    for (const method of onlyOwnerMethods) {
+      await (token as any).connect(owner)[method](...methodParams[method]);
+
+      await expect(
+        (token as any).connect(admin)[method](...methodParams[method])
+      ).to.be.revertedWith("OnlyOwner()");
+
+      await expect(
+        (token as any).connect(creator)[method](...methodParams[method])
+      ).to.be.revertedWith("OnlyOwner()");
+    }
+  });
 });
