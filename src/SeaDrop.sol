@@ -373,7 +373,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             feeRecipient,
             mintParams.restrictFeeRecipients
         );
-        // avoid stack-too-deep
+
+        // Validate the signature in a block scope to avoid "stack too deep".
         {
             // Get the digest to verify the EIP-712 signature.
             bytes32 digest = _getDigest(
@@ -399,6 +400,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             address recoveredAddress = digest.recover(signature);
             _validateSignerAndParams(nftContract, mintParams, recoveredAddress);
         }
+
         // Mint the token(s), split the payout, emit an event.
         _mintAndPay(
             nftContract,
