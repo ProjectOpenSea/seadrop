@@ -69,7 +69,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     mapping(address => address[]) private _enumeratedSigners;
 
     /// @notice Track the used signature digests.
-    mapping(address => mapping(bytes32 => bool)) private _usedDigests;
+    mapping(bytes32 => bool) private _usedDigests;
 
     /// @notice Track the allowed payers.
     mapping(address => mapping(address => bool)) private _allowedPayers;
@@ -380,12 +380,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         );
 
         // Ensure the digest has not already been used.
-        if (_usedDigests[nftContract][digest]) {
+        if (_usedDigests[digest]) {
             revert SignatureAlreadyUsed();
         }
 
         // Mark the digest as used.
-        _usedDigests[nftContract][digest] = true;
+        _usedDigests[digest] = true;
 
         // Use the recover method to see what address was used to create
         // the signature on this data.
