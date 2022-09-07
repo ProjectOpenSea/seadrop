@@ -210,6 +210,12 @@ interface SeaDropErrorsAndEvents {
     error SignedMintsMustRestrictFeeRecipients();
 
     /**
+     * @dev Revert with an error if a signature for a signed mint has already
+     *      been used.
+     */
+    error SignatureAlreadyUsed();
+
+    /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
      * 
      * @param nftContract    The nft contract.

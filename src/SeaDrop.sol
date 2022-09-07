@@ -68,6 +68,9 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /// @notice Track the signers for each server-side drop.
     mapping(address => address[]) private _enumeratedSigners;
 
+    /// @notice Track the used signature digests.
+    mapping(address => mapping(bytes32 => bool)) private _usedDigests;
+
     /// @notice Track the allowed payers.
     mapping(address => mapping(address => bool)) private _allowedPayers;
 
@@ -316,6 +319,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
     /**
      * @notice Mint with a server-side signature.
+     *         Note that a signature can only be used once.
      *
      * @param nftContract      The nft contract to mint.
      * @param feeRecipient     The fee recipient.
@@ -374,6 +378,14 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             feeRecipient,
             mintParams
         );
+
+        // Ensure the digest has not already been used.
+        if (_usedDigests[nftContract][digest]) {
+            revert SignatureAlreadyUsed();
+        }
+
+        // Mark the digest as used.
+        _usedDigests[nftContract][digest] = true;
 
         // Use the recover method to see what address was used to create
         // the signature on this data.

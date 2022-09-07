@@ -175,7 +175,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   it("Should mint a signed mint", async () => {
     // Mint signed with payer for minter.
-    const signature = await signMint(
+    let signature = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -234,7 +234,34 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     expect(minterBalance).to.eq(3);
     expect(await token.totalSupply()).to.eq(3);
 
+    // Ensure a signature can only be used once.
+    // Mint again with the same params.
+    await expect(
+      seadrop
+        .connect(payer)
+        .mintSigned(
+          token.address,
+          feeRecipient.address,
+          minter.address,
+          3,
+          mintParams,
+          signature,
+          {
+            value,
+          }
+        )
+    ).to.be.revertedWith("SignatureAlreadyUsed()");
+
     // Mint signed with minter being payer.
+    // Change a parameter to use a new digest.
+    const newMintParams = { ...mintParams, startTime: 100 };
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      newMintParams,
+      signer
+    );
     await expect(
       seadrop
         .connect(minter)
@@ -243,7 +270,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           feeRecipient.address,
           ethers.constants.AddressZero,
           3,
-          mintParams,
+          newMintParams,
           signature,
           { value }
         )

@@ -49,6 +49,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
 
     /**
      * @notice Mint with a server-side signature.
+     *         Note that a signature can only be used once.
      *
      * @param nftContract      The nft contract to mint.
      * @param feeRecipient     The fee recipient.
