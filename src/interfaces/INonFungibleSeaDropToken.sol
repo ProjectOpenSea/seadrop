@@ -38,6 +38,18 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
      *
+     * @dev    NOTE: If a token registers itself with multiple SeaDrop
+     *         contracts, the implementation of this function should guard
+     *         against reentrancy. If the implementing token uses
+     *         _safeMint(), or a feeRecipient with a malicious receive() hook
+     *         is specified, the token or fee recipients may be able to execute
+     *         another mint in the same transaction via a separate SeaDrop
+     *         contract.
+     *         This is dangerous if an implementing token does not correctly
+     *         update the minterNumMinted and currentTotalSupply values before
+     *         transferring minted tokens, as SeaDrop references these values to
+     *         enforce token limits on a per-wallet and per-stage basis.
+     *
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
      */
@@ -47,6 +59,10 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply,
      *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
+     *
+     * @dev    NOTE: Implementing contracts should always update these numbers
+     *         before transferring any tokens with _safeMint() to mitigate
+     *         consequences of malicious onERC721Received() hooks.
      *
      * @param minter The minter address.
      */

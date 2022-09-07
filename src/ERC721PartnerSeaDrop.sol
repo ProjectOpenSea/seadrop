@@ -58,6 +58,22 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     {}
 
     /**
+     * @notice Mint tokens, restricted to the SeaDrop contract.
+     *
+     * @param minter   The address to mint to.
+     * @param quantity The number of tokens to mint.
+     */
+    function mintSeaDrop(address minter, uint256 quantity)
+        external
+        payable
+        override
+        onlyAllowedSeaDrop(msg.sender)
+    {
+        // Mint the quantity of tokens to the minter.
+        _mint(minter, quantity);
+    }
+
+    /**
      * @notice Update the allowed SeaDrop contracts.
      *
      * @param allowedSeaDrop The allowed SeaDrop addresses.

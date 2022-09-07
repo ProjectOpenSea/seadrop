@@ -20,7 +20,7 @@ import {
 } from "./lib/SeaDropStructs.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
-
+import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 import {
     IERC165
 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
@@ -31,7 +31,11 @@ import {
  * @notice ERC721SeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop.
  */
-contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
+contract ERC721SeaDrop is
+    ERC721ContractMetadata,
+    INonFungibleSeaDropToken,
+    ReentrancyGuard
+{
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) internal _allowedSeaDrop;
 
@@ -135,6 +139,22 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
     /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
      *
+     * @dev    NOTE: If a token registers itself with multiple SeaDrop
+     *         contracts, the implementation of this function should guard
+     *         against reentrancy. If the implementing token uses
+     *         _safeMint(), or a feeRecipient with a malicious receive() hook
+     *         is specified, the token or fee recipients may be able to execute
+     *         another mint in the same transaction via a separate SeaDrop
+     *         contract.
+     *         This is dangerous if an implementing token does not correctly
+     *         update the minterNumMinted and currentTotalSupply values before
+     *         transferring minted tokens, as SeaDrop references these values to
+     *         enforce token limits on a per-wallet and per-stage basis.
+     *
+     *         ERC721A tracks these values automatically, and this contract
+     *         does not use _safeMint(), but the note and modifier are left
+     *         here to encourage best-practices when referencing this contract.
+     *
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
      */
@@ -143,6 +163,7 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
         payable
         override
         onlyAllowedSeaDrop(msg.sender)
+        nonReentrant
     {
         // Mint the quantity of tokens to the minter.
         _mint(minter, quantity);
@@ -292,6 +313,10 @@ contract ERC721SeaDrop is ERC721ContractMetadata, INonFungibleSeaDropToken {
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply,
      *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
+     *
+     * @dev    NOTE: Implementing contracts should always update these numbers
+     *         before transferring any tokens with _safeMint() to mitigate
+     *         consequences of malicious onERC721Received() hooks.
      *
      * @param minter The minter address.
      */
