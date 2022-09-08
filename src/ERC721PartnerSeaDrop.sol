@@ -12,12 +12,6 @@ import {
     SignedMintValidationParams
 } from "./lib/SeaDropStructs.sol";
 
-import { ERC721A } from "ERC721A/ERC721A.sol";
-
-import {
-    IERC165
-} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-
 import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
 /**
