@@ -81,6 +81,7 @@ contract ERC721SeaDrop is
 
     /**
      * @notice Update the allowed SeaDrop contracts.
+     *         Only the owner or administrator can use this function.
      *
      * @param allowedSeaDrop The allowed SeaDrop addresses.
      */
@@ -174,7 +175,8 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Update public drop data for this nft contract on SeaDrop.
+     * @notice Update the public drop data for this nft contract on SeaDrop.
+     *         Only the owner can use this function.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
@@ -188,9 +190,8 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Update allow list data for this nft contract on SeaDrop.
-     *
-     *         Note: Only authorized users can call this.
+     * @notice Update the allow list data for this nft contract on SeaDrop.
+     *         Only the owner can use this function.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
@@ -204,14 +205,16 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Update token gated drop stage data for this nft contract
+     * @notice Update the token gated drop stage data for this nft contract
      *         on SeaDrop.
+     *         Only the owner can use this function.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
-     *         token gated drop promotions for each other, they can be
-     *         minted by the same actor until `maxTokenSupplyForStage`
-     *         is reached. Please ensure the `allowedNftToken` is not
-     *         running an active drop during the `dropStage` time period.
+     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         simultaneous token gated drop promotions for each other,
+     *         they can be minted by the same actor until
+     *         `maxTokenSupplyForStage` is reached. Please ensure the
+     *         `allowedNftToken` is not running an active drop during the
+     *         `dropStage` time period.
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -228,6 +231,7 @@ contract ERC721SeaDrop is
 
     /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
+     *         Only the owner can use this function.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param dropURI     The new drop URI.
@@ -261,6 +265,7 @@ contract ERC721SeaDrop is
     /**
      * @notice Update the allowed fee recipient for this nft contract
      *         on SeaDrop.
+     *         Only the owner can set the allowed fee recipient.
      *
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
@@ -278,7 +283,7 @@ contract ERC721SeaDrop is
     /**
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
-     *         Only the owner or administrator can update the signers.
+     *         Only the owner can use this function.
      *
      * @param seaDropImpl                The allowed SeaDrop contract.
      * @param signer                     The signer to update.
@@ -299,6 +304,7 @@ contract ERC721SeaDrop is
 
     /**
      * @notice Update the allowed payers for this nft contract on SeaDrop.
+     *         Only the owner can use this function.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param payer       The payer to update.

@@ -14,6 +14,7 @@ import {
     TokenGatedMintParams,
     SignedMintValidationParams
 } from "seadrop/lib/SeaDropStructs.sol";
+
 import { Merkle } from "murky/Merkle.sol";
 
 contract ERC721PartnerSeaDropPlusRegularMint is ERC721PartnerSeaDrop {

@@ -69,6 +69,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
 
     /**
      * @notice Update the allowed SeaDrop contracts.
+     *         Only the owner or administrator can use this function.
      *
      * @param allowedSeaDrop The allowed SeaDrop addresses.
      */
@@ -81,8 +82,10 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     }
 
     /**
-     * @notice Update public drop data for this nft contract on SeaDrop.
-     *         The administrator must first set `feeBps`.
+     * @notice Update the public drop data for this nft contract on SeaDrop.
+     *         Only the owner or administrator can use this function.
+     *
+     *         The administrator can only update `feeBps`.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
@@ -132,8 +135,8 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     }
 
     /**
-     * @notice Update allow list data for this nft contract on SeaDrop.
-     *         Note: Only owner or administrator can call this.
+     * @notice Update the allow list data for this nft contract on SeaDrop.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
@@ -153,15 +156,18 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     }
 
     /**
-     * @notice Update token gated drop stage data for this nft contract
-     *         on SeaDrop. The administrator must first set `feeBps`.
+     * @notice Update the token gated drop stage data for this nft contract
+     *         on SeaDrop.
+     *         Only the owner or administrator can use this function.
+     *
+     *         The administrator must first set `feeBps`.
      *
      *         Note: If two INonFungibleSeaDropToken tokens are doing
      *         simultaneous token gated drop promotions for each other,
      *         they can be minted by the same actor until
      *         `maxTokenSupplyForStage` is reached. Please ensure the
-     *         `allowedNftToken` is not running an active drop during
-     *         the `dropStage` time period.
+     *         `allowedNftToken` is not running an active drop during the
+     *         `dropStage` time period.
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -214,6 +220,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
 
     /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param dropURI     The new drop URI.
@@ -250,7 +257,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     /**
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
-     *         Only the owner or administrator can update the signers.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl                The allowed SeaDrop contract.
      * @param signer                     The signer to update.
@@ -308,7 +315,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
 
     /**
      * @notice Update the allowed payers for this nft contract on SeaDrop.
-     *         Only the owner or administrator can update the payers.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param payer       The payer to update.

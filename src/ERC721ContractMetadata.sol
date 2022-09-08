@@ -38,8 +38,7 @@ contract ERC721ContractMetadata is
     bytes32 _provenanceHash;
 
     /**
-     * @notice Deploy the token contract with its name, symbol,
-     *         and an administrator.
+     * @notice Deploy the token contract with its name and symbol.
      */
     constructor(string memory name, string memory symbol)
         ERC721A(name, symbol)

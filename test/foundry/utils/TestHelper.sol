@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
+
 import { MintParams } from "seadrop/lib/SeaDropStructs.sol";
 
 import { SeaDrop } from "seadrop/SeaDrop.sol";

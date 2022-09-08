@@ -30,6 +30,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
 
     /**
      * @notice Update the allowed SeaDrop contracts.
+     *         Only the owner or administrator can use this function.
      *
      * @param allowedSeaDrop The allowed SeaDrop addresses.
      */
@@ -76,8 +77,10 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
         );
 
     /**
-     * @notice Update public drop data for this nft contract on SeaDrop.
-     *         Note: Only the administrator can update `feeBps`.
+     * @notice Update the public drop data for this nft contract on SeaDrop.
+     *         Only the owner or administrator can use this function.
+     *
+     *         The administrator can only update `feeBps`.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
@@ -88,9 +91,8 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     ) external;
 
     /**
-     * @notice Update allow list data for this nft contract on SeaDrop.
-     *
-     *         Note: Be sure only authorized users can call this.
+     * @notice Update the allow list data for this nft contract on SeaDrop.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
@@ -101,14 +103,19 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     ) external;
 
     /**
-     * @notice Update token gated drop stage data for this nft contract
-     *         on SeaDrop. The administrator must first set `feeBps`.
+     * @notice Update the token gated drop stage data for this nft contract
+     *         on SeaDrop.
+     *         Only the owner or administrator can use this function.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
-     *         token gated drop promotions for each other, they can be
-     *         minted by the same actor until `maxTokenSupplyForStage`
-     *         is reached. Please ensure the `allowedNftToken` is not
-     *         running an active drop during the `dropStage` time period.
+     *         The administrator, when present, must first set `feeBps`.
+     *
+     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         simultaneous token gated drop promotions for each other,
+     *         they can be minted by the same actor until
+     *         `maxTokenSupplyForStage` is reached. Please ensure the
+     *         `allowedNftToken` is not running an active drop during the
+     *         `dropStage` time period.
+     *
      *
      * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
@@ -122,6 +129,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
 
     /**
      * @notice Update the drop URI for this nft contract on SeaDrop.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param dropURI     The new drop URI.
@@ -131,7 +139,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
 
     /**
      * @notice Update the creator payout address for this nft contract on SeaDrop.
-     *         Only an authorized user can set the creator payout address.
+     *         Only the owner can set the creator payout address.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
@@ -144,7 +152,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
      * @notice Update the allowed fee recipient for this nft contract
      *         on SeaDrop.
-     *         Only an authorized user can set the allowed fee recipient.
+     *         Only the administrator can set the allowed fee recipient.
      *
      * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
@@ -158,7 +166,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
      * @notice Update the server-side signers for this nft contract
      *         on SeaDrop.
-     *         Only an authorized user can update the signers.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl                The allowed SeaDrop contract.
      * @param signer                     The signer to update.
@@ -173,6 +181,7 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
 
     /**
      * @notice Update the allowed payers for this nft contract on SeaDrop.
+     *         Only the owner or administrator can use this function.
      *
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param payer       The payer to update.
