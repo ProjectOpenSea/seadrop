@@ -7,13 +7,12 @@ import { ISeaDrop } from "../src/interfaces/ISeaDrop.sol";
 
 contract MintPublicDrop is Script {
     // Addresses
-    address seadrop = 0x18e55C1728c2CA06878b6b609a26c978596C27EB;
+    address seadrop = 0x53002b539B8eB1EDe580fc2D86640240CFfFC6B2;
     address token = 0x044F927CFa2D5bDD1DA9E5F6AE45ad7d778b756A;
-    address feeRecipient = 0xf0E16c071E2cd421974dCb76d9af4DeDB578E059;
-    address minter = 0xfBa662e1a8e91a350702cF3b87D0C2d2Fb4BA57F;
+    address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
 
     // Drop config
-    uint80 mintPrice = 10000000000000; // 0.00001 ether
+    uint80 mintPrice = 100000000000000; // 0.0001 ether
 
     function run() external {
         vm.startBroadcast();
@@ -22,7 +21,7 @@ contract MintPublicDrop is Script {
         ISeaDrop(seadrop).mintPublic{ value: quantity * mintPrice }(
             address(token),
             feeRecipient,
-            minter,
+            address(0),
             quantity
         );
     }
