@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import { ERC721SeaDrop } from "../src/ERC721PartnerSeaDrop.sol";
+import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
 
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
