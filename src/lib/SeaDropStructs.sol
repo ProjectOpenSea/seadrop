@@ -27,13 +27,6 @@ struct PublicDrop {
 }
 
 /**
- * @notice Stages from dropURI are strictly for front-end consumption,
- *         and are trusted to match information in the
- *         PublicDrop, AllowLists or TokenGatedDropStage
- *         (we may want to surface discrepancies on the front-end)
- */
-
-/**
  * @notice A struct defining token gated drop stage data.
  *         Designed to fit efficiently in one storage slot.
  * 
