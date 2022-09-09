@@ -285,7 +285,10 @@ contract ExampleToken is ERC721SeaDrop {
         );
         if (((tokenId + seed) * 3) % 4 == 0) {
             style = string.concat(style, ";stroke:");
-            style = string.concat(style, _randomColor(tokenId + seed + 5, false));
+            style = string.concat(
+                style,
+                _randomColor(tokenId + seed + 5, false)
+            );
             style = string.concat(style, ";stroke-width:");
             style = string.concat(
                 style,
