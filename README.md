@@ -18,9 +18,9 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
 
 ## Background
 
-SeaDrop is a marketplace protocol for safely and efficiently buying and selling NFTs. Each listing contains an arbitrary number of items that the offerer is willing to give (the "offer") along with an arbitrary number of items that must be received along with their respective receivers (the "consideration").
+SeaDrop is a contract to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, token gated drops, and server-side signed mints. An implementing token contract should contain the methods to interface with `SeaDrop` through an authorized user such as an Owner or Administrator.
 
-See the [documentation](docs/SeaportDocumentation.md), the [interface](contracts/interfaces/SeaportInterface.sol), and the full [interface documentation](https://docs.opensea.io/v2.0/reference/seaport-overview) for more information on Seaport.
+Future SeaDrop contracts are envisioned to contain additional functionality like descending dutch auction mechanisms and payment in ERC20 tokens.
 
 ## Deployments
 
@@ -93,7 +93,7 @@ yarn profile
 
 ### Foundry Tests
 
-Seaport also includes a suite of fuzzing tests written in solidity with Foundry.
+SeaDrop also includes a suite of fuzzing tests written in solidity with Foundry.
 
 To install Foundry (assuming a Linux or macOS system):
 
