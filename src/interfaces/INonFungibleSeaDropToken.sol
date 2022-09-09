@@ -18,10 +18,10 @@ import {
 
 interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
-     * @dev Revert with an error if a contract other than an allowed
-     *      SeaDrop address calls an update function.
+     * @dev Revert with an error if a contract is not an allowed
+     *      SeaDrop address.
      */
-    error OnlySeaDrop();
+    error OnlyAllowedSeaDrop();
 
     /**
      * @dev Emit an event when allowed SeaDrop contracts are updated.

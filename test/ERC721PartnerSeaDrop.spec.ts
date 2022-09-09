@@ -352,6 +352,24 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       .withArgs([seadrop.address]);
   });
 
+  it("Should only let allowed seadrop call seaDropMint", async () => {
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(
+          token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
+        )
+          .to.emit(token, "Transfer")
+          .withArgs(ethers.constants.AddressZero, minter.address, 1);
+      }
+    );
+
+    await expect(
+      token.connect(owner).mintSeaDrop(minter.address, 1)
+    ).to.be.revertedWith("OnlyAllowedSeaDrop");
+  });
+
   it("Should only let the owner and administrator call update functions", async () => {
     const onlyOwnerOrAdministratorMethods = [
       "updateAllowedSeaDrop",
@@ -410,6 +428,11 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       updatePayer: [seadrop.address, `0x${"4".repeat(40)}`, true],
     };
 
+    const paramsWithNonSeaDrop = (method: string) => [
+      creator.address,
+      ...methodParams[method].slice(1),
+    ];
+
     for (const method of onlyOwnerOrAdministratorMethods) {
       await (token as any).connect(admin)[method](...methodParams[method]);
 
@@ -421,6 +444,12 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       await expect(
         (token as any).connect(creator)[method](...methodParams[method])
       ).to.be.revertedWith("OnlyOwnerOrAdministrator()");
+
+      if (method !== "updateAllowedSeaDrop") {
+        await expect(
+          (token as any).connect(admin)[method](...paramsWithNonSeaDrop(method))
+        ).to.be.revertedWith("OnlyAllowedSeaDrop()");
+      }
     }
 
     for (const method of OnlyAdministratorMethods) {
@@ -433,6 +462,10 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       await expect(
         (token as any).connect(creator)[method](...methodParams[method])
       ).to.be.revertedWith("OnlyAdministrator()");
+
+      await expect(
+        (token as any).connect(admin)[method](...paramsWithNonSeaDrop(method))
+      ).to.be.revertedWith("OnlyAllowedSeaDrop()");
     }
 
     for (const method of onlyOwnerMethods) {
@@ -445,6 +478,10 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
       await expect(
         (token as any).connect(creator)[method](...methodParams[method])
       ).to.be.revertedWith("OnlyOwner()");
+
+      await expect(
+        (token as any).connect(owner)[method](...paramsWithNonSeaDrop(method))
+      ).to.be.revertedWith("OnlyAllowedSeaDrop()");
     }
   });
 });

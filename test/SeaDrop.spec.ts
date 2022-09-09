@@ -62,8 +62,79 @@ describe(`SeaDrop (v${VERSION})`, function () {
       vanillaToken.address,
       provider,
       async (impersonatedSigner) => {
+        const publicDrop = {
+          mintPrice: 1000,
+          maxTotalMintableByWallet: 1,
+          startTime: Math.round(Date.now() / 1000) - 100,
+          endTime: Math.round(Date.now() / 1000) + 100,
+          feeBps: 1000,
+          restrictFeeRecipients: false,
+        };
+        await expect(
+          seadrop.connect(impersonatedSigner).updatePublicDrop(publicDrop)
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+
+        const allowListData = {
+          merkleRoot: ethers.constants.HashZero,
+          publicKeyURIs: [],
+          allowListURI: "",
+        };
+        await expect(
+          seadrop.connect(impersonatedSigner).updateAllowList(allowListData)
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+
+        const tokenGatedDropStage = {
+          mintPrice: "10000000000000000", // 0.01 ether
+          maxTotalMintableByWallet: 10,
+          startTime: Math.round(Date.now() / 1000) - 100,
+          endTime: Math.round(Date.now() / 1000) + 500,
+          dropStageIndex: 1,
+          maxTokenSupplyForStage: 100,
+          feeBps: 100,
+          restrictFeeRecipients: true,
+        };
+        await expect(
+          seadrop
+            .connect(impersonatedSigner)
+            .updateTokenGatedDrop(minter.address, tokenGatedDropStage)
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+
+        await expect(
+          seadrop
+            .connect(impersonatedSigner)
+            .updateCreatorPayoutAddress(minter.address)
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+
+        await expect(
+          seadrop
+            .connect(impersonatedSigner)
+            .updateAllowedFeeRecipient(minter.address, true)
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+
+        const signedMintValidationParams = {
+          minMintPrice: 1,
+          maxMaxTotalMintableByWallet: 11,
+          minStartTime: 50,
+          maxEndTime: "100000000000",
+          maxMaxTokenSupplyForStage: 10000,
+          minFeeBps: 1,
+          maxFeeBps: 9000,
+        };
+        await expect(
+          seadrop
+            .connect(impersonatedSigner)
+            .updateSignedMintValidationParams(
+              minter.address,
+              signedMintValidationParams
+            )
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+
         await expect(
           seadrop.connect(impersonatedSigner).updateDropURI("http://test.com")
+        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+
+        await expect(
+          seadrop.connect(impersonatedSigner).updatePayer(minter.address, true)
         ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
       }
     );

@@ -50,7 +50,7 @@ contract ERC721SeaDrop is
      */
     modifier onlyAllowedSeaDrop(address seaDrop) {
         if (_allowedSeaDrop[seaDrop] != true) {
-            revert OnlySeaDrop();
+            revert OnlyAllowedSeaDrop();
         }
         _;
     }

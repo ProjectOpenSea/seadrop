@@ -231,7 +231,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     await expect(
       token.connect(owner).mintSeaDrop(minter.address, 1)
-    ).to.be.revertedWith("OnlySeaDrop");
+    ).to.be.revertedWith("OnlyAllowedSeaDrop");
   });
 
   it("Should return supportsInterface true for supported interfaces", async () => {
@@ -480,12 +480,23 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       updatePayer: [seadrop.address, `0x${"4".repeat(40)}`, true],
     };
 
+    const paramsWithNonSeaDrop = (method: string) => [
+      creator.address,
+      ...methodParams[method].slice(1),
+    ];
+
     for (const method of onlyOwnerMethods) {
       await (token as any).connect(owner)[method](...methodParams[method]);
 
       await expect(
         (token as any).connect(creator)[method](...methodParams[method])
       ).to.be.revertedWith("OnlyOwner()");
+
+      if (method !== "updateAllowedSeaDrop") {
+        await expect(
+          (token as any).connect(owner)[method](...paramsWithNonSeaDrop(method))
+        ).to.be.revertedWith("OnlyAllowedSeaDrop()");
+      }
     }
   });
 });
