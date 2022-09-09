@@ -283,24 +283,26 @@ contract ExampleToken is ERC721SeaDrop {
             style,
             Strings.toString(_randomOpacity(tokenId + seed + 3))
         );
-        style = string.concat(style, ";stroke:");
-        style = string.concat(style, _randomColor(tokenId + 5, false));
-        style = string.concat(style, ";stroke-width:");
-        style = string.concat(
-            style,
-            Strings.toString(_randomStrokeWidth(tokenId + seed + 7))
-        );
-        style = string.concat(style, ";stroke-opacity:.");
-        style = string.concat(
-            style,
-            Strings.toString(_randomOpacity(tokenId + seed + 9))
-        );
-        if ((tokenId + seed) % 5 == 0) {
-            style = string.concat(style, ";stroke-dasharray:");
+        if (((tokenId + seed) * 3) % 4 == 0) {
+            style = string.concat(style, ";stroke:");
+            style = string.concat(style, _randomColor(tokenId + seed + 5, false));
+            style = string.concat(style, ";stroke-width:");
             style = string.concat(
                 style,
-                Strings.toString(_randomStrokeWidth(tokenId + seed + 13))
+                Strings.toString(_randomStrokeWidth(tokenId + seed + 7))
             );
+            style = string.concat(style, ";stroke-opacity:.");
+            style = string.concat(
+                style,
+                Strings.toString(_randomOpacity(tokenId + seed + 9))
+            );
+            if ((tokenId + seed) % 5 == 0) {
+                style = string.concat(style, ";stroke-dasharray:");
+                style = string.concat(
+                    style,
+                    Strings.toString(_randomStrokeWidth(tokenId + seed + 13))
+                );
+            }
         }
         return style;
     }
