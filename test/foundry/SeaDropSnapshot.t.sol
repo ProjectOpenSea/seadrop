@@ -186,10 +186,6 @@ contract TestSeaDropSnapshot is TestHelper {
         snapshotToken.mint{ value: 0.1 ether }(address(this), 1);
     }
 
-    function testRegularMintBaseStorageAccess_snapshot() public {
-        address _snapshotToken = address(snapshotToken);
-    }
-
     function testMintPublic_snapshot() public {
         seadrop.mintPublic{ value: 0.1 ether }(
             address(snapshotToken),
@@ -197,11 +193,6 @@ contract TestSeaDropSnapshot is TestHelper {
             address(0),
             1
         );
-    }
-
-    function testMintPublicBaseStorageAccess_snapshot() public {
-        address _snapshotToken = address(snapshotToken);
-        address _seadrop = address(seadrop);
     }
 
     function testMintAllowList_snapshot() public {
@@ -213,13 +204,6 @@ contract TestSeaDropSnapshot is TestHelper {
             mintParams,
             proof
         );
-    }
-
-    function testMintAllowListBaseStorageAccess_snapshot() public {
-        MintParams memory _mintParams = mintParams;
-        bytes32[] memory _proof = proof;
-        address _snapshotTokenAddress = address(snapshotToken);
-        address _seadrop = address(seadrop);
     }
 
     function testMintAllowedTokenHolder_snapshot() public {
@@ -239,12 +223,6 @@ contract TestSeaDropSnapshot is TestHelper {
         );
     }
 
-    function testMintAllowedTokenHolderBaseStorageAccess_snapshot() public {
-        address _tokenGatedEligible = address(tokenGatedEligible);
-        address _snapshotTokenAddress = address(snapshotToken);
-        address _seadrop = address(seadrop);
-    }
-
     function testMintSigned_snapshot() public {
         seadrop.mintSigned{ value: 0.1 ether }(
             address(snapshotToken),
@@ -255,12 +233,5 @@ contract TestSeaDropSnapshot is TestHelper {
             1010101,
             signature
         );
-    }
-
-    function testMintSignedBaseStorageAccess_snapshot() public {
-        MintParams memory _mintParams = mintParams;
-        bytes memory _signature = signature;
-        address _snapshotTokenAddress = address(snapshotToken);
-        address _seadrop = address(seadrop);
     }
 }
