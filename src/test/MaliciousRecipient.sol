@@ -8,7 +8,7 @@ contract MaliciousRecipient {
     address public token;
     SeaDrop public seaDrop;
 
-    fallback() external payable {
+    receive() external payable {
         if (startAttack) {
             startAttack = false;
             seaDrop.mintPublic{ value: 1 ether }({
