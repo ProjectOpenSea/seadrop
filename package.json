@@ -11,7 +11,7 @@
     "test": "hardhat test --config ./hardhat.config.ts",
     "test:forge": "forge test -vvv",
     "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",
-    "coverage": "hardhat preprocess --dest temp-src-coverage && hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js",
+    "coverage": "rm -rf temp-src-coverage; hardhat preprocess --dest temp-src-coverage && hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js",
     "lint:check": "yarn lint:check:format && yarn lint:check:solhint && yarn lint:check:eslint",
     "lint:check:format": "prettier --check **.{sol,js,ts}",
     "lint:check:solhint": "yarn build && solhint --config ./config/.solhint.json --ignore-path ./config/.solhintignore contracts/**/*.sol",

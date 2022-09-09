@@ -221,7 +221,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
         vm.deal(args.minter, 100 ether);
-        vm.expectRevert(INonFungibleSeaDropToken.OnlySeaDrop.selector);
+        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
 
         token.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }

@@ -52,6 +52,7 @@ module.exports = {
     "object-shorthand": "error",
     "prefer-const": "error",
     "sort-imports": ["error", { ignoreDeclarationSort: true }],
+    "no-unexpected-multiline": "off",
   },
   overrides: [
     {
