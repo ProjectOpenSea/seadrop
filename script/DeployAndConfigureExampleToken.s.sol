@@ -21,8 +21,8 @@ contract DeployAndConfigureExampleToken is Script {
     uint256 maxSupply = 100;
 
     // Drop config
-    uint16 feeBps = 1000; // 10%
-    uint80 mintPrice = 100000000000000; // 0.0001 ether
+    uint16 feeBps = 500; // 5%
+    uint80 mintPrice = 0.0001 ether;
     uint16 maxTotalMintableByWallet = 5;
 
     function run() external {
@@ -37,12 +37,12 @@ contract DeployAndConfigureExampleToken is Script {
             allowedSeadrop
         );
 
+        // Configure the token.
         token.setMaxSupply(maxSupply);
 
+        // Configure the drop parameters.
         token.updateCreatorPayoutAddress(seadrop, creator);
-
         token.updateAllowedFeeRecipient(seadrop, feeRecipient, true);
-
         token.updatePublicDrop(
             seadrop,
             PublicDrop(
@@ -56,12 +56,11 @@ contract DeployAndConfigureExampleToken is Script {
         );
 
         // We are ready, let's mint the first 3 tokens!
-        uint256 quantity = 3;
-        ISeaDrop(seadrop).mintPublic{ value: quantity * mintPrice }(
+        ISeaDrop(seadrop).mintPublic{ value: mintPrice * 3 }(
             address(token),
             feeRecipient,
             address(0),
-            quantity
+            3
         );
     }
 }
