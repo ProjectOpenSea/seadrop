@@ -130,7 +130,7 @@ contract ExampleToken is ERC721SeaDrop {
      * @notice Returns a random web safe font based on the token id.
      */
     function _font(uint256 tokenId) internal view returns (string memory) {
-        uint256 roll = thisUintAddress / tokenId << 1;
+        uint256 roll = (thisUintAddress / tokenId) << 1;
         if (roll % 9 == 0) {
             return "Garamond";
         } else if (roll % 8 == 0) {
@@ -154,8 +154,8 @@ contract ExampleToken is ERC721SeaDrop {
      * @notice Returns a random font size based on the token id.
      */
     function _fontSize(uint256 tokenId) internal view returns (string memory) {
-        uint256 roll = thisUintAddress / tokenId << 2;
-        return Strings.toString(roll % 180 + 12);
+        uint256 roll = (thisUintAddress / tokenId) << 2;
+        return Strings.toString((roll % 180) + 12);
     }
 
     /**
@@ -166,7 +166,7 @@ contract ExampleToken is ERC721SeaDrop {
         view
         returns (string memory)
     {
-        uint256 roll = thisUintAddress / tokenId << 3;
+        uint256 roll = (thisUintAddress / tokenId) << 3;
         string memory color = "rgb(";
         uint256 pastelBase = onlyPastel == true ? 127 : 0;
         uint256 r = ((roll << 1) % (255 - pastelBase)) + pastelBase;
@@ -189,7 +189,7 @@ contract ExampleToken is ERC721SeaDrop {
         view
         returns (string memory)
     {
-        uint256 roll = thisUintAddress / tokenId << 4;
+        uint256 roll = (thisUintAddress / tokenId) << 4;
         if (roll % 3 != 0) return "";
         string memory rect = "<rect x='";
         uint256 x = (roll << 1) % 301;
@@ -217,7 +217,7 @@ contract ExampleToken is ERC721SeaDrop {
         view
         returns (string memory)
     {
-        uint256 roll = thisUintAddress / tokenId << 5;
+        uint256 roll = (thisUintAddress / tokenId) << 5;
         if (roll % 5 != 0) return "";
         string memory poly = "<polygon points='";
         uint256 x1 = (roll << 1) % 301;
@@ -251,7 +251,7 @@ contract ExampleToken is ERC721SeaDrop {
         view
         returns (string memory)
     {
-        uint256 roll = thisUintAddress / tokenId << 6;
+        uint256 roll = (thisUintAddress / tokenId) << 6;
         if (roll % 7 != 0) return "";
         string memory circle = "<circle cx='";
         uint256 cx = (roll << 1) % 300;
@@ -316,8 +316,8 @@ contract ExampleToken is ERC721SeaDrop {
      *         to be prepended with a decimal in the css.
      */
     function _randomOpacity(uint256 tokenId) internal view returns (uint256) {
-        uint256 roll = (thisUintAddress / tokenId) << 3; 
-        return roll % 9 + 1;
+        uint256 roll = (thisUintAddress / tokenId) << 3;
+        return (roll % 9) + 1;
     }
 
     /**
