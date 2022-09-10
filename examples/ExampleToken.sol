@@ -131,7 +131,9 @@ contract ExampleToken is ERC721SeaDrop {
      */
     function _font(uint256 tokenId) internal view returns (string memory) {
         uint256 roll = (thisUintAddress / tokenId) << 1;
-        if (roll % 9 == 0) {
+        if (roll % 13 == 0) {
+            return "Courier New";
+        } else if (roll % 9 == 0) {
             return "Garamond";
         } else if (roll % 8 == 0) {
             return "Tahoma";
@@ -143,8 +145,6 @@ contract ExampleToken is ERC721SeaDrop {
             return "Georgia";
         } else if (roll % 4 == 0) {
             return "Helvetica";
-        } else if (roll % 3 == 0) {
-            return "Courier New";
         } else {
             return "Brush Script MT";
         }
