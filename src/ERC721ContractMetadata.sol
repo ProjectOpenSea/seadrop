@@ -11,7 +11,9 @@ import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 /**
  * @title  ERC721ContractMetadata
- * @author jameswenzel, ryanio, stephankmin
+ * @author James Wenzel (emo.eth)
+ * @author Ryan Ghods (ralxz.eth)
+ * @author Stephan Min (stephanm.eth)
  * @notice ERC721ContractMetadata is a token contract that extends ERC721A
  *         with additional metadata and ownership capabilities.
  */

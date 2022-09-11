@@ -16,7 +16,9 @@ import { TwoStepAdministered } from "utility-contracts/TwoStepAdministered.sol";
 
 /**
  * @title  ERC721PartnerSeaDrop
- * @author jameswenzel, ryanio, stephankmin
+ * @author James Wenzel (emo.eth)
+ * @author Ryan Ghods (ralxz.eth)
+ * @author Stephan Min (stephanm.eth)
  * @notice ERC721PartnerSeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop, with additional administrative
  *         functionality tailored for business requirements around partnered

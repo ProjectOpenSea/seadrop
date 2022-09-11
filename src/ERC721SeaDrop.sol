@@ -29,7 +29,9 @@ import {
 
 /**
  * @title  ERC721SeaDrop
- * @author jameswenzel, ryanio, stephankmin
+ * @author James Wenzel (emo.eth)
+ * @author Ryan Ghods (ralxz.eth)
+ * @author Stephan Min (stephanm.eth)
  * @notice ERC721SeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop.
  */
