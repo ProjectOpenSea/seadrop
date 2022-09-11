@@ -17,7 +17,7 @@ describe(`SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
   let token: ERC721PartnerSeaDrop;
-  let vanillaToken: IERC721;
+  let standard721Token: IERC721;
   let owner: Wallet;
   let admin: Wallet;
   let minter: Wallet;
@@ -52,14 +52,14 @@ describe(`SeaDrop (v${VERSION})`, function () {
       seadrop.address,
     ]);
 
-    // Deploy vanilla (non-IER721SeaDrop) token
+    // Deploy a standard (non-IER721SeaDrop) token
     const ERC721A = await ethers.getContractFactory("ERC721A", owner);
-    vanillaToken = (await ERC721A.deploy("", "")) as unknown as IERC721;
+    standard721Token = (await ERC721A.deploy("", "")) as unknown as IERC721;
   });
 
   it("Should not let a non-INonFungibleSeaDropToken token contract use the token methods", async () => {
     await whileImpersonating(
-      vanillaToken.address,
+      standard721Token.address,
       provider,
       async (impersonatedSigner) => {
         const publicDrop = {

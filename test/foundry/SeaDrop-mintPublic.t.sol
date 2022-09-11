@@ -225,6 +225,4 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
 
         token.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }
-
-    // testMintPublic_revertFeeRecipientNotAllowed
 }
