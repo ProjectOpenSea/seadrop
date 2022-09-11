@@ -3,9 +3,7 @@ pragma solidity ^0.8.11;
 
 import "forge-std/Script.sol";
 
-import { ExampleToken } from "../examples/ExampleToken.sol";
-
-import { ERC721PartnerSeaDrop } from "../src/ERC721PartnerSeaDrop.sol";
+import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
 
 import { ISeaDrop } from "../src/interfaces/ISeaDrop.sol";
 
@@ -31,7 +29,9 @@ contract DeployAndConfigureExampleToken is Script {
         address[] memory allowedSeadrop = new address[](1);
         allowedSeadrop[0] = seadrop;
 
-        ExampleToken token = new ExampleToken(
+        // This example uses ERC721SeaDrop. For separate Owner and
+        // Administrator privileges, use ERC721PartnerSeaDrop.
+        ERC721SeaDrop token = new ERC721SeaDrop(
             "My Example Token",
             "ExTKN",
             allowedSeadrop
@@ -47,8 +47,8 @@ contract DeployAndConfigureExampleToken is Script {
             seadrop,
             PublicDrop(
                 mintPrice,
-                uint48(block.timestamp),
-                uint48(block.timestamp) + 1000,
+                uint48(block.timestamp), // start time
+                uint48(block.timestamp) + 1000, // end time
                 maxTotalMintableByWallet,
                 feeBps,
                 true
@@ -60,7 +60,7 @@ contract DeployAndConfigureExampleToken is Script {
             address(token),
             feeRecipient,
             address(0),
-            3
+            3 // quantity
         );
     }
 }
