@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
@@ -60,7 +60,7 @@ contract TestSeaDropSnapshot is TestHelper {
             admin,
             allowedSeaDrop
         );
-        // Deploy a vanilla ERC721 token.
+        // Deploy a standard ERC721 token.
         tokenGatedEligible = new TestERC721();
 
         // Set the max supply to 1000.

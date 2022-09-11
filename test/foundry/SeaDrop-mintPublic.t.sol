@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
@@ -225,6 +225,4 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
 
         token.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
     }
-
-    // testMintPublic_revertFeeRecipientNotAllowed
 }

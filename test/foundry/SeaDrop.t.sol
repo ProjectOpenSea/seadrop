@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
@@ -17,7 +17,7 @@ import {
 } from "seadrop/lib/SeaDropStructs.sol";
 
 contract TestSeaDrop is TestHelper {
-    TestERC721 badToken;
+    TestERC721 standard721Token;
     mapping(address => bool) seenAddresses;
 
     TokenGatedDropStage remove;
@@ -38,8 +38,8 @@ contract TestSeaDrop is TestHelper {
         allowedSeaDrop[0] = address(seadrop);
         token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
 
-        // Deploy a vanilla ERC721 token.
-        badToken = new TestERC721();
+        // Deploy a standard ERC721 token.
+        standard721Token = new TestERC721();
         add.maxTotalMintableByWallet = 1;
         update.maxTotalMintableByWallet = 2;
         addSigned.maxMaxTotalMintableByWallet = 1;
@@ -56,11 +56,11 @@ contract TestSeaDrop is TestHelper {
 
     function testUpdateDropURI_onlyERC721PartnerSeaDrop() public {
         string memory uri = "https://example.com/";
-        vm.startPrank(address(badToken));
+        vm.startPrank(address(standard721Token));
         vm.expectRevert(
             abi.encodeWithSelector(
                 OnlyINonFungibleSeaDropToken.selector,
-                address(badToken)
+                address(standard721Token)
             )
         );
         seadrop.updateDropURI(uri);
