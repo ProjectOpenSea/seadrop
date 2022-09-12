@@ -40,6 +40,9 @@ contract ERC721SeaDrop is
     INonFungibleSeaDropToken,
     ReentrancyGuard
 {
+    /// @notice Revert with an error if mint exceeds the max supply.
+    error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
+
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) internal _allowedSeaDrop;
 
@@ -156,10 +159,9 @@ contract ERC721SeaDrop is
      *         transferring minted tokens, as SeaDrop references these values
      *         to enforce token limits on a per-wallet and per-stage basis.
      *
-     *         ERC721A tracks these values automatically, and this contract
-     *         does not use _safeMint(), but this note and nonReentrant
-     *         modifier are left here to encourage best-practices when
-     *         referencing this contract.
+     *         ERC721A tracks these values automatically, but this note and
+     *         nonReentrant modifier are left here to encourage best-practices
+     *         when referencing this contract.
      *
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
@@ -172,8 +174,16 @@ contract ERC721SeaDrop is
         onlyAllowedSeaDrop(msg.sender)
         nonReentrant
     {
+        // Extra safety check to ensure the max supply is not exceeded.
+        if (_totalMinted() + quantity > maxSupply()) {
+            revert MintQuantityExceedsMaxSupply(
+                _totalMinted() + quantity,
+                maxSupply()
+            );
+        }
+
         // Mint the quantity of tokens to the minter.
-        _mint(minter, quantity);
+        _safeMint(minter, quantity);
     }
 
     /**

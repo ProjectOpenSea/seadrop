@@ -217,6 +217,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   });
 
   it("Should only let allowed seadrop call seaDropMint", async () => {
+    await token.setMaxSupply(1);
+
     await whileImpersonating(
       seadrop.address,
       provider,
@@ -226,6 +228,10 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         )
           .to.emit(token, "Transfer")
           .withArgs(ethers.constants.AddressZero, minter.address, 1);
+
+        await expect(
+          token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
+        ).to.be.revertedWith("MintQuantityExceedsMaxSupply(2, 1)");
       }
     );
 

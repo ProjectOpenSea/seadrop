@@ -65,6 +65,14 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         override
         onlyAllowedSeaDrop(msg.sender)
     {
+        // Extra safety check to ensure the max supply is not exceeded.
+        if (_totalMinted() + quantity > maxSupply()) {
+            revert MintQuantityExceedsMaxSupply(
+                _totalMinted() + quantity,
+                maxSupply()
+            );
+        }
+
         // Mint the quantity of tokens to the minter.
         _mint(minter, quantity);
     }
