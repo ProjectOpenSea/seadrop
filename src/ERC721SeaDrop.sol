@@ -343,7 +343,7 @@ contract ERC721SeaDrop is
         )
     {
         minterNumMinted = _numberMinted(minter);
-        currentTotalSupply = totalSupply();
+        currentTotalSupply = _totalMinted();
         maxSupply = _maxSupply;
     }
 

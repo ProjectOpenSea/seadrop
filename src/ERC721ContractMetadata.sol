@@ -120,7 +120,7 @@ contract ERC721ContractMetadata is
      */
     function setProvenanceHash(bytes32 newProvenanceHash) external onlyOwner {
         // Revert if any items have been minted.
-        if (totalSupply() > 0) {
+        if (_totalMinted() > 0) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
         }
 
