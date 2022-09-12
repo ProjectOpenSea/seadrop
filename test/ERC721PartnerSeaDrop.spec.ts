@@ -277,6 +277,7 @@ describe(`ERC721PartnerSeaDrop (v${VERSION})`, function () {
   });
 
   it("Should only let the owner set the provenance hash", async () => {
+    await token.setMaxSupply(1);
     expect(await token.provenanceHash()).to.equal(ethers.constants.HashZero);
 
     const defaultProvenanceHash = `0x${"0".repeat(64)}`;
