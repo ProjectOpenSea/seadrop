@@ -101,16 +101,5 @@ jobs:
       - name: Install forge dependencies
         run: forge install
 
-      # Install solc 0.8.17
-      # This can be removed once added to foundry nightly
-      # (https://github.com/foundry-rs/foundry/issues/3141)
-      - name: Install svm-rs
-        uses: actions-rs/install@v0.1
-        with:
-          crate: svm-rs
-          version: latest
-      - name: Install solc 0.8.17
-        run: svm install 0.8.17
-
       - name: Run tests
         run: forge test -vvv
