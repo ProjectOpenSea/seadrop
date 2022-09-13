@@ -32,26 +32,28 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 
 <tr><td>Ethereum</td><td rowspan="14">
 
-[0x0000000000comingsoon](https://etherscan.io/address/0x0000000000comingsoon#code)
+[0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
 
 </td></tr>
-
-<tr><td>Rinkeby</td></tr>
 <tr><td>Goerli</td></tr>
-<tr><td>Kovan</td></tr>
-<tr><td>Polygon</td></tr>
-<tr><td>Mumbai</td></tr>
-<tr><td>Optimism</td></tr>
-<tr><td>Optimistic Kovan</td></tr>
-<tr><td>Arbitrum</td></tr>
-<tr><td>Arbitrum Rinkeby</td></tr>
-<tr><td>Avalanche Fuji</td></tr>
-<tr><td>Avalanche C-Chain</td></tr>
-<tr><td>Gnosis Chain</td></tr>
-<tr><td>BSC</td></tr>
 </table>
 
 To be deployed on other EVM chains, such as:
+
+Short-term:
+
+- Polygon
+- Mumbai
+- Optimism
+- Optimistic Kovan
+- Arbitrum
+- Arbitrum Rinkeby
+- Avalanche Fuji
+- Avalanche C-Chain
+- Gnosis Chain
+- BSC
+
+Long-term:
 
 - Klaytn
 - Baobab

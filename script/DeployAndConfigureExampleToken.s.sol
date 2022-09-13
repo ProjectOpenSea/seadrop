@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
 
@@ -11,7 +11,7 @@ import { PublicDrop } from "../src/lib/SeaDropStructs.sol";
 
 contract DeployAndConfigureExampleToken is Script {
     // Addresses
-    address seadrop = 0x53002b539B8eB1EDe580fc2D86640240CFfFC6B2;
+    address seadrop = 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5;
     address creator = 0x26faf8AE18d15Ed1CA0563727Ad6D4Aa02fb2F80;
     address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
 
