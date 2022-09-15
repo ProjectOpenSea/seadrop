@@ -62,7 +62,14 @@ Long-term:
 - Fantom
 - RSK
 
-To deploy to a new EVM chain, follow the [steps outlined here](docs/Deployment.md).
+To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeployment.md).
+
+Docs:
+
+- [SeaDrop Deployment](docs/SeaDropDeployment.md)
+- [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
+- [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
+- [Provenance Hash](docs/ProvenanceHash.md)
 
 ## Diagram
 
