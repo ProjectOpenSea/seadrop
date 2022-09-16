@@ -299,7 +299,7 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the allowed payer and emits an event.
      *
-     * @param payer  The payer to add or remove.
+     * @param payer   The payer to add or remove.
      * @param allowed Whether to add or remove the payer.
      */
     function updatePayer(address payer, bool allowed) external;

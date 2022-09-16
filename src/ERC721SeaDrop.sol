@@ -327,7 +327,7 @@ contract ERC721SeaDrop is
         address payer,
         bool allowed
     ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
-        // Update the signers.
+        // Update the payer.
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
 

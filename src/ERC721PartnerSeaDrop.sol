@@ -342,7 +342,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
         onlyOwnerOrAdministrator
         onlyAllowedSeaDrop(seaDropImpl)
     {
-        // Update the signers.
+        // Update the payer.
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
 }
