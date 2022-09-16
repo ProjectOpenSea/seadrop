@@ -335,6 +335,7 @@ contract ERC721DropTest is TestHelper {
         // Create an address to attempt to mint the tokens to, that doesn't
         // own the allowed NFT tokens.
         address notOwner = makeAddr("not owner");
+        vm.assume(args.minter != notOwner);
         hoax(notOwner, 100 ether);
 
         // Expect the call to fail since the notOwner address does not own
