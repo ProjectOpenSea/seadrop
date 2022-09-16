@@ -1,3 +1,5 @@
+![SeaDrop](img/seadrop-banner.png)
+
 # SeaDrop
 
 SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockchains.
