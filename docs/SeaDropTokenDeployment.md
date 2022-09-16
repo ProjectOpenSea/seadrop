@@ -58,33 +58,36 @@ Follows the pattern of `tokenURI` — could be either on-chain data blob or exte
 #### Example
 
 ```json
-[
-  {
-    "name": "My Public Stage",
-    "description": "My public stage description.",
-    "promoImage": "https://google.com",
-    "isPublic": true,
-    "mintPrice": 1000000000000000000,
-    "maxTotalMintableByWallet": 50,
-    "maxTokenSupplyForStage": 5000,
-    "startTime": 1659045594,
-    "endTime": 1659045594,
-    "feeBps": 10000
-  },
-  {
-    "name": "My Token Gated Stage",
-    "description": "My token gated stage description",
-    "promoImage": "https://google.com",
-    "isPublic": false,
-    "allowedTokenAddresses": ["0x8a90cab2b38dba80c64b7734e58ee1db38b8992e"],
-    "mintPrice": 1000000000000000,
-    "maxTotalMintableByWallet": 5,
-    "maxTokenSupplyForStage": 1000,
-    "startTime": 1659043594,
-    "endTime": 1659044594,
-    "feeBps": 10000
-  }
-]
+{
+  "name": "An Example Drop",
+  "description": "This is the description for this example drop.",
+  "stages": [
+    {
+      "name": "My Public Stage",
+      "description": "My public stage description.",
+      "promoImage": "https://google.com/123.png",
+      "isPublic": true,
+      "mintPrice": 1000000000000000000,
+      "maxTotalMintableByWallet": 50,
+      "maxTokenSupplyForStage": 5000,
+      "startTime": 1659045594,
+      "endTime": 1659045594,
+      "feeBps": 500
+    },
+    {
+      "name": "My Private Allow List Stage",
+      "description": "My private stage description",
+      "promoImage": "https://google.com/456.png",
+      "isPublic": false,
+      "mintPrice": 1000000000000000,
+      "maxTotalMintableByWallet": 5,
+      "maxTokenSupplyForStage": 1000,
+      "startTime": 1659043594,
+      "endTime": 1659044594,
+      "feeBps": 500
+    }
+  ]
+}
 ```
 
 #### JSON Schema
@@ -100,38 +103,52 @@ Follows the pattern of `tokenURI` — could be either on-chain data blob or exte
     "description": {
       "type": "string"
     },
-    "promoImage": {
-      "type": "string"
-    },
-    "isPublic": {
-      "type": "boolean"
-    },
-    "allowListURI": {
-      "type": "string"
-    },
-    "allowedTokenAddresses": {
+    "stages": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "promoImage": {
+            "type": "string"
+          },
+          "isPublic": {
+            "type": "boolean"
+          },
+          "allowListURI": {
+            "type": "string"
+          },
+          "allowedTokenAddresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mintPrice": {
+            "type": "integer"
+          },
+          "maxTotalMintableByWallet": {
+            "type": "integer"
+          },
+          "maxTokenSupplyForStage": {
+            "type": "integer"
+          },
+          "startTime": {
+            "type": "integer"
+          },
+          "endTime": {
+            "type": "integer"
+          },
+          "feeBps": {
+            "type": "integer"
+          }
+        }
       }
-    },
-    "mintPrice": {
-      "type": "integer"
-    },
-    "maxTotalMintableByWallet": {
-      "type": "integer"
-    },
-    "maxTokenSupplyForStage": {
-      "type": "integer"
-    },
-    "startTime": {
-      "type": "integer"
-    },
-    "endTime": {
-      "type": "integer"
-    },
-    "feeBps": {
-      "type": "integer"
     }
   }
 }
