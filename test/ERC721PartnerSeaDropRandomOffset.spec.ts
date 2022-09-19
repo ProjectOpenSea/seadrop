@@ -141,9 +141,9 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
     const tokenUri99 = 98 - randomOffset;
     expect(await token.tokenURI(tokenUri2)).to.equal(`http://example.com/2`);
     expect(await token.tokenURI(tokenUri1)).to.equal(`http://example.com/1`);
-    expect(await token.tokenURI(tokenUri99)).to.equal(`http://example.com/99`);
     expect(await token.tokenURI(tokenUri100)).to.equal(
       `http://example.com/100`
     );
+    expect(await token.tokenURI(tokenUri99)).to.equal(`http://example.com/99`);
   });
 });
