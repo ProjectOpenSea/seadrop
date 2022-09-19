@@ -121,16 +121,25 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
 
     await token.connect(owner).setRandomOffset();
 
-    const randomOffset = await token.randomOffset();
+    const randomOffset = (await token.randomOffset()).toNumber();
 
-    expect(randomOffset.toNumber()).to.be.greaterThan(0);
-    expect(randomOffset.toNumber()).to.be.lessThanOrEqual(100);
+    expect(randomOffset).to.be.greaterThan(0);
+    expect(randomOffset).to.be.lessThanOrEqual(100);
+
+    const startTokenId = 1;
 
     expect(await token.tokenURI(1)).to.equal(
-      `http://example.com/${(1 + randomOffset.toNumber()) % 100}`
+      `http://example.com/${((1 + randomOffset) % 100) + startTokenId}`
     );
     expect(await token.tokenURI(100)).to.equal(
-      `http://example.com/${(100 + randomOffset.toNumber()) % 100}`
+      `http://example.com/${((100 + randomOffset) % 100) + startTokenId}`
     );
+
+    const tokenId1 = 100 - randomOffset;
+    const tokenId100 = 99 - randomOffset;
+    const tokenId99 = 98 - randomOffset;
+    expect(await token.tokenURI(tokenId1)).to.equal(`http://example.com/1`);
+    expect(await token.tokenURI(tokenId99)).to.equal(`http://example.com/99`);
+    expect(await token.tokenURI(tokenId100)).to.equal(`http://example.com/100`);
   });
 });

@@ -82,15 +82,23 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
 
         string memory base = _baseURI();
         if (bytes(base).length == 0) {
+            // If there is no baseURI set, return an empty string.
             return "";
         } else if (!revealed) {
-            return _baseURI();
+            // If the baseURI is set but the collection is not revealed yet,
+            // return just the baseURI.
+            return base;
         } else {
+            // If the baseURI is set and the collection is revealed,
+            // return the tokenURI offset by the randomOffset.
             return
                 string.concat(
                     base,
                     "/",
-                    Strings.toString((tokenId + randomOffset) % _maxSupply)
+                    Strings.toString(
+                        ((tokenId + randomOffset) % _maxSupply) +
+                            _startTokenId()
+                    )
                 );
         }
     }
