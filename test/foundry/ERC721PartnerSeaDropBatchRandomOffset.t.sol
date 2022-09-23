@@ -159,6 +159,29 @@ contract TestERC721PartnerSeaDropBatchRandomOffset is TestHelper {
         test.revealBatch();
     }
 
+    function testRevealBatch_lastBatchSmallerThanMin() public {
+        test.mintSeaDrop(address(this), 1001);
+        vm.difficulty(42);
+        test.revealBatch();
+        test.mintSeaDrop(address(this), 2345);
+        vm.difficulty(69);
+        test.revealBatch();
+        test.mintSeaDrop(address(this), 1600);
+        test.revealBatch();
+        test.mintSeaDrop(address(this), 54);
+        vm.difficulty(420);
+        test.revealBatch();
+        (
+            uint64 inclusiveStartId,
+            uint64 exclusiveEndId,
+            uint64 randomOffset
+        ) = test.batchOffsets(3);
+
+        assertEq(inclusiveStartId, 4947);
+        assertEq(exclusiveEndId, 5001);
+        assertEq(randomOffset, 420 % 54);
+    }
+
     function testTokenURI_nonexistent() public {
         vm.expectRevert(IERC721A.URIQueryForNonexistentToken.selector);
         test.tokenURI(1);
@@ -195,6 +218,14 @@ contract TestERC721PartnerSeaDropBatchRandomOffset is TestHelper {
         test.mintSeaDrop(address(this), 1001);
         test.revealBatch();
         test.mintSeaDrop(address(this), 3999);
+        test.revealBatch();
+        assertEq(test.tokenURI(5000), "reveal/5000");
+    }
+
+    function testTokenURI_allRevealed_lastBatchSmallerThanMin() public {
+        test.mintSeaDrop(address(this), 4950);
+        test.revealBatch();
+        test.mintSeaDrop(address(this), 50);
         test.revealBatch();
         assertEq(test.tokenURI(5000), "reveal/5000");
     }

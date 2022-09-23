@@ -47,10 +47,7 @@ contract ERC721PartnerSeaDropBatchRandomOffset is ERC721PartnerSeaDrop {
     }
 
     /**
-     * @notice Set the random offset, for a fair metadata reveal. Only callable
-     *         by the owner one time when the total number of minted tokens
-     *         equals the max supply. Should be called at the time of reveal.
-     *         of reveal after secondary market trading pre-reveal.
+     * @notice Set the random offset for a batch of tokens. Can be called at most once per MIN_BATCH_SIZE tokens.
      */
     function revealBatch() external onlyOwner {
         BatchOffset[] storage offsets = batchOffsets;
@@ -70,9 +67,11 @@ contract ERC721PartnerSeaDropBatchRandomOffset is ERC721PartnerSeaDrop {
         }
         uint256 exclusiveEndId = _nextTokenId();
 
+        // allow revealing a batch smaller than MIN_BATCH_SIZE if it is the last one
+        uint256 numTokensRemaining = _maxSupply - _totalMinted();
         // validate batch size
         uint256 batchSize = exclusiveEndId - inclusiveStartId;
-        if (batchSize < MIN_BATCH_SIZE) {
+        if (batchSize < MIN_BATCH_SIZE && numTokensRemaining > MIN_BATCH_SIZE) {
             revert BatchSizeTooSmall(uint64(batchSize));
         }
 
