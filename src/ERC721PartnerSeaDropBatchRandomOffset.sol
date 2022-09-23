@@ -11,7 +11,7 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @notice ERC721PartnerSeaDropBatchRandomOffset is a token contract that extends
- *         ERC721PartnerSeaDrop and applies a randomOffset to the tokenURI,
+ *         ERC721PartnerSeaDrop and applies randomOffsets to the tokenURI,
  *         to enable fair metadata reveals.
  */
 contract ERC721PartnerSeaDropBatchRandomOffset is ERC721PartnerSeaDrop {
