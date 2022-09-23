@@ -30,7 +30,7 @@ contract ERC721PartnerSeaDropBatchRandomOffset is ERC721PartnerSeaDrop {
 
     /**
      * @notice Deploy the token contract with its name, symbol,
-     *         administrator, and allowed SeaDrop addresses.
+     *         administrator, allowed SeaDrop addresses, and default tokenURI.
      */
     constructor(
         string memory name,
