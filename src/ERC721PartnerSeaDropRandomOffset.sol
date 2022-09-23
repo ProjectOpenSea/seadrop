@@ -44,8 +44,8 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
     /**
      * @notice Set the random offset, for a fair metadata reveal. Only callable
      *         by the owner one time when the total number of minted tokens
-     *         equals the max supply. Should be called at the time of reveal.
-     *         of reveal after secondary market trading pre-reveal.
+     *         equals the max supply. Should be called immediately before
+     *         reveal.
      */
     function setRandomOffset() external onlyOwner {
         if (revealed) {
