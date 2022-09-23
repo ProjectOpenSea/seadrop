@@ -11,7 +11,7 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @notice ERC721PartnerSeaDropBatchRandomOffset is a token contract that extends
- *         ERC721PartnerSeaDrop a apply a randomOffset to the tokenURI,
+ *         ERC721PartnerSeaDrop and applies a randomOffset to the tokenURI,
  *         to enable fair metadata reveals.
  */
 contract ERC721PartnerSeaDropBatchRandomOffset is ERC721PartnerSeaDrop {
@@ -112,26 +112,17 @@ contract ERC721PartnerSeaDropBatchRandomOffset is ERC721PartnerSeaDrop {
         }
 
         string memory base = _baseURI();
-        if (bytes(base).length == 0) {
-            // If there is no baseURI set, return an empty string.
-            return "";
-        } else if (revealed) {
+        if (revealed) {
             for (uint256 i = 0; i < offsets.length; i++) {
                 BatchOffset memory batchOffset = offsets[i];
                 if (
                     tokenId >= batchOffset.inclusiveStartId &&
                     tokenId < batchOffset.exclusiveEndId
                 ) {
-                    uint256 batchSize = batchOffset.exclusiveEndId -
-                        batchOffset.inclusiveStartId;
-                    // add random offset to (tokenId - inclusiveStartId)
-                    // mod batchSize to get its new offset from batch start
-                    uint256 tokenOffsetFromBatchStart = ((tokenId -
-                        batchOffset.inclusiveStartId) +
-                        batchOffset.randomOffset) % batchSize;
-                    // add tokenOffsetFromBatchStart to inclusiveStartId to get new tokenId
-                    uint256 offsetTokenId = tokenOffsetFromBatchStart +
-                        batchOffset.inclusiveStartId;
+                    uint256 offsetTokenId = _calculateOffsetId(
+                        batchOffset,
+                        tokenId
+                    );
                     return
                         string.concat(
                             base,
@@ -142,5 +133,21 @@ contract ERC721PartnerSeaDropBatchRandomOffset is ERC721PartnerSeaDrop {
             }
         }
         return defaultURI;
+    }
+
+    function _calculateOffsetId(BatchOffset memory batchOffset, uint256 tokenId)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 batchSize = batchOffset.exclusiveEndId -
+            batchOffset.inclusiveStartId;
+        // add random offset to (tokenId - inclusiveStartId)
+        // mod batchSize to get its new offset from batch start
+        uint256 tokenOffsetFromBatchStart = ((tokenId -
+            batchOffset.inclusiveStartId) + batchOffset.randomOffset) %
+            batchSize;
+        // add tokenOffsetFromBatchStart to inclusiveStartId to get new tokenId
+        return tokenOffsetFromBatchStart + batchOffset.inclusiveStartId;
     }
 }
