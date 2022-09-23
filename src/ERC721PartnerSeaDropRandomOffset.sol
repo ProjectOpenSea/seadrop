@@ -3,8 +3,6 @@ pragma solidity 0.8.17;
 
 import { ERC721PartnerSeaDrop } from "./ERC721PartnerSeaDrop.sol";
 
-import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
-
 /**
  * @title  ERC721PartnerSeaDropRandomOffset
  * @author James Wenzel (emo.eth)
@@ -94,8 +92,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
             return
                 string.concat(
                     base,
-                    "/",
-                    Strings.toString(
+                    _toString(
                         ((tokenId + randomOffset) % _maxSupply) +
                             _startTokenId()
                     )

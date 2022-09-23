@@ -115,9 +115,9 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
 
     expect(await token.tokenURI(1)).to.equal("");
 
-    await token.setBaseURI("http://example.com");
+    await token.setBaseURI("http://example.com/");
 
-    expect(await token.tokenURI(1)).to.equal("http://example.com");
+    expect(await token.tokenURI(1)).to.equal("http://example.com/");
 
     await token.connect(owner).setRandomOffset();
 
