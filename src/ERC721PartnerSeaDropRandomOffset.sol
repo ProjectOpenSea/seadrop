@@ -9,7 +9,7 @@ import { ERC721PartnerSeaDrop } from "./ERC721PartnerSeaDrop.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @notice ERC721PartnerSeaDropRandomOffset is a token contract that extends
- *         ERC721PartnerSeaDrop a apply a randomOffset to the tokenURI,
+ *         ERC721PartnerSeaDrop to apply a randomOffset to the tokenURI,
  *         to enable fair metadata reveals.
  */
 contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
