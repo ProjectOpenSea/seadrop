@@ -38,14 +38,14 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 
 </td></tr>
 <tr><td>Goerli</td></tr>
+<tr><td>Polygon</td></tr>
+<tr><td>Mumbai</td></tr>
 </table>
 
 To be deployed on other EVM chains, such as:
 
 Short-term:
 
-- Polygon
-- Mumbai
 - Optimism
 - Optimistic Kovan
 - Arbitrum
