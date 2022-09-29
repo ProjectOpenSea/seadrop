@@ -14,8 +14,6 @@ To split responsibilities with an Administrator role who can set fee parameters,
 1. Set the creator payout address with `token.updateCreatorPayoutAddress()`
 1. Set the contract URI with `token.setContractURI()`
 1. Set the base URI with `token.setBaseURI()`
-1. Set the drop URI with `token.setDropURI()`
-   1. See [Format of Drop URI](#format-of-drop-uri)
 1. Optionally:
    1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()`
       1. Must be set before first token is minted
@@ -23,6 +21,8 @@ To split responsibilities with an Administrator role who can set fee parameters,
    1. Set a token gated drop stage with `token.updateTokenGatedDrop()`
    1. Add server-side signers with `token.updateSignedMintValidationParams()`
 1. Set a public drop stage with `token.updatePublicDrop()`
+1. Set the drop URI with `token.setDropURI()`
+   1. See [Format of Drop URI](#format-of-drop-uri)
 
 ### ERC721PartnerSeaDrop
 
@@ -36,18 +36,19 @@ To split responsibilities with an Administrator role who can set fee parameters,
    1. Set the contract URI with `token.setContractURI()`
    1. Set the base URI with `token.setBaseURI()`
 1. Can be sent by token Owner or Administrator:
+   1. Optionally:
+      1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()`
+         1. Must be set before first token is minted
+         1. Instructions for generating the provenance hash [here](./ProvenanceHash.md)
+      1. Set an allow list drop stage with `token.updateAllowList()`
+         1. See [Format of Allow List URI](#format-of-drop-uri)
+      1. Set a token gated drop stage with `token.updateTokenGatedDrop()`
+         1. Administrator must first initialize with feeBps
+      1. Set a public drop stage with `token.updatePublicDrop()`
+         1. Administrator must first initialize with feeBps with `token.updatePublicDrop()`
+         1. If `restrictFeeRecipients` is set to true, Administrator must set allowed fee recipients with `token.updateAllowedFeeRecipient()`
    1. Set the drop URI with `token.setDropURI()`
       1. See [Format of Drop URI](#format-of-drop-uri)
-1. Optionally:
-   1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()`
-      1. Must be set before first token is minted
-   1. Set an allow list drop stage with `token.updateAllowList()`
-      1. See [Format of Allow List URI](#format-of-drop-uri)
-   1. Set a token gated drop stage with `token.updateTokenGatedDrop()`
-      1. Administrator must first initialize with feeBps.
-1. Set a public drop stage with `token.updatePublicDrop()`
-   1. Administrator must first initialize with feeBps.with `token.updatePublicDrop()`
-   1. If `restrictFeeRecipients` is set to true, Administrator must set allowed fee recipients with `token.updateAllowedFeeRecipient()`
 
 ## Specifications
 

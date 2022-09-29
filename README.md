@@ -11,6 +11,7 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
   - [Background](#background)
   - [Deployments](#deployments)
   - [Diagram](#diagram)
+  - [Docs](#docs)
   - [Install](#install)
   - [Usage](#usage)
     - [Foundry Tests](#foundry-tests)
@@ -66,16 +67,16 @@ Long-term:
 
 To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeployment.md).
 
-Docs:
+## Diagram
+
+![SeaDrop Diagram](img/seadrop-diagram.png)
+
+## Docs
 
 - [SeaDrop Deployment](docs/SeaDropDeployment.md)
 - [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
 - [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
 - [Provenance Hash](docs/ProvenanceHash.md)
-
-## Diagram
-
-![SeaDrop Diagram](img/seadrop-diagram.png)
 
 ## Install
 
