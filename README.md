@@ -82,7 +82,7 @@ Docs:
 To install dependencies and compile contracts:
 
 ```bash
-git clone https://github.com/ProjectOpenSea/primary-drops-evm && cd primary-drops-evm
+git clone https://github.com/ProjectOpenSea/seadrop && cd seadrop
 yarn install
 yarn build
 ```
