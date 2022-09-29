@@ -70,6 +70,8 @@
     "lodash": ">=4.17.21",
     "node-fetch": ">=2.6.7",
     "underscore": ">=1.12.1",
-    "yargs-parser": ">=5.0.1"
+    "yargs-parser": ">=5.0.1",
+    "web3": ">=1.8.0",
+    "got": ">=11.8.5"
   }
 }
