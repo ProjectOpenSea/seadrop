@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {
     ERC721PartnerSeaDropRandomOffset
-} from "../ERC721PartnerSeaDropRandomOffset.sol";
+} from "../extensions/ERC721PartnerSeaDropRandomOffset.sol";
 
 /*
  * ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
