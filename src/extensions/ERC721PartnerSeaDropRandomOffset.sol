@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ERC721PartnerSeaDrop } from "./ERC721PartnerSeaDrop.sol";
+import { ERC721PartnerSeaDrop } from "../ERC721PartnerSeaDrop.sol";
 
 /**
  * @title  ERC721PartnerSeaDropRandomOffset
