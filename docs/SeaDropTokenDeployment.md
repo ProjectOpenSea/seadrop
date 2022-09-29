@@ -66,6 +66,7 @@ Follows the pattern of `tokenURI` — could be either on-chain data blob or exte
     {
       "name": "My Public Stage",
       "description": "My public stage description.",
+      "uuid": "ecae5ad4-fa40-4e79-856b-ec304c3ea5d4",
       "promoImage": "https://google.com/123.png",
       "isPublic": true,
       "mintPrice": 1000000000000000000,
@@ -78,6 +79,7 @@ Follows the pattern of `tokenURI` — could be either on-chain data blob or exte
     {
       "name": "My Private Allow List Stage",
       "description": "My private stage description",
+      "uuid": "07e7a791-42ad-46e6-968a-564acf0c06dc",
       "promoImage": "https://google.com/456.png",
       "isPublic": false,
       "mintPrice": 1000000000000000,
@@ -113,6 +115,9 @@ Follows the pattern of `tokenURI` — could be either on-chain data blob or exte
             "type": "string"
           },
           "description": {
+            "type": "string"
+          },
+          "uuid": {
             "type": "string"
           },
           "promoImage": {
