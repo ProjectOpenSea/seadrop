@@ -163,6 +163,10 @@ Lint checks utilize prettier, prettier-plugin-solidity, and solhint.
 "prettier-plugin-solidity": "^1.0.0-beta.24",
 ```
 
+## Audits
+
+SeaDrop was audited after development, a link to the report will be coming soon.
+
 ## Contributing
 
 Contributions to SeaDrop are welcome by anyone interested in writing more tests, improving readability, optimizing for gas efficiency, or extending the protocol with new features.
