@@ -71,6 +71,8 @@ To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeplo
 
 ![SeaDrop Diagram](img/seadrop-diagram.png)
 
+This diagram shows the logic flow in the case that a drop is hosted on OpenSea, with an optional mint hosted elsewhere. Note that a fee recipient is not required to integrate with SeaDrop, and a fee recipient may be any address.
+
 ## Docs
 
 - [SeaDrop Deployment](docs/SeaDropDeployment.md)
