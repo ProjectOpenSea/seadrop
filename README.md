@@ -1,4 +1,4 @@
-![SeaDrop](img/seadrop-banner.png)
+![Seadrop_GithubCover](https://user-images.githubusercontent.com/6371847/193665838-3c8f0363-8ba2-48c6-914e-ea0bc60c460b.png)
 
 # SeaDrop
 
