@@ -15,6 +15,9 @@ import {
  *
  * ---------------------------------------------------
  *
+ * Read HUGO x IO's full terms and conditions at:
+ * https://hugo.imaginaryones.com/terms-and-conditions
+ *
  * @notice This contract uses ERC721PartnerSeaDropBurnable,
  *         an ERC721A token contract that is compatible with SeaDrop,
  *         along with a burn function only callable by the token owner.
