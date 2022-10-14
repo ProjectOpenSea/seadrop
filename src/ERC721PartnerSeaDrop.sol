@@ -62,6 +62,7 @@ contract ERC721PartnerSeaDrop is ERC721SeaDrop, TwoStepAdministered {
     function mintSeaDrop(address minter, uint256 quantity)
         external
         payable
+        virtual
         override
         onlyAllowedSeaDrop(msg.sender)
     {
