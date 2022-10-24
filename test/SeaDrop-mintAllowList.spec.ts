@@ -12,6 +12,14 @@ import type { INonFungibleSeaDropToken, ISeaDrop } from "../typechain-types";
 import type { MintParamsStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
 
+const createMerkleTree = (leaves: Buffer[]) =>
+  new MerkleTree(leaves, keccak256, {
+    hashLeaves: true,
+    sortLeaves: true,
+    sortPairs: true,
+    duplicateOdd: true,
+  });
+
 const toPaddedBuffer = (data: any) =>
   Buffer.from(
     ethers.BigNumber.from(data).toHexString().slice(2).padStart(64, "0"),
@@ -117,10 +125,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Construct a merkle tree from the allow list elements.
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     // Store the merkle root.
     const root = merkleTree.getHexRoot();
@@ -186,10 +191,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       [minter.address, mintParamsFreeMint],
     ]);
 
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     const root = merkleTree.getHexRoot();
     const leaf = merkleTree.getLeaf(0);
@@ -240,10 +242,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       [minter.address, mintParams],
     ]);
 
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     const root = merkleTree.getHexRoot();
     const leaf = merkleTree.getLeaf(0);
@@ -315,10 +314,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       [minter.address, mintParams],
     ]);
 
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     const root = merkleTree.getHexRoot();
     const leaf = merkleTree.getLeaf(0);
@@ -377,10 +373,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       [minter.address, mintParams],
     ]);
 
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     const root = merkleTree.getHexRoot();
     const leaf = merkleTree.getLeaf(0);
@@ -424,10 +417,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       [minter.address, mintParams],
     ]);
 
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     const root = merkleTree.getHexRoot();
     const leaf = merkleTree.getLeaf(0);
@@ -488,10 +478,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       [minter.address, mintParams],
     ]);
 
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     const root = merkleTree.getHexRoot();
     const leaf = merkleTree.getLeaf(0);
@@ -541,10 +528,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Construct a merkle tree from the allow list elements.
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     // Store the merkle root.
     const root = merkleTree.getHexRoot();
@@ -630,17 +614,18 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Construct a merkle tree from the allow list elements.
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     // Store the merkle root.
     const root = merkleTree.getHexRoot();
 
     // Get the leaves.
-    const leafMinter = merkleTree.getLeaf(0);
-    const leafSecondMinter = merkleTree.getLeaf(1);
+    const leafMinter = merkleTree.getLeaf(
+      keccak256(elementsBuffer[0]) < keccak256(elementsBuffer[1]) ? 0 : 1
+    );
+    const leafSecondMinter = merkleTree.getLeaf(
+      keccak256(elementsBuffer[0]) < keccak256(elementsBuffer[1]) ? 1 : 0
+    );
 
     // Get the proof of the leaf to pass into the transaction.
     const proofMinter = merkleTree.getHexProof(leafMinter);
@@ -727,17 +712,18 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Construct a merkle tree from the allow list elements.
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     // Store the merkle root.
     const root = merkleTree.getHexRoot();
 
     // Get the leaves.
-    const leafMinter = merkleTree.getLeaf(0);
-    const leafSecondMinter = merkleTree.getLeaf(1);
+    const leafMinter = merkleTree.getLeaf(
+      keccak256(elementsBuffer[0]) < keccak256(elementsBuffer[1]) ? 0 : 1
+    );
+    const leafSecondMinter = merkleTree.getLeaf(
+      keccak256(elementsBuffer[0]) < keccak256(elementsBuffer[1]) ? 1 : 0
+    );
 
     // Get the proof of the leaf to pass into the transaction.
     const proofMinter = merkleTree.getHexProof(leafMinter);
@@ -819,10 +805,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Construct a merkle tree from the allow list elements.
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     // Get the leaf at index 0.
     const leaf = merkleTree.getLeaf(0);
@@ -884,10 +867,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Construct a merkle tree from the allow list elements.
-    const merkleTree = new MerkleTree(elementsBuffer, keccak256, {
-      hashLeaves: true,
-      sortPairs: true,
-    });
+    const merkleTree = createMerkleTree(elementsBuffer);
 
     // Get the leaf at index 0.
     const leaf = merkleTree.getLeaf(0);
