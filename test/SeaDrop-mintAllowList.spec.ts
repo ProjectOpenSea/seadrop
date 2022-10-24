@@ -17,7 +17,6 @@ const createMerkleTree = (leaves: Buffer[]) =>
     hashLeaves: true,
     sortLeaves: true,
     sortPairs: true,
-    duplicateOdd: true,
   });
 
 const toPaddedBuffer = (data: any) =>
