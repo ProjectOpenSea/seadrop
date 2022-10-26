@@ -1,5 +1,12 @@
 ![Seadrop_GithubCover](img/seadrop-banner.png)
 
+[![Version][version-badge]][version-link]
+[![Test CI][ci-badge]][ci-link]
+[![Code Coverage][coverage-badge]][coverage-link]
+[![License][license-badge]][license-link]
+[![Docs][docs-badge]][docs-link]
+[![Discussions][discussions-badge]][discussions-link]
+
 # SeaDrop
 
 SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockchains.
@@ -190,3 +197,16 @@ When making a pull request, ensure that:
 ## License
 
 [MIT](LICENSE) Copyright 2022 Ozone Networks, Inc.
+
+[version-badge]: https://img.shields.io/github/package-json/v/ProjectOpenSea/seadrop
+[version-link]: https://github.com/ProjectOpenSea/seadrop/blob/main/package.json
+[ci-badge]: https://github.com/ProjectOpenSea/seadrop/actions/workflows/test.yml/badge.svg
+[ci-link]: https://github.com/ProjectOpenSea/seadrop/actions/workflows/test.yml
+[coverage-badge]: https://coveralls.io/repos/github/ProjectOpenSea/seadrop/badge.svg?branch=main
+[coverage-link]: https://coveralls.io/github/ProjectOpenSea/seadrop?branch=main
+[license-badge]: https://img.shields.io/github/license/ProjectOpenSea/seadrop
+[license-link]: https://github.com/ProjectOpenSea/seadrop/blob/main/LICENSE
+[docs-badge]: https://img.shields.io/badge/SeaDrop-documentation-informational
+[docs-link]: https://github.com/ProjectOpenSea/seadrop/tree/main/docs
+[discussions-badge]: https://img.shields.io/badge/SeaDrop-discussions-blueviolet
+[discussions-link]: https://github.com/ProjectOpenSea/seadrop/discussions
