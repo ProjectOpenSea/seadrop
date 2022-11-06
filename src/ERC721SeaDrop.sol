@@ -25,7 +25,11 @@ import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 
 import {
     IERC165
-} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
+
+import {
+    DefaultOperatorFilterer
+} from "operator-filter-registry/DefaultOperatorFilterer.sol";
 
 /**
  * @title  ERC721SeaDrop
@@ -38,7 +42,8 @@ import {
 contract ERC721SeaDrop is
     ERC721ContractMetadata,
     INonFungibleSeaDropToken,
-    ReentrancyGuard
+    ReentrancyGuard,
+    DefaultOperatorFilterer
 {
     /// @notice Revert with an error if mint exceeds the max supply.
     error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
@@ -375,5 +380,63 @@ contract ERC721SeaDrop is
             // ERC721A returns supportsInterface true for
             // ERC165, ERC721, ERC721Metadata
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Transfers `tokenId` from `from` to `to`.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must be owned by `from`.
+     * - If the caller is not `from`, it must be approved to move this token
+     * by either {approve} or {setApprovalForAll}.
+     * - The operator (msg.sender) must be allowed.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override onlyAllowedOperator {
+        super.transferFrom(from, to, tokenId);
+    }
+
+    /**
+     * @dev Equivalent to `safeTransferFrom(from, to, tokenId, '')`.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override onlyAllowedOperator {
+        super.safeTransferFrom(from, to, tokenId);
+    }
+
+    /**
+     * @dev Safely transfers `tokenId` token from `from` to `to`.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must exist and be owned by `from`.
+     * - If the caller is not `from`, it must be approved to move this token
+     * by either {approve} or {setApprovalForAll}.
+     * - If `to` refers to a smart contract, it must implement
+     * {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     * - The operator (msg.sender) must be allowed.
+     *
+     * Emits a {Transfer} event.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override onlyAllowedOperator {
+        super.safeTransferFrom(from, to, tokenId, data);
     }
 }

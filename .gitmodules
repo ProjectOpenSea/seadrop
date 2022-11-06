@@ -16,3 +16,6 @@
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "lib/operator-filter-registry"]
+	path = lib/operator-filter-registry
+	url = git@github.com:ProjectOpenSea/operator-filter-registry.git

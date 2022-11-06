@@ -10,9 +10,7 @@ import {
     SignedMintValidationParams
 } from "seadrop/lib/SeaDropStructs.sol";
 
-import {
-    ECDSA
-} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 
 contract SeaDropMintSignedTest is TestHelper {
     using ECDSA for bytes32;

@@ -22,19 +22,19 @@ import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 
 import {
     IERC721
-} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 
 import {
     IERC165
-} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 import {
     ECDSA
-} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 
 import {
     MerkleProof
-} from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
+} from "openzeppelin-contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title  SeaDrop

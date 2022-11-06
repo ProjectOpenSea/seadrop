@@ -14,7 +14,7 @@ import {
 
 import {
     IERC165
-} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
     /**
