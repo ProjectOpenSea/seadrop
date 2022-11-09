@@ -400,7 +400,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator {
+    ) public override onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -411,7 +411,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator {
+    ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -436,7 +436,7 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override onlyAllowedOperator {
+    ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 }
