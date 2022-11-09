@@ -1,6 +1,7 @@
 node_modules/
 
-contracts/test/
+src/test/
+src/shim/
 
 test/
 lib/

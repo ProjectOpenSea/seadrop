@@ -506,4 +506,46 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       }
     }
   });
+
+  it("Should be able to transfer successfully", async () => {
+    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
+    await token.setMaxSupply(5);
+
+    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
+    await token.updateAllowedFeeRecipient(
+      seadrop.address,
+      feeRecipient.address,
+      true
+    );
+    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await seadrop
+      .connect(minter)
+      .mintPublic(
+        token.address,
+        feeRecipient.address,
+        ethers.constants.AddressZero,
+        5,
+        { value: ethers.BigNumber.from(publicDrop.mintPrice).mul(5) }
+      );
+
+    await token
+      .connect(minter)
+      .transferFrom(minter.address, creator.address, 1);
+    await token
+      .connect(minter)
+      ["safeTransferFrom(address,address,uint256)"](
+        minter.address,
+        creator.address,
+        2
+      );
+    await token
+      .connect(minter)
+      ["safeTransferFrom(address,address,uint256,bytes)"](
+        minter.address,
+        creator.address,
+        3,
+        Buffer.from("dadb0d", "hex")
+      );
+    expect(await token.balanceOf(creator.address)).to.eq(3);
+  });
 });
