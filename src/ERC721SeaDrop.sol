@@ -28,8 +28,8 @@ import {
 } from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 import {
-    DefaultOperatorFilterer
-} from "operator-filter-registry/DefaultOperatorFilterer.sol";
+    DefaultOperatorFilterer721
+} from "operator-filter-registry/example/DefaultOperatorFilterer721.sol";
 
 /**
  * @title  ERC721SeaDrop
@@ -43,7 +43,7 @@ contract ERC721SeaDrop is
     ERC721ContractMetadata,
     INonFungibleSeaDropToken,
     ReentrancyGuard,
-    DefaultOperatorFilterer
+    DefaultOperatorFilterer721
 {
     /// @notice Revert with an error if mint exceeds the max supply.
     error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
