@@ -174,7 +174,7 @@ Lint checks utilize prettier, prettier-plugin-solidity, and solhint.
 
 ## Audits
 
-SeaDrop was audited after development, a link to the report will be coming soon.
+SeaDrop was audited after development by [Spearbit](https://spearbit.com/), read the report [here](./assets/spearbit-seadrop-audit.pdf).
 
 ## Contributing
 
