@@ -13,9 +13,9 @@ import { ERC721PartnerSeaDrop } from "../ERC721PartnerSeaDrop.sol";
  */
 contract ERC721PartnerSeaDropBurnable is ERC721PartnerSeaDrop {
     /**
-     * @notice A token can only be burned by its owner.
+     * @notice A token can only be burned by its owner or approved address.
      */
-    error BurnIncorrectOwner();
+    error BurnNotOwnerOrApproved();
 
     /**
      * @notice Deploy the token contract with its name, symbol,
@@ -34,8 +34,11 @@ contract ERC721PartnerSeaDropBurnable is ERC721PartnerSeaDrop {
      * @param tokenId The token id to burn.
      */
     function burn(uint256 tokenId) external {
-        if (ownerOf(tokenId) != msg.sender) {
-            revert BurnIncorrectOwner();
+        address owner = ownerOf(tokenId);
+        if (owner != _msgSenderERC721A()) {
+            if (!isApprovedForAll(owner, _msgSenderERC721A())) {
+                revert BurnNotOwnerOrApproved();
+            }
         }
 
         _burn(tokenId);

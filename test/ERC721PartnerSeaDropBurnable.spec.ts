@@ -20,6 +20,7 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
   let admin: Wallet;
   let creator: Wallet;
   let minter: Wallet;
+  let approved: Wallet;
 
   after(async () => {
     await network.provider.request({
@@ -33,9 +34,10 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
     admin = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
+    approved = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    for (const wallet of [owner, admin, minter, creator]) {
+    for (const wallet of [owner, admin, minter, creator, approved]) {
       await faucet(wallet.address, provider);
     }
 
@@ -58,32 +60,48 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
   it("Should only let the token owner burn their own token", async () => {
     await token.setMaxSupply(1);
 
-    // Mint one token to the minter.
+    // Mint two tokens to the minter.
     await whileImpersonating(
       seadrop.address,
       provider,
       async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1);
+        await token.connect(impersonatedSigner).mintSeaDrop(minter.address, 2);
       }
     );
 
     expect(await token.ownerOf(1)).to.equal(minter.address);
-    expect(await token.totalSupply()).to.equal(1);
+    expect(await token.totalSupply()).to.equal(2);
 
-    // Only the owner of the minted token should be able to burn it.
+    // Only the owner or approved of the minted token should be able to burn it.
     await expect(token.connect(admin).burn(1)).to.be.revertedWith(
-      "BurnIncorrectOwner()"
+      "BurnNotOwnerOrApproved()"
     );
     await expect(token.connect(owner).burn(1)).to.be.revertedWith(
-      "BurnIncorrectOwner()"
+      "BurnNotOwnerOrApproved()"
+    );
+    await expect(token.connect(approved).burn(1)).to.be.revertedWith(
+      "BurnNotOwnerOrApproved()"
+    );
+    await expect(token.connect(approved).burn(2)).to.be.revertedWith(
+      "BurnNotOwnerOrApproved()"
     );
 
     expect(await token.ownerOf(1)).to.equal(minter.address);
-    expect(await token.totalSupply()).to.equal(1);
+    expect(await token.totalSupply()).to.equal(2);
 
     await token.connect(minter).burn(1);
 
+    expect(await token.totalSupply()).to.equal(1);
+
+    await token.connect(minter).approve(approved.address, 1);
+    await token.connect(approved).burn(2);
+
+    expect(await token.totalSupply()).to.equal(0);
+
     await expect(token.ownerOf(1)).to.be.revertedWith(
+      "OwnerQueryForNonexistentToken()"
+    );
+    await expect(token.ownerOf(2)).to.be.revertedWith(
       "OwnerQueryForNonexistentToken()"
     );
     expect(await token.totalSupply()).to.equal(0);
