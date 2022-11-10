@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {IOperatorFilterRegistry} from "../../IOperatorFilterRegistry.sol";
-import {Initializable} from "openzeppelin-contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Initializable} from "../../../../openzeppelin-contracts/proxy/utils/Initializable.sol";
 
 abstract contract OperatorFilterer1155Upgradeable is Initializable {
     error OperatorNotAllowed(address operator);

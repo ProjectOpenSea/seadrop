@@ -48,7 +48,7 @@ Hardhat config located at [`hardhat.config.ts`](./hardhat.config.ts)
 
 **Deploy**
 
-In this directory (`src/upgradeable`) run:
+In this directory (`src-upgradeable`) run:
 
 ```
 npx hardhat run --config hardhat.config.ts --network goerli scripts/deploy.ts
@@ -56,7 +56,7 @@ npx hardhat run --config hardhat.config.ts --network goerli scripts/deploy.ts
 
 **Upgrade**
 
-In this directory (`src/upgradeable`) run:
+In this directory (`src-upgradeable`) run:
 
 ```
 npx hardhat run --config hardhat.config.ts --network goerli scripts/upgrade.ts
