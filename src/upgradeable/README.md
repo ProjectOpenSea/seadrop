@@ -26,11 +26,11 @@ npm install --save-dev @openzeppelin/hardhat-upgrades
 
 **Deploy Script**
 
-Located at [`scripts/deploy.js`](./scripts/deploy.js)
+Located at [`scripts/deploy.ts`](./scripts/deploy.ts)
 
 **Upgrade Script**
 
-Located at [`scripts/upgrade.js`](./scripts/upgrade.js)
+Located at [`scripts/upgrade.ts`](./scripts/upgrade.ts)
 
 ### Testnet / Mainnet
 
@@ -44,20 +44,20 @@ export PRIVATE_KEY="Your Wallet Private Key"
 export RPC_URL_GOERLI="https://Infura Or Alchemy URL With API Key"
 ```
 
-Hardhat config located at [`hardhat.config.js`](./hardhat.config.js)
+Hardhat config located at [`hardhat.config.ts`](./hardhat.config.ts)
 
 **Deploy**
 
-In `src/upgradeable` run:
+In this directory (`src/upgradeable`) run:
 
 ```
-npx hardhat run --config hardhat.config.js --network goerli scripts/deploy.js
+npx hardhat run --config hardhat.config.ts --network goerli scripts/deploy.ts
 ```
 
 **Upgrade**
 
-In `src/upgradeable` run:
+In this directory (`src/upgradeable`) run:
 
 ```
-npx hardhat run --config hardhat.config.js --network goerli scripts/upgrade.js
+npx hardhat run --config hardhat.config.ts --network goerli scripts/upgrade.ts
 ```

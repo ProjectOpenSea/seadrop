@@ -1,13 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
+
 function c_41c99668(bytes8 c__41c99668) pure {}
-function c_true41c99668(bytes8 c__41c99668) pure returns (bool){ return true; }
-function c_false41c99668(bytes8 c__41c99668) pure returns (bool){ return false; }
 
+function c_true41c99668(bytes8 c__41c99668) pure returns (bool) {
+    return true;
+}
 
-import { AllowListData, MintParams, PublicDrop, TokenGatedDropStage, TokenGatedMintParams, SignedMintValidationParams } from "../lib/SeaDropStructsUpgradeable.sol";
+function c_false41c99668(bytes8 c__41c99668) pure returns (bool) {
+    return false;
+}
 
-import { SeaDropErrorsAndEventsUpgradeable } from "../lib/SeaDropErrorsAndEventsUpgradeable.sol";
+import {
+    AllowListData,
+    MintParams,
+    PublicDrop,
+    TokenGatedDropStage,
+    TokenGatedMintParams,
+    SignedMintValidationParams
+} from "../lib/SeaDropStructsUpgradeable.sol";
+
+import {
+    SeaDropErrorsAndEventsUpgradeable
+} from "../lib/SeaDropErrorsAndEventsUpgradeable.sol";
 
 interface ISeaDropUpgradeable is SeaDropErrorsAndEventsUpgradeable {
     /**
