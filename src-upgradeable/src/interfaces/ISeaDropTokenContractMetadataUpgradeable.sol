@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-function c_617a6f63(bytes8 c__617a6f63) pure {}
-
-function c_true617a6f63(bytes8 c__617a6f63) pure returns (bool) {
-    return true;
-}
-
-function c_false617a6f63(bytes8 c__617a6f63) pure returns (bool) {
-    return false;
-}
-
 interface ISeaDropTokenContractMetadataUpgradeable {
     /**
      * @dev Emit an event when the max token supply is updated.

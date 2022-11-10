@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
-function c_2dc713e7(bytes8 c__2dc713e7) pure {}
-function c_true2dc713e7(bytes8 c__2dc713e7) pure returns (bool){ return true; }
-function c_false2dc713e7(bytes8 c__2dc713e7) pure returns (bool){ return false; }
-
 
 import { PublicDrop, TokenGatedDropStage, SignedMintValidationParams } from "./SeaDropStructsUpgradeable.sol";
 

@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
-function c_b16eb2fb(bytes8 c__b16eb2fb) pure {}
-function c_trueb16eb2fb(bytes8 c__b16eb2fb) pure returns (bool){ return true; }
-function c_falseb16eb2fb(bytes8 c__b16eb2fb) pure returns (bool){ return false; }
-
 
 /**
  * @notice A struct defining public drop data.
