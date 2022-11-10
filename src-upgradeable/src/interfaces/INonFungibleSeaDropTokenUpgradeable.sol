@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-function c_b6783655(bytes8 c__b6783655) pure {}
-
-function c_trueb6783655(bytes8 c__b6783655) pure returns (bool) {
-    return true;
-}
-
-function c_falseb6783655(bytes8 c__b6783655) pure returns (bool) {
-    return false;
-}
-
 import {
     ISeaDropTokenContractMetadataUpgradeable
 } from "../interfaces/ISeaDropTokenContractMetadataUpgradeable.sol";

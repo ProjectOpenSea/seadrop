@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-function c_afe8af9c(bytes8 c__afe8af9c) pure {}
-
-function c_trueafe8af9c(bytes8 c__afe8af9c) pure returns (bool) {
-    return true;
-}
-
-function c_falseafe8af9c(bytes8 c__afe8af9c) pure returns (bool) {
-    return false;
-}
-
 import {
     ERC721PartnerSeaDropUpgradeable
 } from "../ERC721PartnerSeaDropUpgradeable.sol";
@@ -26,20 +16,10 @@ import {
 contract ERC721PartnerSeaDropBurnableUpgradeable is
     ERC721PartnerSeaDropUpgradeable
 {
-    function c_d007dd4f(bytes8 c__d007dd4f) internal pure {}
-
-    function c_trued007dd4f(bytes8 c__d007dd4f) internal pure returns (bool) {
-        return true;
-    }
-
-    function c_falsed007dd4f(bytes8 c__d007dd4f) internal pure returns (bool) {
-        return false;
-    }
-
     /**
-     * @notice A token can only be burned by its owner.
+     * @notice A token can only be burned by its owner or approved address.
      */
-    error BurnIncorrectOwner();
+    error BurnNotOwnerOrApproved();
 
     /**
      * @notice Deploy the token contract with its name, symbol,
@@ -77,9 +57,7 @@ contract ERC721PartnerSeaDropBurnableUpgradeable is
         string memory,
         address,
         address[] memory
-    ) internal onlyInitializing {
-        c_d007dd4f(0x987d64aaa551caec); /* function */
-    }
+    ) internal onlyInitializing {}
 
     /**
      * @notice Destroys `tokenId`, only callable by the owner of the token.
@@ -87,21 +65,16 @@ contract ERC721PartnerSeaDropBurnableUpgradeable is
      * @param tokenId The token id to burn.
      */
     function burn(uint256 tokenId) external {
-        c_d007dd4f(0xf66ee6e8fdbc9a4c); /* function */
-
-        c_d007dd4f(0x7f58b41fb1483310); /* line */
-        c_d007dd4f(0x798623601771e27c); /* statement */
-        if (ownerOf(tokenId) != msg.sender) {
-            c_d007dd4f(0xcc362c82dea34e9a); /* branch */
-
-            c_d007dd4f(0x8a6839982e97c9ca); /* line */
-            revert BurnIncorrectOwner();
-        } else {
-            c_d007dd4f(0xe668b3e01f508e0a); /* branch */
+        address owner = ownerOf(tokenId);
+        if (owner != _msgSenderERC721A()) {
+            if (
+                !isApprovedForAll(owner, _msgSenderERC721A()) &&
+                getApproved(tokenId) != _msgSenderERC721A()
+            ) {
+                revert BurnNotOwnerOrApproved();
+            }
         }
 
-        c_d007dd4f(0xffa7ea885fe930a4); /* line */
-        c_d007dd4f(0x897e22dfd4d1115e); /* statement */
         _burn(tokenId);
     }
 }
