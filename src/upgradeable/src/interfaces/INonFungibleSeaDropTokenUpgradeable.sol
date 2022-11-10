@@ -1,17 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
+
 function c_b6783655(bytes8 c__b6783655) pure {}
-function c_trueb6783655(bytes8 c__b6783655) pure returns (bool){ return true; }
-function c_falseb6783655(bytes8 c__b6783655) pure returns (bool){ return false; }
 
+function c_trueb6783655(bytes8 c__b6783655) pure returns (bool) {
+    return true;
+}
 
-import { ISeaDropTokenContractMetadataUpgradeable } from "../interfaces/ISeaDropTokenContractMetadataUpgradeable.sol";
+function c_falseb6783655(bytes8 c__b6783655) pure returns (bool) {
+    return false;
+}
 
-import { AllowListData, PublicDrop, TokenGatedDropStage, SignedMintValidationParams } from "../lib/SeaDropStructsUpgradeable.sol";
+import {
+    ISeaDropTokenContractMetadataUpgradeable
+} from "../interfaces/ISeaDropTokenContractMetadataUpgradeable.sol";
 
-import { IERC165Upgradeable } from "../../openzeppelin-contracts/contracts/utils/introspection/IERC165Upgradeable.sol";
+import {
+    AllowListData,
+    PublicDrop,
+    TokenGatedDropStage,
+    SignedMintValidationParams
+} from "../lib/SeaDropStructsUpgradeable.sol";
 
-interface INonFungibleSeaDropTokenUpgradeable is ISeaDropTokenContractMetadataUpgradeable, IERC165Upgradeable {
+import {
+    IERC165Upgradeable
+} from "../../lib/openzeppelin-contracts/contracts/utils/introspection/IERC165Upgradeable.sol";
+
+interface INonFungibleSeaDropTokenUpgradeable is
+    ISeaDropTokenContractMetadataUpgradeable,
+    IERC165Upgradeable
+{
     /**
      * @dev Revert with an error if a contract is not an allowed
      *      SeaDrop address.

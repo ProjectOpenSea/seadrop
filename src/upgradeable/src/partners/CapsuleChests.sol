@@ -71,7 +71,12 @@ contract CapsuleChests is ERC721PartnerSeaDropUpgradeable {
         address administrator,
         address[] memory allowedSeaDrop
     ) external initializer initializerERC721A {
-        ERC721PartnerSeaDropUpgradeable.__ERC721PartnerSeaDrop_init(name, symbol, administrator, allowedSeaDrop);
+        ERC721PartnerSeaDropUpgradeable.__ERC721PartnerSeaDrop_init(
+            name,
+            symbol,
+            administrator,
+            allowedSeaDrop
+        );
     }
 
     function setCapsuleCardsAddress(address newCapsuleCardsAddress)
