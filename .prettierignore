@@ -5,4 +5,4 @@ coverage*
 gasReporterOutput.json
 lib
 temp-src-coverage
-src/upgradeable/lib
+src-upgradeable/lib
