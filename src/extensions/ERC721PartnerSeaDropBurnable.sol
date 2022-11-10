@@ -36,7 +36,10 @@ contract ERC721PartnerSeaDropBurnable is ERC721PartnerSeaDrop {
     function burn(uint256 tokenId) external {
         address owner = ownerOf(tokenId);
         if (owner != _msgSenderERC721A()) {
-            if (!isApprovedForAll(owner, _msgSenderERC721A())) {
+            if (
+                !isApprovedForAll(owner, _msgSenderERC721A()) &&
+                getApproved(tokenId) != _msgSenderERC721A()
+            ) {
                 revert BurnNotOwnerOrApproved();
             }
         }

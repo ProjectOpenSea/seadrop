@@ -58,19 +58,21 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
   });
 
   it("Should only let the token owner burn their own token", async () => {
-    await token.setMaxSupply(1);
+    await token.setMaxSupply(3);
 
-    // Mint two tokens to the minter.
+    // Mint three tokens to the minter.
     await whileImpersonating(
       seadrop.address,
       provider,
       async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(minter.address, 2);
+        await token.connect(impersonatedSigner).mintSeaDrop(minter.address, 3);
       }
     );
 
     expect(await token.ownerOf(1)).to.equal(minter.address);
-    expect(await token.totalSupply()).to.equal(2);
+    expect(await token.ownerOf(2)).to.equal(minter.address);
+    expect(await token.ownerOf(3)).to.equal(minter.address);
+    expect(await token.totalSupply()).to.equal(3);
 
     // Only the owner or approved of the minted token should be able to burn it.
     await expect(token.connect(admin).burn(1)).to.be.revertedWith(
@@ -85,16 +87,31 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
     await expect(token.connect(approved).burn(2)).to.be.revertedWith(
       "BurnNotOwnerOrApproved()"
     );
+    await expect(token.connect(owner).burn(3)).to.be.revertedWith(
+      "BurnNotOwnerOrApproved()"
+    );
 
     expect(await token.ownerOf(1)).to.equal(minter.address);
-    expect(await token.totalSupply()).to.equal(2);
+    expect(await token.ownerOf(2)).to.equal(minter.address);
+    expect(await token.ownerOf(3)).to.equal(minter.address);
+    expect(await token.totalSupply()).to.equal(3);
 
     await token.connect(minter).burn(1);
 
+    expect(await token.totalSupply()).to.equal(2);
+
+    await token.connect(minter).setApprovalForAll(approved.address, true);
+    await token.connect(approved).burn(2);
+
     expect(await token.totalSupply()).to.equal(1);
 
-    await token.connect(minter).approve(approved.address, 1);
-    await token.connect(approved).burn(2);
+    await token.connect(minter).setApprovalForAll(approved.address, false);
+    await expect(token.connect(approved).burn(3)).to.be.revertedWith(
+      "BurnNotOwnerOrApproved()"
+    );
+
+    await token.connect(minter).approve(owner.address, 3);
+    await token.connect(owner).burn(3);
 
     expect(await token.totalSupply()).to.equal(0);
 
@@ -107,7 +124,7 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
     expect(await token.totalSupply()).to.equal(0);
 
     // Should not be able to burn a nonexistent token.
-    for (const tokenId of [0, 1, 2]) {
+    for (const tokenId of [0, 1, 2, 3]) {
       await expect(token.connect(minter).burn(tokenId)).to.be.revertedWith(
         "OwnerQueryForNonexistentToken()"
       );
