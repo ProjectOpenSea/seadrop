@@ -9,7 +9,7 @@ async function mainDeploy() {
     [
       "CHCC: Genesis Collection Chest",
       "CHCC-GCC",
-      "0xfBa662e1a8e91a350702cF3b87D0C2d2Fb4BA57F",
+      "0x4468A5B725E2C63056131121cD33b66848E1dd87",
       ["0x00005EA00Ac477B1030CE78506496e8C2dE24bf5"],
     ],
     { initializer: "initialize" }
