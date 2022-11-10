@@ -20,17 +20,13 @@ import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
 import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 
-import {
-    IERC721
-} from "openzeppelin-contracts/token/ERC721/IERC721.sol";
+import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 
 import {
     IERC165
 } from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
-import {
-    ECDSA
-} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
+import { ECDSA } from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 
 import {
     MerkleProof

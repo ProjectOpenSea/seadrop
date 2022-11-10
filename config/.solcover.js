@@ -3,7 +3,7 @@ module.exports = {
     "./shim/Shim.sol",
     "./test/TestERC721.sol",
     "./test/MaliciousRecipient.sol",
-    "./partners"
+    "./partners",
   ],
   configureYulOptimizer: true,
   solcOptimizerDetails: {
