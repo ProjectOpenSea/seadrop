@@ -66,6 +66,19 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     };
   });
 
+  it("Should emit an event when the contract is deployed", async () => {
+    const ERC721SeaDrop = await ethers.getContractFactory(
+      "ERC721SeaDrop",
+      owner
+    );
+    const tx = await ERC721SeaDrop.deploy("", "", [seadrop.address]);
+    const receipt = await tx.deployTransaction.wait();
+    const event = (receipt as any).events.filter(
+      ({ event }: any) => event === "SeaDropTokenDeployed"
+    );
+    expect(event).to.not.be.null;
+  });
+
   it("Should not be able to mint until the creator address is updated to non-zero", async () => {
     await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
     await token.setMaxSupply(5);
@@ -547,5 +560,189 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         Buffer.from("dadb0d", "hex")
       );
     expect(await token.balanceOf(creator.address)).to.eq(3);
+  });
+
+  it("Should be able to use the multiConfigure method", async () => {
+    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
+    const allowListData = {
+      merkleRoot: `0x${"3".repeat(64)}`,
+      publicKeyURIs: [],
+      allowListURI: "",
+    };
+    const tokenGatedDropStage = {
+      mintPrice: "10000000000000000", // 0.01 ether
+      maxTotalMintableByWallet: 10,
+      startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 100,
+      feeBps: 100,
+      restrictFeeRecipients: true,
+    };
+    const signedMintValidationParams = {
+      minMintPrice: 10,
+      maxMaxTotalMintableByWallet: 5,
+      minStartTime: 50,
+      maxEndTime: 100,
+      maxMaxTokenSupplyForStage: 100,
+      minFeeBps: 5,
+      maxFeeBps: 1000,
+    };
+    const config = {
+      maxSupply: 100,
+      baseURI: "https://example1.com",
+      contractURI: "https://example2.com",
+      seaDropImpl: seadrop.address,
+      publicDrop,
+      dropURI: "https://example3.com",
+      allowListData,
+      creatorPayoutAddress: creator.address,
+      allowedFeeRecipient: feeRecipient.address,
+      allowedPayers: [`0x${"4".repeat(40)}`, `0x${"5".repeat(40)}`],
+      provenanceHash: `0x${"3".repeat(64)}`,
+
+      tokenGatedAllowedNftTokens: [
+        `0x${"6".repeat(40)}`,
+        `0x${"7".repeat(40)}`,
+      ],
+      tokenGatedDropStages: [
+        tokenGatedDropStage,
+        {
+          ...tokenGatedDropStage,
+          mintPrice: tokenGatedDropStage.mintPrice + "1",
+        },
+      ],
+
+      signers: [`0x${"8".repeat(40)}`, `0x${"9".repeat(40)}`],
+      signedMintValidationParams: [
+        signedMintValidationParams,
+        {
+          ...signedMintValidationParams,
+          minMintPrice: signedMintValidationParams.minMintPrice + 1,
+        },
+      ],
+    };
+
+    await expect(
+      token.connect(creator).multiConfigure(config)
+    ).to.be.revertedWith("OnlyOwner()");
+
+    // Should revert if tokenGatedAllowedNftToken.length != tokenGatedDropStages.length
+    await expect(
+      token.connect(owner).multiConfigure({
+        ...config,
+        tokenGatedAllowedNftTokens: config.tokenGatedAllowedNftTokens.slice(1),
+      })
+    ).to.be.revertedWith("TokenGatedMismatch");
+
+    // Should revert if signers.length != signedMintValidationParams.length
+    await expect(
+      token.connect(owner).multiConfigure({
+        ...config,
+        signers: config.signers.slice(1),
+      })
+    ).to.be.revertedWith("SignersMismatch");
+
+    await expect(token.connect(owner).multiConfigure(config))
+      .to.emit(seadrop, "DropURIUpdated")
+      .withArgs(token.address, "https://example3.com");
+
+    const checkResults = async () => {
+      expect(await token.maxSupply()).to.eq(100);
+      expect(await token.baseURI()).to.eq("https://example1.com");
+      expect(await token.contractURI()).to.eq("https://example2.com");
+      expect(await seadrop.getPublicDrop(token.address)).to.deep.eq([
+        ethers.BigNumber.from(publicDrop.mintPrice),
+        publicDrop.startTime,
+        publicDrop.endTime,
+        publicDrop.maxTotalMintableByWallet,
+        publicDrop.feeBps,
+        publicDrop.restrictFeeRecipients,
+      ]);
+      expect(await seadrop.getAllowListMerkleRoot(token.address)).to.eq(
+        allowListData.merkleRoot
+      );
+      expect(await seadrop.getCreatorPayoutAddress(token.address)).to.eq(
+        creator.address
+      );
+      expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([
+        feeRecipient.address,
+      ]);
+      expect(await seadrop.getPayers(token.address)).to.deep.eq(
+        config.allowedPayers
+      );
+      expect(await token.provenanceHash()).to.eq(`0x${"3".repeat(64)}`);
+      expect(
+        await seadrop.getTokenGatedAllowedTokens(token.address)
+      ).to.deep.eq(config.tokenGatedAllowedNftTokens);
+      for (const [i, allowed] of config.tokenGatedAllowedNftTokens.entries()) {
+        expect(
+          await seadrop.getTokenGatedDrop(token.address, allowed)
+        ).to.deep.eq([
+          ethers.BigNumber.from(config.tokenGatedDropStages[i].mintPrice),
+          config.tokenGatedDropStages[i].maxTotalMintableByWallet,
+          config.tokenGatedDropStages[i].startTime,
+          config.tokenGatedDropStages[i].endTime,
+          config.tokenGatedDropStages[i].dropStageIndex,
+          config.tokenGatedDropStages[i].maxTokenSupplyForStage,
+          config.tokenGatedDropStages[i].feeBps,
+          config.tokenGatedDropStages[i].restrictFeeRecipients,
+        ]);
+      }
+      expect(await seadrop.getSigners(token.address)).to.deep.eq(
+        config.signers
+      );
+      for (const [i, signer] of config.signers.entries()) {
+        expect(
+          await seadrop.getSignedMintValidationParams(token.address, signer)
+        ).to.deep.eq([
+          ethers.BigNumber.from(
+            config.signedMintValidationParams[i].minMintPrice
+          ),
+          config.signedMintValidationParams[i].maxMaxTotalMintableByWallet,
+          config.signedMintValidationParams[i].minStartTime,
+          config.signedMintValidationParams[i].maxEndTime,
+          config.signedMintValidationParams[i].maxMaxTokenSupplyForStage,
+          config.signedMintValidationParams[i].minFeeBps,
+          config.signedMintValidationParams[i].maxFeeBps,
+        ]);
+      }
+    };
+    await checkResults();
+
+    // Should not do anything if all fields are zeroed out
+    await expect(
+      token.connect(owner).multiConfigure({
+        maxSupply: 0,
+        baseURI: "",
+        contractURI: "",
+        seaDropImpl: seadrop.address,
+        publicDrop: {
+          mintPrice: 0, // 0.1 ether
+          maxTotalMintableByWallet: 0,
+          startTime: 0,
+          endTime: 0,
+          feeBps: 0,
+          restrictFeeRecipients: true,
+        },
+        dropURI: "",
+        allowListData: {
+          merkleRoot: ethers.constants.HashZero,
+          publicKeyURIs: [],
+          allowListURI: "",
+        },
+        creatorPayoutAddress: ethers.constants.AddressZero,
+        allowedFeeRecipient: ethers.constants.AddressZero,
+        allowedPayers: [],
+        provenanceHash: ethers.constants.HashZero,
+
+        tokenGatedAllowedNftTokens: [],
+        tokenGatedDropStages: [],
+
+        signers: [],
+        signedMintValidationParams: [],
+      })
+    ).to.not.emit(seadrop, "DropURIUpdated");
+    await checkResults();
   });
 });

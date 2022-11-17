@@ -40,6 +40,16 @@ contract ERC721ContractMetadata is
     bytes32 _provenanceHash;
 
     /**
+     * @dev Throws if the sender is not the owner or the contract itself.
+     */
+    modifier onlyOwnerOrSelf() {
+        if (owner() != msg.sender && msg.sender != address(this)) {
+            revert OnlyOwner();
+        }
+        _;
+    }
+
+    /**
      * @notice Deploy the token contract with its name and symbol.
      */
     constructor(string memory name, string memory symbol)
@@ -68,7 +78,7 @@ contract ERC721ContractMetadata is
     function setContractURI(string calldata newContractURI)
         external
         override
-        onlyOwner
+        onlyOwnerOrSelf
     {
         // Set the new contract URI.
         _contractURI = newContractURI;
@@ -118,7 +128,10 @@ contract ERC721ContractMetadata is
      *
      * @param newProvenanceHash The new provenance hash to set.
      */
-    function setProvenanceHash(bytes32 newProvenanceHash) external onlyOwner {
+    function setProvenanceHash(bytes32 newProvenanceHash)
+        external
+        onlyOwnerOrSelf
+    {
         // Revert if any items have been minted.
         if (_totalMinted() > 0) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
@@ -139,7 +152,7 @@ contract ERC721ContractMetadata is
      *
      * @param newMaxSupply The new max supply to set.
      */
-    function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
+    function setMaxSupply(uint256 newMaxSupply) external onlyOwnerOrSelf {
         // Ensure the max supply does not exceed the maximum value of uint64.
         if (newMaxSupply > 2**64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
@@ -160,7 +173,7 @@ contract ERC721ContractMetadata is
     function setBaseURI(string calldata newBaseURI)
         external
         override
-        onlyOwner
+        onlyOwnerOrSelf
     {
         // Set the new base URI.
         _tokenBaseURI = newBaseURI;
