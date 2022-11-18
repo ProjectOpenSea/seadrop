@@ -46,11 +46,13 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 
 </td></tr>
 <tr><td>Goerli</td></tr>
-<tr><td>Polygon</td></tr>
-<tr><td>Mumbai</td></tr>
+<tr><td>Polygon Mainnet</td></tr>
+<tr><td>Polygon Mumbai</td></tr>
+<tr><td>Klaytn Mainnet</td></tr>
+<tr><td>Klaytn Baobab</td></tr>
 </table>
 
-To be deployed on other EVM chains, such as:
+To be deployed on other EVM chains:
 
 Short-term:
 
@@ -65,8 +67,6 @@ Short-term:
 
 Long-term:
 
-- Klaytn
-- Baobab
 - Skale
 - Celo
 - Fantom
