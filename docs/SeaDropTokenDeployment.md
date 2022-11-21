@@ -1,6 +1,6 @@
 # Token Deployment
 
-An example script to deploy a token contract is located at [DeployAndConfigureExampleToken.s.sol](../script/DeployAndConfigureExampleToken.s.sol). It can be run with `forge script script/DeployAndConfigureExampleToken.s.sol --rpc-url [any_network_alchemy_rpc_url] --broadcast -vvvv --private-key [priv_key] --etherscan-api-key [api_key] --verify --retries 10`
+An example script to deploy a token contract is located at [DeployAndConfigureExampleToken.s.sol](../script/DeployAndConfigureExampleToken.s.sol). It can be run with `forge script script/DeployAndConfigureExampleToken.s.sol --rpc-url ${RPC_URL} --broadcast -vvvv --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify --retries 10`
 
 ### ERC721SeaDrop
 
@@ -9,7 +9,7 @@ An example script to deploy a token contract is located at [DeployAndConfigureEx
 To split responsibilities with an Administrator role who can set fee parameters, use [`ERC721PartnerSeaDrop`](#erc721partnerseadrop).
 
 1. Deploy `src/ERC721SeaDrop.sol` with constructor args `string name, string symbol, address[] allowedSeaDrop`
-   1. e.g. `forge create --rpc-url [rpc_url] src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" \[seadrop_address\] --private-key [priv_key] --etherscan-api-key [api_key] --verify`
+   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Set the token max supply with `token.setMaxSupply()`
 1. Set the creator payout address with `token.updateCreatorPayoutAddress()`
 1. Set the contract URI with `token.setContractURI()`
@@ -29,7 +29,7 @@ To split responsibilities with an Administrator role who can set fee parameters,
 `ERC721PartnerSeaDrop` is a token contract designed to split responsibilities between an Owner and Administrator.
 
 1. Deploy `src/ERC721PartnerSeaDrop.sol` with constructor args `string name, string symbol, address administrator, address[] allowedSeaDrop`
-   1. e.g. `forge create --rpc-url [rpc_url] src/ERC721PartnerSeaDrop.sol:ERC721PartnerSeaDrop --constructor-args "TokenTest1" "TEST1" [administrator_address] \[seadrop_address\] --private-key [priv_key] --etherscan-api-key [api_key] --verify`
+   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721PartnerSeaDrop.sol:ERC721PartnerSeaDrop --constructor-args "TokenTest1" "TEST1" ${ADMIN_ADDRESS} \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Required to be sent by token Owner:
    1. Set the token max supply with `token.setMaxSupply()`
    1. Set the creator payout address with `token.updateCreatorPayoutAddress()`

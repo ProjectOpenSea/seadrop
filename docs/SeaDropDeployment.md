@@ -4,7 +4,7 @@ For official deployments see [Deployments](../README.md#deployments).
 
 If you would like to deploy your own `SeaDrop` instance, you can do so with:
 
-`forge create --rpc-url [rpc_url] src/SeaDrop.sol:SeaDrop --private-key [priv_key] --etherscan-api-key [api_key] --verify`
+`forge create --rpc-url ${RPC_URL} src/SeaDrop.sol:SeaDrop --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 
 To deploy at the cross-chain address of `0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`, send:
 
