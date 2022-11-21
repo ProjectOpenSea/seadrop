@@ -46,26 +46,23 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 
 </td></tr>
 <tr><td>Goerli</td></tr>
-<tr><td>Polygon Mainnet</td></tr>
+<tr><td>Polygon</td></tr>
 <tr><td>Polygon Mumbai</td></tr>
-<tr><td>Klaytn Mainnet</td></tr>
+<tr><td>Klaytn</td></tr>
 <tr><td>Klaytn Baobab</td></tr>
+<tr><td>Optimism</td></tr>
+<tr><td>Optimism Goerli</td></tr>
+<tr><td>Arbitrum One</td></tr>
+<tr><td>Arbitrum Nova</td></tr>
+<tr><td>Arbitrum Goerli</td></tr>
+<tr><td>Avalanche C-Chain</td></tr>
+<tr><td>Avalanche Fuji</td></tr>
+<tr><td>BSC</td></tr>
+<tr><td>BSC Testnet</td></tr>
+<tr><td>Gnosis Chain</td></tr>
 </table>
 
 To be deployed on other EVM chains:
-
-Short-term:
-
-- Optimism
-- Optimistic Kovan
-- Arbitrum
-- Arbitrum Rinkeby
-- Avalanche Fuji
-- Avalanche C-Chain
-- Gnosis Chain
-- BSC
-
-Long-term:
 
 - Skale
 - Celo
