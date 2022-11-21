@@ -40,7 +40,7 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 <th>SeaDrop 1.0</th>
 </tr>
 
-<tr><td>Ethereum</td><td rowspan="14">
+<tr><td>Ethereum</td><td rowspan="16">
 
 [0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
 
