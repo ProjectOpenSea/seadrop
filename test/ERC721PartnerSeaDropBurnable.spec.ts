@@ -76,19 +76,19 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
 
     // Only the owner or approved of the minted token should be able to burn it.
     await expect(token.connect(admin).burn(1)).to.be.revertedWith(
-      "BurnNotOwnerOrApproved()"
+      "TransferCallerNotOwnerNorApproved()"
     );
     await expect(token.connect(owner).burn(1)).to.be.revertedWith(
-      "BurnNotOwnerOrApproved()"
+      "TransferCallerNotOwnerNorApproved()"
     );
     await expect(token.connect(approved).burn(1)).to.be.revertedWith(
-      "BurnNotOwnerOrApproved()"
+      "TransferCallerNotOwnerNorApproved()"
     );
     await expect(token.connect(approved).burn(2)).to.be.revertedWith(
-      "BurnNotOwnerOrApproved()"
+      "TransferCallerNotOwnerNorApproved()"
     );
     await expect(token.connect(owner).burn(3)).to.be.revertedWith(
-      "BurnNotOwnerOrApproved()"
+      "TransferCallerNotOwnerNorApproved()"
     );
 
     expect(await token.ownerOf(1)).to.equal(minter.address);
@@ -107,7 +107,7 @@ describe(`ERC721PartnerSeaDropBurnable (v${VERSION})`, function () {
 
     await token.connect(minter).setApprovalForAll(approved.address, false);
     await expect(token.connect(approved).burn(3)).to.be.revertedWith(
-      "BurnNotOwnerOrApproved()"
+      "TransferCallerNotOwnerNorApproved()"
     );
 
     await token.connect(minter).approve(owner.address, 3);
