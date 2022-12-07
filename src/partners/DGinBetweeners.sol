@@ -30,7 +30,7 @@ import { ERC721PartnerSeaDrop } from "../ERC721PartnerSeaDrop.sol";
 .........................@,,,,,,,,,,,,@##########@..............................
 ............................@@(,,,,@@#########%*................................
 ............................&(#%##########&,#&@.................................
-..........................@##@%&@######*(*#####@...............................
+..........................@##@%&@######*(*#####@................................
 ........................@###@ #%@%@/.&*(/#@#######@.............................
 .......................@ ,#@#######&((####@########@............................
 ......................@#.##@##############@#########@...........................
@@ -60,6 +60,11 @@ contract DGinBetweeners is ERC721PartnerSeaDrop {
         address[] memory allowedSeaDrop
     ) ERC721PartnerSeaDrop(name, symbol, administrator, allowedSeaDrop) {}
 
+    /**
+     * @notice Set the address that can burn items on this contract for claiming.
+     *
+     * @param newAddress The address to set.
+     */
     function setBurnableAddress(address newAddress)
         external
         onlyOwner
@@ -67,6 +72,9 @@ contract DGinBetweeners is ERC721PartnerSeaDrop {
         burnableAddress = newAddress;
     }
 
+    /**
+     * @notice The address that can burn items on this contract for claiming.
+     */
     function getBurnableAddress() public view returns (address) {
         return burnableAddress;
     }
