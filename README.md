@@ -40,33 +40,31 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 <th>SeaDrop 1.0</th>
 </tr>
 
-<tr><td>Ethereum</td><td rowspan="14">
+<tr><td>Ethereum</td><td rowspan="17">
 
 [0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
 
 </td></tr>
 <tr><td>Goerli</td></tr>
+<tr><td>Sepolia</td></tr>
 <tr><td>Polygon</td></tr>
-<tr><td>Mumbai</td></tr>
+<tr><td>Polygon Mumbai</td></tr>
+<tr><td>Klaytn</td></tr>
+<tr><td>Klaytn Baobab</td></tr>
+<tr><td>Optimism</td></tr>
+<tr><td>Optimism Goerli</td></tr>
+<tr><td>Arbitrum One</td></tr>
+<tr><td>Arbitrum Nova</td></tr>
+<tr><td>Arbitrum Goerli</td></tr>
+<tr><td>Avalanche C-Chain</td></tr>
+<tr><td>Avalanche Fuji</td></tr>
+<tr><td>BSC</td></tr>
+<tr><td>BSC Testnet</td></tr>
+<tr><td>Gnosis Chain</td></tr>
 </table>
 
-To be deployed on other EVM chains, such as:
+To be deployed on other EVM chains:
 
-Short-term:
-
-- Optimism
-- Optimistic Kovan
-- Arbitrum
-- Arbitrum Rinkeby
-- Avalanche Fuji
-- Avalanche C-Chain
-- Gnosis Chain
-- BSC
-
-Long-term:
-
-- Klaytn
-- Baobab
 - Skale
 - Celo
 - Fantom

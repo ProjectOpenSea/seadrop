@@ -11,9 +11,7 @@
     "test": "hardhat test --config ./hardhat.config.ts",
     "test:forge": "forge test -vvv",
     "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",
-    "fixLibImport": "npx replace 'openzeppelin-contracts/' 'lib/openzeppelin-contracts/contracts/' lib/operator-filter-registry/src/IOperatorFilterRegistry.sol",
-    "restoreLibImport": "npx replace 'lib/openzeppelin-contracts/contracts/' 'openzeppelin-contracts/' lib/operator-filter-registry/src/IOperatorFilterRegistry.sol",
-    "coverage": "rm -rf temp-src-coverage; hardhat preprocess --dest temp-src-coverage; yarn fixLibImport; hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js; yarn restoreLibImport",
+    "coverage": "rm -rf temp-src-coverage; hardhat preprocess --dest temp-src-coverage; hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js",
     "lint:check": "yarn lint:check:format && yarn lint:check:solhint && yarn lint:check:eslint",
     "lint:check:format": "prettier --check **.{sol,js,ts}",
     "lint:check:solhint": "yarn build && solhint --config ./config/.solhint.json --ignore-path ./config/.solhintignore src/**/*.sol",
@@ -75,6 +73,7 @@
     "underscore": ">=1.12.1",
     "yargs-parser": ">=5.0.1",
     "web3": ">=1.8.0",
-    "got": ">=11.8.5"
+    "got": ">=11.8.5",
+    "minimatch": ">=3.0.5"
   }
 }
