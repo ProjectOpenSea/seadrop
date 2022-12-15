@@ -18,10 +18,12 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
     uint256 public randomOffset;
 
     /// @notice If the collection has been revealed and the randomOffset has
-    ///         been set.
-    uint256 public constant REVEALED_FALSE = 1;
-    uint256 public constant REVEALED_TRUE = 2;
-    uint256 public revealed = REVEALED_FALSE;
+    ///         been set. 1=False, 2=True.
+    uint256 public revealed = _REVEALED_FALSE;
+
+    /// @dev For gas efficiency, uint is used instead of bool for revealed.
+    uint256 private constant _REVEALED_FALSE = 1;
+    uint256 private constant _REVEALED_TRUE = 2;
 
     /// @notice Revert when setting the randomOffset if already set.
     error AlreadyRevealed();
@@ -49,7 +51,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      */
     function setRandomOffset() external onlyOwner {
         // Revert setting the offset if already revealed.
-        if (revealed == REVEALED_TRUE) {
+        if (revealed == _REVEALED_TRUE) {
             revert AlreadyRevealed();
         }
 
@@ -71,7 +73,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
             1;
 
         // Set revealed to true.
-        revealed = REVEALED_TRUE;
+        revealed = _REVEALED_TRUE;
     }
 
     /**
@@ -91,7 +93,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
         if (bytes(base).length == 0) {
             // If there is no baseURI set, return an empty string.
             return "";
-        } else if (revealed == REVEALED_FALSE) {
+        } else if (revealed == _REVEALED_FALSE) {
             // If the baseURI is set but the collection is not revealed yet,
             // return just the baseURI.
             return base;
