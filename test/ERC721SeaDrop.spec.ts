@@ -3,6 +3,7 @@ import { ethers, network } from "hardhat";
 
 import {
   IERC165__factory,
+  IERC2981__factory,
   IERC721__factory,
   INonFungibleSeaDropToken__factory,
   ISeaDropTokenContractMetadata__factory,
@@ -246,9 +247,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       [
         INonFungibleSeaDropToken__factory,
         ISeaDropTokenContractMetadata__factory,
-        IERC165__factory,
       ],
-      [ISeaDropTokenContractMetadata__factory],
+      [IERC165__factory],
+    ];
+    const supportedInterfacesERC721ContractMetadata = [
+      [ISeaDropTokenContractMetadata__factory, IERC2981__factory],
+      [IERC2981__factory, IERC165__factory],
     ];
     const supportedInterfacesERC721A = [
       [IERC721__factory, IERC165__factory],
@@ -257,6 +261,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     for (const factories of [
       ...supportedInterfacesERC721SeaDrop,
+      ...supportedInterfacesERC721ContractMetadata,
       ...supportedInterfacesERC721A,
     ]) {
       const interfaceId = factories

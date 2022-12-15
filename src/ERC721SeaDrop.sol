@@ -377,8 +377,10 @@ contract ERC721SeaDrop is
         return
             interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
             interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
+            // ERC721ContractMetadata returns supportsInterface true for
+            //     EIP-2981
             // ERC721A returns supportsInterface true for
-            // ERC165, ERC721, ERC721Metadata
+            //     ERC165, ERC721, ERC721Metadata
             super.supportsInterface(interfaceId);
     }
 
