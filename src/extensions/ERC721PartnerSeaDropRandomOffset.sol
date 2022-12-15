@@ -19,7 +19,9 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
 
     /// @notice If the collection has been revealed and the randomOffset has
     ///         been set.
-    bool public revealed;
+    uint256 public constant REVEALED_FALSE = 1;
+    uint256 public constant REVEALED_TRUE = 2;
+    uint256 public revealed = REVEALED_FALSE;
 
     /// @notice Revert when setting the randomOffset if already set.
     error AlreadyRevealed();
@@ -47,7 +49,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      */
     function setRandomOffset() external onlyOwner {
         // Revert setting the offset if already revealed.
-        if (revealed) {
+        if (revealed == REVEALED_TRUE) {
             revert AlreadyRevealed();
         }
 
@@ -69,7 +71,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
             1;
 
         // Set revealed to true.
-        revealed = true;
+        revealed = REVEALED_TRUE;
     }
 
     /**
@@ -89,7 +91,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
         if (bytes(base).length == 0) {
             // If there is no baseURI set, return an empty string.
             return "";
-        } else if (!revealed) {
+        } else if (revealed == REVEALED_FALSE) {
             // If the baseURI is set but the collection is not revealed yet,
             // return just the baseURI.
             return base;
