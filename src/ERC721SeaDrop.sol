@@ -371,7 +371,7 @@ contract ERC721SeaDrop is
         public
         view
         virtual
-        override(IERC165, ERC721A)
+        override(IERC165, ERC721ContractMetadata)
         returns (bool)
     {
         return

@@ -12,11 +12,7 @@ import {
     SignedMintValidationParams
 } from "../lib/SeaDropStructs.sol";
 
-import {
-    IERC165
-} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
-
-interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata, IERC165 {
+interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
     /**
      * @dev Revert with an error if a contract is not an allowed
      *      SeaDrop address.

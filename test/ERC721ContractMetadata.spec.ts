@@ -97,4 +97,35 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       .to.emit(token, "TokenURIUpdated")
       .withArgs(5, 10);
   });
+
+  it("Should only let the owner update the royalties address and basis points", async () => {
+    expect(await token.royaltyAddress()).to.equal(ethers.constants.AddressZero);
+    expect(await token.royaltyBasisPoints()).to.equal(0);
+
+    await expect(
+      token.connect(admin).setRoyaltyAddress(owner.address)
+    ).to.be.revertedWith("OnlyOwner");
+
+    await expect(
+      token.connect(admin).setRoyaltyBasisPoints(owner.address)
+    ).to.be.revertedWith("OnlyOwner");
+
+    await expect(token.connect(owner).setRoyaltyAddress(admin.address))
+      .to.emit(token, "RoyaltyAddressUpdated")
+      .withArgs(admin.address);
+    await expect(token.connect(owner).setRoyaltyBasisPoints(500)) // 5%
+      .to.emit(token, "RoyaltyBasisPointsUpdated")
+      .withArgs(500);
+
+    expect(await token.royaltyAddress()).to.equal(admin.address);
+    expect(await token.royaltyBasisPoints()).to.equal(500);
+
+    expect(await token.royaltyInfo(1, 100_000)).to.deep.equal([
+      admin.address,
+      ethers.BigNumber.from(5000),
+    ]);
+    expect(await token.supportsInterface("0x2a55205a")).to.equal(true);
+
+    await expect(token.connect(owner).emitBatchTokenURIUpdated(5, 10));
+  });
 });

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface ISeaDropTokenContractMetadata {
+import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
+
+interface ISeaDropTokenContractMetadata is IERC2981 {
     /**
      * @dev Emit an event when the max token supply is updated.
      */
@@ -37,6 +39,16 @@ interface ISeaDropTokenContractMetadata {
      * @param baseURI The base URI.
      */
     event BaseURIUpdated(string baseURI);
+
+    /**
+     * @dev Emit an event when the royalties address is updated.
+     */
+    event RoyaltyAddressUpdated(address wallet);
+
+    /**
+     * @dev Emit an event when the royalties basis points (out of 10_000) is updated.
+     */
+    event RoyaltyBasisPointsUpdated(uint256 bps);
 
     /**
      * @notice Returns the contract URI.
@@ -98,4 +110,28 @@ interface ISeaDropTokenContractMetadata {
      *      hash after the mint has started.
      */
     error ProvenanceHashCannotBeSetAfterMintStarted();
+
+    /**
+     * @notice Sets the address to receive royalties.
+     *
+     * @param newWallet The new wallet address.
+     */
+    function setRoyaltyAddress(address newWallet) external;
+
+    /**
+     * @notice Sets the royalty basis points out of 10_000.
+     *
+     * @param newBps The value as an integer (e.g. 500 for 5%)
+     */
+    function setRoyaltyBasisPoints(uint256 newBps) external;
+
+    /**
+     * @notice Returns the address that receives royalties.
+     */
+    function royaltyAddress() external view returns (address);
+
+    /**
+     * @notice Returns the royalty basis points out of 10_000.
+     */
+    function royaltyBasisPoints() external view returns (uint256);
 }

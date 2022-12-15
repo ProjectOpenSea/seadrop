@@ -9,6 +9,12 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
+import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
+
+import {
+    IERC165
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
+
 /**
  * @title  ERC721ContractMetadata
  * @author James Wenzel (emo.eth)
@@ -38,6 +44,12 @@ contract ERC721ContractMetadata is
     /// @notice Track the provenance hash for guaranteeing metadata order
     ///         for random reveals.
     bytes32 _provenanceHash;
+
+    /// @notice Track the royalty percentage basis points (out of 10_000)
+    uint256 _royaltyBps;
+
+    /// @notice Track the address to receive royalties.
+    address _royaltyAddress;
 
     /**
      * @notice Deploy the token contract with its name and symbol.
@@ -175,5 +187,81 @@ contract ERC721ContractMetadata is
      */
     function _baseURI() internal view virtual override returns (string memory) {
         return _tokenBaseURI;
+    }
+
+    /**
+     * @notice Sets the address to receive royalties.
+     *
+     * @param newWallet The new wallet address.
+     */
+    function setRoyaltyAddress(address newWallet) external onlyOwner {
+        // Set the new royalty address.
+        _royaltyAddress = newWallet;
+
+        // Emit an event with the royalty address update.
+        emit RoyaltyAddressUpdated(newWallet);
+    }
+
+    /**
+     * @notice Sets the royalty basis points out of 10_000.
+     *
+     * @param newBps The value as an integer (e.g. 500 for 5%)
+     */
+    function setRoyaltyBasisPoints(uint256 newBps) external onlyOwner {
+        // Set the new royalty percent.
+        _royaltyBps = newBps;
+
+        // Emit an event with the royalty bps update.
+        emit RoyaltyBasisPointsUpdated(newBps);
+    }
+
+    /**
+     * @notice Returns the address that receives royalties.
+     */
+    function royaltyAddress() external view returns (address) {
+        return _royaltyAddress;
+    }
+
+    /**
+     * @notice Returns the royalty basis points out of 10_000.
+     */
+    function royaltyBasisPoints() external view returns (uint256) {
+        return _royaltyBps;
+    }
+
+    /**
+     * @notice Called with the sale price to determine how much royalty
+     *         is owed and to whom.
+     *
+     * @ param  _tokenId     The NFT asset queried for royalty information
+     * @param  _salePrice    The sale price of the NFT asset specified by _tokenId
+     *
+     * @return receiver      Address of who should be sent the royalty payment
+     * @return royaltyAmount The royalty payment amount for _salePrice
+     */
+    function royaltyInfo(
+        uint256, /* _tokenId */
+        uint256 _salePrice
+    ) external view returns (address receiver, uint256 royaltyAmount) {
+        royaltyAmount = (_salePrice * _royaltyBps) / 10_000;
+
+        return (_royaltyAddress, royaltyAmount);
+    }
+
+    /**
+     * @notice Returns whether the interface is supported.
+     *
+     * @param interfaceId The interface id to check against.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(IERC165, ERC721A)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IERC2981).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 }
