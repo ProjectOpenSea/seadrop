@@ -134,4 +134,14 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      * @notice Returns the royalty basis points out of 10_000.
      */
     function royaltyBasisPoints() external view returns (uint256);
+
+    /**
+     * @dev Revert if the royalty basis points is greater than 10_000.
+     */
+    error InvalidRoyaltyBasisPoints(uint256 basisPoints);
+
+    /**
+     * @dev Revert if the royalty address is being set to the zero address.
+     */
+    error RoyaltyAddressCannotBeZeroAddress(address wallet);
 }

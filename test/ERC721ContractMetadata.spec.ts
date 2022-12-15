@@ -110,6 +110,15 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token.connect(admin).setRoyaltyBasisPoints(owner.address)
     ).to.be.revertedWith("OnlyOwner");
 
+    await expect(
+      token.connect(owner).setRoyaltyBasisPoints(10_001)
+    ).to.be.revertedWith("InvalidRoyaltyBasisPoints(10001)");
+    await expect(
+      token.connect(owner).setRoyaltyAddress(ethers.constants.AddressZero)
+    ).to.be.revertedWith(
+      `RoyaltyAddressCannotBeZeroAddress("${ethers.constants.AddressZero}")`
+    );
+
     await expect(token.connect(owner).setRoyaltyAddress(admin.address))
       .to.emit(token, "RoyaltyAddressUpdated")
       .withArgs(admin.address);

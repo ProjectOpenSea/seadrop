@@ -195,6 +195,11 @@ contract ERC721ContractMetadata is
      * @param newWallet The new wallet address.
      */
     function setRoyaltyAddress(address newWallet) external onlyOwner {
+        // Revert if the address is the zero address.
+        if (newWallet == address(0)) {
+            revert RoyaltyAddressCannotBeZeroAddress(newWallet);
+        }
+
         // Set the new royalty address.
         _royaltyAddress = newWallet;
 
@@ -208,6 +213,11 @@ contract ERC721ContractMetadata is
      * @param newBps The value as an integer (e.g. 500 for 5%)
      */
     function setRoyaltyBasisPoints(uint256 newBps) external onlyOwner {
+        // Revert if the fee basis points is greater than 10_000.
+        if (newBps > 10_000) {
+            revert InvalidRoyaltyBasisPoints(newBps);
+        }
+
         // Set the new royalty percent.
         _royaltyBps = newBps;
 
