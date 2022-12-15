@@ -48,19 +48,29 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      *         reveal.
      */
     function setRandomOffset() external onlyOwner {
+        // Revert setting the offset if already revealed.
         if (revealed == REVEALED_TRUE) {
             revert AlreadyRevealed();
         }
-        if (_totalMinted() != _maxSupply) {
+
+        // Put maxSupply on the stack, since reading a state variable
+        // costs more gas than reading a local variable.
+        uint256 maxSupply = _maxSupply;
+
+        // Revert if the collection is not yet fully minted.
+        if (_totalMinted() != maxSupply) {
             revert NotFullyMinted();
         }
+
         // block.difficulty returns PREVRANDAO on Ethereum post-merge
         // NOTE: do not use this on other chains
         // randomOffset returns between 1 and MAX_SUPPLY
         randomOffset =
             (uint256(keccak256(abi.encode(block.difficulty))) %
-                (_maxSupply - 1)) +
+                (maxSupply - 1)) +
             1;
+
+        // Set revealed to true.
         revealed = REVEALED_TRUE;
     }
 
@@ -70,12 +80,9 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      *
      * @param tokenId The token id
      */
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
         if (!_exists(tokenId)) {
             revert URIQueryForNonexistentToken();
         }
