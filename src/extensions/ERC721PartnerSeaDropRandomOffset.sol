@@ -45,6 +45,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      *         equals the max supply. Should be called immediately before
      *         reveal.
      */
+    // solhint-disable-next-line comprehensive-interface
     function setRandomOffset() external onlyOwner {
         if (revealed) {
             revert AlreadyRevealed();

@@ -28,10 +28,6 @@ contract ERC721ContractMetadata is
     TwoStepOwnable,
     ISeaDropTokenContractMetadata
 {
-    /// @notice Throw if the max supply exceeds uint64, a limit
-    //          due to the storage of bit-packed variables in ERC721A.
-    error CannotExceedMaxSupplyOfUint64(uint256 newMaxSupply);
-
     /// @notice Track the max supply.
     uint256 _maxSupply;
 
@@ -59,17 +55,20 @@ contract ERC721ContractMetadata is
     {}
 
     /**
-     * @notice Returns the base URI for token metadata.
+     * @notice Sets the base URI for the token metadata and emits an event.
+     *
+     * @param newBaseURI The new base URI to set.
      */
-    function baseURI() external view override returns (string memory) {
-        return _baseURI();
-    }
+    function setBaseURI(string calldata newBaseURI)
+        external
+        override
+        onlyOwner
+    {
+        // Set the new base URI.
+        _tokenBaseURI = newBaseURI;
 
-    /**
-     * @notice Returns the contract URI for contract metadata.
-     */
-    function contractURI() external view override returns (string memory) {
-        return _contractURI;
+        // Emit an event with the update.
+        emit BaseURIUpdated(newBaseURI);
     }
 
     /**
@@ -105,48 +104,6 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Returns the max token supply.
-     */
-    function maxSupply() public view returns (uint256) {
-        return _maxSupply;
-    }
-
-    /**
-     * @notice Returns the provenance hash.
-     *         The provenance hash is used for random reveals, which
-     *         is a hash of the ordered metadata to show it is unmodified
-     *         after mint has started.
-     */
-    function provenanceHash() external view override returns (bytes32) {
-        return _provenanceHash;
-    }
-
-    /**
-     * @notice Sets the provenance hash and emits an event.
-     *         The provenance hash is used for random reveals, which
-     *         is a hash of the ordered metadata to show it is unmodified
-     *         after mint has started.
-     *         This function will revert after the first item has been minted.
-     *
-     * @param newProvenanceHash The new provenance hash to set.
-     */
-    function setProvenanceHash(bytes32 newProvenanceHash) external onlyOwner {
-        // Revert if any items have been minted.
-        if (_totalMinted() > 0) {
-            revert ProvenanceHashCannotBeSetAfterMintStarted();
-        }
-
-        // Keep track of the old provenance hash for emitting with the event.
-        bytes32 oldProvenanceHash = _provenanceHash;
-
-        // Set the new provenance hash.
-        _provenanceHash = newProvenanceHash;
-
-        // Emit an event with the update.
-        emit ProvenanceHashUpdated(oldProvenanceHash, newProvenanceHash);
-    }
-
-    /**
      * @notice Sets the max token supply and emits an event.
      *
      * @param newMaxSupply The new max supply to set.
@@ -165,28 +122,30 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Sets the base URI for the token metadata and emits an event.
+     * @notice Sets the provenance hash and emits an event.
      *
-     * @param newBaseURI The new base URI to set.
+     *         The provenance hash is used for random reveals, which
+     *         is a hash of the ordered metadata to show it has not been
+     *         modified after mint started.
+     *
+     *         This function will revert after the first item has been minted.
+     *
+     * @param newProvenanceHash The new provenance hash to set.
      */
-    function setBaseURI(string calldata newBaseURI)
-        external
-        override
-        onlyOwner
-    {
-        // Set the new base URI.
-        _tokenBaseURI = newBaseURI;
+    function setProvenanceHash(bytes32 newProvenanceHash) external onlyOwner {
+        // Revert if any items have been minted.
+        if (_totalMinted() > 0) {
+            revert ProvenanceHashCannotBeSetAfterMintStarted();
+        }
+
+        // Keep track of the old provenance hash for emitting with the event.
+        bytes32 oldProvenanceHash = _provenanceHash;
+
+        // Set the new provenance hash.
+        _provenanceHash = newProvenanceHash;
 
         // Emit an event with the update.
-        emit BaseURIUpdated(newBaseURI);
-    }
-
-    /**
-     * @notice Returns the base URI for the contract, which ERC721A uses
-     *         to return tokenURI.
-     */
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _tokenBaseURI;
+        emit ProvenanceHashUpdated(oldProvenanceHash, newProvenanceHash);
     }
 
     /**
@@ -226,6 +185,45 @@ contract ERC721ContractMetadata is
     }
 
     /**
+     * @notice Returns the base URI for token metadata.
+     */
+    function baseURI() external view override returns (string memory) {
+        return _baseURI();
+    }
+
+    /**
+     * @notice Returns the base URI for the contract, which ERC721A uses
+     *         to return tokenURI.
+     */
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _tokenBaseURI;
+    }
+
+    /**
+     * @notice Returns the contract URI for contract metadata.
+     */
+    function contractURI() external view override returns (string memory) {
+        return _contractURI;
+    }
+
+    /**
+     * @notice Returns the max token supply.
+     */
+    function maxSupply() public view returns (uint256) {
+        return _maxSupply;
+    }
+
+    /**
+     * @notice Returns the provenance hash.
+     *         The provenance hash is used for random reveals, which
+     *         is a hash of the ordered metadata to show it is unmodified
+     *         after mint has started.
+     */
+    function provenanceHash() external view override returns (bytes32) {
+        return _provenanceHash;
+    }
+
+    /**
      * @notice Returns the address that receives royalties.
      */
     function royaltyAddress() external view returns (address) {
@@ -243,19 +241,23 @@ contract ERC721ContractMetadata is
      * @notice Called with the sale price to determine how much royalty
      *         is owed and to whom.
      *
-     * @ param  _tokenId     The NFT asset queried for royalty information
-     * @param  _salePrice    The sale price of the NFT asset specified by _tokenId
+     * @ param  _tokenId     The NFT asset queried for royalty information.
+     * @param  _salePrice    The sale price of the NFT asset specified by
+     *                       _tokenId.
      *
-     * @return receiver      Address of who should be sent the royalty payment
-     * @return royaltyAmount The royalty payment amount for _salePrice
+     * @return receiver      Address of who should be sent the royalty payment.
+     * @return royaltyAmount The royalty payment amount for _salePrice.
      */
     function royaltyInfo(
         uint256, /* _tokenId */
         uint256 _salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
+        // Set the royalty amount to the sale price times the royalty basis
+        // points divided by 10_000.
         royaltyAmount = (_salePrice * _royaltyBps) / 10_000;
 
-        return (_royaltyAddress, royaltyAmount);
+        // Set the receiver of the royalty.
+        receiver = _royaltyAddress;
     }
 
     /**

@@ -88,6 +88,132 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
     ) external payable;
 
     /**
+     * @notice Emits an event to notify update of the drop URI.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param dropURI The new drop URI.
+     */
+    function updateDropURI(string calldata dropURI) external;
+
+    /**
+     * @notice Updates the public drop data for the nft contract
+     *         and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param publicDrop The public drop data.
+     */
+    function updatePublicDrop(PublicDrop calldata publicDrop) external;
+
+    /**
+     * @notice Updates the allow list merkle root for the nft contract
+     *         and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param allowListData The allow list data.
+     */
+    function updateAllowList(AllowListData calldata allowListData) external;
+
+    /**
+     * @notice Updates the token gated drop stage for the nft contract
+     *         and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         simultaneous token gated drop promotions for each other,
+     *         they can be minted by the same actor until
+     *         `maxTokenSupplyForStage` is reached. Please ensure the
+     *         `allowedNftToken` is not running an active drop during
+     *         the `dropStage` time period.
+     *
+     * @param allowedNftToken The token gated nft token.
+     * @param dropStage       The token gated drop stage data.
+     */
+    function updateTokenGatedDrop(
+        address allowedNftToken,
+        TokenGatedDropStage calldata dropStage
+    ) external;
+
+    /**
+     * @notice Updates the creator payout address and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param payoutAddress The creator payout address.
+     */
+    function updateCreatorPayoutAddress(address payoutAddress) external;
+
+    /**
+     * @notice Updates the allowed fee recipient and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param feeRecipient The fee recipient.
+     * @param allowed      If the fee recipient is allowed.
+     */
+    function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
+        external;
+
+    /**
+     * @notice Updates the allowed server-side signers and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
+     */
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams calldata signedMintValidationParams
+    ) external;
+
+    /**
+     * @notice Updates the allowed payer and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param payer   The payer to add or remove.
+     * @param allowed Whether to add or remove the payer.
+     */
+    function updatePayer(address payer, bool allowed) external;
+
+    /**
      * @notice Returns the public drop data for the nft contract.
      *
      * @param nftContract The nft contract.
@@ -218,89 +344,4 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
         address allowedNftToken,
         uint256 allowedNftTokenId
     ) external view returns (bool);
-
-    /**
-     * The following methods assume msg.sender is an nft contract
-     * and its ERC165 interface id matches INonFungibleSeaDropToken.
-     */
-
-    /**
-     * @notice Emits an event to notify update of the drop URI.
-     *
-     * @param dropURI The new drop URI.
-     */
-    function updateDropURI(string calldata dropURI) external;
-
-    /**
-     * @notice Updates the public drop data for the nft contract
-     *         and emits an event.
-     *
-     * @param publicDrop The public drop data.
-     */
-    function updatePublicDrop(PublicDrop calldata publicDrop) external;
-
-    /**
-     * @notice Updates the allow list merkle root for the nft contract
-     *         and emits an event.
-     *
-     *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
-     *
-     * @param allowListData The allow list data.
-     */
-    function updateAllowList(AllowListData calldata allowListData) external;
-
-    /**
-     * @notice Updates the token gated drop stage for the nft contract
-     *         and emits an event.
-     *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
-     *         token gated drop promotions for each other, they can be
-     *         minted by the same actor until `maxTokenSupplyForStage`
-     *         is reached. Please ensure the `allowedNftToken` is not
-     *         running an active drop during the `dropStage` time period.
-     *
-     * @param allowedNftToken The token gated nft token.
-     * @param dropStage       The token gated drop stage data.
-     */
-    function updateTokenGatedDrop(
-        address allowedNftToken,
-        TokenGatedDropStage calldata dropStage
-    ) external;
-
-    /**
-     * @notice Updates the creator payout address and emits an event.
-     *
-     * @param payoutAddress The creator payout address.
-     */
-    function updateCreatorPayoutAddress(address payoutAddress) external;
-
-    /**
-     * @notice Updates the allowed fee recipient and emits an event.
-     *
-     * @param feeRecipient The fee recipient.
-     * @param allowed      If the fee recipient is allowed.
-     */
-    function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
-        external;
-
-    /**
-     * @notice Updates the allowed server-side signers and emits an event.
-     *
-     * @param signer                     The signer to update.
-     * @param signedMintValidationParams Minimum and maximum parameters
-     *                                   to enforce for signed mints.
-     */
-    function updateSignedMintValidationParams(
-        address signer,
-        SignedMintValidationParams calldata signedMintValidationParams
-    ) external;
-
-    /**
-     * @notice Updates the allowed payer and emits an event.
-     *
-     * @param payer   The payer to add or remove.
-     * @param allowed Whether to add or remove the payer.
-     */
-    function updatePayer(address payer, bool allowed) external;
 }

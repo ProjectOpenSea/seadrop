@@ -29,6 +29,7 @@ contract ERC721PartnerSeaDropBurnable is ERC721PartnerSeaDrop {
      *
      * @param tokenId The token id to burn.
      */
+    // solhint-disable-next-line comprehensive-interface
     function burn(uint256 tokenId) external {
         _burn(tokenId, true);
     }
