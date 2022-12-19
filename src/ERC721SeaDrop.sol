@@ -492,7 +492,9 @@ contract ERC721SeaDrop is
             this.setContractURI(config.contractURI);
         }
         if (
-            config.publicDrop.startTime != 0 && config.publicDrop.endTime != 0
+            _cast(config.publicDrop.startTime != 0) |
+                _cast(config.publicDrop.endTime != 0) ==
+            1
         ) {
             this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
         }

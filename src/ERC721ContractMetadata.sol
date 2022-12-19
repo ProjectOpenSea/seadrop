@@ -43,7 +43,10 @@ contract ERC721ContractMetadata is
      * @dev Throws if the sender is not the owner or the contract itself.
      */
     modifier onlyOwnerOrSelf() {
-        if (owner() != msg.sender && msg.sender != address(this)) {
+        if (
+            _cast(msg.sender == owner()) | _cast(msg.sender == address(this)) ==
+            0
+        ) {
             revert OnlyOwner();
         }
         _;
@@ -188,5 +191,18 @@ contract ERC721ContractMetadata is
      */
     function _baseURI() internal view virtual override returns (string memory) {
         return _tokenBaseURI;
+    }
+
+    /**
+     * @dev Internal pure function to cast a `bool` value to a `uint256` value.
+     *
+     * @param b The `bool` value to cast.
+     *
+     * @return u The `uint256` value.
+     */
+    function _cast(bool b) internal pure returns (uint256 u) {
+        assembly {
+            u := b
+        }
     }
 }
