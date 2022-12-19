@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "hardhat compile --config ./hardhat.config.ts",
+    "clean": "hardhat clean; hardhat clean --config ./hardhat-coverage.config.ts; forge clean; rm -rf coverage coverage.json hh-cache hh-cache-coverage",
     "test": "hardhat test --config ./hardhat.config.ts",
     "test:forge": "forge test -vvv",
     "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",

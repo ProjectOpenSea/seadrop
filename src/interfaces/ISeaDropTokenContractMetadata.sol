@@ -24,7 +24,7 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     /**
      * @dev Revert if the royalty address is being set to the zero address.
      */
-    error RoyaltyAddressCannotBeZeroAddress(address wallet);
+    error RoyaltyAddressCannotBeZeroAddress();
 
     /**
      * @dev Emit an event for full token metadata reveals/updates.
@@ -51,15 +51,9 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     event ProvenanceHashUpdated(bytes32 previousHash, bytes32 newHash);
 
     /**
-     * @dev Emit an event when the royalties address is updated.
+     * @dev Emit an event when the royalties info is updated.
      */
-    event RoyaltyAddressUpdated(address wallet);
-
-    /**
-     * @dev Emit an event when the royalties basis points (out of 10_000)
-     *      is updated.
-     */
-    event RoyaltyBasisPointsUpdated(uint256 bps);
+    event RoyaltyInfoUpdated(address receiver, uint256 bps);
 
     /**
      * @dev Emit an event for partial reveals/updates.
@@ -72,6 +66,14 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
         uint256 indexed startTokenId,
         uint256 indexed endTokenId
     );
+
+    /**
+     * @notice A struct defining royalty info for the contract.
+     */
+    struct RoyaltyInfo {
+        address royaltyAddress;
+        uint96 royaltyBps;
+    }
 
     /**
      * @notice Sets the base URI for the token metadata and emits an event.
@@ -108,18 +110,11 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     function setProvenanceHash(bytes32 newProvenanceHash) external;
 
     /**
-     * @notice Sets the address to receive royalties.
+     * @notice Sets the address and basis points for royalties.
      *
-     * @param newWallet The new wallet address.
+     * @param newInfo The struct to configure royalties.
      */
-    function setRoyaltyAddress(address newWallet) external;
-
-    /**
-     * @notice Sets the royalty basis points out of 10_000.
-     *
-     * @param newBps The value as an integer (e.g. 500 for 5%)
-     */
-    function setRoyaltyBasisPoints(uint256 newBps) external;
+    function setRoyaltyInfo(RoyaltyInfo calldata newInfo) external;
 
     /**
      * @notice Returns the base URI for token metadata.

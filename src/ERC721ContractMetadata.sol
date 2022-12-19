@@ -41,11 +41,9 @@ contract ERC721ContractMetadata is
     ///         for random reveals.
     bytes32 _provenanceHash;
 
-    /// @notice Track the royalty percentage basis points (out of 10_000)
-    uint256 _royaltyBps;
-
-    /// @notice Track the address to receive royalties.
-    address _royaltyAddress;
+    /// @notice Track the royalty info: address to receive royalties, and
+    ///         royalty basis points.
+    RoyaltyInfo _royaltyInfo;
 
     /**
      * @dev Throws if the sender is not the owner or the contract itself.
@@ -75,7 +73,7 @@ contract ERC721ContractMetadata is
     function setBaseURI(string calldata newBaseURI)
         external
         override
-        onlyOwner
+        onlyOwnerOrSelf
     {
         // Set the new base URI.
         _tokenBaseURI = newBaseURI;
@@ -110,7 +108,7 @@ contract ERC721ContractMetadata is
      */
     function emitBatchTokenURIUpdated(uint256 startTokenId, uint256 endTokenId)
         external
-        onlyOwner
+        onlyOwnerOrSelf
     {
         // Emit an event with the update.
         emit TokenURIUpdated(startTokenId, endTokenId);
@@ -121,7 +119,7 @@ contract ERC721ContractMetadata is
      *
      * @param newMaxSupply The new max supply to set.
      */
-    function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
+    function setMaxSupply(uint256 newMaxSupply) external onlyOwnerOrSelf {
         // Ensure the max supply does not exceed the maximum value of uint64.
         if (newMaxSupply > 2**64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
@@ -165,39 +163,29 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Sets the address to receive royalties.
+     * @notice Sets the address and basis points for royalties.
      *
-     * @param newWallet The new wallet address.
+     * @param newInfo The struct to configure royalties.
      */
-    function setRoyaltyAddress(address newWallet) external onlyOwner {
-        // Revert if the address is the zero address.
-        if (newWallet == address(0)) {
-            revert RoyaltyAddressCannotBeZeroAddress(newWallet);
+    function setRoyaltyInfo(RoyaltyInfo calldata newInfo)
+        external
+        onlyOwnerOrSelf
+    {
+        // Revert if the new royalty address is the zero address.
+        if (newInfo.royaltyAddress == address(0)) {
+            revert RoyaltyAddressCannotBeZeroAddress();
         }
 
-        // Set the new royalty address.
-        _royaltyAddress = newWallet;
-
-        // Emit an event with the royalty address update.
-        emit RoyaltyAddressUpdated(newWallet);
-    }
-
-    /**
-     * @notice Sets the royalty basis points out of 10_000.
-     *
-     * @param newBps The value as an integer (e.g. 500 for 5%)
-     */
-    function setRoyaltyBasisPoints(uint256 newBps) external onlyOwner {
-        // Revert if the fee basis points is greater than 10_000.
-        if (newBps > 10_000) {
-            revert InvalidRoyaltyBasisPoints(newBps);
+        // Revert if the new basis points is greater than 10_000.
+        if (newInfo.royaltyBps > 10_000) {
+            revert InvalidRoyaltyBasisPoints(newInfo.royaltyBps);
         }
 
-        // Set the new royalty percent.
-        _royaltyBps = newBps;
+        // Set the new royalty info.
+        _royaltyInfo = newInfo;
 
-        // Emit an event with the royalty bps update.
-        emit RoyaltyBasisPointsUpdated(newBps);
+        // Emit an event with the updated params.
+        emit RoyaltyInfoUpdated(newInfo.royaltyAddress, newInfo.royaltyBps);
     }
 
     /**
@@ -243,14 +231,14 @@ contract ERC721ContractMetadata is
      * @notice Returns the address that receives royalties.
      */
     function royaltyAddress() external view returns (address) {
-        return _royaltyAddress;
+        return _royaltyInfo.royaltyAddress;
     }
 
     /**
      * @notice Returns the royalty basis points out of 10_000.
      */
     function royaltyBasisPoints() external view returns (uint256) {
-        return _royaltyBps;
+        return _royaltyInfo.royaltyBps;
     }
 
     /**
@@ -268,12 +256,15 @@ contract ERC721ContractMetadata is
         uint256, /* _tokenId */
         uint256 _salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
+        // Put the royalty info on the stack for more efficient access.
+        RoyaltyInfo storage info = _royaltyInfo;
+
         // Set the royalty amount to the sale price times the royalty basis
         // points divided by 10_000.
-        royaltyAmount = (_salePrice * _royaltyBps) / 10_000;
+        royaltyAmount = (_salePrice * info.royaltyBps) / 10_000;
 
         // Set the receiver of the royalty.
-        receiver = _royaltyAddress;
+        receiver = info.royaltyAddress;
     }
 
     /**

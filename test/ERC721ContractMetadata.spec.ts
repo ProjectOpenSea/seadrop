@@ -103,28 +103,22 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.royaltyBasisPoints()).to.equal(0);
 
     await expect(
-      token.connect(admin).setRoyaltyAddress(owner.address)
+      token.connect(admin).setRoyaltyInfo([owner.address, 100])
     ).to.be.revertedWith("OnlyOwner");
 
     await expect(
-      token.connect(admin).setRoyaltyBasisPoints(owner.address)
-    ).to.be.revertedWith("OnlyOwner");
-
-    await expect(
-      token.connect(owner).setRoyaltyBasisPoints(10_001)
+      token.connect(owner).setRoyaltyInfo([owner.address, 10_001])
     ).to.be.revertedWith("InvalidRoyaltyBasisPoints(10001)");
     await expect(
-      token.connect(owner).setRoyaltyAddress(ethers.constants.AddressZero)
-    ).to.be.revertedWith(
-      `RoyaltyAddressCannotBeZeroAddress("${ethers.constants.AddressZero}")`
-    );
+      token.connect(owner).setRoyaltyInfo([ethers.constants.AddressZero, 200])
+    ).to.be.revertedWith(`RoyaltyAddressCannotBeZeroAddress()`);
 
-    await expect(token.connect(owner).setRoyaltyAddress(admin.address))
-      .to.emit(token, "RoyaltyAddressUpdated")
-      .withArgs(admin.address);
-    await expect(token.connect(owner).setRoyaltyBasisPoints(500)) // 5%
-      .to.emit(token, "RoyaltyBasisPointsUpdated")
-      .withArgs(500);
+    await expect(token.connect(owner).setRoyaltyInfo([admin.address, 100]))
+      .to.emit(token, "RoyaltyInfoUpdated")
+      .withArgs(admin.address, 100);
+    await expect(token.connect(owner).setRoyaltyInfo([admin.address, 500])) // 5%
+      .to.emit(token, "RoyaltyInfoUpdated")
+      .withArgs(admin.address, 500);
 
     expect(await token.royaltyAddress()).to.equal(admin.address);
     expect(await token.royaltyBasisPoints()).to.equal(500);
@@ -134,7 +128,5 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       ethers.BigNumber.from(5000),
     ]);
     expect(await token.supportsInterface("0x2a55205a")).to.equal(true);
-
-    await expect(token.connect(owner).emitBatchTokenURIUpdated(5, 10));
   });
 });
