@@ -19,6 +19,10 @@ import {
     SignedMintValidationParams
 } from "./lib/SeaDropStructs.sol";
 
+import {
+    ERC721SeaDropStructsErrorsAndEvents
+} from "./lib/ERC721SeaDropStructsErrorsAndEvents.sol";
+
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
@@ -42,12 +46,10 @@ import {
 contract ERC721SeaDrop is
     ERC721ContractMetadata,
     INonFungibleSeaDropToken,
+    ERC721SeaDropStructsErrorsAndEvents,
     ReentrancyGuard,
     DefaultOperatorFilterer
 {
-    /// @notice Revert with an error if mint exceeds the max supply.
-    error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
-
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) internal _allowedSeaDrop;
 
@@ -87,6 +89,9 @@ contract ERC721SeaDrop is
 
         // Set the enumeration.
         _enumeratedAllowedSeaDrop = allowedSeaDrop;
+
+        // Emit an event noting the contract deployment.
+        emit SeaDropTokenDeployed();
     }
 
     /**
@@ -201,7 +206,13 @@ contract ERC721SeaDrop is
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrSelf
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Update the public drop data on SeaDrop.
         ISeaDrop(seaDropImpl).updatePublicDrop(publicDrop);
     }
@@ -216,7 +227,13 @@ contract ERC721SeaDrop is
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrSelf
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Update the allow list on SeaDrop.
         ISeaDrop(seaDropImpl).updateAllowList(allowListData);
     }
@@ -241,7 +258,13 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrSelf
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Update the token gated drop stage.
         ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
     }
@@ -257,7 +280,7 @@ contract ERC721SeaDrop is
         external
         virtual
         override
-        onlyOwner
+        onlyOwnerOrSelf
         onlyAllowedSeaDrop(seaDropImpl)
     {
         // Update the drop URI.
@@ -274,7 +297,7 @@ contract ERC721SeaDrop is
     function updateCreatorPayoutAddress(
         address seaDropImpl,
         address payoutAddress
-    ) external onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    ) external onlyOwnerOrSelf onlyAllowedSeaDrop(seaDropImpl) {
         // Update the creator payout address.
         ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
     }
@@ -292,7 +315,7 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external virtual onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    ) external virtual onlyOwnerOrSelf onlyAllowedSeaDrop(seaDropImpl) {
         // Update the allowed fee recipient.
         ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
@@ -311,7 +334,13 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
-    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrSelf
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Update the signer.
         ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
             signer,
@@ -331,7 +360,13 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address payer,
         bool allowed
-    ) external virtual override onlyOwner onlyAllowedSeaDrop(seaDropImpl) {
+    )
+        external
+        virtual
+        override
+        onlyOwnerOrSelf
+        onlyAllowedSeaDrop(seaDropImpl)
+    {
         // Update the payer.
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
@@ -438,5 +473,169 @@ contract ERC721SeaDrop is
         bytes memory data
     ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
+    }
+
+    /**
+     * @notice Configure multiple properties at a time.
+     *
+     *         Note: The individual configure methods should be used
+     *         to unset or reset any properties to zero, as this method
+     *         will ignore zero-value properties in the config struct.
+     *
+     * @param config The configuration struct.
+     */
+    function multiConfigure(MultiConfigureStruct calldata config)
+        external
+        onlyOwner
+    {
+        if (config.maxSupply > 0) {
+            this.setMaxSupply(config.maxSupply);
+        }
+        if (bytes(config.baseURI).length != 0) {
+            this.setBaseURI(config.baseURI);
+        }
+        if (bytes(config.contractURI).length != 0) {
+            this.setContractURI(config.contractURI);
+        }
+        if (
+            _cast(config.publicDrop.startTime != 0) |
+                _cast(config.publicDrop.endTime != 0) ==
+            1
+        ) {
+            this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
+        }
+        if (bytes(config.dropURI).length != 0) {
+            this.updateDropURI(config.seaDropImpl, config.dropURI);
+        }
+        if (config.allowListData.merkleRoot != bytes32(0)) {
+            this.updateAllowList(config.seaDropImpl, config.allowListData);
+        }
+        if (config.creatorPayoutAddress != address(0)) {
+            this.updateCreatorPayoutAddress(
+                config.seaDropImpl,
+                config.creatorPayoutAddress
+            );
+        }
+        if (config.provenanceHash != bytes32(0)) {
+            this.setProvenanceHash(config.provenanceHash);
+        }
+        if (config.allowedFeeRecipients.length > 0) {
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.allowedFeeRecipients[i],
+                    true
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedFeeRecipients.length > 0) {
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.disallowedFeeRecipients[i],
+                    false
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.allowedPayers.length > 0) {
+            for (uint256 i = 0; i < config.allowedPayers.length; ) {
+                this.updatePayer(
+                    config.seaDropImpl,
+                    config.allowedPayers[i],
+                    true
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedPayers.length > 0) {
+            for (uint256 i = 0; i < config.disallowedPayers.length; ) {
+                this.updatePayer(
+                    config.seaDropImpl,
+                    config.disallowedPayers[i],
+                    false
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.tokenGatedDropStages.length > 0) {
+            if (
+                config.tokenGatedDropStages.length !=
+                config.tokenGatedAllowedNftTokens.length
+            ) {
+                revert TokenGatedMismatch();
+            }
+            for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
+                this.updateTokenGatedDrop(
+                    config.seaDropImpl,
+                    config.tokenGatedAllowedNftTokens[i],
+                    config.tokenGatedDropStages[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedTokenGatedAllowedNftTokens.length > 0) {
+            for (
+                uint256 i = 0;
+                i < config.disallowedTokenGatedAllowedNftTokens.length;
+
+            ) {
+                TokenGatedDropStage memory emptyStage;
+                this.updateTokenGatedDrop(
+                    config.seaDropImpl,
+                    config.disallowedTokenGatedAllowedNftTokens[i],
+                    emptyStage
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.signedMintValidationParams.length > 0) {
+            if (
+                config.signedMintValidationParams.length !=
+                config.signers.length
+            ) {
+                revert SignersMismatch();
+            }
+            for (
+                uint256 i = 0;
+                i < config.signedMintValidationParams.length;
+
+            ) {
+                this.updateSignedMintValidationParams(
+                    config.seaDropImpl,
+                    config.signers[i],
+                    config.signedMintValidationParams[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedSigners.length > 0) {
+            for (uint256 i = 0; i < config.disallowedSigners.length; ) {
+                SignedMintValidationParams memory emptyParams;
+                this.updateSignedMintValidationParams(
+                    config.seaDropImpl,
+                    config.disallowedSigners[i],
+                    emptyParams
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
     }
 }
