@@ -9,22 +9,32 @@ import {
 } from "./SeaDropStructs.sol";
 
 interface ERC721SeaDropStructsErrorsAndEvents {
-  /// @notice Revert with an error if mint exceeds the max supply.
+  /**
+   * @notice Revert with an error if mint exceeds the max supply.
+   */
   error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
 
-  /// @notice Revert with an error if the number of token gated 
-  ///         allowedNftTokens doesn't match the length of supplied
-  ///         drop stages.
+  /**
+   * @notice Revert with an error if the number of token gated 
+   *         allowedNftTokens doesn't match the length of supplied
+   *         drop stages.
+   */
   error TokenGatedMismatch();
 
-  /// @notice Revert with an error if the number of signers doesn't match
-  ///         the length of supplied signedMintValidationParams
+  /**
+   *  @notice Revert with an error if the number of signers doesn't match
+   *          the length of supplied signedMintValidationParams
+   */
   error SignersMismatch();
 
-  /// @notice An event to signify that a SeaDrop token contract was deployed.
+  /**
+   * @notice An event to signify that a SeaDrop token contract was deployed.
+   */
   event SeaDropTokenDeployed();
 
-  /// @notice A struct to configure multiple options at a time.
+  /**
+   * @notice A struct to configure multiple options at a time.
+   */
   struct MultiConfigureStruct {
     uint256 maxSupply;
     string baseURI;
@@ -38,9 +48,11 @@ interface ERC721SeaDropStructsErrorsAndEvents {
     bytes32 provenanceHash;
     address[] allowedPayers;
 
+    // Token-gated
     address[] tokenGatedAllowedNftTokens;
     TokenGatedDropStage[] tokenGatedDropStages;
 
+    // Server-signed
     address[] signers;
     SignedMintValidationParams[] signedMintValidationParams;
   }
