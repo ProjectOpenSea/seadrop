@@ -46,16 +46,17 @@ contract ERC721ContractMetadata is
     RoyaltyInfo _royaltyInfo;
 
     /**
-     * @dev Throws if the sender is not the owner or the contract itself.
+     * @dev Reverts if the sender is not the owner or the contract itself.
+     *      This function is inlined instead of being a modifier
+     *      to save contract space from being inlined N times.
      */
-    modifier onlyOwnerOrSelf() {
+    function _onlyOwnerOrSelf() internal view {
         if (
             _cast(msg.sender == owner()) | _cast(msg.sender == address(this)) ==
             0
         ) {
             revert OnlyOwner();
         }
-        _;
     }
 
     /**
@@ -70,11 +71,10 @@ contract ERC721ContractMetadata is
      *
      * @param newBaseURI The new base URI to set.
      */
-    function setBaseURI(string calldata newBaseURI)
-        external
-        override
-        onlyOwnerOrSelf
-    {
+    function setBaseURI(string calldata newBaseURI) external override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Set the new base URI.
         _tokenBaseURI = newBaseURI;
 
@@ -87,11 +87,10 @@ contract ERC721ContractMetadata is
      *
      * @param newContractURI The new contract URI.
      */
-    function setContractURI(string calldata newContractURI)
-        external
-        override
-        onlyOwnerOrSelf
-    {
+    function setContractURI(string calldata newContractURI) external override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Set the new contract URI.
         _contractURI = newContractURI;
 
@@ -108,8 +107,10 @@ contract ERC721ContractMetadata is
      */
     function emitBatchTokenURIUpdated(uint256 startTokenId, uint256 endTokenId)
         external
-        onlyOwnerOrSelf
     {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Emit an event with the update.
         emit TokenURIUpdated(startTokenId, endTokenId);
     }
@@ -119,7 +120,10 @@ contract ERC721ContractMetadata is
      *
      * @param newMaxSupply The new max supply to set.
      */
-    function setMaxSupply(uint256 newMaxSupply) external onlyOwnerOrSelf {
+    function setMaxSupply(uint256 newMaxSupply) external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the max supply does not exceed the maximum value of uint64.
         if (newMaxSupply > 2**64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
@@ -143,10 +147,10 @@ contract ERC721ContractMetadata is
      *
      * @param newProvenanceHash The new provenance hash to set.
      */
-    function setProvenanceHash(bytes32 newProvenanceHash)
-        external
-        onlyOwnerOrSelf
-    {
+    function setProvenanceHash(bytes32 newProvenanceHash) external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Revert if any items have been minted.
         if (_totalMinted() > 0) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
@@ -167,10 +171,10 @@ contract ERC721ContractMetadata is
      *
      * @param newInfo The struct to configure royalties.
      */
-    function setRoyaltyInfo(RoyaltyInfo calldata newInfo)
-        external
-        onlyOwnerOrSelf
-    {
+    function setRoyaltyInfo(RoyaltyInfo calldata newInfo) external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Revert if the new royalty address is the zero address.
         if (newInfo.royaltyAddress == address(0)) {
             revert RoyaltyAddressCannotBeZeroAddress();

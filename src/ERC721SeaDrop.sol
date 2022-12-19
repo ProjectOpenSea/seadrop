@@ -57,14 +57,16 @@ contract ERC721SeaDrop is
     address[] internal _enumeratedAllowedSeaDrop;
 
     /**
-     * @notice Modifier to restrict access exclusively to
-     *         allowed SeaDrop contracts.
+     * @dev Reverts if not an allowed SeaDrop contract.
+     *      This function is inlined instead of being a modifier
+     *      to save contract space from being inlined N times.
+     *
+     * @param seaDrop The SeaDrop address to check if allowed.
      */
-    modifier onlyAllowedSeaDrop(address seaDrop) {
+    function _onlyAllowedSeaDrop(address seaDrop) internal view {
         if (_allowedSeaDrop[seaDrop] != true) {
             revert OnlyAllowedSeaDrop();
         }
-        _;
     }
 
     /**
@@ -181,9 +183,11 @@ contract ERC721SeaDrop is
         payable
         virtual
         override
-        onlyAllowedSeaDrop(msg.sender)
         nonReentrant
     {
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(msg.sender);
+
         // Extra safety check to ensure the max supply is not exceeded.
         if (_totalMinted() + quantity > maxSupply()) {
             revert MintQuantityExceedsMaxSupply(
@@ -206,13 +210,13 @@ contract ERC721SeaDrop is
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    )
-        external
-        virtual
-        override
-        onlyOwnerOrSelf
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the public drop data on SeaDrop.
         ISeaDrop(seaDropImpl).updatePublicDrop(publicDrop);
     }
@@ -227,13 +231,13 @@ contract ERC721SeaDrop is
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    )
-        external
-        virtual
-        override
-        onlyOwnerOrSelf
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the allow list on SeaDrop.
         ISeaDrop(seaDropImpl).updateAllowList(allowListData);
     }
@@ -258,13 +262,13 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    )
-        external
-        virtual
-        override
-        onlyOwnerOrSelf
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the token gated drop stage.
         ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
     }
@@ -280,9 +284,13 @@ contract ERC721SeaDrop is
         external
         virtual
         override
-        onlyOwnerOrSelf
-        onlyAllowedSeaDrop(seaDropImpl)
     {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the drop URI.
         ISeaDrop(seaDropImpl).updateDropURI(dropURI);
     }
@@ -298,7 +306,13 @@ contract ERC721SeaDrop is
     function updateCreatorPayoutAddress(
         address seaDropImpl,
         address payoutAddress
-    ) external onlyOwnerOrSelf onlyAllowedSeaDrop(seaDropImpl) {
+    ) external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the creator payout address.
         ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
     }
@@ -316,7 +330,13 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external virtual onlyOwnerOrSelf onlyAllowedSeaDrop(seaDropImpl) {
+    ) external virtual {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the allowed fee recipient.
         ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
@@ -335,13 +355,13 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
-    )
-        external
-        virtual
-        override
-        onlyOwnerOrSelf
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the signer.
         ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
             signer,
@@ -361,13 +381,13 @@ contract ERC721SeaDrop is
         address seaDropImpl,
         address payer,
         bool allowed
-    )
-        external
-        virtual
-        override
-        onlyOwnerOrSelf
-        onlyAllowedSeaDrop(seaDropImpl)
-    {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Ensure the SeaDrop is allowed.
+        _onlyAllowedSeaDrop(seaDropImpl);
+
         // Update the payer.
         ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
@@ -438,7 +458,8 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public override {
+        _onlyAllowedOperator(from);
         super.transferFrom(from, to, tokenId);
     }
 
@@ -449,7 +470,8 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public override {
+        _onlyAllowedOperator(from);
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -474,8 +496,44 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override onlyAllowedOperator(from) {
+    ) public override {
+        _onlyAllowedOperator(from);
         super.safeTransferFrom(from, to, tokenId, data);
+    }
+
+    /**
+     * @notice Reverts if an operator is not allowed. This function is inlined
+     *         to save contract size space instead of using the modifier, which
+     *         gets inlined N times.
+     *
+     * @param from The from address to check.
+     */
+    function _onlyAllowedOperator(address from) internal view {
+        // Check registry code length to facilitate testing in environments
+        // without a deployed registry.
+        if (address(operatorFilterRegistry).code.length > 0) {
+            // Allow spending tokens from addresses with balance
+            // Note that this still allows listings and marketplaces with
+            // escrow to transfer tokens if transferred from an EOA.
+            if (from == msg.sender) return;
+            if (
+                _cast(
+                    operatorFilterRegistry.isOperatorAllowed(
+                        address(this),
+                        msg.sender
+                    )
+                ) |
+                    _cast(
+                        operatorFilterRegistry.isOperatorAllowed(
+                            address(this),
+                            from
+                        )
+                    ) ==
+                0
+            ) {
+                revert OperatorNotAllowed(msg.sender);
+            }
+        }
     }
 
     /**
