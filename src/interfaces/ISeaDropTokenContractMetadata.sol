@@ -46,7 +46,8 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     event RoyaltyAddressUpdated(address wallet);
 
     /**
-     * @dev Emit an event when the royalties basis points (out of 10_000) is updated.
+     * @dev Emit an event when the royalties basis points (out of 10_000)
+     *      is updated.
      */
     event RoyaltyBasisPointsUpdated(uint256 bps);
 

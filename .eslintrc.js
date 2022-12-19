@@ -21,18 +21,7 @@ module.exports = {
   rules: {
     "@typescript-eslint/consistent-type-imports": "error",
     "@typescript-eslint/prefer-nullish-coalescing": "error",
-    camelcase: [
-      "error",
-      {
-        allow: [
-          "IERC165__factory",
-          "IERC2981__factory",
-          "IERC721__factory",
-          "INonFungibleSeaDropToken__factory",
-          "ISeaDropTokenContractMetadata__factory",
-        ],
-      },
-    ],
+    camelcase: ["error", { allow: ["(.*)__factory"] }],
     "import/order": [
       "error",
       {
