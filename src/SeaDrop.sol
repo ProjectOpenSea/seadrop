@@ -603,7 +603,11 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @param endTime   The drop stage end time.
      */
     function _checkActive(uint256 startTime, uint256 endTime) internal view {
-        if (block.timestamp < startTime || block.timestamp > endTime) {
+        if (
+            _cast(block.timestamp < startTime) |
+                _cast(block.timestamp > endTime) ==
+            1
+        ) {
             // Revert if the drop stage is not active.
             revert NotActive(block.timestamp, startTime, endTime);
         }
@@ -1418,5 +1422,18 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
                 )
             )
         );
+    }
+
+    /**
+     * @dev Internal pure function to cast a `bool` value to a `uint256` value.
+     *
+     * @param b The `bool` value to cast.
+     *
+     * @return u The `uint256` value.
+     */
+    function _cast(bool b) internal pure returns (uint256 u) {
+        assembly {
+            u := b
+        }
     }
 }

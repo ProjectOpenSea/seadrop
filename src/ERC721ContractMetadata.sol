@@ -48,6 +48,19 @@ contract ERC721ContractMetadata is
     address _royaltyAddress;
 
     /**
+     * @dev Throws if the sender is not the owner or the contract itself.
+     */
+    modifier onlyOwnerOrSelf() {
+        if (
+            _cast(msg.sender == owner()) | _cast(msg.sender == address(this)) ==
+            0
+        ) {
+            revert OnlyOwner();
+        }
+        _;
+    }
+
+    /**
      * @notice Deploy the token contract with its name and symbol.
      */
     constructor(string memory name, string memory symbol)
@@ -79,7 +92,7 @@ contract ERC721ContractMetadata is
     function setContractURI(string calldata newContractURI)
         external
         override
-        onlyOwner
+        onlyOwnerOrSelf
     {
         // Set the new contract URI.
         _contractURI = newContractURI;
@@ -132,7 +145,10 @@ contract ERC721ContractMetadata is
      *
      * @param newProvenanceHash The new provenance hash to set.
      */
-    function setProvenanceHash(bytes32 newProvenanceHash) external onlyOwner {
+    function setProvenanceHash(bytes32 newProvenanceHash)
+        external
+        onlyOwnerOrSelf
+    {
         // Revert if any items have been minted.
         if (_totalMinted() > 0) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
@@ -275,5 +291,18 @@ contract ERC721ContractMetadata is
         return
             interfaceId == type(IERC2981).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Internal pure function to cast a `bool` value to a `uint256` value.
+     *
+     * @param b The `bool` value to cast.
+     *
+     * @return u The `uint256` value.
+     */
+    function _cast(bool b) internal pure returns (uint256 u) {
+        assembly {
+            u := b
+        }
     }
 }

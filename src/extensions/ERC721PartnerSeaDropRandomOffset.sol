@@ -18,8 +18,12 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
     uint256 public randomOffset;
 
     /// @notice If the collection has been revealed and the randomOffset has
-    ///         been set.
-    bool public revealed;
+    ///         been set. 1=False, 2=True.
+    uint256 public revealed = _REVEALED_FALSE;
+
+    /// @dev For gas efficiency, uint is used instead of bool for revealed.
+    uint256 private constant _REVEALED_FALSE = 1;
+    uint256 private constant _REVEALED_TRUE = 2;
 
     /// @notice Revert when setting the randomOffset if already set.
     error AlreadyRevealed();
@@ -47,20 +51,30 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      */
     // solhint-disable-next-line comprehensive-interface
     function setRandomOffset() external onlyOwner {
-        if (revealed) {
+        // Revert setting the offset if already revealed.
+        if (revealed == _REVEALED_TRUE) {
             revert AlreadyRevealed();
         }
-        if (_totalMinted() != _maxSupply) {
+
+        // Put maxSupply on the stack, since reading a state variable
+        // costs more gas than reading a local variable.
+        uint256 maxSupply = _maxSupply;
+
+        // Revert if the collection is not yet fully minted.
+        if (_totalMinted() != maxSupply) {
             revert NotFullyMinted();
         }
+
         // block.difficulty returns PREVRANDAO on Ethereum post-merge
         // NOTE: do not use this on other chains
         // randomOffset returns between 1 and MAX_SUPPLY
         randomOffset =
             (uint256(keccak256(abi.encode(block.difficulty))) %
-                (_maxSupply - 1)) +
+                (maxSupply - 1)) +
             1;
-        revealed = true;
+
+        // Set revealed to true.
+        revealed = _REVEALED_TRUE;
     }
 
     /**
@@ -83,7 +97,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
         if (bytes(base).length == 0) {
             // If there is no baseURI set, return an empty string.
             return "";
-        } else if (!revealed) {
+        } else if (revealed == _REVEALED_FALSE) {
             // If the baseURI is set but the collection is not revealed yet,
             // return just the baseURI.
             return base;

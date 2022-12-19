@@ -54,7 +54,7 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev Revert if the fee basis points is greater than 10_000.
      */
-     error InvalidFeeBps(uint256 feeBps);
+    error InvalidFeeBps(uint256 feeBps);
 
     /**
      * @dev Revert if the fee recipient is already included.
