@@ -597,10 +597,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       dropURI: "https://example3.com",
       allowListData,
       creatorPayoutAddress: creator.address,
-      allowedFeeRecipient: feeRecipient.address,
-      allowedPayers: [`0x${"4".repeat(40)}`, `0x${"5".repeat(40)}`],
       provenanceHash: `0x${"3".repeat(64)}`,
-
+      allowedFeeRecipients: [feeRecipient.address],
+      disallowedFeeRecipients: [],
+      allowedPayers: [`0x${"4".repeat(40)}`, `0x${"5".repeat(40)}`],
+      disallowedPayers: [],
       tokenGatedAllowedNftTokens: [
         `0x${"6".repeat(40)}`,
         `0x${"7".repeat(40)}`,
@@ -612,7 +613,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           mintPrice: tokenGatedDropStage.mintPrice + "1",
         },
       ],
-
+      disallowedTokenGatedAllowedNftTokens: [],
       signers: [`0x${"8".repeat(40)}`, `0x${"9".repeat(40)}`],
       signedMintValidationParams: [
         signedMintValidationParams,
@@ -621,6 +622,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           minMintPrice: signedMintValidationParams.minMintPrice + 1,
         },
       ],
+      disallowedSigners: [],
     };
 
     await expect(
@@ -711,38 +713,87 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await checkResults();
 
     // Should not do anything if all fields are zeroed out
+    const zeroedConfig = {
+      maxSupply: 0,
+      baseURI: "",
+      contractURI: "",
+      seaDropImpl: seadrop.address,
+      publicDrop: {
+        mintPrice: 0,
+        maxTotalMintableByWallet: 0,
+        startTime: 0,
+        endTime: 0,
+        feeBps: 0,
+        restrictFeeRecipients: true,
+      },
+      dropURI: "",
+      allowListData: {
+        merkleRoot: ethers.constants.HashZero,
+        publicKeyURIs: [],
+        allowListURI: "",
+      },
+      creatorPayoutAddress: ethers.constants.AddressZero,
+      provenanceHash: ethers.constants.HashZero,
+      allowedFeeRecipients: [],
+      disallowedFeeRecipients: [],
+      allowedPayers: [],
+      disallowedPayers: [],
+      tokenGatedAllowedNftTokens: [],
+      tokenGatedDropStages: [],
+      disallowedTokenGatedAllowedNftTokens: [],
+      signers: [],
+      signedMintValidationParams: [],
+      disallowedSigners: [],
+    };
+    await expect(token.connect(owner).multiConfigure(zeroedConfig)).to.not.emit(
+      seadrop,
+      "DropURIUpdated"
+    );
+    await checkResults();
+
+    // Should unset properties
     await expect(
       token.connect(owner).multiConfigure({
-        maxSupply: 0,
-        baseURI: "",
-        contractURI: "",
-        seaDropImpl: seadrop.address,
-        publicDrop: {
-          mintPrice: 0, // 0.1 ether
-          maxTotalMintableByWallet: 0,
-          startTime: 0,
-          endTime: 0,
-          feeBps: 0,
-          restrictFeeRecipients: true,
-        },
-        dropURI: "",
-        allowListData: {
-          merkleRoot: ethers.constants.HashZero,
-          publicKeyURIs: [],
-          allowListURI: "",
-        },
-        creatorPayoutAddress: ethers.constants.AddressZero,
-        allowedFeeRecipient: ethers.constants.AddressZero,
-        allowedPayers: [],
-        provenanceHash: ethers.constants.HashZero,
-
-        tokenGatedAllowedNftTokens: [],
-        tokenGatedDropStages: [],
-
-        signers: [],
-        signedMintValidationParams: [],
+        ...zeroedConfig,
+        disallowedFeeRecipients: config.allowedFeeRecipients,
       })
-    ).to.not.emit(seadrop, "DropURIUpdated");
-    await checkResults();
+    )
+      .to.emit(seadrop, "AllowedFeeRecipientUpdated")
+      .withArgs(token.address, feeRecipient.address, false);
+    await expect(
+      token.connect(owner).multiConfigure({
+        ...zeroedConfig,
+        disallowedPayers: config.allowedPayers,
+      })
+    )
+      .to.emit(seadrop, "PayerUpdated")
+      .withArgs(token.address, config.allowedPayers[0], false);
+    await expect(
+      token.connect(owner).multiConfigure({
+        ...zeroedConfig,
+        disallowedTokenGatedAllowedNftTokens: [
+          config.tokenGatedAllowedNftTokens[0],
+        ],
+      })
+    )
+      .to.emit(seadrop, "TokenGatedDropStageUpdated")
+      .withArgs(token.address, config.tokenGatedAllowedNftTokens[0], [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        false,
+      ]);
+    await expect(
+      token.connect(owner).multiConfigure({
+        ...zeroedConfig,
+        disallowedSigners: [config.signers[0]],
+      })
+    )
+      .to.emit(seadrop, "SignedMintValidationParamsUpdated")
+      .withArgs(token.address, config.signers[0], [0, 0, 0, 0, 0, 0, 0]);
   });
 });

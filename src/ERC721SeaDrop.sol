@@ -477,6 +477,12 @@ contract ERC721SeaDrop is
 
     /**
      * @notice Configure multiple properties at a time.
+     *
+     *         Note: The individual configure methods should be used
+     *         to unset or reset any properties to zero, as this method
+     *         will ignore zero-value properties in the config struct.
+     *
+     * @param config The configuration struct.
      */
     function multiConfigure(MultiConfigureStruct calldata config)
         external
@@ -510,12 +516,32 @@ contract ERC721SeaDrop is
                 config.creatorPayoutAddress
             );
         }
-        if (config.allowedFeeRecipient != address(0)) {
-            this.updateAllowedFeeRecipient(
-                config.seaDropImpl,
-                config.allowedFeeRecipient,
-                true
-            );
+        if (config.provenanceHash != bytes32(0)) {
+            this.setProvenanceHash(config.provenanceHash);
+        }
+        if (config.allowedFeeRecipients.length > 0) {
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.allowedFeeRecipients[i],
+                    true
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedFeeRecipients.length > 0) {
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.disallowedFeeRecipients[i],
+                    false
+                );
+                unchecked {
+                    ++i;
+                }
+            }
         }
         if (config.allowedPayers.length > 0) {
             for (uint256 i = 0; i < config.allowedPayers.length; ) {
@@ -529,8 +555,17 @@ contract ERC721SeaDrop is
                 }
             }
         }
-        if (config.provenanceHash != bytes32(0)) {
-            this.setProvenanceHash(config.provenanceHash);
+        if (config.disallowedPayers.length > 0) {
+            for (uint256 i = 0; i < config.disallowedPayers.length; ) {
+                this.updatePayer(
+                    config.seaDropImpl,
+                    config.disallowedPayers[i],
+                    false
+                );
+                unchecked {
+                    ++i;
+                }
+            }
         }
         if (config.tokenGatedDropStages.length > 0) {
             if (
@@ -544,6 +579,23 @@ contract ERC721SeaDrop is
                     config.seaDropImpl,
                     config.tokenGatedAllowedNftTokens[i],
                     config.tokenGatedDropStages[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedTokenGatedAllowedNftTokens.length > 0) {
+            for (
+                uint256 i = 0;
+                i < config.disallowedTokenGatedAllowedNftTokens.length;
+
+            ) {
+                TokenGatedDropStage memory emptyStage;
+                this.updateTokenGatedDrop(
+                    config.seaDropImpl,
+                    config.disallowedTokenGatedAllowedNftTokens[i],
+                    emptyStage
                 );
                 unchecked {
                     ++i;
@@ -566,6 +618,19 @@ contract ERC721SeaDrop is
                     config.seaDropImpl,
                     config.signers[i],
                     config.signedMintValidationParams[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedSigners.length > 0) {
+            for (uint256 i = 0; i < config.disallowedSigners.length; ) {
+                SignedMintValidationParams memory emptyParams;
+                this.updateSignedMintValidationParams(
+                    config.seaDropImpl,
+                    config.disallowedSigners[i],
+                    emptyParams
                 );
                 unchecked {
                     ++i;

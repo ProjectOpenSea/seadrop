@@ -33,7 +33,7 @@ interface ERC721SeaDropStructsErrorsAndEvents {
   event SeaDropTokenDeployed();
 
   /**
-   * @notice A struct to configure multiple options at a time.
+   * @notice A struct to configure multiple contract options at a time.
    */
   struct MultiConfigureStruct {
     uint256 maxSupply;
@@ -44,16 +44,22 @@ interface ERC721SeaDropStructsErrorsAndEvents {
     string dropURI;
     AllowListData allowListData;
     address creatorPayoutAddress;
-    address allowedFeeRecipient;
     bytes32 provenanceHash;
+
+    address[] allowedFeeRecipients;
+    address[] disallowedFeeRecipients;
+
     address[] allowedPayers;
+    address[] disallowedPayers;
 
     // Token-gated
     address[] tokenGatedAllowedNftTokens;
     TokenGatedDropStage[] tokenGatedDropStages;
+    address[] disallowedTokenGatedAllowedNftTokens;
 
     // Server-signed
     address[] signers;
     SignedMintValidationParams[] signedMintValidationParams;
+    address[] disallowedSigners;
   }
 }
