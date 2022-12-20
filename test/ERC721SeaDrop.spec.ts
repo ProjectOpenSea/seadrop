@@ -565,6 +565,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         Buffer.from("dadb0d", "hex")
       );
     expect(await token.balanceOf(creator.address)).to.eq(3);
+
+    await token.connect(minter).setApprovalForAll(creator.address, true);
+    await token.connect(minter).approve(creator.address, 4);
   });
 
   it("Should be able to use the multiConfigure method", async () => {

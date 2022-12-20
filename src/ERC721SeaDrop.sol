@@ -441,6 +441,49 @@ contract ERC721SeaDrop is
     }
 
     /**
+     * @dev Approve or remove `operator` as an operator for the caller.
+     * Operators can call {transferFrom} or {safeTransferFrom}
+     * for any token owned by the caller.
+     *
+     * Requirements:
+     *
+     * - The `operator` cannot be the caller.
+     * - The `operator` must be allowed.
+     *
+     * Emits an {ApprovalForAll} event.
+     */
+    function setApprovalForAll(address operator, bool approved)
+        public
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.setApprovalForAll(operator, approved);
+    }
+
+    /**
+     * @dev Gives permission to `to` to transfer `tokenId` token to another account.
+     * The approval is cleared when the token is transferred.
+     *
+     * Only a single account can be approved at a time, so approving the
+     * zero address clears previous approvals.
+     *
+     * Requirements:
+     *
+     * - The caller must own the token or be an approved operator.
+     * - `tokenId` must exist.
+     * - The `operator` mut be allowed.
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address operator, uint256 tokenId)
+        public
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.approve(operator, tokenId);
+    }
+
+    /**
      * @dev Transfers `tokenId` from `from` to `to`.
      *
      * Requirements:
@@ -450,7 +493,7 @@ contract ERC721SeaDrop is
      * - `tokenId` token must be owned by `from`.
      * - If the caller is not `from`, it must be approved to move this token
      * by either {approve} or {setApprovalForAll}.
-     * - The operator (msg.sender) must be allowed.
+     * - The operator must be allowed.
      *
      * Emits a {Transfer} event.
      */
@@ -458,8 +501,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override {
-        _onlyAllowedOperator(from);
+    ) public override onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -470,8 +512,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override {
-        _onlyAllowedOperator(from);
+    ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -487,7 +528,7 @@ contract ERC721SeaDrop is
      * by either {approve} or {setApprovalForAll}.
      * - If `to` refers to a smart contract, it must implement
      * {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-     * - The operator (msg.sender) must be allowed.
+     * - The operator must be allowed.
      *
      * Emits a {Transfer} event.
      */
@@ -496,44 +537,8 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override {
-        _onlyAllowedOperator(from);
+    ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
-    }
-
-    /**
-     * @notice Reverts if an operator is not allowed. This function is inlined
-     *         to save contract size space instead of using the modifier, which
-     *         gets inlined N times.
-     *
-     * @param from The from address to check.
-     */
-    function _onlyAllowedOperator(address from) internal view {
-        // Check registry code length to facilitate testing in environments
-        // without a deployed registry.
-        if (address(operatorFilterRegistry).code.length > 0) {
-            // Allow spending tokens from addresses with balance
-            // Note that this still allows listings and marketplaces with
-            // escrow to transfer tokens if transferred from an EOA.
-            if (from == msg.sender) return;
-            if (
-                _cast(
-                    operatorFilterRegistry.isOperatorAllowed(
-                        address(this),
-                        msg.sender
-                    )
-                ) |
-                    _cast(
-                        operatorFilterRegistry.isOperatorAllowed(
-                            address(this),
-                            from
-                        )
-                    ) ==
-                0
-            ) {
-                revert OperatorNotAllowed(msg.sender);
-            }
-        }
     }
 
     /**
