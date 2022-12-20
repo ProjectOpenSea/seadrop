@@ -284,6 +284,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       expect(await token.supportsInterface(interfaceId)).to.be.true;
     }
 
+    // Ensure the interface that SeaDrop 1.0 strictly checks for
+    // in the modifier `onlyINonFungibleSeaDropToken` returns true,
+    // otherwise the contract will not be able to interact with SeaDrop 1.0.
+    expect(await token.supportsInterface("0x1890fe8e")).to.be.true;
+
     // Ensure invalid interfaces return false.
     const invalidInterfaceIds = ["0x00000000", "0x10000000", "0x00000001"];
     for (const interfaceId of invalidInterfaceIds) {
