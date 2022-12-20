@@ -127,6 +127,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       admin.address,
       ethers.BigNumber.from(5000),
     ]);
+    // 0x2a55205a is interface id for EIP-2981
     expect(await token.supportsInterface("0x2a55205a")).to.equal(true);
   });
 });
