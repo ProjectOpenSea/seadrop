@@ -1005,6 +1005,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /**
      * @notice Emits an event to notify update of the drop URI.
      *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
      * @param dropURI The new drop URI.
      */
     function updateDropURI(string calldata dropURI)
@@ -1016,7 +1022,14 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     }
 
     /**
-     * @notice Updates the public drop for the nft contract and emits an event.
+     * @notice Updates the public drop data for the nft contract
+     *         and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
      *
      * @param publicDrop The public drop data.
      */
@@ -1040,6 +1053,9 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /**
      * @notice Updates the allow list merkle root for the nft contract
      *         and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
      *
      *         Note: Be sure only authorized users can call this from
      *         token contracts that implement INonFungibleSeaDropToken.
@@ -1071,11 +1087,18 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
-     *         token gated drop promotions for each other, they can be
-     *         minted by the same actor until `maxTokenSupplyForStage`
-     *         is reached. Please ensure the `allowedNftToken` is not
-     *         running an active drop during the `dropStage` time period.
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         simultaneous token gated drop promotions for each other,
+     *         they can be minted by the same actor until
+     *         `maxTokenSupplyForStage` is reached. Please ensure the
+     *         `allowedNftToken` is not running an active drop during
+     *         the `dropStage` time period.
      *
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
@@ -1141,24 +1164,36 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     /**
      * @notice Updates the creator payout address and emits an event.
      *
-     * @param _payoutAddress The creator payout address.
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
+     *
+     * @param payoutAddress The creator payout address.
      */
-    function updateCreatorPayoutAddress(address _payoutAddress)
+    function updateCreatorPayoutAddress(address payoutAddress)
         external
         onlyINonFungibleSeaDropToken
     {
-        if (_payoutAddress == address(0)) {
+        if (payoutAddress == address(0)) {
             revert CreatorPayoutAddressCannotBeZeroAddress();
         }
         // Set the creator payout address.
-        _creatorPayoutAddresses[msg.sender] = _payoutAddress;
+        _creatorPayoutAddresses[msg.sender] = payoutAddress;
 
         // Emit an event with the update.
-        emit CreatorPayoutAddressUpdated(msg.sender, _payoutAddress);
+        emit CreatorPayoutAddressUpdated(msg.sender, payoutAddress);
     }
 
     /**
      * @notice Updates the allowed fee recipient and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
      *
      * @param feeRecipient The fee recipient.
      * @param allowed      If the fee recipient is allowed.
@@ -1198,6 +1233,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
     /**
      * @notice Updates the allowed server-side signers and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
      *
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
@@ -1266,6 +1307,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
     /**
      * @notice Updates the allowed payer and emits an event.
+     *
+     *         This method assume msg.sender is an nft contract and its
+     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *
+     *         Note: Be sure only authorized users can call this from
+     *         token contracts that implement INonFungibleSeaDropToken.
      *
      * @param payer   The payer to add or remove.
      * @param allowed Whether to add or remove the payer.

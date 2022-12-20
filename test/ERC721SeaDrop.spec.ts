@@ -3,6 +3,7 @@ import { ethers, network } from "hardhat";
 
 import {
   IERC165__factory,
+  IERC2981__factory,
   IERC721__factory,
   INonFungibleSeaDropToken__factory,
   ISeaDropTokenContractMetadata__factory,
@@ -259,9 +260,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       [
         INonFungibleSeaDropToken__factory,
         ISeaDropTokenContractMetadata__factory,
-        IERC165__factory,
       ],
-      [ISeaDropTokenContractMetadata__factory],
+      [IERC165__factory],
+    ];
+    const supportedInterfacesERC721ContractMetadata = [
+      [ISeaDropTokenContractMetadata__factory, IERC2981__factory],
+      [IERC2981__factory, IERC165__factory],
     ];
     const supportedInterfacesERC721A = [
       [IERC721__factory, IERC165__factory],
@@ -270,6 +274,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     for (const factories of [
       ...supportedInterfacesERC721SeaDrop,
+      ...supportedInterfacesERC721ContractMetadata,
       ...supportedInterfacesERC721A,
     ]) {
       const interfaceId = factories
@@ -278,6 +283,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         .toHexString();
       expect(await token.supportsInterface(interfaceId)).to.be.true;
     }
+
+    // Ensure the interface that SeaDrop 1.0 strictly checks for
+    // in the modifier `onlyINonFungibleSeaDropToken` returns true,
+    // otherwise the contract will not be able to interact with SeaDrop 1.0.
+    expect(await token.supportsInterface("0x1890fe8e")).to.be.true;
 
     // Ensure invalid interfaces return false.
     const invalidInterfaceIds = ["0x00000000", "0x10000000", "0x00000001"];
@@ -560,6 +570,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         Buffer.from("dadb0d", "hex")
       );
     expect(await token.balanceOf(creator.address)).to.eq(3);
+
+    await token.connect(minter).setApprovalForAll(creator.address, true);
+    await token.connect(minter).approve(creator.address, 4);
   });
 
   it("Should be able to use the multiConfigure method", async () => {

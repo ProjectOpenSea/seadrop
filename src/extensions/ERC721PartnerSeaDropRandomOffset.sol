@@ -49,6 +49,7 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      *         equals the max supply. Should be called immediately before
      *         reveal.
      */
+    // solhint-disable-next-line comprehensive-interface
     function setRandomOffset() external onlyOwner {
         // Revert setting the offset if already revealed.
         if (revealed == _REVEALED_TRUE) {
@@ -82,9 +83,12 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
      *
      * @param tokenId The token id
      */
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         if (!_exists(tokenId)) {
             revert URIQueryForNonexistentToken();
         }

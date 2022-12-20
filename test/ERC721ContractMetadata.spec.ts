@@ -97,4 +97,37 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       .to.emit(token, "TokenURIUpdated")
       .withArgs(5, 10);
   });
+
+  it("Should only let the owner update the royalties address and basis points", async () => {
+    expect(await token.royaltyAddress()).to.equal(ethers.constants.AddressZero);
+    expect(await token.royaltyBasisPoints()).to.equal(0);
+
+    await expect(
+      token.connect(admin).setRoyaltyInfo([owner.address, 100])
+    ).to.be.revertedWith("OnlyOwner");
+
+    await expect(
+      token.connect(owner).setRoyaltyInfo([owner.address, 10_001])
+    ).to.be.revertedWith("InvalidRoyaltyBasisPoints(10001)");
+    await expect(
+      token.connect(owner).setRoyaltyInfo([ethers.constants.AddressZero, 200])
+    ).to.be.revertedWith(`RoyaltyAddressCannotBeZeroAddress()`);
+
+    await expect(token.connect(owner).setRoyaltyInfo([admin.address, 100]))
+      .to.emit(token, "RoyaltyInfoUpdated")
+      .withArgs(admin.address, 100);
+    await expect(token.connect(owner).setRoyaltyInfo([admin.address, 500])) // 5%
+      .to.emit(token, "RoyaltyInfoUpdated")
+      .withArgs(admin.address, 500);
+
+    expect(await token.royaltyAddress()).to.equal(admin.address);
+    expect(await token.royaltyBasisPoints()).to.equal(500);
+
+    expect(await token.royaltyInfo(1, 100_000)).to.deep.equal([
+      admin.address,
+      ethers.BigNumber.from(5000),
+    ]);
+    // 0x2a55205a is interface id for EIP-2981
+    expect(await token.supportsInterface("0x2a55205a")).to.equal(true);
+  });
 });
