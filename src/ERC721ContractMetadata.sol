@@ -79,7 +79,7 @@ contract ERC721ContractMetadata is
         _tokenBaseURI = newBaseURI;
 
         // Emit an event with the update.
-        emit BatchMetadataUpdate(0, _nextTokenId() - 1);
+        emit BatchMetadataUpdate(1, _nextTokenId() - 1);
     }
 
     /**
