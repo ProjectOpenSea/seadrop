@@ -79,7 +79,7 @@ contract ERC721ContractMetadata is
         _tokenBaseURI = newBaseURI;
 
         // Emit an event with the update.
-        emit BaseURIUpdated(newBaseURI);
+        emit BatchMetadataUpdate(0, _nextTokenId() - 1);
     }
 
     /**
@@ -100,19 +100,19 @@ contract ERC721ContractMetadata is
 
     /**
      * @notice Emit an event notifying metadata updates for
-     *         a range of token ids.
+     *         a range of token ids, according to EIP-4906.
      *
-     * @param startTokenId The start token id.
-     * @param endTokenId   The end token id.
+     * @param fromTokenId The start token id.
+     * @param toTokenId   The end token id.
      */
-    function emitBatchTokenURIUpdated(uint256 startTokenId, uint256 endTokenId)
+    function emitBatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId)
         external
     {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
         // Emit an event with the update.
-        emit TokenURIUpdated(startTokenId, endTokenId);
+        emit BatchMetadataUpdate(fromTokenId, toTokenId);
     }
 
     /**
@@ -285,6 +285,7 @@ contract ERC721ContractMetadata is
     {
         return
             interfaceId == type(IERC2981).interfaceId ||
+            interfaceId == 0x49064906 || // ERC-4906
             super.supportsInterface(interfaceId);
     }
 

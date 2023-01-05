@@ -27,11 +27,13 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     error RoyaltyAddressCannotBeZeroAddress();
 
     /**
-     * @dev Emit an event for full token metadata reveals/updates.
+     * @dev Emit an event for token metadata reveals/updates,
+     *      according to EIP-4906.
      *
-     * @param baseURI The base URI.
+     * @param _fromTokenId The start token id.
+     * @param _toTokenId   The end token id.
      */
-    event BaseURIUpdated(string baseURI);
+    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
     /**
      * @dev Emit an event when the URI for the collection-level metadata
@@ -54,18 +56,6 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      * @dev Emit an event when the royalties info is updated.
      */
     event RoyaltyInfoUpdated(address receiver, uint256 bps);
-
-    /**
-     * @dev Emit an event for partial reveals/updates.
-     *      Batch update implementation should be left to contract.
-     *
-     * @param startTokenId The start token id.
-     * @param endTokenId   The end token id.
-     */
-    event TokenURIUpdated(
-        uint256 indexed startTokenId,
-        uint256 indexed endTokenId
-    );
 
     /**
      * @notice A struct defining royalty info for the contract.
