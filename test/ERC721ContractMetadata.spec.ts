@@ -5,11 +5,13 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { ERC721PartnerSeaDrop } from "../typechain-types";
+import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
+import { whileImpersonating } from "./utils/impersonate";
 
 describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
+  let seadrop: ISeaDrop;
   let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
   let admin: Wallet;
@@ -30,12 +32,20 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
+    // Deploy SeaDrop to mint tokens
+    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
+    seadrop = await SeaDrop.deploy();
+
     // Deploy token
     const ERC721PartnerSeaDrop = await ethers.getContractFactory(
       "ERC721PartnerSeaDrop",
       owner
     );
-    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, []);
+    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
+      seadrop.address,
+    ]);
+
+    await token.connect(owner).setMaxSupply(5);
   });
 
   it("Should only let the owner set and get the base URI", async () => {
@@ -46,6 +56,19 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.be.revertedWith("OnlyOwner");
     expect(await token.baseURI()).to.equal("");
 
+    // it should not emit BatchMetadataUpdate when totalSupply is 0
+    await expect(
+      token.connect(owner).setBaseURI("http://example.com")
+    ).to.not.emit(token, "BatchMetadataUpdate");
+
+    // it should emit BatchMetadataUpdate when totalSupply is greater than 0
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 2);
+      }
+    );
     await expect(token.connect(owner).setBaseURI("http://example.com"))
       .to.emit(token, "BatchMetadataUpdate")
       .withArgs(1, await token.totalSupply());
@@ -67,17 +90,17 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should only let the owner set and get the max supply", async () => {
-    expect(await token.maxSupply()).to.equal(0);
+    expect(await token.maxSupply()).to.equal(5);
 
-    await expect(token.connect(admin).setMaxSupply(5)).to.be.revertedWith(
+    await expect(token.connect(admin).setMaxSupply(10)).to.be.revertedWith(
       "OnlyOwner"
     );
-    expect(await token.maxSupply()).to.equal(0);
-
-    await expect(token.connect(owner).setMaxSupply(5))
-      .to.emit(token, "MaxSupplyUpdated")
-      .withArgs(5);
     expect(await token.maxSupply()).to.equal(5);
+
+    await expect(token.connect(owner).setMaxSupply(25))
+      .to.emit(token, "MaxSupplyUpdated")
+      .withArgs(25);
+    expect(await token.maxSupply()).to.equal(25);
   });
 
   it("Should not let the owner set the max supply over 2**64", async () => {
