@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4;
 
-import { ConstructorInitializableUpgradeable } from "./ConstructorInitializableUpgradeable.sol";
+import {
+    ConstructorInitializableUpgradeable
+} from "./ConstructorInitializableUpgradeable.sol";
 import { TwoStepOwnableStorage } from "./TwoStepOwnableStorage.sol";
-import "../../openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import "../../../lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 /**
 @notice A two-step extension of Ownable, where the new owner must claim ownership of the contract after owner initiates transfer
 Owner can cancel the transfer at any point before the new owner claims ownership.
 Helpful in guarding against transferring ownership to an address that is unable to act as the Owner.
 */
-abstract contract TwoStepOwnableUpgradeable is Initializable, ConstructorInitializableUpgradeable {
+abstract contract TwoStepOwnableUpgradeable is
+    Initializable,
+    ConstructorInitializableUpgradeable
+{
     using TwoStepOwnableStorage for TwoStepOwnableStorage.Layout;
 
     event OwnershipTransferred(
@@ -44,11 +49,9 @@ abstract contract TwoStepOwnableUpgradeable is Initializable, ConstructorInitial
 
     ///@notice Initiate ownership transfer to newPotentialOwner. Note: new owner will have to manually acceptOwnership
     ///@param newPotentialOwner address of potential new owner
-    function transferOwnership(address newPotentialOwner)
-        public
-        virtual
-        onlyOwner
-    {
+    function transferOwnership(
+        address newPotentialOwner
+    ) public virtual onlyOwner {
         if (newPotentialOwner == address(0)) {
             revert NewOwnerIsZeroAddress();
         }

@@ -7,19 +7,19 @@ import {
 
 import {
     ERC721AUpgradeable
-} from "../../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
+} from "../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
 
 import {
     TwoStepOwnableUpgradeable
-} from "../lib/utility-contracts/src/TwoStepOwnableUpgradeable.sol";
+} from "../lib-upgradeable/utility-contracts/src/TwoStepOwnableUpgradeable.sol";
 
 import {
     IERC2981Upgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC2981Upgradeable.sol";
+} from "../lib/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC2981Upgradeable.sol";
 
 import {
     IERC165Upgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+} from "../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
 
 import {
     ERC721ContractMetadataStorage

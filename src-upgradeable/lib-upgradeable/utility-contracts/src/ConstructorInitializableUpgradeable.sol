@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4;
-import "../../openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import "../../../lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @author emo.eth
@@ -13,8 +13,11 @@ abstract contract ConstructorInitializableUpgradeable is Initializable {
         __ConstructorInitializable_init_unchained();
     }
 
-    function __ConstructorInitializable_init_unchained() internal onlyInitializing {
-    }
+    function __ConstructorInitializable_init_unchained()
+        internal
+        onlyInitializing
+    {}
+
     error AlreadyInitialized();
 
     modifier onlyConstructor() {

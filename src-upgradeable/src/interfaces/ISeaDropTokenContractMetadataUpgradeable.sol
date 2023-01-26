@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {
     IERC2981Upgradeable
-} from "../../../lib/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC2981Upgradeable.sol";
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC2981Upgradeable.sol";
 
 interface ISeaDropTokenContractMetadataUpgradeable is IERC2981Upgradeable {
     /**

@@ -14,10 +14,10 @@ import {
 
 import {
     TwoStepAdministeredUpgradeable
-} from "../lib/utility-contracts/src/TwoStepAdministeredUpgradeable.sol";
+} from "../lib-upgradeable/utility-contracts/src/TwoStepAdministeredUpgradeable.sol";
 import {
     TwoStepAdministeredStorage
-} from "../lib/utility-contracts/src/TwoStepAdministeredStorage.sol";
+} from "../lib-upgradeable/utility-contracts/src/TwoStepAdministeredStorage.sol";
 
 /**
  * @title  ERC721PartnerSeaDrop
