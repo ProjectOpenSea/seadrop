@@ -62,9 +62,10 @@ contract ERC721ContractMetadata is
     /**
      * @notice Deploy the token contract with its name and symbol.
      */
-    constructor(string memory name, string memory symbol)
-        ERC721A(name, symbol)
-    {}
+    constructor(
+        string memory name,
+        string memory symbol
+    ) ERC721A(name, symbol) {}
 
     /**
      * @notice Sets the base URI for the token metadata and emits an event.
@@ -79,7 +80,9 @@ contract ERC721ContractMetadata is
         _tokenBaseURI = newBaseURI;
 
         // Emit an event with the update.
-        emit BatchMetadataUpdate(1, _nextTokenId() - 1);
+        if (totalSupply() != 0) {
+            emit BatchMetadataUpdate(1, _nextTokenId() - 1);
+        }
     }
 
     /**
@@ -105,9 +108,10 @@ contract ERC721ContractMetadata is
      * @param fromTokenId The start token id.
      * @param toTokenId   The end token id.
      */
-    function emitBatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId)
-        external
-    {
+    function emitBatchMetadataUpdate(
+        uint256 fromTokenId,
+        uint256 toTokenId
+    ) external {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -125,7 +129,7 @@ contract ERC721ContractMetadata is
         _onlyOwnerOrSelf();
 
         // Ensure the max supply does not exceed the maximum value of uint64.
-        if (newMaxSupply > 2**64 - 1) {
+        if (newMaxSupply > 2 ** 64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
@@ -257,7 +261,7 @@ contract ERC721ContractMetadata is
      * @return royaltyAmount The royalty payment amount for _salePrice.
      */
     function royaltyInfo(
-        uint256, /* _tokenId */
+        uint256 /* _tokenId */,
         uint256 _salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
         // Put the royalty info on the stack for more efficient access.
@@ -276,13 +280,9 @@ contract ERC721ContractMetadata is
      *
      * @param interfaceId The interface id to check against.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(IERC165, ERC721A)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(IERC165, ERC721A) returns (bool) {
         return
             interfaceId == type(IERC2981).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906
