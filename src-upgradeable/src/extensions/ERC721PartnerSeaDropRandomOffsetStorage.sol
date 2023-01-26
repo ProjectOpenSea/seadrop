@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import {
     ERC721PartnerSeaDropRandomOffsetUpgradeable
 } from "./ERC721PartnerSeaDropRandomOffsetUpgradeable.sol";
+
 import {
     ERC721ContractMetadataUpgradeable
 } from "../ERC721ContractMetadataUpgradeable.sol";

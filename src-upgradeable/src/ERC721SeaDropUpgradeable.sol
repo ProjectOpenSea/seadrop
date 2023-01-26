@@ -29,11 +29,11 @@ import {
 
 import {
     IERC165Upgradeable
-} from "../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
 
 import {
     DefaultOperatorFiltererUpgradeable
-} from "../lib/operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
+} from "../../lib/operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 
 import { ERC721SeaDropStorage } from "./ERC721SeaDropStorage.sol";
 
