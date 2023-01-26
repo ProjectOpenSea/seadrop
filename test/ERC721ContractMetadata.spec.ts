@@ -4,10 +4,10 @@ import { ethers, network } from "hardhat";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
+import { whileImpersonating } from "./utils/impersonate";
 
 import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
-import { whileImpersonating } from "./utils/impersonate";
 
 describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
