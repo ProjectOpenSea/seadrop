@@ -48,7 +48,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await expect(token.connect(owner).setBaseURI("http://example.com"))
       .to.emit(token, "BatchMetadataUpdate")
-      .withArgs(0, await token.totalSupply());
+      .withArgs(1, await token.totalSupply());
     expect(await token.baseURI()).to.equal("http://example.com");
   });
 
