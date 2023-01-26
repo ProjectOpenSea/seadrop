@@ -10,6 +10,7 @@
     "build": "hardhat compile --config ./hardhat.config.ts",
     "clean": "hardhat clean; hardhat clean --config ./hardhat-coverage.config.ts; forge clean; rm -rf coverage coverage.json hh-cache hh-cache-coverage",
     "test": "hardhat test --config ./hardhat.config.ts",
+    "test:upgradeable": "hardhat test --config ./src-upgradeable/hardhat.config.ts",
     "test:forge": "forge test -vvv",
     "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",
     "coverage": "rm -rf temp-src-coverage; hardhat preprocess --dest temp-src-coverage; hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js",
