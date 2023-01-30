@@ -213,7 +213,6 @@ contract ERC721SeaDropUpgradeable is
      */
     function mintSeaDrop(address minter, uint256 quantity)
         external
-        payable
         virtual
         override
         nonReentrant

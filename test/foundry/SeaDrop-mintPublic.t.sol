@@ -216,13 +216,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         public
         validateArgs(args)
     {
-        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(token));
-
-        uint256 mintValue = args.numMints * publicDrop.mintPrice;
-
-        vm.deal(args.minter, 100 ether);
         vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
-
-        token.mintSeaDrop{ value: mintValue }(args.minter, args.numMints);
+        token.mintSeaDrop(args.minter, args.numMints);
     }
 }

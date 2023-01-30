@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {
     ISeaDropTokenContractMetadataUpgradeable
-} from "../interfaces/ISeaDropTokenContractMetadataUpgradeable.sol";
+} from "./ISeaDropTokenContractMetadataUpgradeable.sol";
 
 import {
     AllowListData,
@@ -52,7 +52,7 @@ interface INonFungibleSeaDropTokenUpgradeable is
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
      */
-    function mintSeaDrop(address minter, uint256 quantity) external payable;
+    function mintSeaDrop(address minter, uint256 quantity) external;
 
     /**
      * @notice Returns a set of mint stats for the address.
