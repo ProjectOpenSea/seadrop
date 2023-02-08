@@ -12,7 +12,7 @@ import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
  * @notice ERC721SeaDropBurnable is a token contract that extends
  *         ERC721SeaDrop to additionally provide a burn function.
  */
-contract ERC721ERC721SeaDropSeaDropBurnable is ERC721SeaDrop {
+contract ERC721SeaDropBurnable is ERC721SeaDrop {
     /**
      * @notice Deploy the token contract with its name, symbol,
      *         and allowed SeaDrop addresses.
