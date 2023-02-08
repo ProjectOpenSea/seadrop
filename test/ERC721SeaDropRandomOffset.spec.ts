@@ -6,10 +6,7 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type {
-  ERC721SeaDropRandomOffset,
-  ISeaDrop,
-} from "../typechain-types";
+import type { ERC721SeaDropRandomOffset, ISeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
@@ -48,11 +45,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
       "ERC721SeaDropRandomOffset",
       owner
     );
-    token = await ERC721SeaDropRandomOffset.deploy(
-      "",
-      "",
-      [seadrop.address]
-    );
+    token = await ERC721SeaDropRandomOffset.deploy("", "", [seadrop.address]);
   });
 
   it("Should only let the owner call setRandomOffset once the max supply is reached", async () => {

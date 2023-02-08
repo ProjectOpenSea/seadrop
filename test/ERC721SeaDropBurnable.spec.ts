@@ -6,10 +6,7 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type {
-  ERC721SeaDropBurnable,
-  ISeaDrop,
-} from "../typechain-types";
+import type { ERC721SeaDropBurnable, ISeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
@@ -50,9 +47,7 @@ describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
       "ERC721SeaDropBurnable",
       owner
     );
-    token = await ERC721SeaDropBurnable.deploy("", "", [
-      seadrop.address,
-    ]);
+    token = await ERC721SeaDropBurnable.deploy("", "", [seadrop.address]);
   });
 
   it("Should only let the token owner burn their own token", async () => {
