@@ -42,7 +42,7 @@ import {
 } from "./ERC721ContractMetadataStorage.sol";
 
 /**
- * @title  ERC721SeaDrop
+ * @title  ERC721SeaDropUpgradeable
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)

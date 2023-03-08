@@ -27,11 +27,6 @@ contract TestSeaDrop is TestHelper {
     SignedMintValidationParams updateSigned;
     SignedMintValidationParams removeSigned;
 
-    struct FuzzSelector {
-        address targetAddress;
-        bytes4[] targetSelectors;
-    }
-
     function setUp() public {
         // Deploy the ERC721PartnerSeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
