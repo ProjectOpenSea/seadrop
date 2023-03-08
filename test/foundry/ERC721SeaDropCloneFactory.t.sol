@@ -38,4 +38,11 @@ contract ERC721SeaDropCloneFactoryTest is Test {
             address(1234)
         );
     }
+
+    function testClone_Reinitialize() public {
+        address clone = factory.createClone("name", "symbol");
+        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(clone);
+        vm.expectRevert("Initializable: contract is already initialized");
+        token.initialize("name", "symbol", new address[](0), address(this));
+    }
 }
