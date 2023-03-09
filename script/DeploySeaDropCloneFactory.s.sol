@@ -11,10 +11,10 @@ contract DeploySeaDropCloneFactory is BaseCreate2Script {
     function run() public {
         setUp();
         vm.createSelectFork("goerli");
-        emit log(keccak256(type(ERC721SeaDropCloneFactory).creationCode));
-        // bytes32 salt = 0x000000000000000000000000000000000000000021f603d672480b0267b5cad3;
-        // address deployed =
-        //     _immutableCreate2IfNotDeployed(address(deployer), salt, type(ERC721SeaDropCloneFactory).creationCode);
-        // require(deployed == 0x0000000092A8aC080B3100419c79139bEe23194F, "did not deploy to correct address");
+        // emit log(keccak256(type(ERC721SeaDropCloneFactory).creationCode));
+        bytes32 salt = 0x000000000000000000000000000000000000000028a4b5c923003304f4352aab;
+        address deployed =
+            _immutableCreate2IfNotDeployed(address(deployer), salt, type(ERC721SeaDropCloneFactory).creationCode);
+        require(deployed == 0x00000000b8F8F18B708C8f7AA10f9EE7Ea88049a, "did not deploy to correct address");
     }
 }
