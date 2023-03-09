@@ -1,4 +1,5 @@
 ERC721A/=lib/ERC721A/contracts/
+ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/contracts/
 ds-test/=lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 murky/=lib/murky/src/
