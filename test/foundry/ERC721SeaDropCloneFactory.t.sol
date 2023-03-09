@@ -5,7 +5,10 @@ import { Test } from "forge-std/Test.sol";
 import {
     ERC721SeaDropCloneFactory
 } from "../../src/ERC721SeaDropCloneFactory.sol";
-import { ERC721SeaDropCloneable } from "../../src/ERC721SeaDropCloneable.sol";
+import {
+    ERC721SeaDropCloneable,
+    ERC721SeaDrop
+} from "../../src/ERC721SeaDropCloneable.sol";
 import { SeaDrop } from "../../src/SeaDrop.sol";
 
 contract ERC721SeaDropCloneFactoryTest is Test {
@@ -19,9 +22,13 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         factory.createClone("name", "symbol");
     }
 
+    event SeaDropTokenDeployed();
+
     function testClone1() public {
         vm.createSelectFork(getChain("mainnet").rpcUrl);
         factory = new ERC721SeaDropCloneFactory();
+        vm.expectEmit(false, false, false, false);
+        emit SeaDropTokenDeployed();
         address clone = factory.createClone("name", "symbol");
         ERC721SeaDropCloneable token = ERC721SeaDropCloneable(clone);
 

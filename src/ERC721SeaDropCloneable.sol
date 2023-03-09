@@ -31,6 +31,7 @@ contract ERC721SeaDropCloneable is
         _symbol = __symbol;
         _updateAllowedSeaDrop(allowedSeaDrop);
         _transferOwnership(initialOwner);
+        emit SeaDropTokenDeployed();
     }
 
     function name() public view virtual override returns (string memory) {
