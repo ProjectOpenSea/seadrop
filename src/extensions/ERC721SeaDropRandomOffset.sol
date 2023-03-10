@@ -67,11 +67,10 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
 
         // block.difficulty returns PREVRANDAO on Ethereum post-merge
         // NOTE: do not use this on other chains
-        // randomOffset returns between 1 and MAX_SUPPLY
-        randomOffset =
-            (uint256(keccak256(abi.encode(block.difficulty))) %
-                (maxSupply - 1)) +
-            1;
+        // randomOffset returns between 0 and MAX_SUPPLY - 1
+        randomOffset = uint256(
+            keccak256(abi.encode(block.difficulty))
+        ) % maxSupply;
 
         // Set revealed to true.
         revealed = _REVEALED_TRUE;

@@ -44,6 +44,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       blockGasLimit: 30_000_000,
       throwOnCallFailures: false,
+      hardfork: "merge",
     },
     verificationNetwork: {
       url: process.env.NETWORK_RPC ?? "",

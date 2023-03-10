@@ -5,6 +5,7 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
+import { getPrevRandaoForOffset, setPrevRandao } from "./utils/prevrandao";
 
 import type { ERC721SeaDropRandomOffset, ISeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
@@ -75,6 +76,37 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     );
 
     expect(await token.randomOffset()).to.not.equal(ethers.constants.Zero);
+  });
+
+  it("Should be able to offset the token IDs by any possible number", async () => {
+    const baseUri = "http://example.com/";
+    const startTokenId = 1;
+    await token.setMaxSupply(30);
+
+    for (let i = 0; i < 30; i++) {
+      const snapshotId = await network.provider.send("evm_snapshot");
+      await token.setBaseURI(baseUri);
+
+      await whileImpersonating(
+        seadrop.address,
+        provider,
+        async (impersonatedSigner) => {
+          await token
+            .connect(impersonatedSigner)
+            .mintSeaDrop(minter.address, 30);
+        }
+      );
+      const prevRandao = getPrevRandaoForOffset(i, 30);
+      await setPrevRandao(prevRandao, provider);
+      await token.connect(owner).setRandomOffset();
+      // The next test tests this more in depth, we just need one NFT per iteration here.
+      const tokenId = 12;
+      expect(await token.tokenURI(tokenId)).to.equal(
+        `${baseUri}${((tokenId + i) % 30) + startTokenId}`
+      );
+
+      await network.provider.send("evm_revert", [snapshotId]);
+    }
   });
 
   it("Should return the tokenURI correctly offset by randomOffset", async () => {
