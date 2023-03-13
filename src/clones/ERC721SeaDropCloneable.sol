@@ -25,7 +25,9 @@ import {
 
 import { ERC721ACloneable } from "./ERC721ACloneable.sol";
 
-import { ReentrancyGuardUpgradeable } from "./ReentrancyGuardUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import {
     IERC165

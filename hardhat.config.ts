@@ -21,10 +21,6 @@ function getRemappings() {
     .filter(Boolean) // remove empty lines
     .map((line: string) => line.trim().split("="));
 }
-const remappingLineExceptions = [
-  // OperatorFilterUpgradeable.sol
-  'import {Initializable} from "../../../../lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";',
-];
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
@@ -69,9 +65,6 @@ const config: HardhatUserConfig = {
         if (line.match(/ from "/i)) {
           getRemappings().forEach(([find, replace]: string[]) => {
             if (line.match(find)) {
-              // Special case exceptions.
-              if (remappingLineExceptions.includes(line)) return;
-
               line = line.replace(find, replace);
             }
           });

@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import { ERC721SeaDropCloneable } from "./ERC721SeaDropCloneable.sol";
+
 import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 
 contract ERC721SeaDropCloneFactory {

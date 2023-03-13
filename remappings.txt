@@ -4,6 +4,7 @@ ds-test/=lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 murky/=lib/murky/src/
 openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 operator-filter-registry/=lib/operator-filter-registry/src/
 seadrop/=src/
 solmate/=lib/solmate/src/

@@ -8,7 +8,7 @@ import { IERC721A } from "ERC721A/IERC721A.sol";
 
 import {
     Initializable
-} from "openzeppelin-contracts/proxy/utils/Initializable.sol";
+} from "openzeppelin-contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
  * @dev Interface of ERC721 token receiver.
