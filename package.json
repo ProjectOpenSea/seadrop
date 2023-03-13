@@ -30,8 +30,7 @@
   },
   "dependencies": {
     "ethers": "^5.7.0",
-    "hardhat": "^2.11.1",
-    "hardhat-contract-sizer": "^2.8.0"
+    "hardhat": "^2.11.1"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.1.1",
@@ -54,6 +53,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.0.1",
     "ethereum-waffle": "^3.4.4",
+    "hardhat-contract-sizer": "^2.8.0",
     "hardhat-gas-reporter": "^1.0.9",
     "hardhat-preprocessor": "^0.1.5",
     "husky": "^8.0.1",
