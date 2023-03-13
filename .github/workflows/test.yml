@@ -89,6 +89,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: hardhat
+          parallel: true
 
   forge-test:
     name: Run Forge Tests
@@ -140,3 +141,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./lcov.info
           flag-name: foundry
+          parallel: true
+
+coverage-finish:
+  needs: [hardhat-coverage, forge-coverage]
+  if: ${{ always() }}
+  runs-on: ubuntu-latest
+  steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        parallel-finished: true
