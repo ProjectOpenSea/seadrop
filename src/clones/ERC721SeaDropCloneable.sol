@@ -32,8 +32,8 @@ import {
 } from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 import {
-    DefaultOperatorFilterer
-} from "operator-filter-registry/DefaultOperatorFilterer.sol";
+    DefaultOperatorFiltererUpgradeable
+} from "operator-filter-registry/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 
 /**
  * @title  ERC721SeaDrop
@@ -48,7 +48,7 @@ contract ERC721SeaDropCloneable is
     INonFungibleSeaDropToken,
     ERC721SeaDropStructsErrorsAndEvents,
     ReentrancyGuardUpgradeable,
-    DefaultOperatorFilterer
+    DefaultOperatorFiltererUpgradeable
 {
     /// @notice Track the allowed SeaDrop addresses.
     mapping(address => bool) internal _allowedSeaDrop;
@@ -81,6 +81,7 @@ contract ERC721SeaDropCloneable is
     ) public initializer {
         __ERC721ACloneable__init(__name, __symbol);
         __ReentrancyGuard_init();
+        __DefaultOperatorFilterer_init();
         _updateAllowedSeaDrop(allowedSeaDrop);
         _transferOwnership(initialOwner);
         emit SeaDropTokenDeployed();
