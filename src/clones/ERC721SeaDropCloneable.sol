@@ -1,23 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ERC721ContractMetadataCloneable, ISeaDropTokenContractMetadata} from "./ERC721ContractMetadataCloneable.sol";
+import {
+    ERC721ContractMetadataCloneable,
+    ISeaDropTokenContractMetadata
+} from "./ERC721ContractMetadataCloneable.sol";
 
-import {INonFungibleSeaDropToken} from "../interfaces/INonFungibleSeaDropToken.sol";
+import {
+    INonFungibleSeaDropToken
+} from "../interfaces/INonFungibleSeaDropToken.sol";
 
-import {ISeaDrop} from "../interfaces/ISeaDrop.sol";
+import { ISeaDrop } from "../interfaces/ISeaDrop.sol";
 
-import {AllowListData, PublicDrop, TokenGatedDropStage, SignedMintValidationParams} from "../lib/SeaDropStructs.sol";
+import {
+    AllowListData,
+    PublicDrop,
+    TokenGatedDropStage,
+    SignedMintValidationParams
+} from "../lib/SeaDropStructs.sol";
 
-import {ERC721SeaDropStructsErrorsAndEvents} from "../lib/ERC721SeaDropStructsErrorsAndEvents.sol";
+import {
+    ERC721SeaDropStructsErrorsAndEvents
+} from "../lib/ERC721SeaDropStructsErrorsAndEvents.sol";
 
-import {ERC721ACloneable} from "./ERC721ACloneable.sol";
+import { ERC721ACloneable } from "./ERC721ACloneable.sol";
 
-import {ReentrancyGuardUpgradeable} from "./ReentrancyGuardUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "./ReentrancyGuardUpgradeable.sol";
 
-import {IERC165} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
+import {
+    IERC165
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
-import {DefaultOperatorFilterer} from "operator-filter-registry/DefaultOperatorFilterer.sol";
+import {
+    DefaultOperatorFilterer
+} from "operator-filter-registry/DefaultOperatorFilterer.sol";
 
 /**
  * @title  ERC721SeaDrop
@@ -76,7 +92,12 @@ contract ERC721SeaDropCloneable is
      *
      * @param allowedSeaDrop The allowed SeaDrop addresses.
      */
-    function updateAllowedSeaDrop(address[] calldata allowedSeaDrop) external virtual override onlyOwner {
+    function updateAllowedSeaDrop(address[] calldata allowedSeaDrop)
+        external
+        virtual
+        override
+        onlyOwner
+    {
         _updateAllowedSeaDrop(allowedSeaDrop);
     }
 
@@ -87,11 +108,12 @@ contract ERC721SeaDropCloneable is
      */
     function _updateAllowedSeaDrop(address[] calldata allowedSeaDrop) internal {
         // Put the length on the stack for more efficient access.
-        uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop.length;
+        uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
+            .length;
         uint256 allowedSeaDropLength = allowedSeaDrop.length;
 
         // Reset the old mapping.
-        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength;) {
+        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength; ) {
             _allowedSeaDrop[_enumeratedAllowedSeaDrop[i]] = false;
             unchecked {
                 ++i;
@@ -99,7 +121,7 @@ contract ERC721SeaDropCloneable is
         }
 
         // Set the new mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength;) {
+        for (uint256 i = 0; i < allowedSeaDropLength; ) {
             _allowedSeaDrop[allowedSeaDrop[i]] = true;
             unchecked {
                 ++i;
@@ -146,13 +168,21 @@ contract ERC721SeaDropCloneable is
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
      */
-    function mintSeaDrop(address minter, uint256 quantity) external virtual override nonReentrant {
+    function mintSeaDrop(address minter, uint256 quantity)
+        external
+        virtual
+        override
+        nonReentrant
+    {
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(msg.sender);
 
         // Extra safety check to ensure the max supply is not exceeded.
         if (_totalMinted() + quantity > maxSupply()) {
-            revert MintQuantityExceedsMaxSupply(_totalMinted() + quantity, maxSupply());
+            revert MintQuantityExceedsMaxSupply(
+                _totalMinted() + quantity,
+                maxSupply()
+            );
         }
 
         // Mint the quantity of tokens to the minter.
@@ -166,7 +196,10 @@ contract ERC721SeaDropCloneable is
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
      */
-    function updatePublicDrop(address seaDropImpl, PublicDrop calldata publicDrop) external virtual override {
+    function updatePublicDrop(
+        address seaDropImpl,
+        PublicDrop calldata publicDrop
+    ) external virtual override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -184,7 +217,10 @@ contract ERC721SeaDropCloneable is
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
      */
-    function updateAllowList(address seaDropImpl, AllowListData calldata allowListData) external virtual override {
+    function updateAllowList(
+        address seaDropImpl,
+        AllowListData calldata allowListData
+    ) external virtual override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -211,11 +247,11 @@ contract ERC721SeaDropCloneable is
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
-    function updateTokenGatedDrop(address seaDropImpl, address allowedNftToken, TokenGatedDropStage calldata dropStage)
-        external
-        virtual
-        override
-    {
+    function updateTokenGatedDrop(
+        address seaDropImpl,
+        address allowedNftToken,
+        TokenGatedDropStage calldata dropStage
+    ) external virtual override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -233,7 +269,11 @@ contract ERC721SeaDropCloneable is
      * @param seaDropImpl The allowed SeaDrop contract.
      * @param dropURI     The new drop URI.
      */
-    function updateDropURI(address seaDropImpl, string calldata dropURI) external virtual override {
+    function updateDropURI(address seaDropImpl, string calldata dropURI)
+        external
+        virtual
+        override
+    {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -252,7 +292,10 @@ contract ERC721SeaDropCloneable is
      * @param seaDropImpl   The allowed SeaDrop contract.
      * @param payoutAddress The new payout address.
      */
-    function updateCreatorPayoutAddress(address seaDropImpl, address payoutAddress) external {
+    function updateCreatorPayoutAddress(
+        address seaDropImpl,
+        address payoutAddress
+    ) external {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -272,7 +315,11 @@ contract ERC721SeaDropCloneable is
      * @param feeRecipient The new fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
-    function updateAllowedFeeRecipient(address seaDropImpl, address feeRecipient, bool allowed) external virtual {
+    function updateAllowedFeeRecipient(
+        address seaDropImpl,
+        address feeRecipient,
+        bool allowed
+    ) external virtual {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -305,7 +352,10 @@ contract ERC721SeaDropCloneable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the signer.
-        ISeaDrop(seaDropImpl).updateSignedMintValidationParams(signer, signedMintValidationParams);
+        ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
+            signer,
+            signedMintValidationParams
+        );
     }
 
     /**
@@ -316,7 +366,11 @@ contract ERC721SeaDropCloneable is
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
-    function updatePayer(address seaDropImpl, address payer, bool allowed) external virtual override {
+    function updatePayer(
+        address seaDropImpl,
+        address payer,
+        bool allowed
+    ) external virtual override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -342,7 +396,11 @@ contract ERC721SeaDropCloneable is
         external
         view
         override
-        returns (uint256 minterNumMinted, uint256 currentTotalSupply, uint256 maxSupply)
+        returns (
+            uint256 minterNumMinted,
+            uint256 currentTotalSupply,
+            uint256 maxSupply
+        )
     {
         minterNumMinted = _numberMinted(minter);
         currentTotalSupply = _totalMinted();
@@ -361,13 +419,14 @@ contract ERC721SeaDropCloneable is
         override(IERC165, ERC721ContractMetadataCloneable)
         returns (bool)
     {
-        return interfaceId == type(INonFungibleSeaDropToken).interfaceId
-            || interfaceId == type(ISeaDropTokenContractMetadata).interfaceId
-        // ERC721ContractMetadata returns supportsInterface true for
-        //     EIP-2981
-        // ERC721A returns supportsInterface true for
-        //     ERC165, ERC721, ERC721Metadata
-        || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
+            interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
+            // ERC721ContractMetadata returns supportsInterface true for
+            //     EIP-2981
+            // ERC721A returns supportsInterface true for
+            //     ERC165, ERC721, ERC721Metadata
+            super.supportsInterface(interfaceId);
     }
 
     /**
@@ -382,7 +441,11 @@ contract ERC721SeaDropCloneable is
      *
      * Emits an {ApprovalForAll} event.
      */
-    function setApprovalForAll(address operator, bool approved) public override onlyAllowedOperatorApproval(operator) {
+    function setApprovalForAll(address operator, bool approved)
+        public
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
         super.setApprovalForAll(operator, approved);
     }
 
@@ -401,7 +464,11 @@ contract ERC721SeaDropCloneable is
      *
      * Emits an {Approval} event.
      */
-    function approve(address operator, uint256 tokenId) public override onlyAllowedOperatorApproval(operator) {
+    function approve(address operator, uint256 tokenId)
+        public
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
         super.approve(operator, tokenId);
     }
 
@@ -419,14 +486,22 @@ contract ERC721SeaDropCloneable is
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 tokenId) public override onlyAllowedOperator(from) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
     /**
      * @dev Equivalent to `safeTransferFrom(from, to, tokenId, '')`.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override onlyAllowedOperator(from) {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -446,11 +521,12 @@ contract ERC721SeaDropCloneable is
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
-        public
-        override
-        onlyAllowedOperator(from)
-    {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
@@ -463,7 +539,10 @@ contract ERC721SeaDropCloneable is
      *
      * @param config The configuration struct.
      */
-    function multiConfigure(MultiConfigureStruct calldata config) external onlyOwner {
+    function multiConfigure(MultiConfigureStruct calldata config)
+        external
+        onlyOwner
+    {
         if (config.maxSupply > 0) {
             this.setMaxSupply(config.maxSupply);
         }
@@ -473,7 +552,11 @@ contract ERC721SeaDropCloneable is
         if (bytes(config.contractURI).length != 0) {
             this.setContractURI(config.contractURI);
         }
-        if (_cast(config.publicDrop.startTime != 0) | _cast(config.publicDrop.endTime != 0) == 1) {
+        if (
+            _cast(config.publicDrop.startTime != 0) |
+                _cast(config.publicDrop.endTime != 0) ==
+            1
+        ) {
             this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
         }
         if (bytes(config.dropURI).length != 0) {
@@ -483,50 +566,74 @@ contract ERC721SeaDropCloneable is
             this.updateAllowList(config.seaDropImpl, config.allowListData);
         }
         if (config.creatorPayoutAddress != address(0)) {
-            this.updateCreatorPayoutAddress(config.seaDropImpl, config.creatorPayoutAddress);
+            this.updateCreatorPayoutAddress(
+                config.seaDropImpl,
+                config.creatorPayoutAddress
+            );
         }
         if (config.provenanceHash != bytes32(0)) {
             this.setProvenanceHash(config.provenanceHash);
         }
         if (config.allowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.allowedFeeRecipients.length;) {
-                this.updateAllowedFeeRecipient(config.seaDropImpl, config.allowedFeeRecipients[i], true);
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.allowedFeeRecipients[i],
+                    true
+                );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.disallowedFeeRecipients.length;) {
-                this.updateAllowedFeeRecipient(config.seaDropImpl, config.disallowedFeeRecipients[i], false);
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl,
+                    config.disallowedFeeRecipients[i],
+                    false
+                );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.allowedPayers.length > 0) {
-            for (uint256 i = 0; i < config.allowedPayers.length;) {
-                this.updatePayer(config.seaDropImpl, config.allowedPayers[i], true);
+            for (uint256 i = 0; i < config.allowedPayers.length; ) {
+                this.updatePayer(
+                    config.seaDropImpl,
+                    config.allowedPayers[i],
+                    true
+                );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedPayers.length > 0) {
-            for (uint256 i = 0; i < config.disallowedPayers.length;) {
-                this.updatePayer(config.seaDropImpl, config.disallowedPayers[i], false);
+            for (uint256 i = 0; i < config.disallowedPayers.length; ) {
+                this.updatePayer(
+                    config.seaDropImpl,
+                    config.disallowedPayers[i],
+                    false
+                );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.tokenGatedDropStages.length > 0) {
-            if (config.tokenGatedDropStages.length != config.tokenGatedAllowedNftTokens.length) {
+            if (
+                config.tokenGatedDropStages.length !=
+                config.tokenGatedAllowedNftTokens.length
+            ) {
                 revert TokenGatedMismatch();
             }
-            for (uint256 i = 0; i < config.tokenGatedDropStages.length;) {
+            for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
                 this.updateTokenGatedDrop(
-                    config.seaDropImpl, config.tokenGatedAllowedNftTokens[i], config.tokenGatedDropStages[i]
+                    config.seaDropImpl,
+                    config.tokenGatedAllowedNftTokens[i],
+                    config.tokenGatedDropStages[i]
                 );
                 unchecked {
                     ++i;
@@ -534,10 +641,16 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.disallowedTokenGatedAllowedNftTokens.length > 0) {
-            for (uint256 i = 0; i < config.disallowedTokenGatedAllowedNftTokens.length;) {
+            for (
+                uint256 i = 0;
+                i < config.disallowedTokenGatedAllowedNftTokens.length;
+
+            ) {
                 TokenGatedDropStage memory emptyStage;
                 this.updateTokenGatedDrop(
-                    config.seaDropImpl, config.disallowedTokenGatedAllowedNftTokens[i], emptyStage
+                    config.seaDropImpl,
+                    config.disallowedTokenGatedAllowedNftTokens[i],
+                    emptyStage
                 );
                 unchecked {
                     ++i;
@@ -545,12 +658,21 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.signedMintValidationParams.length > 0) {
-            if (config.signedMintValidationParams.length != config.signers.length) {
+            if (
+                config.signedMintValidationParams.length !=
+                config.signers.length
+            ) {
                 revert SignersMismatch();
             }
-            for (uint256 i = 0; i < config.signedMintValidationParams.length;) {
+            for (
+                uint256 i = 0;
+                i < config.signedMintValidationParams.length;
+
+            ) {
                 this.updateSignedMintValidationParams(
-                    config.seaDropImpl, config.signers[i], config.signedMintValidationParams[i]
+                    config.seaDropImpl,
+                    config.signers[i],
+                    config.signedMintValidationParams[i]
                 );
                 unchecked {
                     ++i;
@@ -558,9 +680,13 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.disallowedSigners.length > 0) {
-            for (uint256 i = 0; i < config.disallowedSigners.length;) {
+            for (uint256 i = 0; i < config.disallowedSigners.length; ) {
                 SignedMintValidationParams memory emptyParams;
-                this.updateSignedMintValidationParams(config.seaDropImpl, config.disallowedSigners[i], emptyParams);
+                this.updateSignedMintValidationParams(
+                    config.seaDropImpl,
+                    config.disallowedSigners[i],
+                    emptyParams
+                );
                 unchecked {
                     ++i;
                 }

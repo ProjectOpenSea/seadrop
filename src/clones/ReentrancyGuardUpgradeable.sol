@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import {ReentrancyGuardStorage} from "./ReentrancyGuardStorage.sol";
-import {Initializable} from "openzeppelin-contracts/proxy/utils/Initializable.sol";
+import { ReentrancyGuardStorage } from "./ReentrancyGuardStorage.sol";
+import {
+    Initializable
+} from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 
 /// @notice Gas optimized reentrancy protection for smart contracts.
 /// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/ReentrancyGuard.sol)

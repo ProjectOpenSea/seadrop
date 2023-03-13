@@ -14,9 +14,12 @@ import {
  * @dev Interface of ERC721 token receiver.
  */
 interface ERC721A__IERC721Receiver {
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
-        external
-        returns (bytes4);
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
 }
 
 /**
@@ -138,7 +141,10 @@ contract ERC721ACloneable is IERC721A, Initializable {
     //                          CONSTRUCTOR
     // =============================================================
 
-    function __ERC721ACloneable__init(string memory name_, string memory symbol_) internal onlyInitializing {
+    function __ERC721ACloneable__init(
+        string memory name_,
+        string memory symbol_
+    ) internal onlyInitializing {
         _name = name_;
         _symbol = symbol_;
         _currentIndex = _startTokenId();
@@ -201,7 +207,13 @@ contract ERC721ACloneable is IERC721A, Initializable {
     /**
      * @dev Returns the number of tokens in `owner`'s account.
      */
-    function balanceOf(address owner) public view virtual override returns (uint256) {
+    function balanceOf(address owner)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         if (owner == address(0)) revert BalanceQueryForZeroAddress();
         return _packedAddressData[owner] & _BITMASK_ADDRESS_DATA_ENTRY;
     }
@@ -210,14 +222,18 @@ contract ERC721ACloneable is IERC721A, Initializable {
      * Returns the number of tokens minted by `owner`.
      */
     function _numberMinted(address owner) internal view returns (uint256) {
-        return (_packedAddressData[owner] >> _BITPOS_NUMBER_MINTED) & _BITMASK_ADDRESS_DATA_ENTRY;
+        return
+            (_packedAddressData[owner] >> _BITPOS_NUMBER_MINTED) &
+            _BITMASK_ADDRESS_DATA_ENTRY;
     }
 
     /**
      * Returns the number of tokens burned by or on behalf of `owner`.
      */
     function _numberBurned(address owner) internal view returns (uint256) {
-        return (_packedAddressData[owner] >> _BITPOS_NUMBER_BURNED) & _BITMASK_ADDRESS_DATA_ENTRY;
+        return
+            (_packedAddressData[owner] >> _BITPOS_NUMBER_BURNED) &
+            _BITMASK_ADDRESS_DATA_ENTRY;
     }
 
     /**
@@ -238,7 +254,9 @@ contract ERC721ACloneable is IERC721A, Initializable {
         assembly {
             auxCasted := aux
         }
-        packed = (packed & _BITMASK_AUX_COMPLEMENT) | (auxCasted << _BITPOS_AUX);
+        packed =
+            (packed & _BITMASK_AUX_COMPLEMENT) |
+            (auxCasted << _BITPOS_AUX);
         _packedAddressData[owner] = packed;
     }
 
@@ -254,14 +272,21 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * This function call must use less than 30000 gas.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
         // The interface IDs are constants representing the first 4 bytes
         // of the XOR of all function selectors in the interface.
         // See: [ERC165](https://eips.ethereum.org/EIPS/eip-165)
         // (e.g. `bytes4(i.functionA.selector ^ i.functionB.selector ^ ...)`)
-        return interfaceId == 0x01ffc9a7 // ERC165 interface ID for ERC165.
-            || interfaceId == 0x80ac58cd // ERC165 interface ID for ERC721.
-            || interfaceId == 0x5b5e139f; // ERC165 interface ID for ERC721Metadata.
+        return
+            interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165.
+            interfaceId == 0x80ac58cd || // ERC165 interface ID for ERC721.
+            interfaceId == 0x5b5e139f; // ERC165 interface ID for ERC721Metadata.
     }
 
     // =============================================================
@@ -285,11 +310,20 @@ contract ERC721ACloneable is IERC721A, Initializable {
     /**
      * @dev Returns the Uniform Resource Identifier (URI) for `tokenId` token.
      */
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
 
         string memory baseURI = _baseURI();
-        return bytes(baseURI).length != 0 ? string(abi.encodePacked(baseURI, _toString(tokenId))) : "";
+        return
+            bytes(baseURI).length != 0
+                ? string(abi.encodePacked(baseURI, _toString(tokenId)))
+                : "";
     }
 
     /**
@@ -312,7 +346,13 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * - `tokenId` must exist.
      */
-    function ownerOf(uint256 tokenId) public view virtual override returns (address) {
+    function ownerOf(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (address)
+    {
         return address(uint160(_packedOwnershipOf(tokenId)));
     }
 
@@ -320,14 +360,24 @@ contract ERC721ACloneable is IERC721A, Initializable {
      * @dev Gas spent here starts off proportional to the maximum mint batch size.
      * It gradually moves to O(1) as tokens get transferred around over time.
      */
-    function _ownershipOf(uint256 tokenId) internal view virtual returns (TokenOwnership memory) {
+    function _ownershipOf(uint256 tokenId)
+        internal
+        view
+        virtual
+        returns (TokenOwnership memory)
+    {
         return _unpackedOwnership(_packedOwnershipOf(tokenId));
     }
 
     /**
      * @dev Returns the unpacked `TokenOwnership` struct at `index`.
      */
-    function _ownershipAt(uint256 index) internal view virtual returns (TokenOwnership memory) {
+    function _ownershipAt(uint256 index)
+        internal
+        view
+        virtual
+        returns (TokenOwnership memory)
+    {
         return _unpackedOwnership(_packedOwnerships[index]);
     }
 
@@ -343,7 +393,11 @@ contract ERC721ACloneable is IERC721A, Initializable {
     /**
      * Returns the packed ownership data of `tokenId`.
      */
-    function _packedOwnershipOf(uint256 tokenId) private view returns (uint256) {
+    function _packedOwnershipOf(uint256 tokenId)
+        private
+        view
+        returns (uint256)
+    {
         uint256 curr = tokenId;
 
         unchecked {
@@ -375,7 +429,11 @@ contract ERC721ACloneable is IERC721A, Initializable {
     /**
      * @dev Returns the unpacked `TokenOwnership` struct from `packed`.
      */
-    function _unpackedOwnership(uint256 packed) private pure returns (TokenOwnership memory ownership) {
+    function _unpackedOwnership(uint256 packed)
+        private
+        pure
+        returns (TokenOwnership memory ownership)
+    {
         ownership.addr = address(uint160(packed));
         ownership.startTimestamp = uint64(packed >> _BITPOS_START_TIMESTAMP);
         ownership.burned = packed & _BITMASK_BURNED != 0;
@@ -385,19 +443,30 @@ contract ERC721ACloneable is IERC721A, Initializable {
     /**
      * @dev Packs ownership data into a single uint256.
      */
-    function _packOwnershipData(address owner, uint256 flags) private view returns (uint256 result) {
+    function _packOwnershipData(address owner, uint256 flags)
+        private
+        view
+        returns (uint256 result)
+    {
         assembly {
             // Mask `owner` to the lower 160 bits, in case the upper bits somehow aren't clean.
             owner := and(owner, _BITMASK_ADDRESS)
             // `owner | (block.timestamp << _BITPOS_START_TIMESTAMP) | flags`.
-            result := or(owner, or(shl(_BITPOS_START_TIMESTAMP, timestamp()), flags))
+            result := or(
+                owner,
+                or(shl(_BITPOS_START_TIMESTAMP, timestamp()), flags)
+            )
         }
     }
 
     /**
      * @dev Returns the `nextInitialized` flag set if `quantity` equals 1.
      */
-    function _nextInitializedFlag(uint256 quantity) private pure returns (uint256 result) {
+    function _nextInitializedFlag(uint256 quantity)
+        private
+        pure
+        returns (uint256 result)
+    {
         // For branchless setting of the `nextInitialized` flag.
         assembly {
             // `(quantity == 1) << _BITPOS_NEXT_INITIALIZED`.
@@ -443,7 +512,13 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * - `tokenId` must exist.
      */
-    function getApproved(uint256 tokenId) public view virtual override returns (address) {
+    function getApproved(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (address)
+    {
         if (!_exists(tokenId)) revert ApprovalQueryForNonexistentToken();
 
         return _tokenApprovals[tokenId].value;
@@ -460,7 +535,11 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * Emits an {ApprovalForAll} event.
      */
-    function setApprovalForAll(address operator, bool approved) public virtual override {
+    function setApprovalForAll(address operator, bool approved)
+        public
+        virtual
+        override
+    {
         _operatorApprovals[_msgSenderERC721A()][operator] = approved;
         emit ApprovalForAll(_msgSenderERC721A(), operator, approved);
     }
@@ -470,7 +549,13 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * See {setApprovalForAll}.
      */
-    function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return _operatorApprovals[owner][operator];
     }
 
@@ -482,18 +567,20 @@ contract ERC721ACloneable is IERC721A, Initializable {
      * Tokens start existing when they are minted. See {_mint}.
      */
     function _exists(uint256 tokenId) internal view virtual returns (bool) {
-        return _startTokenId() <= tokenId && tokenId < _currentIndex // If within bounds,
-            && _packedOwnerships[tokenId] & _BITMASK_BURNED == 0; // and not burned.
+        return
+            _startTokenId() <= tokenId &&
+            tokenId < _currentIndex && // If within bounds,
+            _packedOwnerships[tokenId] & _BITMASK_BURNED == 0; // and not burned.
     }
 
     /**
      * @dev Returns whether `msgSender` is equal to `approvedAddress` or `owner`.
      */
-    function _isSenderApprovedOrOwner(address approvedAddress, address owner, address msgSender)
-        private
-        pure
-        returns (bool result)
-    {
+    function _isSenderApprovedOrOwner(
+        address approvedAddress,
+        address owner,
+        address msgSender
+    ) private pure returns (bool result) {
         assembly {
             // Mask `owner` to the lower 160 bits, in case the upper bits somehow aren't clean.
             owner := and(owner, _BITMASK_ADDRESS)
@@ -537,16 +624,31 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 tokenId) public virtual override {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public virtual override {
         uint256 prevOwnershipPacked = _packedOwnershipOf(tokenId);
 
-        if (address(uint160(prevOwnershipPacked)) != from) revert TransferFromIncorrectOwner();
+        if (address(uint160(prevOwnershipPacked)) != from)
+            revert TransferFromIncorrectOwner();
 
-        (uint256 approvedAddressSlot, address approvedAddress) = _getApprovedSlotAndAddress(tokenId);
+        (
+            uint256 approvedAddressSlot,
+            address approvedAddress
+        ) = _getApprovedSlotAndAddress(tokenId);
 
         // The nested ifs save around 20+ gas over a compound boolean condition.
-        if (!_isSenderApprovedOrOwner(approvedAddress, from, _msgSenderERC721A())) {
-            if (!isApprovedForAll(from, _msgSenderERC721A())) revert TransferCallerNotOwnerNorApproved();
+        if (
+            !_isSenderApprovedOrOwner(
+                approvedAddress,
+                from,
+                _msgSenderERC721A()
+            )
+        ) {
+            if (!isApprovedForAll(from, _msgSenderERC721A()))
+                revert TransferCallerNotOwnerNorApproved();
         }
 
         if (to == address(0)) revert TransferToZeroAddress();
@@ -574,8 +676,11 @@ contract ERC721ACloneable is IERC721A, Initializable {
             // - `startTimestamp` to the timestamp of transfering.
             // - `burned` to `false`.
             // - `nextInitialized` to `true`.
-            _packedOwnerships[tokenId] =
-                _packOwnershipData(to, _BITMASK_NEXT_INITIALIZED | _nextExtraData(from, to, prevOwnershipPacked));
+            _packedOwnerships[tokenId] = _packOwnershipData(
+                to,
+                _BITMASK_NEXT_INITIALIZED |
+                    _nextExtraData(from, to, prevOwnershipPacked)
+            );
 
             // If the next slot may not have been initialized (i.e. `nextInitialized == false`) .
             if (prevOwnershipPacked & _BITMASK_NEXT_INITIALIZED == 0) {
@@ -598,7 +703,11 @@ contract ERC721ACloneable is IERC721A, Initializable {
     /**
      * @dev Equivalent to `safeTransferFrom(from, to, tokenId, '')`.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public virtual override {
         safeTransferFrom(from, to, tokenId, "");
     }
 
@@ -617,7 +726,12 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public virtual override {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) public virtual override {
         transferFrom(from, to, tokenId);
         if (to.code.length != 0) {
             if (!_checkContractOnERC721Received(from, to, tokenId, _data)) {
@@ -642,7 +756,12 @@ contract ERC721ACloneable is IERC721A, Initializable {
      * - When `to` is zero, `tokenId` will be burned by `from`.
      * - `from` and `to` are never both zero.
      */
-    function _beforeTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity) internal virtual {}
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal virtual {}
 
     /**
      * @dev Hook that is called after a set of serially-ordered token IDs
@@ -660,7 +779,12 @@ contract ERC721ACloneable is IERC721A, Initializable {
      * - When `to` is zero, `tokenId` has been burned by `from`.
      * - `from` and `to` are never both zero.
      */
-    function _afterTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity) internal virtual {}
+    function _afterTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal virtual {}
 
     /**
      * @dev Private function to invoke {IERC721Receiver-onERC721Received} on a target contract.
@@ -672,14 +796,23 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * Returns whether the call correctly returned the expected magic value.
      */
-    function _checkContractOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
-        private
-        returns (bool)
-    {
-        try ERC721A__IERC721Receiver(to).onERC721Received(_msgSenderERC721A(), from, tokenId, _data) returns (
-            bytes4 retval
-        ) {
-            return retval == ERC721A__IERC721Receiver(to).onERC721Received.selector;
+    function _checkContractOnERC721Received(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) private returns (bool) {
+        try
+            ERC721A__IERC721Receiver(to).onERC721Received(
+                _msgSenderERC721A(),
+                from,
+                tokenId,
+                _data
+            )
+        returns (bytes4 retval) {
+            return
+                retval ==
+                ERC721A__IERC721Receiver(to).onERC721Received.selector;
         } catch (bytes memory reason) {
             if (reason.length == 0) {
                 revert TransferToNonERC721ReceiverImplementer();
@@ -720,15 +853,20 @@ contract ERC721ACloneable is IERC721A, Initializable {
             // - `numberMinted += quantity`.
             //
             // We can directly add to the `balance` and `numberMinted`.
-            _packedAddressData[to] += quantity * ((1 << _BITPOS_NUMBER_MINTED) | 1);
+            _packedAddressData[to] +=
+                quantity *
+                ((1 << _BITPOS_NUMBER_MINTED) | 1);
 
             // Updates:
             // - `address` to the owner.
             // - `startTimestamp` to the timestamp of minting.
             // - `burned` to `false`.
             // - `nextInitialized` to `quantity == 1`.
-            _packedOwnerships[startTokenId] =
-                _packOwnershipData(to, _nextInitializedFlag(quantity) | _nextExtraData(address(0), to, 0));
+            _packedOwnerships[startTokenId] = _packOwnershipData(
+                to,
+                _nextInitializedFlag(quantity) |
+                    _nextExtraData(address(0), to, 0)
+            );
 
             uint256 toMasked;
             uint256 end = startTokenId + quantity;
@@ -753,7 +891,11 @@ contract ERC721ACloneable is IERC721A, Initializable {
                 // The `iszero(eq(,))` check ensures that large values of `quantity`
                 // that overflows uint256 will make the loop run out of gas.
                 // The compiler will optimize the `iszero` away for performance.
-                for { let tokenId := add(startTokenId, 1) } iszero(eq(tokenId, end)) { tokenId := add(tokenId, 1) } {
+                for {
+                    let tokenId := add(startTokenId, 1)
+                } iszero(eq(tokenId, end)) {
+                    tokenId := add(tokenId, 1)
+                } {
                     // Emit the `Transfer` event. Similar to above.
                     log4(0, 0, _TRANSFER_EVENT_SIGNATURE, 0, toMasked, tokenId)
                 }
@@ -790,7 +932,8 @@ contract ERC721ACloneable is IERC721A, Initializable {
         uint256 startTokenId = _currentIndex;
         if (to == address(0)) revert MintToZeroAddress();
         if (quantity == 0) revert MintZeroQuantity();
-        if (quantity > _MAX_MINT_ERC2309_QUANTITY_LIMIT) revert MintERC2309QuantityExceedsLimit();
+        if (quantity > _MAX_MINT_ERC2309_QUANTITY_LIMIT)
+            revert MintERC2309QuantityExceedsLimit();
 
         _beforeTokenTransfers(address(0), to, startTokenId, quantity);
 
@@ -801,17 +944,27 @@ contract ERC721ACloneable is IERC721A, Initializable {
             // - `numberMinted += quantity`.
             //
             // We can directly add to the `balance` and `numberMinted`.
-            _packedAddressData[to] += quantity * ((1 << _BITPOS_NUMBER_MINTED) | 1);
+            _packedAddressData[to] +=
+                quantity *
+                ((1 << _BITPOS_NUMBER_MINTED) | 1);
 
             // Updates:
             // - `address` to the owner.
             // - `startTimestamp` to the timestamp of minting.
             // - `burned` to `false`.
             // - `nextInitialized` to `quantity == 1`.
-            _packedOwnerships[startTokenId] =
-                _packOwnershipData(to, _nextInitializedFlag(quantity) | _nextExtraData(address(0), to, 0));
+            _packedOwnerships[startTokenId] = _packOwnershipData(
+                to,
+                _nextInitializedFlag(quantity) |
+                    _nextExtraData(address(0), to, 0)
+            );
 
-            emit ConsecutiveTransfer(startTokenId, startTokenId + quantity - 1, address(0), to);
+            emit ConsecutiveTransfer(
+                startTokenId,
+                startTokenId + quantity - 1,
+                address(0),
+                to
+            );
 
             _currentIndex = startTokenId + quantity;
         }
@@ -831,7 +984,11 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * Emits a {Transfer} event for each mint.
      */
-    function _safeMint(address to, uint256 quantity, bytes memory _data) internal virtual {
+    function _safeMint(
+        address to,
+        uint256 quantity,
+        bytes memory _data
+    ) internal virtual {
         _mint(to, quantity);
 
         unchecked {
@@ -839,7 +996,14 @@ contract ERC721ACloneable is IERC721A, Initializable {
                 uint256 end = _currentIndex;
                 uint256 index = end - quantity;
                 do {
-                    if (!_checkContractOnERC721Received(address(0), to, index++, _data)) {
+                    if (
+                        !_checkContractOnERC721Received(
+                            address(0),
+                            to,
+                            index++,
+                            _data
+                        )
+                    ) {
                         revert TransferToNonERC721ReceiverImplementer();
                     }
                 } while (index < end);
@@ -882,12 +1046,22 @@ contract ERC721ACloneable is IERC721A, Initializable {
 
         address from = address(uint160(prevOwnershipPacked));
 
-        (uint256 approvedAddressSlot, address approvedAddress) = _getApprovedSlotAndAddress(tokenId);
+        (
+            uint256 approvedAddressSlot,
+            address approvedAddress
+        ) = _getApprovedSlotAndAddress(tokenId);
 
         if (approvalCheck) {
             // The nested ifs save around 20+ gas over a compound boolean condition.
-            if (!_isSenderApprovedOrOwner(approvedAddress, from, _msgSenderERC721A())) {
-                if (!isApprovedForAll(from, _msgSenderERC721A())) revert TransferCallerNotOwnerNorApproved();
+            if (
+                !_isSenderApprovedOrOwner(
+                    approvedAddress,
+                    from,
+                    _msgSenderERC721A()
+                )
+            ) {
+                if (!isApprovedForAll(from, _msgSenderERC721A()))
+                    revert TransferCallerNotOwnerNorApproved();
             }
         }
 
@@ -920,7 +1094,8 @@ contract ERC721ACloneable is IERC721A, Initializable {
             // - `nextInitialized` to `true`.
             _packedOwnerships[tokenId] = _packOwnershipData(
                 from,
-                (_BITMASK_BURNED | _BITMASK_NEXT_INITIALIZED) | _nextExtraData(from, address(0), prevOwnershipPacked)
+                (_BITMASK_BURNED | _BITMASK_NEXT_INITIALIZED) |
+                    _nextExtraData(from, address(0), prevOwnershipPacked)
             );
 
             // If the next slot may not have been initialized (i.e. `nextInitialized == false`) .
@@ -961,7 +1136,9 @@ contract ERC721ACloneable is IERC721A, Initializable {
         assembly {
             extraDataCasted := extraData
         }
-        packed = (packed & _BITMASK_EXTRA_DATA_COMPLEMENT) | (extraDataCasted << _BITPOS_EXTRA_DATA);
+        packed =
+            (packed & _BITMASK_EXTRA_DATA_COMPLEMENT) |
+            (extraDataCasted << _BITPOS_EXTRA_DATA);
         _packedOwnerships[index] = packed;
     }
 
@@ -979,13 +1156,21 @@ contract ERC721ACloneable is IERC721A, Initializable {
      * - When `to` is zero, `tokenId` will be burned by `from`.
      * - `from` and `to` are never both zero.
      */
-    function _extraData(address from, address to, uint24 previousExtraData) internal view virtual returns (uint24) {}
+    function _extraData(
+        address from,
+        address to,
+        uint24 previousExtraData
+    ) internal view virtual returns (uint24) {}
 
     /**
      * @dev Returns the next extra data for the packed ownership data.
      * The returned result is shifted into position.
      */
-    function _nextExtraData(address from, address to, uint256 prevOwnershipPacked) private view returns (uint256) {
+    function _nextExtraData(
+        address from,
+        address to,
+        uint256 prevOwnershipPacked
+    ) private view returns (uint256) {
         uint24 extraData = uint24(prevOwnershipPacked >> _BITPOS_EXTRA_DATA);
         return uint256(_extraData(from, to, extraData)) << _BITPOS_EXTRA_DATA;
     }
@@ -1006,7 +1191,12 @@ contract ERC721ACloneable is IERC721A, Initializable {
     /**
      * @dev Converts a uint256 to its ASCII string decimal representation.
      */
-    function _toString(uint256 value) internal pure virtual returns (string memory str) {
+    function _toString(uint256 value)
+        internal
+        pure
+        virtual
+        returns (string memory str)
+    {
         assembly {
             // The maximum value of a uint256 contains 78 digits (1 byte per digit), but
             // we allocate 0xa0 bytes to keep the free memory pointer 32-byte word aligned.

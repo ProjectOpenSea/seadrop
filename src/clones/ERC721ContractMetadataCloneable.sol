@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ISeaDropTokenContractMetadata} from "../interfaces/ISeaDropTokenContractMetadata.sol";
+import {
+    ISeaDropTokenContractMetadata
+} from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
-import {ERC721ACloneable} from "./ERC721ACloneable.sol";
+import { ERC721ACloneable } from "./ERC721ACloneable.sol";
 
-import {TwoStepOwnable} from "utility-contracts/TwoStepOwnable.sol";
+import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
-import {IERC2981} from "openzeppelin-contracts/interfaces/IERC2981.sol";
+import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
 
-import {IERC165} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
+import {
+    IERC165
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title  ERC721ContractMetadataCloneable
@@ -19,7 +23,11 @@ import {IERC165} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
  * @notice ERC721ContractMetadata is a token contract that extends ERC721A
  *         with additional metadata and ownership capabilities.
  */
-contract ERC721ContractMetadataCloneable is ERC721ACloneable, TwoStepOwnable, ISeaDropTokenContractMetadata {
+contract ERC721ContractMetadataCloneable is
+    ERC721ACloneable,
+    TwoStepOwnable,
+    ISeaDropTokenContractMetadata
+{
     /// @notice Track the max supply.
     uint256 _maxSupply;
 
@@ -43,7 +51,10 @@ contract ERC721ContractMetadataCloneable is ERC721ACloneable, TwoStepOwnable, IS
      *      to save contract space from being inlined N times.
      */
     function _onlyOwnerOrSelf() internal view {
-        if (_cast(msg.sender == owner()) | _cast(msg.sender == address(this)) == 0) {
+        if (
+            _cast(msg.sender == owner()) | _cast(msg.sender == address(this)) ==
+            0
+        ) {
             revert OnlyOwner();
         }
     }
@@ -89,7 +100,9 @@ contract ERC721ContractMetadataCloneable is ERC721ACloneable, TwoStepOwnable, IS
      * @param fromTokenId The start token id.
      * @param toTokenId   The end token id.
      */
-    function emitBatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId) external {
+    function emitBatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId)
+        external
+    {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -107,7 +120,7 @@ contract ERC721ContractMetadataCloneable is ERC721ACloneable, TwoStepOwnable, IS
         _onlyOwnerOrSelf();
 
         // Ensure the max supply does not exceed the maximum value of uint64.
-        if (newMaxSupply > 2 ** 64 - 1) {
+        if (newMaxSupply > 2**64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
@@ -238,11 +251,11 @@ contract ERC721ContractMetadataCloneable is ERC721ACloneable, TwoStepOwnable, IS
      * @return receiver      Address of who should be sent the royalty payment.
      * @return royaltyAmount The royalty payment amount for _salePrice.
      */
-    function royaltyInfo(uint256, /* _tokenId */ uint256 _salePrice)
-        external
-        view
-        returns (address receiver, uint256 royaltyAmount)
-    {
+    function royaltyInfo(
+        uint256,
+        /* _tokenId */
+        uint256 _salePrice
+    ) external view returns (address receiver, uint256 royaltyAmount) {
         // Put the royalty info on the stack for more efficient access.
         RoyaltyInfo storage info = _royaltyInfo;
 
@@ -266,8 +279,10 @@ contract ERC721ContractMetadataCloneable is ERC721ACloneable, TwoStepOwnable, IS
         override(IERC165, ERC721ACloneable)
         returns (bool)
     {
-        return interfaceId == type(IERC2981).interfaceId || interfaceId == 0x49064906 // ERC-4906
-            || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IERC2981).interfaceId ||
+            interfaceId == 0x49064906 || // ERC-4906
+            super.supportsInterface(interfaceId);
     }
 
     /**
