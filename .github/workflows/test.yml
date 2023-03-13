@@ -108,6 +108,9 @@ jobs:
 
       - name: Run tests
         run: forge test -vvv
+        env:
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
   forge-coverage:
     name: Run Forge Coverage
@@ -127,6 +130,9 @@ jobs:
 
       - name: Run coverage
         run: yarn coverage:forge
+        env:
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
       - name: Submit coverage to Coveralls
         uses: coverallsapp/github-action@master
