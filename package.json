@@ -30,7 +30,8 @@
   },
   "dependencies": {
     "ethers": "^5.7.0",
-    "hardhat": "^2.11.1"
+    "hardhat": "^2.11.1",
+    "hardhat-contract-sizer": "^2.8.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.1.1",
