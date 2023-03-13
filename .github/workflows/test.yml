@@ -143,12 +143,12 @@ jobs:
           flag-name: foundry
           parallel: true
 
-coverage-finish:
-  needs: [hardhat-coverage, forge-coverage]
-  if: ${{ always() }}
-  runs-on: ubuntu-latest
-  steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
-      with:
-        parallel-finished: true
+  coverage-finish:
+    needs: [hardhat-coverage, forge-coverage]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          parallel-finished: true
