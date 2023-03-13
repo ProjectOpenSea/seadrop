@@ -139,11 +139,12 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./lcov.info
+          path-to-lcov: ./lcov-filtered.info
           flag-name: foundry
           parallel: true
 
   coverage-finish:
+    name: Finish Coverage Results
     needs: [hardhat-coverage, forge-coverage]
     if: ${{ always() }}
     runs-on: ubuntu-latest
