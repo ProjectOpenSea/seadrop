@@ -20,8 +20,20 @@ contract ERC721SeaDropCloneFactory {
         external
         returns (address)
     {
-        address instance = Clones.clone(
-            seaDropCloneableUpgradeableImplementation
+        // Derive a pseudo-random salt, so clone addresses don't collide
+        // across chains.
+        bytes32 salt = keccak256(
+            abi.encodePacked(
+                msg.sender,
+                msg.sender.balance,
+                block.number,
+                block.timestamp
+            )
+        );
+
+        address instance = Clones.cloneDeterministic(
+            seaDropCloneableUpgradeableImplementation,
+            salt
         );
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = DEFAULT_SEADROP;
