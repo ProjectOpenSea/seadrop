@@ -19,7 +19,7 @@ contract ERC721SeaDropCloneFactoryTest is Test {
     }
 
     function testClone__snapshot() public {
-        factory.createClone("name", "symbol");
+        factory.createClone("name", "symbol", bytes32("1"));
     }
 
     event SeaDropTokenDeployed();
@@ -29,7 +29,7 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         factory = new ERC721SeaDropCloneFactory();
         vm.expectEmit(false, false, false, false);
         emit SeaDropTokenDeployed();
-        address clone = factory.createClone("name", "symbol");
+        address clone = factory.createClone("name", "symbol", bytes32("1"));
         ERC721SeaDropCloneable token = ERC721SeaDropCloneable(clone);
 
         assertEq(token.name(), "name", "name should be set");
@@ -88,7 +88,7 @@ contract ERC721SeaDropCloneFactoryTest is Test {
     }
 
     function testClone_Reinitialize() public {
-        address clone = factory.createClone("name", "symbol");
+        address clone = factory.createClone("name", "symbol", bytes32("1"));
         ERC721SeaDropCloneable token = ERC721SeaDropCloneable(clone);
         vm.expectRevert("Initializable: contract is already initialized");
         token.initialize("name", "symbol", new address[](0), address(this));
