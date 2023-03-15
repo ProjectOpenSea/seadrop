@@ -172,9 +172,10 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.tokenURI(2)).to.equal("http://example.com/2");
 
     // If the baseURI does not end with "/" then the tokenURI should just be baseURI
-    await expect(
-      token.connect(owner).setBaseURI("http://example.com")
-    ).to.emit(token, "BatchMetadataUpdate");
+    await expect(token.connect(owner).setBaseURI("http://example.com")).to.emit(
+      token,
+      "BatchMetadataUpdate"
+    );
 
     expect(await token.baseURI()).to.equal("http://example.com");
     expect(await token.tokenURI(1)).to.equal("http://example.com");
