@@ -155,6 +155,11 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should return the correct tokenURI based on baseURI's last character", async () => {
+    // Revert on nonexistent token
+    await expect(token.tokenURI(100000)).to.be.revertedWith(
+      "URIQueryForNonexistentToken"
+    );
+
     // If the baseURI ends with "/" then the tokenURI should be baseURI + tokenId
     await expect(
       token.connect(owner).setBaseURI("http://example.com/")
