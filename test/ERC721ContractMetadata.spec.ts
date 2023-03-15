@@ -153,4 +153,45 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     // 0x2a55205a is interface id for EIP-2981
     expect(await token.supportsInterface("0x2a55205a")).to.equal(true);
   });
+
+  it("Should return the correct tokenURI based on baseURI's last character", async () => {
+    // Revert on nonexistent token
+    await expect(token.tokenURI(100000)).to.be.revertedWith(
+      "URIQueryForNonexistentToken"
+    );
+
+    // If the baseURI is empty then the tokenURI should be empty
+    await expect(token.connect(owner).setBaseURI("")).to.emit(
+      token,
+      "BatchMetadataUpdate"
+    );
+    expect(await token.baseURI()).to.equal("");
+    expect(await token.tokenURI(1)).to.equal("");
+
+    // If the baseURI ends with "/" then the tokenURI should be baseURI + tokenId
+    await expect(
+      token.connect(owner).setBaseURI("http://example.com/")
+    ).to.emit(token, "BatchMetadataUpdate");
+
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 2);
+      }
+    );
+    expect(await token.baseURI()).to.equal("http://example.com/");
+    expect(await token.tokenURI(1)).to.equal("http://example.com/1");
+    expect(await token.tokenURI(2)).to.equal("http://example.com/2");
+
+    // If the baseURI does not end with "/" then the tokenURI should just be baseURI
+    await expect(token.connect(owner).setBaseURI("http://example.com")).to.emit(
+      token,
+      "BatchMetadataUpdate"
+    );
+
+    expect(await token.baseURI()).to.equal("http://example.com");
+    expect(await token.tokenURI(1)).to.equal("http://example.com");
+    expect(await token.tokenURI(2)).to.equal("http://example.com");
+  });
 });
