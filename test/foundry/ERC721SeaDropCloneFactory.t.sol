@@ -68,6 +68,23 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         );
         assertEq(token.totalSupply(), 1);
         assertEq(token.ownerOf(1), address(this));
+
+        assertEq(token.tokenURI(1), "", "tokenURI should be blank at first");
+        assertEq(token.baseURI(), "", "baseURI should be blank at first");
+
+        token.setBaseURI("https://example.com");
+        assertEq(
+            token.tokenURI(1),
+            token.baseURI(),
+            "tokenURI just the baseURI"
+        );
+
+        token.setBaseURI("https://example.com/");
+        assertEq(
+            token.tokenURI(1),
+            string(abi.encodePacked(token.baseURI(), "1")),
+            "tokenURI the baseURI + tokenID"
+        );
     }
 
     function testClone_Reinitialize() public {

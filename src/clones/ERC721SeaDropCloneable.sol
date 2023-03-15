@@ -150,6 +150,37 @@ contract ERC721SeaDropCloneable is
     }
 
     /**
+     * @dev Overrides the `tokenURI()` function from ERC721A
+     *      to return just the base URI if it is implied to not be a directory.
+     *
+     *      This is to help with ERC721 contracts in which the same token URI
+     *      is desired for each token, such as when the tokenURI is 'unrevealed'.
+     */
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+
+        string memory baseURI = _baseURI();
+
+        // Exit early if the baseURI is empty.
+        if (bytes(baseURI).length == 0) {
+            return "";
+        }
+
+        // Check if the last character in baseURI is a slash.
+        if (bytes(baseURI)[bytes(baseURI).length - 1] != bytes("/")[0]) {
+            return baseURI;
+        }
+
+        return string(abi.encodePacked(baseURI, _toString(tokenId)));
+    }
+
+    /**
      * @notice Mint tokens, restricted to the SeaDrop contract.
      *
      * @dev    NOTE: If a token registers itself with multiple SeaDrop
