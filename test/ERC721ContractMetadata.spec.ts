@@ -160,6 +160,14 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       "URIQueryForNonexistentToken"
     );
 
+    // If the baseURI is empty then the tokenURI should be empty
+    await expect(token.connect(owner).setBaseURI("")).to.emit(
+      token,
+      "BatchMetadataUpdate"
+    );
+    expect(await token.baseURI()).to.equal("");
+    expect(await token.tokenURI(1)).to.equal("");
+
     // If the baseURI ends with "/" then the tokenURI should be baseURI + tokenId
     await expect(
       token.connect(owner).setBaseURI("http://example.com/")
