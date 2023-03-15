@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
-
-import { ERC721SeaDropUpgradeable } from "./ERC721SeaDropUpgradeable.sol";
-import {
-    ERC721ContractMetadataUpgradeable
-} from "./ERC721ContractMetadataUpgradeable.sol";
 
 library ERC721SeaDropStorage {
     struct Layout {

@@ -1,9 +1,12 @@
 ERC721A/=lib/ERC721A/contracts/
-ds-test/=lib/forge-std/lib/ds-test/src/
+ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/contracts/
+ds-test/=lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 murky/=lib/murky/src/
 openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 operator-filter-registry/=lib/operator-filter-registry/src/
 seadrop/=src/
 solmate/=lib/solmate/src/
 utility-contracts/=lib/utility-contracts/src/
+create2-scripts/=lib/create2-helpers/script/

@@ -11,8 +11,16 @@ remappings = [
 optimizer_runs = 1_000_000
 # via_ir = true
 ignored_error_codes = []
+bytecode_hash = "none"
+
+[profile.upgradeable]
+src = 'src-upgradeable/src/'
 
 [profile.ir_inspect]
 test = 'src'
+
+[rpc_endpoints]
+goerli = '${GOERLI_RPC_URL}'
+mainnet = '${ETHEREUM_RPC_URL}'
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

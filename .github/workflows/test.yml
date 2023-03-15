@@ -12,109 +12,86 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build Artifacts
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "yarn"
-      - run: yarn install
-      - run: yarn build
-
   lint:
     name: Run Linters
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 16.x
           cache: "yarn"
+
       - run: yarn install
       - run: yarn lint:check
 
-  test:
-    name: Run Tests
+  hardhat-test:
+    name: Run Hardhat Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 16.x
           cache: "yarn"
+
       - run: yarn install
       - run: yarn build
       - run: yarn test
 
   # TODO get this working
-  # test-upgradeable:
-  #   name: Run Tests on Upgradeable Contracts
+  # hardhat-test-upgradeable:
+  #   name: Run Hardhat Upgradeable Tests
   #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       node-version: [16.x]
   #   steps:
   #     - uses: actions/checkout@v3
   #       with:
   #         submodules: recursive
+  #
   #     - name: Use Node.js
   #       uses: actions/setup-node@v3
   #       with:
-  #         node-version: ${{ matrix.node-version }}
+  #         node-version: 16.x
   #         cache: "yarn"
+  #
   #     - run: yarn install
   #     - run: yarn build
   #     - run: yarn test:upgradeable
 
-  coverage:
-    name: Run Coverage Tests
+  hardhat-coverage:
+    name: Run Hardhat Coverage
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 16.x
           cache: "yarn"
+
       - run: yarn install
       - run: yarn build
       - run: yarn coverage
-      - name: Coveralls
+
+      - name: Submit coverage to Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: VeryGoodOpenSource/very_good_coverage@v1
-        with:
-          path: "./coverage/lcov.info"
-          min_coverage: 100
+          flag-name: hardhat
+          parallel: true
 
-  forge:
+  forge-test:
     name: Run Forge Tests
     runs-on: ubuntu-latest
     steps:
@@ -132,3 +109,47 @@ jobs:
 
       - name: Run tests
         run: forge test -vvv
+        env:
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
+
+  forge-coverage:
+    name: Run Forge Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install forge dependencies
+        run: forge install
+
+      - name: Run coverage
+        run: yarn coverage:forge
+        env:
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
+
+      - name: Submit coverage to Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./lcov-filtered.info
+          flag-name: foundry
+          parallel: true
+
+  coverage-finish:
+    name: Finish Coverage Results
+    needs: [hardhat-coverage, forge-coverage]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          parallel-finished: true

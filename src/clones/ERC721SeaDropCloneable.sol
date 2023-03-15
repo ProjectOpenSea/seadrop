@@ -2,62 +2,61 @@
 pragma solidity 0.8.17;
 
 import {
-    ERC721ContractMetadataUpgradeable,
-    ISeaDropTokenContractMetadataUpgradeable
-} from "./ERC721ContractMetadataUpgradeable.sol";
+    ERC721ContractMetadataCloneable,
+    ISeaDropTokenContractMetadata
+} from "./ERC721ContractMetadataCloneable.sol";
 
 import {
-    INonFungibleSeaDropTokenUpgradeable
-} from "./interfaces/INonFungibleSeaDropTokenUpgradeable.sol";
+    INonFungibleSeaDropToken
+} from "../interfaces/INonFungibleSeaDropToken.sol";
 
-import { ISeaDropUpgradeable } from "./interfaces/ISeaDropUpgradeable.sol";
+import { ISeaDrop } from "../interfaces/ISeaDrop.sol";
 
 import {
     AllowListData,
     PublicDrop,
     TokenGatedDropStage,
     SignedMintValidationParams
-} from "./lib/SeaDropStructsUpgradeable.sol";
+} from "../lib/SeaDropStructs.sol";
 
 import {
-    ERC721SeaDropStructsErrorsAndEventsUpgradeable
-} from "./lib/ERC721SeaDropStructsErrorsAndEventsUpgradeable.sol";
+    ERC721SeaDropStructsErrorsAndEvents
+} from "../lib/ERC721SeaDropStructsErrorsAndEvents.sol";
+
+import { ERC721ACloneable } from "./ERC721ACloneable.sol";
 
 import {
     ReentrancyGuardUpgradeable
-} from "../lib-upgradeable/solmate/src/utils/ReentrancyGuardUpgradeable.sol";
+} from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import {
-    IERC165Upgradeable
-} from "../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+    IERC165
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 import {
     DefaultOperatorFiltererUpgradeable
-} from "../lib-upgradeable/operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
-
-import { ERC721SeaDropStorage } from "./ERC721SeaDropStorage.sol";
-
-import {
-    ERC721ContractMetadataStorage
-} from "./ERC721ContractMetadataStorage.sol";
+} from "operator-filter-registry/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 
 /**
- * @title  ERC721SeaDropUpgradeable
+ * @title  ERC721SeaDrop
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @notice ERC721SeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop.
  */
-contract ERC721SeaDropUpgradeable is
-    ERC721ContractMetadataUpgradeable,
-    INonFungibleSeaDropTokenUpgradeable,
-    ERC721SeaDropStructsErrorsAndEventsUpgradeable,
+contract ERC721SeaDropCloneable is
+    ERC721ContractMetadataCloneable,
+    INonFungibleSeaDropToken,
+    ERC721SeaDropStructsErrorsAndEvents,
     ReentrancyGuardUpgradeable,
     DefaultOperatorFiltererUpgradeable
 {
-    using ERC721SeaDropStorage for ERC721SeaDropStorage.Layout;
-    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
+    /// @notice Track the allowed SeaDrop addresses.
+    mapping(address => bool) internal _allowedSeaDrop;
+
+    /// @notice Track the enumerated allowed SeaDrop addresses.
+    address[] internal _enumeratedAllowedSeaDrop;
 
     /**
      * @dev Reverts if not an allowed SeaDrop contract.
@@ -67,7 +66,7 @@ contract ERC721SeaDropUpgradeable is
      * @param seaDrop The SeaDrop address to check if allowed.
      */
     function _onlyAllowedSeaDrop(address seaDrop) internal view {
-        if (ERC721SeaDropStorage.layout()._allowedSeaDrop[seaDrop] != true) {
+        if (_allowedSeaDrop[seaDrop] != true) {
             revert OnlyAllowedSeaDrop();
         }
     }
@@ -76,45 +75,17 @@ contract ERC721SeaDropUpgradeable is
      * @notice Deploy the token contract with its name, symbol,
      *         and allowed SeaDrop addresses.
      */
-    function __ERC721SeaDrop_init(
-        string memory name,
-        string memory symbol,
-        address[] memory allowedSeaDrop
-    ) internal onlyInitializing {
-        __ERC721A_init_unchained(name, symbol);
-        __ConstructorInitializable_init_unchained();
-        __TwoStepOwnable_init_unchained();
-        __ERC721ContractMetadata_init_unchained(name, symbol);
-        __ReentrancyGuard_init_unchained();
+    function initialize(
+        string calldata __name,
+        string calldata __symbol,
+        address[] calldata allowedSeaDrop,
+        address initialOwner
+    ) public initializer {
+        __ERC721ACloneable__init(__name, __symbol);
+        __ReentrancyGuard_init();
         __DefaultOperatorFilterer_init();
-        __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
-    }
-
-    function __ERC721SeaDrop_init_unchained(
-        string memory,
-        string memory,
-        address[] memory allowedSeaDrop
-    ) internal onlyInitializing {
-        // Put the length on the stack for more efficient access.
-        uint256 allowedSeaDropLength = allowedSeaDrop.length;
-
-        // Set the mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            ERC721SeaDropStorage.layout()._allowedSeaDrop[
-                allowedSeaDrop[i]
-            ] = true;
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Set the enumeration.
-        ERC721SeaDropStorage
-            .layout()
-            ._enumeratedAllowedSeaDrop = allowedSeaDrop;
-
-        // Emit an event noting the contract deployment.
+        _updateAllowedSeaDrop(allowedSeaDrop);
+        _transferOwnership(initialOwner);
         emit SeaDropTokenDeployed();
     }
 
@@ -140,19 +111,13 @@ contract ERC721SeaDropUpgradeable is
      */
     function _updateAllowedSeaDrop(address[] calldata allowedSeaDrop) internal {
         // Put the length on the stack for more efficient access.
-        uint256 enumeratedAllowedSeaDropLength = ERC721SeaDropStorage
-            .layout()
-            ._enumeratedAllowedSeaDrop
+        uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
             .length;
-
         uint256 allowedSeaDropLength = allowedSeaDrop.length;
 
         // Reset the old mapping.
         for (uint256 i = 0; i < enumeratedAllowedSeaDropLength; ) {
-            ERC721SeaDropStorage.layout()._allowedSeaDrop[
-                ERC721SeaDropStorage.layout()._enumeratedAllowedSeaDrop[i]
-            ] = false;
-
+            _allowedSeaDrop[_enumeratedAllowedSeaDrop[i]] = false;
             unchecked {
                 ++i;
             }
@@ -160,19 +125,14 @@ contract ERC721SeaDropUpgradeable is
 
         // Set the new mapping for allowed SeaDrop contracts.
         for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            ERC721SeaDropStorage.layout()._allowedSeaDrop[
-                allowedSeaDrop[i]
-            ] = true;
-
+            _allowedSeaDrop[allowedSeaDrop[i]] = true;
             unchecked {
                 ++i;
             }
         }
 
         // Set the enumeration.
-        ERC721SeaDropStorage
-            .layout()
-            ._enumeratedAllowedSeaDrop = allowedSeaDrop;
+        _enumeratedAllowedSeaDrop = allowedSeaDrop;
 
         // Emit an event for the update.
         emit AllowedSeaDropUpdated(allowedSeaDrop);
@@ -242,12 +202,15 @@ contract ERC721SeaDropUpgradeable is
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the public drop data on SeaDrop.
-        ISeaDropUpgradeable(seaDropImpl).updatePublicDrop(publicDrop);
+        ISeaDrop(seaDropImpl).updatePublicDrop(publicDrop);
     }
 
     /**
@@ -260,12 +223,15 @@ contract ERC721SeaDropUpgradeable is
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the allow list on SeaDrop.
-        ISeaDropUpgradeable(seaDropImpl).updateAllowList(allowListData);
+        ISeaDrop(seaDropImpl).updateAllowList(allowListData);
     }
 
     /**
@@ -288,15 +254,15 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the token gated drop stage.
-        ISeaDropUpgradeable(seaDropImpl).updateTokenGatedDrop(
-            allowedNftToken,
-            dropStage
-        );
+        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
     }
 
     /**
@@ -310,17 +276,20 @@ contract ERC721SeaDropUpgradeable is
         external
         virtual
         override
-        onlyOwner
     {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the drop URI.
-        ISeaDropUpgradeable(seaDropImpl).updateDropURI(dropURI);
+        ISeaDrop(seaDropImpl).updateDropURI(dropURI);
     }
 
     /**
-     * @notice Update the creator payout address for this nft contract on SeaDrop.
+     * @notice Update the creator payout address for this nft contract on
+     *         SeaDrop.
      *         Only the owner can set the creator payout address.
      *
      * @param seaDropImpl   The allowed SeaDrop contract.
@@ -329,14 +298,15 @@ contract ERC721SeaDropUpgradeable is
     function updateCreatorPayoutAddress(
         address seaDropImpl,
         address payoutAddress
-    ) external onlyOwner {
+    ) external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the creator payout address.
-        ISeaDropUpgradeable(seaDropImpl).updateCreatorPayoutAddress(
-            payoutAddress
-        );
+        ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
     }
 
     /**
@@ -352,15 +322,15 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external virtual onlyOwner {
+    ) external virtual {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the allowed fee recipient.
-        ISeaDropUpgradeable(seaDropImpl).updateAllowedFeeRecipient(
-            feeRecipient,
-            allowed
-        );
+        ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
 
     /**
@@ -377,12 +347,15 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the signer.
-        ISeaDropUpgradeable(seaDropImpl).updateSignedMintValidationParams(
+        ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
             signer,
             signedMintValidationParams
         );
@@ -400,12 +373,15 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address payer,
         bool allowed
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the payer.
-        ISeaDropUpgradeable(seaDropImpl).updatePayer(payer, allowed);
+        ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
 
     /**
@@ -431,7 +407,7 @@ contract ERC721SeaDropUpgradeable is
     {
         minterNumMinted = _numberMinted(minter);
         currentTotalSupply = _totalMinted();
-        maxSupply = ERC721ContractMetadataStorage.layout()._maxSupply;
+        maxSupply = _maxSupply;
     }
 
     /**
@@ -443,14 +419,12 @@ contract ERC721SeaDropUpgradeable is
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721ContractMetadataUpgradeable)
+        override(IERC165, ERC721ContractMetadataCloneable)
         returns (bool)
     {
         return
-            interfaceId ==
-            type(INonFungibleSeaDropTokenUpgradeable).interfaceId ||
-            interfaceId ==
-            type(ISeaDropTokenContractMetadataUpgradeable).interfaceId ||
+            interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
+            interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
             // ERC721ContractMetadata returns supportsInterface true for
             //     EIP-2981
             // ERC721A returns supportsInterface true for

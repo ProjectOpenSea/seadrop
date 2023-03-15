@@ -5,19 +5,20 @@ coverage.json
 typechain-types
 yarn-error.log
 
-#Hardhat files
+# Hardhat files
 artifacts/
 hh-cache/
 hh-cache-coverage/
 temp-src-coverage/
 
-#foundry test compilation files
+# Foundry test compilation files
 cache
 out
 reference-out
 optimized-out
 reference-working
 broadcast
+lcov*.info
 
 .DS_Store
 
@@ -25,6 +26,6 @@ broadcast
 .vscode
 __pycache__
 
-# use typescript instead of javascript
+# Use typescript instead of javascript
 *.js
 *.txt

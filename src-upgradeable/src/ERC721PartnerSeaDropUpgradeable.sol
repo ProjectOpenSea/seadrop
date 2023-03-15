@@ -20,7 +20,7 @@ import {
 } from "../lib-upgradeable/utility-contracts/src/TwoStepAdministeredStorage.sol";
 
 /**
- * @title  ERC721PartnerSeaDrop
+ * @title  ERC721PartnerSeaDropUpgradeable
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
