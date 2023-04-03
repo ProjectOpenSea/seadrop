@@ -58,7 +58,7 @@ contract ERC721PartnerSeaDropUpgradeable is
     function _onlyOwnerOrAdministratorOrSelf() internal view {
         if (
             _cast(msg.sender == owner()) |
-                _cast(msg.sender == administrator()) |
+                _cast(msg.sender == administrator) |
                 _cast(msg.sender == address(this)) ==
             0
         ) {
