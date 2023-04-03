@@ -273,7 +273,10 @@ contract ERC721SeaDropUpgradeable is
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -291,7 +294,10 @@ contract ERC721SeaDropUpgradeable is
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -319,7 +325,10 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -341,8 +350,10 @@ contract ERC721SeaDropUpgradeable is
         external
         virtual
         override
-        onlyOwner
     {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -360,7 +371,10 @@ contract ERC721SeaDropUpgradeable is
     function updateCreatorPayoutAddress(
         address seaDropImpl,
         address payoutAddress
-    ) external onlyOwner {
+    ) external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -383,7 +397,10 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address feeRecipient,
         bool allowed
-    ) external virtual onlyOwner {
+    ) external virtual {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -408,7 +425,10 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -431,7 +451,10 @@ contract ERC721SeaDropUpgradeable is
         address seaDropImpl,
         address payer,
         bool allowed
-    ) external virtual override onlyOwner {
+    ) external virtual override {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
