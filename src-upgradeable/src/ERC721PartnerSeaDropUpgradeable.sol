@@ -50,23 +50,6 @@ contract ERC721PartnerSeaDropUpgradeable is
     error AdministratorMustInitializeWithFee();
 
     /**
-     * @dev Reverts if the sender is not the owner, administrator,
-     *      or the contract itself.
-     *      This function is inlined instead of being a modifier
-     *      to save contract space from being inlined N times.
-     */
-    function _onlyOwnerOrAdministratorOrSelf() internal view {
-        if (
-            _cast(msg.sender == owner()) |
-                _cast(msg.sender == administrator) |
-                _cast(msg.sender == address(this)) ==
-            0
-        ) {
-            revert OnlyOwnerOrAdministrator();
-        }
-    }
-
-    /**
      * @notice Deploy the token contract with its name, symbol,
      *         administrator, and allowed SeaDrop addresses.
      */
@@ -150,11 +133,7 @@ contract ERC721PartnerSeaDropUpgradeable is
     function updatePublicDrop(
         address seaDropImpl,
         PublicDrop calldata publicDrop
-    ) external virtual override {
-        // Ensure the sender is only the owner, administrator,
-        // or contract itself.
-        _onlyOwnerOrAdministratorOrSelf();
-
+    ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -201,11 +180,7 @@ contract ERC721PartnerSeaDropUpgradeable is
     function updateAllowList(
         address seaDropImpl,
         AllowListData calldata allowListData
-    ) external virtual override {
-        // Ensure the sender is only the owner, administrator,
-        // or contract itself.
-        _onlyOwnerOrAdministratorOrSelf();
-
+    ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -235,11 +210,7 @@ contract ERC721PartnerSeaDropUpgradeable is
         address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external virtual override {
-        // Ensure the sender is only the owner, administrator,
-        // or contract itself.
-        _onlyOwnerOrAdministratorOrSelf();
-
+    ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -291,11 +262,8 @@ contract ERC721PartnerSeaDropUpgradeable is
         external
         virtual
         override
+        onlyOwnerOrAdministrator
     {
-        // Ensure the sender is only the owner, administrator,
-        // or contract itself.
-        _onlyOwnerOrAdministratorOrSelf();
-
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -341,11 +309,7 @@ contract ERC721PartnerSeaDropUpgradeable is
         address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
-    ) external virtual override {
-        // Ensure the sender is only the owner, administrator,
-        // or contract itself.
-        _onlyOwnerOrAdministratorOrSelf();
-
+    ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
@@ -400,11 +364,7 @@ contract ERC721PartnerSeaDropUpgradeable is
         address seaDropImpl,
         address payer,
         bool allowed
-    ) external virtual override {
-        // Ensure the sender is only the owner, administrator,
-        // or contract itself.
-        _onlyOwnerOrAdministratorOrSelf();
-
+    ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
