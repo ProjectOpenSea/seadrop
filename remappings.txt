@@ -10,3 +10,7 @@ seadrop/=src/
 solmate/=lib/solmate/src/
 utility-contracts/=lib/utility-contracts/src/
 create2-scripts/=lib/create2-helpers/script/
+seaport/=lib/seaport/contracts/
+seaport-test-utils/=lib/seaport/test/foundry/utils
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin-upgradeable/contracts/=lib/openzeppelin-contracts-upgradeable/contracts/
