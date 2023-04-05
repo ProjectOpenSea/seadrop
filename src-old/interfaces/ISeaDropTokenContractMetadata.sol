@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
 
 interface ISeaDropTokenContractMetadata is IERC2981 {
     /**
@@ -53,9 +53,17 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     event ProvenanceHashUpdated(bytes32 previousHash, bytes32 newHash);
 
     /**
-     * @dev Emit an event when the EIP-2981 royalty info is updated.
+     * @dev Emit an event when the royalties info is updated.
      */
-    event RoyaltyInfoUpdated(address receiver, uint256 basisPoints);
+    event RoyaltyInfoUpdated(address receiver, uint256 bps);
+
+    /**
+     * @notice A struct defining royalty info for the contract.
+     */
+    struct RoyaltyInfo {
+        address royaltyAddress;
+        uint96 royaltyBps;
+    }
 
     /**
      * @notice Sets the base URI for the token metadata and emits an event.
@@ -92,6 +100,13 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     function setProvenanceHash(bytes32 newProvenanceHash) external;
 
     /**
+     * @notice Sets the address and basis points for royalties.
+     *
+     * @param newInfo The struct to configure royalties.
+     */
+    function setRoyaltyInfo(RoyaltyInfo calldata newInfo) external;
+
+    /**
      * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view returns (string memory);
@@ -113,4 +128,14 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      *         after mint has started.
      */
     function provenanceHash() external view returns (bytes32);
+
+    /**
+     * @notice Returns the address that receives royalties.
+     */
+    function royaltyAddress() external view returns (address);
+
+    /**
+     * @notice Returns the royalty basis points out of 10_000.
+     */
+    function royaltyBasisPoints() external view returns (uint256);
 }

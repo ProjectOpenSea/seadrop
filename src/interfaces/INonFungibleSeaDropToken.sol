@@ -2,55 +2,44 @@
 pragma solidity 0.8.17;
 
 import {
+    ContractOffererInterface
+} from "seaport/interfaces/ContractOffererInterface.sol";
+
+import {
     ISeaDropTokenContractMetadata
 } from "./ISeaDropTokenContractMetadata.sol";
 
 import {
     AllowListData,
+    CreatorPayout,
     PublicDrop,
     TokenGatedDropStage,
     SignedMintValidationParams
 } from "../lib/SeaDropStructs.sol";
 
-interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
+// TODO rename to IERC721SeaDrop?
+interface INonFungibleSeaDropToken is
+    ISeaDropTokenContractMetadata,
+    ContractOffererInterface
+{
     /**
-     * @dev Revert with an error if a contract is not an allowed
-     *      SeaDrop address.
+     * @dev Revert with an error if the caller is not an allowed Seaport
+     *      or conduit address.
      */
-    error OnlyAllowedSeaDrop();
+    error InvalidCallerOnlyAllowedSeaportOrConduit(address caller);
 
     /**
-     * @dev Emit an event when allowed SeaDrop contracts are updated.
+     * @dev Emit an event when allowed Seaport contracts are updated.
      */
-    event AllowedSeaDropUpdated(address[] allowedSeaDrop);
+    event AllowedSeaportUpdated(address[] allowedSeaport);
 
     /**
-     * @notice Update the allowed SeaDrop contracts.
-     *         Only the owner or administrator can use this function.
+     * @notice Update the allowed Seaport contracts.
+     *         Only the owner can use this function.
      *
-     * @param allowedSeaDrop The allowed SeaDrop addresses.
+     * @param allowedSeaport The allowed Seaport addresses.
      */
-    function updateAllowedSeaDrop(address[] calldata allowedSeaDrop) external;
-
-    /**
-     * @notice Mint tokens, restricted to the SeaDrop contract.
-     *
-     * @dev    NOTE: If a token registers itself with multiple SeaDrop
-     *         contracts, the implementation of this function should guard
-     *         against reentrancy. If the implementing token uses
-     *         _safeMint(), or a feeRecipient with a malicious receive() hook
-     *         is specified, the token or fee recipients may be able to execute
-     *         another mint in the same transaction via a separate SeaDrop
-     *         contract.
-     *         This is dangerous if an implementing token does not correctly
-     *         update the minterNumMinted and currentTotalSupply values before
-     *         transferring minted tokens, as SeaDrop references these values
-     *         to enforce token limits on a per-wallet and per-stage basis.
-     *
-     * @param minter   The address to mint to.
-     * @param quantity The number of tokens to mint.
-     */
-    function mintSeaDrop(address minter, uint256 quantity) external;
+    function updateAllowedSeaport(address[] calldata allowedSeaport) external;
 
     /**
      * @notice Returns a set of mint stats for the address.
@@ -63,7 +52,9 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
      *
      * @param minter The minter address.
      */
-    function getMintStats(address minter)
+    function getMintStats(
+        address minter
+    )
         external
         view
         returns (
@@ -73,30 +64,20 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
         );
 
     /**
-     * @notice Update the public drop data for this nft contract on SeaDrop.
-     *         Only the owner or administrator can use this function.
+     * @notice Update the public drop data.
+     *         Only the owner can use this function.
      *
-     *         The administrator can only update `feeBps`.
-     *
-     * @param seaDropImpl The allowed SeaDrop contract.
      * @param publicDrop  The public drop data.
      */
-    function updatePublicDrop(
-        address seaDropImpl,
-        PublicDrop calldata publicDrop
-    ) external;
+    function updatePublicDrop(PublicDrop calldata publicDrop) external;
 
     /**
      * @notice Update the allow list data for this nft contract on SeaDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl   The allowed SeaDrop contract.
      * @param allowListData The allow list data.
      */
-    function updateAllowList(
-        address seaDropImpl,
-        AllowListData calldata allowListData
-    ) external;
+    function updateAllowList(AllowListData calldata allowListData) external;
 
     /**
      * @notice Update the token gated drop stage data for this nft contract
@@ -113,80 +94,64 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
      *         `dropStage` time period.
      *
      *
-     * @param seaDropImpl     The allowed SeaDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
-        address seaDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external;
 
     /**
-     * @notice Update the drop URI for this nft contract on SeaDrop.
-     *         Only the owner or administrator can use this function.
+     * @notice Update the Drop URI.
+     *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
      * @param dropURI     The new drop URI.
      */
-    function updateDropURI(address seaDropImpl, string calldata dropURI)
-        external;
+    function updateDropURI(string calldata dropURI) external;
 
     /**
-     * @notice Update the creator payout address for this nft contract on
-     *         SeaDrop.
-     *         Only the owner can set the creator payout address.
+     * @notice Update the creator payouts.
+     *         Only the owner can use this function.
      *
-     * @param seaDropImpl   The allowed SeaDrop contract.
-     * @param payoutAddress The new payout address.
+     * @param creatorPayouts The creator payouts.
      */
-    function updateCreatorPayoutAddress(
-        address seaDropImpl,
-        address payoutAddress
+    function updateCreatorPayouts(
+        CreatorPayout[] calldata creatorPayouts
     ) external;
 
     /**
-     * @notice Update the allowed fee recipient for this nft contract
-     *         on SeaDrop.
-     *         Only the administrator can set the allowed fee recipient.
+     * @notice Update the allowed fee recipient.
+     *         Only the owner can use this function.
      *
-     * @param seaDropImpl  The allowed SeaDrop contract.
      * @param feeRecipient The new fee recipient.
      */
     function updateAllowedFeeRecipient(
-        address seaDropImpl,
         address feeRecipient,
         bool allowed
     ) external;
 
     /**
-     * @notice Update the server-side signers for this nft contract
-     *         on SeaDrop.
-     *         Only the owner or administrator can use this function.
+     * @notice Update the server-side signers.
+     *         Only the owner can use this function.
      *
-     * @param seaDropImpl                The allowed SeaDrop contract.
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
      *                                   to enforce for signed mints.
      */
     function updateSignedMintValidationParams(
-        address seaDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
     ) external;
 
     /**
      * @notice Update the allowed payers for this nft contract on SeaDrop.
-     *         Only the owner or administrator can use this function.
+     *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
-    function updatePayer(
-        address seaDropImpl,
-        address payer,
-        bool allowed
-    ) external;
+    function updatePayer(address payer, bool allowed) external;
+
+    // TODO add multiconfigure to ensure contract interface supports self serve
 }

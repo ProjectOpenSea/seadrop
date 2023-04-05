@@ -61,7 +61,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await token.setMaxSupply(100);
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
     publicDrop = {
-      mintPrice: "100000000000000000", // 0.1 ether
+      mintPrice: ethers.utils.parseEther("0.1"),
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 100,
@@ -84,7 +84,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         .mintPublic(token.address, feeRecipient.address, minter.address, 3, {
           value,
         })
-    ).to.be.revertedWith("PayerNotAllowed");
+    ).to.be.revertedWithCustomError(token, "PayerNotAllowed");
 
     expect(await seadrop.getPayers(token.address)).to.deep.eq([]);
     expect(await seadrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
@@ -166,7 +166,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         .mintPublic(token.address, feeRecipient.address, minter.address, 3, {
           value,
         })
-    ).to.be.revertedWith("NotActive");
+    ).to.be.revertedWithCustomError(token, "NotActive");
 
     // Mint public with minter being payer.
     await expect(
@@ -179,7 +179,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
           3,
           { value }
         )
-    ).to.be.revertedWith("NotActive");
+    ).to.be.revertedWithCustomError(token, "NotActive");
   });
 
   it("Should not mint a public stage that has ended", async () => {
@@ -197,7 +197,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         .mintPublic(token.address, feeRecipient.address, minter.address, 3, {
           value,
         })
-    ).to.be.revertedWith("NotActive");
+    ).to.be.revertedWithCustomError(token, "NotActive");
 
     // Mint public with minter being payer.
     await expect(
@@ -210,7 +210,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
           3,
           { value }
         )
-    ).to.be.revertedWith("NotActive");
+    ).to.be.revertedWithCustomError(token, "NotActive");
   });
 
   it("Should respect limit for max mints per wallet and max supply", async () => {
@@ -249,7 +249,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
           value,
         })
-    ).to.be.revertedWith("MintQuantityExceedsMaxSupply");
+    ).to.be.revertedWithCustomError(token, "MintQuantityExceedsMaxSupply");
 
     // Update max supply to 3.
     await token.setMaxSupply(3);
@@ -287,7 +287,10 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         .mintPublic(token.address, feeRecipient.address, minter.address, 1, {
           value,
         })
-    ).to.be.revertedWith("MintQuantityExceedsMaxMintedPerWallet");
+    ).to.be.revertedWithCustomError(
+      token,
+      "MintQuantityExceedsMaxMintedPerWallet"
+    );
   });
 
   it("Should not mint with incorrect payment", async () => {
@@ -307,7 +310,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
             value,
           }
         )
-    ).to.be.revertedWith("IncorrectPayment");
+    ).to.be.revertedWithCustomError(token, "IncorrectPayment");
 
     // Pay for 3 mints but request quantity of 2.
     value = BigNumber.from(publicDrop.mintPrice).mul(3);
@@ -322,7 +325,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
           mintQuantity,
           { value }
         )
-    ).to.be.revertedWith("IncorrectPayment");
+    ).to.be.revertedWithCustomError(token, "IncorrectPayment");
   });
 
   it("Should not mint with invalid fee recipient", async () => {
@@ -339,7 +342,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
             value,
           }
         )
-    ).to.be.revertedWith("FeeRecipientCannotBeZeroAddress");
+    ).to.be.revertedWithCustomError(token, "FeeRecipientCannotBeZeroAddress");
 
     await expect(
       seadrop
@@ -347,7 +350,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         .mintPublic(token.address, creator.address, minter.address, 1, {
           value,
         })
-    ).to.be.revertedWith("FeeRecipientNotAllowed");
+    ).to.be.revertedWithCustomError(token, "FeeRecipientNotAllowed");
   });
 
   it("Should not be able to set an invalid fee bps", async () => {
@@ -355,7 +358,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       token
         .connect(admin)
         .updatePublicDrop(seadrop.address, { ...publicDrop, feeBps: 15_000 })
-    ).to.be.revertedWith("InvalidFeeBps");
+    ).to.be.revertedWithCustomError(token, "InvalidFeeBps");
   });
 
   it("Should mint when feeBps is zero", async () => {
@@ -394,6 +397,6 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       seadrop
         .connect(minter)
         .mintPublic(token.address, feeRecipient.address, minter.address, 0)
-    ).to.be.revertedWith("MintQuantityCannotBeZero");
+    ).to.be.revertedWithCustomError(token, "MintQuantityCannotBeZero");
   });
 });

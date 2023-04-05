@@ -68,17 +68,21 @@ describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
     expect(await token.totalSupply()).to.equal(3);
 
     // Only the owner or approved of the minted token should be able to burn it.
-    await expect(token.connect(owner).burn(1)).to.be.revertedWith(
-      "TransferCallerNotOwnerNorApproved()"
+    await expect(token.connect(owner).burn(1)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
     );
-    await expect(token.connect(approved).burn(1)).to.be.revertedWith(
-      "TransferCallerNotOwnerNorApproved()"
+    await expect(token.connect(approved).burn(1)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
     );
-    await expect(token.connect(approved).burn(2)).to.be.revertedWith(
-      "TransferCallerNotOwnerNorApproved()"
+    await expect(token.connect(approved).burn(2)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
     );
-    await expect(token.connect(owner).burn(3)).to.be.revertedWith(
-      "TransferCallerNotOwnerNorApproved()"
+    await expect(token.connect(owner).burn(3)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
     );
 
     expect(await token.ownerOf(1)).to.equal(minter.address);
@@ -96,8 +100,9 @@ describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
     expect(await token.totalSupply()).to.equal(1);
 
     await token.connect(minter).setApprovalForAll(approved.address, false);
-    await expect(token.connect(approved).burn(3)).to.be.revertedWith(
-      "TransferCallerNotOwnerNorApproved()"
+    await expect(token.connect(approved).burn(3)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
     );
 
     await token.connect(minter).approve(owner.address, 3);
@@ -105,19 +110,21 @@ describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
 
     expect(await token.totalSupply()).to.equal(0);
 
-    await expect(token.ownerOf(1)).to.be.revertedWith(
-      "OwnerQueryForNonexistentToken()"
+    await expect(token.ownerOf(1)).to.be.revertedWithCustomError(
+      token,
+      "OwnerQueryForNonexistentToken"
     );
-    await expect(token.ownerOf(2)).to.be.revertedWith(
-      "OwnerQueryForNonexistentToken()"
+    await expect(token.ownerOf(2)).to.be.revertedWithCustomError(
+      token,
+      "OwnerQueryForNonexistentToken"
     );
     expect(await token.totalSupply()).to.equal(0);
 
     // Should not be able to burn a nonexistent token.
     for (const tokenId of [0, 1, 2, 3]) {
-      await expect(token.connect(minter).burn(tokenId)).to.be.revertedWith(
-        "OwnerQueryForNonexistentToken()"
-      );
+      await expect(
+        token.connect(minter).burn(tokenId)
+      ).to.be.revertedWithCustomError(token, "OwnerQueryForNonexistentToken");
     }
   });
 });

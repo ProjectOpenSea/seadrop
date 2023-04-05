@@ -72,7 +72,7 @@ describe(`SeaDrop (v${VERSION})`, function () {
         };
         await expect(
           seadrop.connect(impersonatedSigner).updatePublicDrop(publicDrop)
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
 
         const allowListData = {
           merkleRoot: ethers.constants.HashZero,
@@ -81,10 +81,10 @@ describe(`SeaDrop (v${VERSION})`, function () {
         };
         await expect(
           seadrop.connect(impersonatedSigner).updateAllowList(allowListData)
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
 
         const tokenGatedDropStage = {
-          mintPrice: "10000000000000000", // 0.01 ether
+          mintPrice: ethers.utils.parseEther("0.1"),
           maxTotalMintableByWallet: 10,
           startTime: Math.round(Date.now() / 1000) - 100,
           endTime: Math.round(Date.now() / 1000) + 500,
@@ -97,19 +97,19 @@ describe(`SeaDrop (v${VERSION})`, function () {
           seadrop
             .connect(impersonatedSigner)
             .updateTokenGatedDrop(minter.address, tokenGatedDropStage)
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
 
         await expect(
           seadrop
             .connect(impersonatedSigner)
             .updateCreatorPayoutAddress(minter.address)
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
 
         await expect(
           seadrop
             .connect(impersonatedSigner)
             .updateAllowedFeeRecipient(minter.address, true)
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
 
         const signedMintValidationParams = {
           minMintPrice: 1,
@@ -127,15 +127,15 @@ describe(`SeaDrop (v${VERSION})`, function () {
               minter.address,
               signedMintValidationParams
             )
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
 
         await expect(
           seadrop.connect(impersonatedSigner).updateDropURI("http://test.com")
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
 
         await expect(
           seadrop.connect(impersonatedSigner).updatePayer(minter.address, true)
-        ).to.be.revertedWith("OnlyINonFungibleSeaDropToken");
+        ).to.be.revertedWithCustomError(token, "OnlyINonFungibleSeaDropToken");
       }
     );
 
@@ -182,7 +182,7 @@ describe(`SeaDrop (v${VERSION})`, function () {
     await maliciousRecipient.setStartAttack({ value: oneEther.mul(10) });
     await expect(
       maliciousRecipient.attack(seadrop.address, token.address)
-    ).to.be.revertedWith("ETH_TRANSFER_FAILED");
+    ).to.be.revertedWithCustomError(token, "ETH_TRANSFER_FAILED");
     expect(await token.totalSupply()).to.eq(0);
   });
 });

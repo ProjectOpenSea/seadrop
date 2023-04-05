@@ -3,11 +3,8 @@ import fs from "fs";
 import type { HardhatUserConfig } from "hardhat/config";
 
 import "dotenv/config";
+import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-ethers";
-import "@nomiclabs/hardhat-waffle";
-import "@nomiclabs/hardhat-etherscan";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
 import "hardhat-preprocessor";
 
 // Configure remappings.
@@ -47,17 +44,12 @@ const config: HardhatUserConfig = {
     hardhat: {
       blockGasLimit: 30_000_000,
       throwOnCallFailures: false,
-    },
-    verificationNetwork: {
-      url: process.env.NETWORK_RPC ?? "",
+      allowUnlimitedContractSize: true,
     },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
-  },
-  etherscan: {
-    apiKey: process.env.EXPLORER_API_KEY,
   },
   preprocess: {
     eachLine: (hre) => ({

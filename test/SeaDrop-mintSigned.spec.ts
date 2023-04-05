@@ -121,7 +121,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
 
     mintParams = {
-      mintPrice: "100000000000000000", // 0.1 ether
+      mintPrice: ethers.utils.parseEther("0.1"),
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 100,
@@ -207,7 +207,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
             value,
           }
         )
-    ).to.be.revertedWith("PayerNotAllowed");
+    ).to.be.revertedWithCustomError(token, "PayerNotAllowed");
 
     // Allow the payer.
     await token.updatePayer(seadrop.address, payer.address, true);
@@ -261,7 +261,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
             value,
           }
         )
-    ).to.be.revertedWith("SignatureAlreadyUsed()");
+    ).to.be.revertedWithCustomError(token, "SignatureAlreadyUsed");
 
     // Mint signed with minter being payer.
     // Change the salt to use a new digest.
@@ -330,7 +330,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           value,
         }
       )
-    ).to.be.revertedWith("InvalidSignature");
+    ).to.be.revertedWithCustomError(token, "InvalidSignature");
 
     // Test with different fee recipient
     await token
@@ -350,7 +350,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           value,
         }
       )
-    ).to.be.revertedWith("InvalidSignature");
+    ).to.be.revertedWithCustomError(token, "InvalidSignature");
 
     // Test with different token contract
     const ERC721PartnerSeaDrop = await ethers.getContractFactory(
@@ -378,7 +378,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
               `0x${"8".repeat(40)}`,
               emptySignedMintValidationParams
             )
-        ).to.be.revertedWith("SignerNotPresent()");
+        ).to.be.revertedWithCustomError(token, "SignerNotPresent");
       }
     );
 
@@ -407,7 +407,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           value,
         }
       )
-    ).to.be.revertedWith("InvalidSignature");
+    ).to.be.revertedWithCustomError(token, "InvalidSignature");
 
     // Test with signer that is not allowed
     const signer2 = new ethers.Wallet(randomHex(32), provider);
@@ -453,7 +453,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           value,
         }
       )
-    ).to.be.revertedWith("InvalidSignature");
+    ).to.be.revertedWithCustomError(token, "InvalidSignature");
 
     // Test with different mint params
     const differentMintParams = {
@@ -473,7 +473,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           value,
         }
       )
-    ).to.be.revertedWith("InvalidSignature");
+    ).to.be.revertedWithCustomError(token, "InvalidSignature");
 
     // Test with different salt
     await expect(
@@ -489,7 +489,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           value,
         }
       )
-    ).to.be.revertedWith("InvalidSignature");
+    ).to.be.revertedWithCustomError(token, "InvalidSignature");
 
     // Ensure that the zero address cannot be added as a signer.
     await expect(
@@ -500,7 +500,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           signedMintValidationParams
         )
-    ).to.be.revertedWith("SignerCannotBeZeroAddress()");
+    ).to.be.revertedWithCustomError(token, "SignerCannotBeZeroAddress");
 
     // Remove the original signer for branch coverage.
     await token.updateSignedMintValidationParams(
@@ -519,7 +519,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         signer.address,
         signedMintValidationParams
       )
-    ).to.be.revertedWith("AdministratorMustInitializeWithFee");
+    ).to.be.revertedWithCustomError(
+      token,
+      "AdministratorMustInitializeWithFee"
+    );
     await token
       .connect(admin)
       .updateSignedMintValidationParams(
@@ -603,7 +606,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value: mintParams.mintPrice }
         )
-    ).to.be.revertedWith("MintQuantityExceedsMaxMintedPerWallet");
+    ).to.be.revertedWithCustomError(
+      token,
+      "MintQuantityExceedsMaxMintedPerWallet"
+    );
 
     // Try to mint one more with manipulated mintParams.
     await expect(
@@ -619,7 +625,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value: mintParams.mintPrice }
         )
-    ).to.be.revertedWith("InvalidSignature");
+    ).to.be.revertedWithCustomError(token, "InvalidSignature");
   });
 
   it("Should mint a signed mint with fee amount that rounds down to zero", async () => {
@@ -695,7 +701,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
             value,
           }
         )
-    ).to.be.revertedWith("InvalidSignedFeeBps");
+    ).to.be.revertedWithCustomError(token, "InvalidSignedFeeBps");
   });
 
   it("Should not mint a signed mint that violates the validation params", async () => {
@@ -725,7 +731,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
             value: 0, // testing free mint price
           }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `InvalidSignedMintPrice(${newMintParams.mintPrice}, ${signedMintValidationParams.minMintPrice})`
     );
 
@@ -756,7 +763,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `InvalidSignedMaxTotalMintableByWallet(${newMintParams.maxTotalMintableByWallet}, ${signedMintValidationParams.maxMaxTotalMintableByWallet})`
     );
 
@@ -784,7 +792,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `InvalidSignedStartTime(${newMintParams.startTime}, ${signedMintValidationParams.minStartTime})`
     );
 
@@ -815,7 +824,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `InvalidSignedEndTime(${newMintParams.endTime}, ${signedMintValidationParams.maxEndTime})`
     );
 
@@ -846,7 +856,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `InvalidSignedMaxTokenSupplyForStage(${newMintParams.maxTokenSupplyForStage}, ${signedMintValidationParams.maxMaxTokenSupplyForStage})`
     );
 
@@ -877,7 +888,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `InvalidSignedFeeBps(${newMintParams.feeBps}, ${signedMintValidationParams.minFeeBps})`
     );
 
@@ -908,7 +920,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `InvalidSignedFeeBps(${newMintParams.feeBps}, ${signedMintValidationParams.maxFeeBps})`
     );
 
@@ -939,7 +952,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           signature,
           { value }
         )
-    ).to.be.revertedWith(`SignedMintsMustRestrictFeeRecipients()`);
+    ).to.be.revertedWithCustomError(
+      token,
+      `SignedMintsMustRestrictFeeRecipients()`
+    );
 
     expect(await token.totalSupply()).to.eq(0);
   });
@@ -952,7 +968,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ...signedMintValidationParams,
           minFeeBps: 11_000,
         })
-    ).to.be.revertedWith(`InvalidFeeBps(11000)`);
+    ).to.be.revertedWithCustomError(token, `InvalidFeeBps(11000)`);
 
     await expect(
       token
@@ -961,6 +977,6 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           ...signedMintValidationParams,
           maxFeeBps: 12_000,
         })
-    ).to.be.revertedWith(`InvalidFeeBps(12000)`);
+    ).to.be.revertedWithCustomError(token, `InvalidFeeBps(12000)`);
   });
 });

@@ -71,7 +71,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Create the drop stage object.
     dropStage = {
-      mintPrice: "10000000000000000", // 0.01 ether
+      mintPrice: ethers.utils.parseEther("0.1"),
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
@@ -176,7 +176,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: dropStage.mintPrice }
         )
-    ).to.be.revertedWith("PayerNotAllowed");
+    ).to.be.revertedWithCustomError(token, "PayerNotAllowed");
 
     // Allow the payer.
     await token
@@ -297,7 +297,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: dropStage.mintPrice }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `TokenGatedTokenIdAlreadyRedeemed("${token.address}", "${allowedNftToken.address}", 0)`
     );
   });
@@ -321,7 +322,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: dropStage.mintPrice }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `TokenGatedNotTokenOwner("${token.address}", "${allowedNftToken.address}", 0)`
     );
   });
@@ -361,7 +363,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         ethers.constants.AddressZero,
         mintParams
       )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `NotActive(${mostRecentBlockTimestamp + 1}, ${dropStage.startTime}, ${
         dropStageExpired.endTime
       })`
@@ -390,7 +393,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: dropStage.mintPrice }
         )
-    ).to.be.revertedWith("FeeRecipientNotAllowed()");
+    ).to.be.revertedWithCustomError(token, "FeeRecipientNotAllowed");
   });
 
   it("Should not mint an allowed token holder stage with a different token contract", async () => {
@@ -442,7 +445,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: dropStage.mintPrice }
         )
-    ).to.be.revertedWith(`NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`);
+    ).to.be.revertedWithCustomError(
+      token,
+      `NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`
+    );
   });
 
   it("Should not mint an allowed token holder stage with different mint params", async () => {
@@ -477,7 +483,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: dropStage.mintPrice }
         )
-    ).to.be.revertedWith(`NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`);
+    ).to.be.revertedWithCustomError(
+      token,
+      `NotActive(${mostRecentBlockTimestamp + 1}, 0, 0)`
+    );
   });
 
   it("Should not mint an allowed token holder stage after exceeding max mints per wallet", async () => {
@@ -513,7 +522,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: mintValue }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `MintQuantityExceedsMaxMintedPerWallet(${tokenIds.length}, ${dropStage.maxTotalMintableByWallet})`
     );
   });
@@ -574,7 +584,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: mintValue }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `MintQuantityExceedsMaxTokenSupplyForStage(${tokenIds.length}, 5)`
     );
   });
@@ -625,7 +636,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           mintParams,
           { value: mintValue }
         )
-    ).to.be.revertedWith(
+    ).to.be.revertedWithCustomError(
+      token,
       `MintQuantityExceedsMaxSupply(${tokenIds.length}, 100)`
     );
   });
@@ -635,7 +647,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token
         .connect(admin)
         .updateTokenGatedDrop(seadrop.address, token.address, dropStage)
-    ).to.be.revertedWith("TokenGatedDropAllowedNftTokenCannotBeDropToken()");
+    ).to.be.revertedWithCustomError(
+      token,
+      "TokenGatedDropAllowedNftTokenCannotBeDropToken"
+    );
 
     await expect(
       token
@@ -645,7 +660,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           ethers.constants.AddressZero,
           dropStage
         )
-    ).to.be.revertedWith("TokenGatedDropAllowedNftTokenCannotBeZeroAddress()");
+    ).to.be.revertedWithCustomError(
+      token,
+      "TokenGatedDropAllowedNftTokenCannotBeZeroAddress"
+    );
   });
 
   it("Should not be able to set an invalid fee bps", async () => {
@@ -656,7 +674,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           ...dropStage,
           feeBps: 15_000,
         })
-    ).to.be.revertedWith("InvalidFeeBps");
+    ).to.be.revertedWithCustomError(token, "InvalidFeeBps");
   });
 
   it("Should revert when stage not present or fee not set", async () => {
@@ -679,7 +697,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
           seadrop
             .connect(impersonatedSigner)
             .updateTokenGatedDrop(token2, zeroMintDropStage)
-        ).to.be.revertedWith("TokenGatedDropStageNotPresent()");
+        ).to.be.revertedWithCustomError(token, "TokenGatedDropStageNotPresent");
       }
     );
 
@@ -689,7 +707,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token
         .connect(owner)
         .updateTokenGatedDrop(seadrop.address, token2, zeroMintDropStage)
-    ).to.be.revertedWith("AdministratorMustInitializeWithFee()");
+    ).to.be.revertedWithCustomError(
+      token,
+      "AdministratorMustInitializeWithFee"
+    );
   });
 
   it("Should clear from enumeration when deleted", async () => {

@@ -1,6 +1,4 @@
-import "@nomiclabs/hardhat-waffle";
 import "@openzeppelin/hardhat-upgrades";
-import "@nomiclabs/hardhat-etherscan";
 
 module.exports = {
   solidity: {

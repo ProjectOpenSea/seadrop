@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {
-    CreatorPayout,
-    PublicDrop,
-    TokenGatedDropStage,
-    SignedMintValidationParams
-} from "./SeaDropStructs.sol";
+import { PublicDrop, TokenGatedDropStage, SignedMintValidationParams } from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     /**
@@ -42,10 +37,10 @@ interface SeaDropErrorsAndEvents {
      *      always `type(uint).max`.
      */
     error MintQuantityExceedsMaxTokenSupplyForStage(
-        uint256 total,
+        uint256 total, 
         uint256 maxTokenSupplyForStage
     );
-
+    
     /**
      * @dev Revert if the fee recipient is the zero address.
      */
@@ -75,24 +70,6 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert if the creator payout address is the zero address.
      */
     error CreatorPayoutAddressCannotBeZeroAddress();
-
-    /**
-     * @dev Revert if the creator payout basis points are zero.
-     */
-    error CreatorPayoutBasisPointsCannotBeZero();
-
-    /**
-     * @dev Revert if the total basis points for the creator payouts
-     *      don't equal exactly 10_000.
-     */
-    error InvalidCreatorPayoutTotalBasisPoints(
-        uint256 totalReceivedBasisPoints
-    );
-
-    /**
-     * @dev Revert if the creator payout basis points don't add up to 10_000.
-     */
-    error InvalidCreatorPayoutBasisPoints(uint256 totalReceivedBasisPoints);
 
     /**
      * @dev Revert with an error if the received payment is incorrect.
@@ -152,73 +129,49 @@ interface SeaDropErrorsAndEvents {
     error OnlyINonFungibleSeaDropToken(address sender);
 
     /**
-     * @dev Revert with an error if the token gated token ids and amounts
-     *      to mint do not match.
-     */
-    error TokenGatedTokenIdsAndAmountsLengthMismatch();
-
-    /**
      * @dev Revert with an error if the sender of a token gated supplied
      *      drop stage redeem is not the owner of the token.
      */
     error TokenGatedNotTokenOwner(
+        address nftContract,
         address allowedNftToken,
         uint256 allowedNftTokenId
     );
 
     /**
-     * @dev Revert with an error if the token id has reached its quantity limit
-     *      to redeem a token gated drop stage.
+     * @dev Revert with an error if the token id has already been used to
+     *      redeem a token gated drop stage.
      */
-    error TokenGatedTokenIdMintExceedsQuantityRemaining(
+    error TokenGatedTokenIdAlreadyRedeemed(
+        address nftContract,
         address allowedNftToken,
-        uint256 allowedNftTokenId,
-        uint256 quantityLimit,
-        uint256 quantityRedeemed,
-        uint256 additionalQuantityToMint
+        uint256 allowedNftTokenId
     );
 
     /**
      * @dev Revert with an error if an empty TokenGatedDropStage is provided
      *      for an already-empty TokenGatedDropStage.
      */
-    error TokenGatedDropStageNotPresent();
+     error TokenGatedDropStageNotPresent();
 
     /**
      * @dev Revert with an error if an allowedNftToken is set to
      *      the zero address.
      */
-    error TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
+     error TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
 
     /**
      * @dev Revert with an error if an allowedNftToken is set to
      *      the drop token itself.
      */
-    error TokenGatedDropAllowedNftTokenCannotBeDropToken();
+     error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
-    /**
-     * @dev Revert with an error if a min mint price is not set in the signed
-     *      mint validation params.
-     */
-    error SignedMintValidationParamsMinMintPriceNotSet();
-
-    /**
-     * @dev Revert with an error if the min mint price for a given
-     *      paymentToken is not set.
-     */
-    error SignedMintValidationParamsMinMintPriceNotSetForToken(
-        address paymentToken
-    );
 
     /**
      * @dev Revert with an error if supplied signed mint price is less than
      *      the minimum specified.
      */
-    error InvalidSignedMintPrice(
-        address paymentToken,
-        uint256 got,
-        uint256 minimum
-    );
+    error InvalidSignedMintPrice(uint256 got, uint256 minimum);
 
     /**
      * @dev Revert with an error if supplied signed maxTotalMintableByWallet
@@ -231,7 +184,7 @@ interface SeaDropErrorsAndEvents {
      *      the minimum specified.
      */
     error InvalidSignedStartTime(uint256 got, uint256 minimum);
-
+    
     /**
      * @dev Revert with an error if supplied signed end time is greater than
      *      the maximum specified.
@@ -242,9 +195,9 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert with an error if supplied signed maxTokenSupplyForStage
      *      is greater than the maximum specified.
      */
-    error InvalidSignedMaxTokenSupplyForStage(uint256 got, uint256 maximum);
-
-    /**
+     error InvalidSignedMaxTokenSupplyForStage(uint256 got, uint256 maximum);
+    
+     /**
      * @dev Revert with an error if supplied signed feeBps is greater than
      *      the maximum specified, or less than the minimum.
      */
@@ -264,25 +217,25 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
-     *
+     * 
+     * @param nftContract    The nft contract.
      * @param minter         The mint recipient.
      * @param feeRecipient   The fee recipient.
      * @param payer          The address who payed for the tx.
      * @param quantityMinted The number of tokens minted.
      * @param unitMintPrice  The amount paid for each token.
-     * @param paymentToken   The payment token for the mint.
      * @param feeBps         The fee out of 10_000 basis points collected.
      * @param dropStageIndex The drop stage index. Items minted
      *                       through mintPublic() have
      *                       dropStageIndex of 0.
      */
     event SeaDropMint(
+        address indexed nftContract,
         address indexed minter,
         address indexed feeRecipient,
         address payer,
         uint256 quantityMinted,
         uint256 unitMintPrice,
-        address paymentToken,
         uint256 feeBps,
         uint256 dropStageIndex
     );
@@ -290,20 +243,25 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev An event with updated public drop data for an nft contract.
      */
-    event PublicDropUpdated(PublicDrop publicDrop);
+    event PublicDropUpdated(
+        address indexed nftContract,
+        PublicDrop publicDrop
+    );
 
     /**
      * @dev An event with updated token gated drop stage data
      *      for an nft contract.
      */
     event TokenGatedDropStageUpdated(
+        address indexed nftContract,
         address indexed allowedNftToken,
         TokenGatedDropStage dropStage
     );
 
     /**
      * @dev An event with updated allow list data for an nft contract.
-     *
+     * 
+     * @param nftContract        The nft contract.
      * @param previousMerkleRoot The previous allow list merkle root.
      * @param newMerkleRoot      The new allow list merkle root.
      * @param publicKeyURI       If the allow list is encrypted, the public key
@@ -312,6 +270,7 @@ interface SeaDropErrorsAndEvents {
      * @param allowListURI       The URI for the allow list.
      */
     event AllowListUpdated(
+        address indexed nftContract,
         bytes32 indexed previousMerkleRoot,
         bytes32 indexed newMerkleRoot,
         string[] publicKeyURI,
@@ -321,19 +280,23 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev An event with updated drop URI for an nft contract.
      */
-    event DropURIUpdated(string newDropURI);
+    event DropURIUpdated(address indexed nftContract, string newDropURI);
 
     /**
      * @dev An event with the updated creator payout address for an nft
      *      contract.
      */
-    event CreatorPayoutsUpdated(CreatorPayout[] creatorPayouts);
+    event CreatorPayoutAddressUpdated(
+        address indexed nftContract,
+        address indexed newPayoutAddress
+    );
 
     /**
      * @dev An event with the updated allowed fee recipient for an nft
      *      contract.
      */
     event AllowedFeeRecipientUpdated(
+        address indexed nftContract,
         address indexed feeRecipient,
         bool indexed allowed
     );
@@ -343,12 +306,17 @@ interface SeaDropErrorsAndEvents {
      *      signers.
      */
     event SignedMintValidationParamsUpdated(
+        address indexed nftContract,
         address indexed signer,
         SignedMintValidationParams signedMintValidationParams
-    );
+    );   
 
     /**
      * @dev An event with the updated payer for an nft contract.
      */
-    event PayerUpdated(address indexed payer, bool indexed allowed);
+    event PayerUpdated(
+        address indexed nftContract,
+        address indexed payer,
+        bool indexed allowed
+    );
 }
