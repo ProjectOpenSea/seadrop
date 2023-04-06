@@ -19,12 +19,12 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     /**
      * @dev Revert if the royalty basis points is greater than 10_000.
      */
-    error InvalidRoyaltyBasisPoints(uint256 basisPoints);
+    error InvalidRoyaltyBasisPoints(uint256 got);
 
     /**
-     * @dev Revert if the royalty address is being set to the zero address.
+     * @dev Revert if the royalty receiver is being set to the zero address.
      */
-    error RoyaltyAddressCannotBeZeroAddress();
+    error RoyaltyReceiverCannotBeZeroAddress();
 
     /**
      * @dev Emit an event for token metadata reveals/updates,

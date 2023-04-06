@@ -1,17 +1,26 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
+import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION } from "./utils/helpers";
-import { whileImpersonating } from "./utils/impersonate";
+import { VERSION, mintTokens } from "./utils/helpers";
 
-import type { ERC721SeaDropRandomOffset, ISeaDrop } from "../typechain-types";
+import type {
+  ConduitInterface,
+  ConsiderationInterface,
+  ERC721SeaDropRandomOffset,
+} from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
+
+  // Seaport
+  let marketplaceContract: ConsiderationInterface;
+  let conduitOne: ConduitInterface;
+
+  // SeaDrop
   let token: ERC721SeaDropRandomOffset;
   let owner: Wallet;
   let creator: Wallet;
@@ -34,9 +43,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
@@ -45,7 +52,12 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
       "ERC721SeaDropRandomOffset",
       owner
     );
-    token = await ERC721SeaDropRandomOffset.deploy("", "", [seadrop.address]);
+    token = await ERC721SeaDropRandomOffset.deploy(
+      "",
+      "",
+      marketplaceContract.address,
+      conduitOne.address
+    );
   });
 
   it("Should only let the owner call setRandomOffset once the max supply is reached", async () => {
@@ -56,15 +68,13 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "NotFullyMinted");
 
     // Mint to the max supply.
-    await whileImpersonating(
-      seadrop.address,
+    await mintTokens({
+      marketplaceContract,
       provider,
-      async (impersonatedSigner) => {
-        await token
-          .connect(impersonatedSigner)
-          .mintSeaDrop(minter.address, 100);
-      }
-    );
+      token,
+      minter,
+      quantity: 100,
+    });
 
     expect(await token.randomOffset()).to.equal(ethers.constants.Zero);
 
@@ -86,15 +96,13 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     );
 
     // Mint to the max supply.
-    await whileImpersonating(
-      seadrop.address,
+    await mintTokens({
+      marketplaceContract,
       provider,
-      async (impersonatedSigner) => {
-        await token
-          .connect(impersonatedSigner)
-          .mintSeaDrop(minter.address, 100);
-      }
-    );
+      token,
+      minter,
+      quantity: 100,
+    });
 
     expect(await token.tokenURI(1)).to.equal("");
 

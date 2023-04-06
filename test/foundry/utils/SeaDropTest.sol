@@ -38,7 +38,7 @@ contract SeaDropTest is
     ERC721SeaDrop offerer;
 
     /// @dev The allowed Seaport address to interact with the contract offerer.
-    address[] internal allowedSeaport;
+    address internal allowedSeaport;
 
     /// @dev SeaDrop doesn't use criteria resolvers.
     CriteriaResolver[] internal criteriaResolvers;
@@ -112,8 +112,7 @@ contract SeaDropTest is
         super.setUp();
 
         // Set allowedSeaport
-        allowedSeaport = new address[](1);
-        allowedSeaport[0] = address(consideration);
+        allowedSeaport = address(consideration);
 
         // Deploy DelegationRegistry to the expected address.
         address registryAddress = 0x00000000000076A84feF008CDAbe6409d2FE638B;

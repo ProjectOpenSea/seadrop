@@ -1,20 +1,29 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
+import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION } from "./utils/helpers";
-import { whileImpersonating } from "./utils/impersonate";
+import { VERSION, mintTokens } from "./utils/helpers";
 
-import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
+import type {
+  ConduitInterface,
+  ConsiderationInterface,
+  ERC721SeaDrop,
+} from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
-  let token: ERC721PartnerSeaDrop;
+
+  // Seaport
+  let marketplaceContract: ConsiderationInterface;
+  let conduitOne: ConduitInterface;
+
+  // SeaDrop
+  let token: ERC721SeaDrop;
   let owner: Wallet;
-  let admin: Wallet;
+  let bob: Wallet;
 
   after(async () => {
     await network.provider.request({
@@ -25,25 +34,26 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   before(async () => {
     // Set the wallets
     owner = new ethers.Wallet(randomHex(32), provider);
-    admin = new ethers.Wallet(randomHex(32), provider);
+    bob = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    for (const wallet of [owner, admin]) {
+    for (const wallet of [owner, bob]) {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop to mint tokens
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
 
     // Deploy token
-    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop",
+    const ERC721SeaDrop = await ethers.getContractFactory(
+      "ERC721SeaDrop",
       owner
     );
-    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
-      seadrop.address,
-    ]);
+    token = await ERC721SeaDrop.deploy(
+      "",
+      "",
+      marketplaceContract.address,
+      conduitOne.address
+    );
 
     await token.connect(owner).setMaxSupply(5);
   });
@@ -52,7 +62,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.baseURI()).to.equal("");
 
     await expect(
-      token.connect(admin).setBaseURI("http://example.com")
+      token.connect(bob).setBaseURI("http://example.com")
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
     expect(await token.baseURI()).to.equal("");
 
@@ -62,13 +72,13 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.not.emit(token, "BatchMetadataUpdate");
 
     // it should emit BatchMetadataUpdate when totalSupply is greater than 0
-    await whileImpersonating(
-      seadrop.address,
+    await mintTokens({
+      marketplaceContract,
       provider,
-      async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 2);
-      }
-    );
+      token,
+      minter: owner,
+      quantity: 1,
+    });
     await expect(token.connect(owner).setBaseURI("http://example.com"))
       .to.emit(token, "BatchMetadataUpdate")
       .withArgs(1, await token.totalSupply());
@@ -79,7 +89,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.contractURI()).to.equal("");
 
     await expect(
-      token.connect(admin).setContractURI("http://example.com")
+      token.connect(bob).setContractURI("http://example.com")
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
     expect(await token.contractURI()).to.equal("");
 
@@ -93,7 +103,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.maxSupply()).to.equal(5);
 
     await expect(
-      token.connect(admin).setMaxSupply(10)
+      token.connect(bob).setMaxSupply(10)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
     expect(await token.maxSupply()).to.equal(5);
 
@@ -106,15 +116,14 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   it("Should not let the owner set the max supply over 2**64", async () => {
     await expect(
       token.connect(owner).setMaxSupply(ethers.BigNumber.from(2).pow(70))
-    ).to.be.revertedWithCustomError(
-      token,
-      `CannotExceedMaxSupplyOfUint64(${ethers.BigNumber.from(2).pow(70)})`
-    );
+    )
+      .to.be.revertedWithCustomError(token, "CannotExceedMaxSupplyOfUint64")
+      .withArgs(ethers.BigNumber.from(2).pow(70));
   });
 
   it("Should only let the owner notify update of batch token URIs", async () => {
     await expect(
-      token.connect(admin).emitBatchMetadataUpdate(5, 10)
+      token.connect(bob).emitBatchMetadataUpdate(5, 10)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
     await expect(token.connect(owner).emitBatchMetadataUpdate(5, 10))
@@ -123,38 +132,42 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should only let the owner update the royalties address and basis points", async () => {
-    expect(await token.royaltyAddress()).to.equal(ethers.constants.AddressZero);
-    expect(await token.royaltyBasisPoints()).to.equal(0);
+    expect(await token.royaltyInfo(0, 100)).to.deep.equal([
+      ethers.constants.AddressZero,
+      0,
+    ]);
 
     await expect(
-      token.connect(admin).setRoyaltyInfo([owner.address, 100])
+      token.connect(bob).setDefaultRoyalty(owner.address, 100)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
+    await expect(token.connect(owner).setDefaultRoyalty(owner.address, 10_001))
+      .to.be.revertedWithCustomError(token, "InvalidRoyaltyBasisPoints")
+      .withArgs(ethers.BigNumber.from(10_001));
     await expect(
-      token.connect(owner).setRoyaltyInfo([owner.address, 10_001])
-    ).to.be.revertedWithCustomError(token, "InvalidRoyaltyBasisPoints(10001)");
-    await expect(
-      token.connect(owner).setRoyaltyInfo([ethers.constants.AddressZero, 200])
+      token.connect(owner).setDefaultRoyalty(ethers.constants.AddressZero, 200)
     ).to.be.revertedWithCustomError(
       token,
-      `RoyaltyAddressCannotBeZeroAddress()`
+      "RoyaltyReceiverCannotBeZeroAddress"
     );
 
-    await expect(token.connect(owner).setRoyaltyInfo([admin.address, 100]))
+    await expect(token.connect(owner).setDefaultRoyalty(bob.address, 100))
       .to.emit(token, "RoyaltyInfoUpdated")
-      .withArgs(admin.address, 100);
-    await expect(token.connect(owner).setRoyaltyInfo([admin.address, 500])) // 5%
+      .withArgs(bob.address, 100);
+    await expect(token.connect(owner).setDefaultRoyalty(bob.address, 500))
       .to.emit(token, "RoyaltyInfoUpdated")
-      .withArgs(admin.address, 500);
+      .withArgs(bob.address, 500);
 
-    expect(await token.royaltyAddress()).to.equal(admin.address);
-    expect(await token.royaltyBasisPoints()).to.equal(500);
-
+    expect(await token.royaltyInfo(0, 100)).to.deep.equal([
+      bob.address,
+      ethers.BigNumber.from(5),
+    ]);
     expect(await token.royaltyInfo(1, 100_000)).to.deep.equal([
-      admin.address,
+      bob.address,
       ethers.BigNumber.from(5000),
     ]);
-    // 0x2a55205a is interface id for EIP-2981
+
+    // interface id for EIP-2981 is 0x2a55205a
     expect(await token.supportsInterface("0x2a55205a")).to.equal(true);
   });
 
@@ -171,20 +184,23 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       "BatchMetadataUpdate"
     );
     expect(await token.baseURI()).to.equal("");
-    expect(await token.tokenURI(1)).to.equal("");
+    expect(await token.tokenURI(1)).to.be.revertedWithCustomError(
+      token,
+      "URIQueryForNonexistentToken"
+    );
 
     // If the baseURI ends with "/" then the tokenURI should be baseURI + tokenId
     await expect(
       token.connect(owner).setBaseURI("http://example.com/")
     ).to.emit(token, "BatchMetadataUpdate");
 
-    await whileImpersonating(
-      seadrop.address,
+    await mintTokens({
+      marketplaceContract,
       provider,
-      async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 2);
-      }
-    );
+      token,
+      minter: owner,
+      quantity: 2,
+    });
     expect(await token.baseURI()).to.equal("http://example.com/");
     expect(await token.tokenURI(1)).to.equal("http://example.com/1");
     expect(await token.tokenURI(2)).to.equal("http://example.com/2");

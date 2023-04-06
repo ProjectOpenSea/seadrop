@@ -126,7 +126,8 @@ contract ERC721ContractMetadata is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the max supply does not exceed the maximum value of uint64.
+        // Ensure the max supply does not exceed the maximum value of uint64,
+        // a limit due to the storage of bit-packed variables in ERC721A.
         if (newMaxSupply > 2 ** 64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
@@ -169,7 +170,7 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @dev Sets the royalty information that all ids in this contract will default to.
+     * @dev Sets the default royalty information.
      *
      * Requirements:
      *
@@ -182,7 +183,12 @@ contract ERC721ContractMetadata is
 
         // Revert if the receiver is the zero address.
         if (receiver == address(0)) {
-            revert RoyaltyAddressCannotBeZeroAddress();
+            revert RoyaltyReceiverCannotBeZeroAddress();
+        }
+
+        // Revert if the fee numerator is greater than 10_000.
+        if (feeNumerator > 10_000) {
+            revert InvalidRoyaltyBasisPoints(feeNumerator);
         }
 
         // Set the default royalty.
@@ -238,7 +244,10 @@ contract ERC721ContractMetadata is
      */
     function tokenURI(
         uint256 tokenId
-    ) public view override returns (string memory) {
+    ) public view virtual override returns (string memory) {
+        // Revert if the tokenId doesn't exist.
+        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+
         // Put the baseURI on the stack.
         string memory theBaseURI = _baseURI();
 
@@ -249,7 +258,7 @@ contract ERC721ContractMetadata is
 
         // If the last character of the baseURI is not a slash, then return
         // the baseURI to signal the same metadata for all tokens, such as
-        // for a prerevealed state.
+        // for a prereveal state.
         if (bytes(theBaseURI)[bytes(theBaseURI).length - 1] != bytes("/")[0]) {
             return theBaseURI;
         }

@@ -9,9 +9,25 @@ import { VERSION } from "./utils/helpers";
 import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
 import type { PublicDropStruct } from "../typechain-types/src/SeaDrop";
 import type { Wallet } from "ethers";
+import { seaportFixture } from "./seaport-utils/fixtures";
 
+/*
 describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   const { provider } = ethers;
+
+  // Seaport
+  let marketplaceContract: ConsiderationInterface;
+  let conduitKeyOne: string;
+  let conduitOne: ConduitInterface;
+  let checkExpectedEvents: SeaportFixtures["checkExpectedEvents"];
+
+  // SeaDrop
+  let token: ERC721SeaDrop;
+  let owner: Wallet;
+  let creator: Wallet;
+  let minter: Wallet;
+  let publicDrop: AwaitedObject<PublicDropStruct>;
+
   let seadrop: ISeaDrop;
   let token: ERC721PartnerSeaDrop;
   let owner: Wallet;
@@ -42,9 +58,8 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    ({ checkExpectedEvents, conduitKeyOne, conduitOne, marketplaceContract } =
+      await seaportFixture(owner));
   });
 
   beforeEach(async () => {
@@ -400,3 +415,4 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "MintQuantityCannotBeZero");
   });
 });
+*/

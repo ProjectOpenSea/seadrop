@@ -56,6 +56,12 @@ const config: HardhatUserConfig = {
       transform: (line: string) => {
         if (line.match(/ from "/i)) {
           getRemappings().forEach(([find, replace]: string[]) => {
+            // Fix for having `@rari-capital/solmate` in seaport and `solmate` in seadrop
+            if (find === "solmate/") {
+              find = '"solmate/';
+              replace = `"${replace}`;
+            }
+
             if (line.match(find)) {
               line = line.replace(find, replace);
             }

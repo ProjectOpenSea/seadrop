@@ -2,12 +2,12 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
 import {
+  ContractOffererInterface__factory,
   IERC165__factory,
   IERC2981__factory,
   IERC721__factory,
   INonFungibleSeaDropToken__factory,
   ISeaDropTokenContractMetadata__factory,
-  ContractOffererInterface__factory,
 } from "../typechain-types";
 
 import { seaportFixture } from "./seaport-utils/fixtures";
@@ -21,26 +21,26 @@ import {
 } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721SeaDrop, ConsiderationInterface } from "../typechain-types";
+import type { AwaitedObject } from "./utils/helpers";
+import type {
+  ConduitInterface,
+  ConsiderationInterface,
+  ERC721SeaDrop,
+} from "../typechain-types";
 import type {
   AllowListDataStruct,
   PublicDropStruct,
   SignedMintValidationParamsStruct,
   TokenGatedDropStageStruct,
 } from "../typechain-types/src/ERC721SeaDrop";
-import type { SeaportFixtures } from "./seaport-utils/fixtures";
-import type { AwaitedObject } from "./utils/helpers";
 import type { BigNumberish, Wallet } from "ethers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 
 describe(`ERC721SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitKeyOne: string;
   let conduitOne: ConduitInterface;
-  let checkExpectedEvents: SeaportFixtures["checkExpectedEvents"];
 
   // SeaDrop
   let token: ERC721SeaDrop;
@@ -69,8 +69,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ checkExpectedEvents, conduitKeyOne, conduitOne, marketplaceContract } =
-      await seaportFixture(owner));
+    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
@@ -82,7 +81,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     token = await ERC721SeaDrop.deploy(
       "",
       "",
-      [marketplaceContract.address],
+      marketplaceContract.address,
       conduitOne.address
     );
 
@@ -136,7 +135,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     const tx = await ERC721SeaDrop.deploy(
       "",
       "",
-      [marketplaceContract.address],
+      marketplaceContract.address,
       conduitOne.address
     );
     const receipt = await tx.deployTransaction.wait();
@@ -792,6 +791,117 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     ).to.emit(token, "SignedMintValidationParamsUpdated");
     // .withArgs(config.signers[0], [[], 0, 0, 0, 0, 0, 0]);
     // Can uncomment the line above once this is fixed:
-    // https://github.com/NomicFoundation/hardhat/issues/3080#issuecomment-1414550798
+    // https://github.com/NomicFoundation/hardhat/issues/3080#issuecomment-1496878645
+  });
+
+  it("Should not allow reentrancy during mint", async () => {
+    // Set a public drop with maxTotalMintableByWallet: 1
+    // and restrictFeeRecipient: false
+    await token.setMaxSupply(10);
+    const oneEther = ethers.utils.parseEther("1");
+    await token.connect(owner).updatePublicDrop({
+      ...publicDrop,
+      mintPrice: oneEther,
+      maxTotalMintableByWallet: 1,
+      restrictFeeRecipients: false,
+    });
+
+    const MaliciousRecipientFactory = await ethers.getContractFactory(
+      "MaliciousRecipient",
+      owner
+    );
+    const maliciousRecipient = await MaliciousRecipientFactory.deploy();
+
+    // Set the creator address to MaliciousRecipient.
+    await token
+      .connect(owner)
+      .updateCreatorPayouts([
+        { payoutAddress: maliciousRecipient.address, basisPoints: 10_000 },
+      ]);
+
+    // Should not be able to mint with reentrancy.
+    await maliciousRecipient.setStartAttack({ value: oneEther.mul(10) });
+    await expect(
+      maliciousRecipient.attack(marketplaceContract.address, token.address)
+    ).to.be.revertedWithCustomError(marketplaceContract, "NoReentrantCalls");
+    expect(await token.totalSupply()).to.eq(0);
+  });
+
+  it("Should only let the token owner burn their own token", async () => {
+    await token.setMaxSupply(3);
+
+    // Mint 3 tokens to the minter.
+    await mintTokens({
+      marketplaceContract,
+      provider,
+      token,
+      minter,
+      quantity: 3,
+    });
+
+    expect(await token.ownerOf(1)).to.equal(minter.address);
+    expect(await token.ownerOf(2)).to.equal(minter.address);
+    expect(await token.ownerOf(3)).to.equal(minter.address);
+    expect(await token.totalSupply()).to.equal(3);
+
+    // Only the owner or approved of the minted token should be able to burn it.
+    await expect(token.connect(owner).burn(1)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
+    );
+    await expect(token.connect(creator).burn(1)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
+    );
+    await expect(token.connect(creator).burn(2)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
+    );
+    await expect(token.connect(creator).burn(3)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
+    );
+
+    expect(await token.ownerOf(1)).to.equal(minter.address);
+    expect(await token.ownerOf(2)).to.equal(minter.address);
+    expect(await token.ownerOf(3)).to.equal(minter.address);
+    expect(await token.totalSupply()).to.equal(3);
+
+    await token.connect(minter).burn(1);
+
+    expect(await token.totalSupply()).to.equal(2);
+
+    await token.connect(minter).setApprovalForAll(creator.address, true);
+    await token.connect(creator).burn(2);
+
+    expect(await token.totalSupply()).to.equal(1);
+
+    await token.connect(minter).setApprovalForAll(creator.address, false);
+    await expect(token.connect(creator).burn(3)).to.be.revertedWithCustomError(
+      token,
+      "TransferCallerNotOwnerNorApproved"
+    );
+
+    await token.connect(minter).approve(owner.address, 3);
+    await token.connect(owner).burn(3);
+
+    expect(await token.totalSupply()).to.equal(0);
+
+    await expect(token.ownerOf(1)).to.be.revertedWithCustomError(
+      token,
+      "OwnerQueryForNonexistentToken"
+    );
+    await expect(token.ownerOf(2)).to.be.revertedWithCustomError(
+      token,
+      "OwnerQueryForNonexistentToken"
+    );
+    expect(await token.totalSupply()).to.equal(0);
+
+    // Should not be able to burn a nonexistent token.
+    for (const tokenId of [0, 1, 2, 3]) {
+      await expect(
+        token.connect(minter).burn(tokenId)
+      ).to.be.revertedWithCustomError(token, "OwnerQueryForNonexistentToken");
+    }
   });
 });

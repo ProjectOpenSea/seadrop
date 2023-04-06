@@ -81,7 +81,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         address minter = address(this);
         bytes memory extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x00), // substandard version: public mint
+            bytes1(0x00), // substandard version byte: public mint
             bytes20(feeRecipient),
             bytes20(minter)
         );
@@ -184,7 +184,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         address minter = address(this);
         bytes memory extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x02), // substandard version: token holder mint
+            bytes1(0x02), // substandard version byte: token holder mint
             bytes20(feeRecipient),
             bytes20(minter),
             abi.encode(mintParams)
@@ -280,7 +280,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         address minter = address(this);
         bytes memory extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x01), // substandard version: allow list mint
+            bytes1(0x01), // substandard version byte: allow list mint
             bytes20(feeRecipient),
             bytes20(minter),
             abi.encode(mintParams),
@@ -398,7 +398,7 @@ contract ERC721SeaDropTest is SeaDropTest {
 
         bytes memory extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x03), // substandard version: signed mint
+            bytes1(0x03), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(minter),
             abi.encode(mintParams),
@@ -466,7 +466,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         );
         extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x03), // substandard version: signed mint
+            bytes1(0x03), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(minter),
             abi.encode(mintParams),
