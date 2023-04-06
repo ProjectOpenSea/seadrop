@@ -1,82 +1,108 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "forge-std/Script.sol";
+
+import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
+
+import { CreatorPayout, PublicDrop } from "../src/lib/SeaDropStructs.sol";
+
 import {
     ConsiderationInterface
 } from "seaport/interfaces/ConsiderationInterface.sol";
 
 import {
-    AdvancedOrder,
     CriteriaResolver,
-    OrderParameters,
+    ItemType,
     OfferItem,
     ConsiderationItem,
-    ItemType
+    AdvancedOrder,
+    OrderComponents,
+    OrderParameters,
+    FulfillmentComponent
 } from "seaport/lib/ConsiderationStructs.sol";
 
 import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+contract DeployAndConfigureExampleToken is Script {
+    // Addresses: Seaport
+    address seaport = 0x00000000000001ad428e4906aE43D8F9852d0dD6;
+    address conduit = 0x1E0049783F008A0085193E00003D00cd54003c71;
 
-import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
+    // Addresses: SeaDrop
+    address creator = 0x1108f964b384f1dCDa03658B24310ccBc48E226F;
+    address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
 
-contract MaliciousRecipient {
-    bool public startAttack;
-    address public token;
-    ConsiderationInterface public seaport;
+    // Token config
+    uint256 maxSupply = 100;
 
-    receive() external payable {
-        if (startAttack) {
-            startAttack = false;
-            seaport.fulfillAdvancedOrder{ value: 1 ether }({
-                advancedOrder: _deriveOrder(),
-                criteriaResolvers: new CriteriaResolver[](0),
-                fulfillerConduitKey: bytes32(0),
-                recipient: address(0)
-            });
-        }
-    }
+    // Drop config
+    uint16 feeBps = 500; // 5%
+    uint80 mintPrice = 0.0001 ether;
+    uint16 maxTotalMintableByWallet = 25;
 
-    // Also receive some eth in the process
-    function setStartAttack() public payable {
-        startAttack = true;
-    }
+    function run() external {
+        vm.startBroadcast();
 
-    function attack(
-        ConsiderationInterface _seaport,
-        address _token
-    ) external payable {
-        token = _token;
-        seaport = _seaport;
+        ERC721SeaDrop token = new ERC721SeaDrop(
+            "My Example Token",
+            "ExTKN",
+            seaport,
+            conduit
+        );
 
-        seaport.fulfillAdvancedOrder{ value: 1 ether }({
-            advancedOrder: _deriveOrder(),
+        // Configure the token.
+        token.setMaxSupply(maxSupply);
+
+        // Configure the drop parameters.
+        setSingleCreatorPayout(token);
+        token.updateAllowedFeeRecipient(feeRecipient, true);
+        token.updatePublicDrop(
+            PublicDrop({
+                mintPrice: mintPrice,
+                paymentToken: address(0),
+                startTime: uint48(block.timestamp),
+                endTime: uint48(block.timestamp) + 10_000_000,
+                maxTotalMintableByWallet: maxTotalMintableByWallet,
+                feeBps: feeBps,
+                restrictFeeRecipients: true
+            })
+        );
+
+        // We are ready, let's mint the first 3 tokens!
+        ConsiderationInterface(seaport).fulfillAdvancedOrder{
+            value: mintPrice * 3
+        }({
+            advancedOrder: deriveOrder(address(token), 3),
             criteriaResolvers: new CriteriaResolver[](0),
             fulfillerConduitKey: bytes32(0),
             recipient: address(0)
         });
-
-        token = address(0);
-        seaport = ConsiderationInterface(address(0));
     }
 
-    function _deriveOrder() internal view returns (AdvancedOrder memory order) {
-        uint256 mintPrice = 1 ether;
-        uint256 feeBps = 1000;
+    function setSingleCreatorPayout(ERC721SeaDrop token) internal {
+        CreatorPayout[] memory creatorPayouts = new CreatorPayout[](1);
+        creatorPayouts[0] = CreatorPayout({
+            payoutAddress: creator,
+            basisPoints: 10_000
+        });
+        token.updateCreatorPayouts(creatorPayouts);
+    }
 
-        address feeRecipient = address(this);
-        address minter = address(this);
-
-        uint256 mintQuantity = 1;
-        uint256 totalValue = mintPrice * mintQuantity;
+    function deriveOrder(
+        address token,
+        uint256 quantity
+    ) internal view returns (AdvancedOrder memory order) {
+        address minter = msg.sender;
+        uint256 totalValue = mintPrice * quantity;
 
         OfferItem[] memory offerItems = new OfferItem[](1);
         offerItems[0] = OfferItem({
             itemType: ItemType.ERC1155,
             token: token,
             identifierOrCriteria: 0,
-            startAmount: 1,
-            endAmount: 1
+            startAmount: quantity,
+            endAmount: quantity
         });
 
         CreatorPayout[] memory creatorPayouts = ERC721SeaDrop(token)
@@ -117,7 +143,7 @@ contract MaliciousRecipient {
             offer: offerItems,
             consideration: considerationItems,
             startTime: block.timestamp,
-            endTime: block.timestamp + 1000,
+            endTime: block.timestamp + 10_000_000,
             salt: 0,
             zone: address(0),
             zoneHash: bytes32(0),

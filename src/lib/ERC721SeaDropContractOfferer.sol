@@ -1,14 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ItemType } from "seaport/lib/ConsiderationEnums.sol";
-
-import {
-    ReceivedItem,
-    Schema,
-    SpentItem
-} from "seaport/lib/ConsiderationStructs.sol";
-
 import {
     ERC721ContractMetadata,
     ISeaDropTokenContractMetadata
@@ -36,6 +28,14 @@ import {
 } from "./ERC721SeaDropStructsErrorsAndEvents.sol";
 
 import { IDelegationRegistry } from "../interfaces/IDelegationRegistry.sol";
+
+import { ItemType } from "seaport/lib/ConsiderationEnums.sol";
+
+import {
+    ReceivedItem,
+    Schema,
+    SpentItem
+} from "seaport/lib/ConsiderationStructs.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
@@ -71,13 +71,13 @@ contract ERC721SeaDropContractOfferer is
 {
     using ECDSA for bytes32;
 
-    /// @notice The allowed Seaport addresses.
+    /// @notice The allowed Seaport addresses that can mint.
     mapping(address => bool) internal _allowedSeaport;
 
     /// @notice The enumerated allowed Seaport addresses.
     address[] internal _enumeratedAllowedSeaport;
 
-    /// @notice The conduit address that can call this contract.
+    /// @notice The allowed conduit address that can mint.
     address private immutable _CONDUIT;
 
     /// @notice The delegation registry.
@@ -227,8 +227,8 @@ contract ERC721SeaDropContractOfferer is
     /**
      * @notice Update the allowed Seaport contracts.
      *
-     *         Warning: this lets the Seaport contract mint on this contract,
-     *         so be sure to only set it to official Seaport releases.
+     *         Warning: this lets the provided addresses mint tokens on this
+     *         contract, be sure to only set official Seaport releases.
      *
      *         Only the owner can use this function.
      *
@@ -284,9 +284,8 @@ contract ERC721SeaDropContractOfferer is
      *                               the amount as the quantity.
      * @param maximumSpent           Maximum items the caller is willing to
      *                               spend. Must meet or exceed the requirement.
-     * @param context                Context of the order containing the mint
-     *                               parameters. Can contain the contract deploy
-     *                               details for contracts.
+     * @param context                Context of the order according to SIP-12,
+     *                               containing the mint parameters.
      *
      * @return offer         An array containing the offer items.
      * @return consideration An array containing the consideration items.
@@ -349,8 +348,8 @@ contract ERC721SeaDropContractOfferer is
      *                            the NFT in question for a primary fee.
      * @param maximumSpent        Maximum items the caller is willing to spend.
      *                            Must meet or exceed the requirement.
-     * @param context             Context of the order, comprised of the
-     *                            the mint parameters and 0x00 version byte.
+     * @param context             Context of the order according to SIP-12,
+     *                            containing the mint parameters.
      *
      * @return offer         An array containing the offer items.
      * @return consideration An array containing the consideration items.
@@ -466,14 +465,13 @@ contract ERC721SeaDropContractOfferer is
     /**
      * @dev Validates an order with the required mint payment.
      *
-     * @param fulfiller              The fulfiller of the order.
-     * @param minimumReceived        The minimum items that the caller must
-     *                               receive.
-     * @param maximumSpent           The maximum items that the caller is
-     *                               willing to spend.
-     * @param context                Additional context of the order, comprised
-     *                               of the NFT tokenID with transfer activation
-     *                               (32 bytes) including the 0x00 version byte.
+     * @param fulfiller       The fulfiller of the order.
+     * @param minimumReceived The minimum items that the caller must
+     *                        receive.
+     * @param maximumSpent    The maximum items that the caller is
+     *                        willing to spend.
+     * @param context         Context of the order according to SIP-12,
+     *                        containing the mint parameters.
      *
      * @return offer An array containing the offer items.
      * @return consideration An array containing the consideration items.
@@ -522,7 +520,7 @@ contract ERC721SeaDropContractOfferer is
                 context[42:330],
                 (MintParams)
             );
-            bytes32[] memory proof = bytesToBytes32Array(context[330:]);
+            bytes32[] memory proof = _bytesToBytes32Array(context[330:]);
             consideration = _validateMintAllowList(
                 feeRecipient,
                 fulfiller_,
@@ -566,14 +564,13 @@ contract ERC721SeaDropContractOfferer is
     /**
      * @dev Creates an order with the required mint payment.
      *
-     * @param fulfiller              The fulfiller of the order.
-     * @param minimumReceived        The minimum items that the caller must
-     *                               receive.
-     * @param maximumSpent           The maximum items that the caller is
-     *                               willing to spend.
-     * @param context                Additional context of the order, comprised
-     *                               of the NFT tokenID with transfer activation
-     *                               (32 bytes) including the 0x00 version byte.
+     * @param fulfiller           The fulfiller of the order.
+     * @param minimumReceived     The minimum items that the caller must
+     *                            receive.
+     * @param maximumSpent        The maximum items that the caller is
+     *                            willing to spend.
+     * @param context             Context of the order according to SIP-12,
+     *                            containing the mint parameters.
      *
      * @return offer An array containing the offer items.
      * @return consideration An array containing the consideration items.
@@ -624,7 +621,7 @@ contract ERC721SeaDropContractOfferer is
                 context[42:330],
                 (MintParams)
             );
-            bytes32[] memory proof = bytesToBytes32Array(context[330:]);
+            bytes32[] memory proof = _bytesToBytes32Array(context[330:]);
             // Checks
             consideration = _validateMintAllowList(
                 feeRecipient,
@@ -1559,16 +1556,6 @@ contract ERC721SeaDropContractOfferer is
     }
 
     /**
-     * @notice Returns if the specified fee recipient is allowed
-     *         for the nft contract.
-     */
-    function getFeeRecipientIsAllowed(
-        address feeRecipient
-    ) external view returns (bool) {
-        return _allowedFeeRecipients[feeRecipient];
-    }
-
-    /**
      * @notice Returns an enumeration of allowed fee recipients
      *         when fee recipients are enforced.
      */
@@ -1603,15 +1590,6 @@ contract ERC721SeaDropContractOfferer is
      */
     function getPayers() external view returns (address[] memory) {
         return _enumeratedPayers;
-    }
-
-    /**
-     * @notice Returns if the specified payer is allowed.
-     *
-     * @param payer The payer.
-     */
-    function getPayerIsAllowed(address payer) external view returns (bool) {
-        return _allowedPayers[payer];
     }
 
     /**
@@ -2000,34 +1978,6 @@ contract ERC721SeaDropContractOfferer is
     }
 
     /**
-     * @notice Remove an address from a supplied enumeration.
-     *
-     * @param toRemove    The address to remove.
-     * @param enumeration The enumerated addresses to parse.
-     */
-    function _removeFromEnumeration(
-        address toRemove,
-        address[] storage enumeration
-    ) internal {
-        // Cache the length.
-        uint256 enumerationLength = enumeration.length;
-        for (uint256 i = 0; i < enumerationLength; ) {
-            // Check if the enumerated element is the one we are deleting.
-            if (enumeration[i] == toRemove) {
-                // Swap with the last element.
-                enumeration[i] = enumeration[enumerationLength - 1];
-                // Delete the (now duplicated) last element.
-                enumeration.pop();
-                // Exit the loop.
-                break;
-            }
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
      * @notice Verify an EIP-712 signature by recreating the data structure
      *         that we signed on the client side, and then using that to recover
      *         the address that signed the signature for this data.
@@ -2293,10 +2243,40 @@ contract ERC721SeaDropContractOfferer is
         }
     }
 
+
+    /**
+     * @notice Internal utility function to remove an address from a supplied
+     *         enumeration.
+     *
+     * @param toRemove    The address to remove.
+     * @param enumeration The enumerated addresses to parse.
+     */
+    function _removeFromEnumeration(
+        address toRemove,
+        address[] storage enumeration
+    ) internal {
+        // Cache the length.
+        uint256 enumerationLength = enumeration.length;
+        for (uint256 i = 0; i < enumerationLength; ) {
+            // Check if the enumerated element is the one we are deleting.
+            if (enumeration[i] == toRemove) {
+                // Swap with the last element.
+                enumeration[i] = enumeration[enumerationLength - 1];
+                // Delete the (now duplicated) last element.
+                enumeration.pop();
+                // Exit the loop.
+                break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     /**
      * @dev Internal utility function to convert bytes to bytes32[].
      */
-    function bytesToBytes32Array(
+    function _bytesToBytes32Array(
         bytes memory data
     ) internal pure returns (bytes32[] memory) {
         // Find 32 bytes segments nb

@@ -10,6 +10,38 @@ import {
 
 interface SeaDropErrorsAndEvents {
     /**
+     * @notice The SeaDrop token types, emitted as part of
+     *         `event SeaDropTokenDeployed`.
+     */
+    enum SEADROP_TOKEN_TYPE {
+        ERC721_STANDARD,
+        ERC721_CLONE,
+        ERC721_LAZY,
+        ERC721_UPGRADEABLE,
+        ERC1155_STANDARD,
+        ERC1155_CLONE,
+        ERC1155_UPGRADEABLE
+    }
+
+    /**
+     * @notice An event to signify that a SeaDrop token contract was deployed.
+     */
+    event SeaDropTokenDeployed(SEADROP_TOKEN_TYPE tokenType);
+
+    /**
+     * @notice Revert with an error if the number of token gated
+     *         allowedNftTokens doesn't match the length of supplied
+     *         drop stages.
+     */
+    error TokenGatedMismatch();
+
+    /**
+     *  @notice Revert with an error if the number of signers doesn't match
+     *          the length of supplied signedMintValidationParams.
+     */
+    error SignersMismatch();
+
+    /**
      * @dev Revert with an error if the drop stage is not active.
      */
     error NotActive(
@@ -144,12 +176,6 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert if a supplied payer address is the zero address.
      */
     error PayerCannotBeZeroAddress();
-
-    /**
-     * @dev Revert with an error if the sender does not
-     *      match the INonFungibleSeaDropToken interface.
-     */
-    error OnlyINonFungibleSeaDropToken(address sender);
 
     /**
      * @dev Revert with an error if the token gated token ids and amounts

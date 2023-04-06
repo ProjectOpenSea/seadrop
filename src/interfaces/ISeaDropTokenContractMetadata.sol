@@ -8,7 +8,7 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      * @notice Throw if the max supply exceeds uint64, a limit
      *         due to the storage of bit-packed variables in ERC721A.
      */
-    error CannotExceedMaxSupplyOfUint64(uint256 newMaxSupply);
+    error CannotExceedMaxSupplyOfUint64(uint256 got);
 
     /**
      * @dev Revert with an error when attempting to set the provenance
