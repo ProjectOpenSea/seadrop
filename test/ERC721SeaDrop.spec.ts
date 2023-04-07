@@ -152,7 +152,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
     await token.updateAllowedFeeRecipient(feeRecipient.address, true);
 
-    const order = await createMintOrder({
+    const { order, value } = await createMintOrder({
       token,
       quantity: 1,
       feeRecipient,
@@ -168,7 +168,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         [],
         ethers.constants.HashZero,
         ethers.constants.AddressZero,
-        { value: publicDrop.mintPrice }
+        { value }
       )
     )
       .to.be.revertedWithCustomError(
@@ -197,9 +197,6 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     expect(await token.getAllowedFeeRecipients()).to.deep.eq([]);
 
-    expect(await token.getFeeRecipientIsAllowed(feeRecipient.address)).to.be
-      .false;
-
     await expect(
       token.updateAllowedFeeRecipient(ethers.constants.AddressZero, true)
     ).to.be.revertedWithCustomError(token, "FeeRecipientCannotBeZeroAddress");
@@ -216,18 +213,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       feeRecipient.address,
     ]);
 
-    expect(await token.getFeeRecipientIsAllowed(feeRecipient.address)).to.be
-      .true;
-
     // Now let's disallow the feeRecipient
     await expect(token.updateAllowedFeeRecipient(feeRecipient.address, false))
       .to.emit(token, "AllowedFeeRecipientUpdated")
       .withArgs(feeRecipient.address, false);
 
     expect(await token.getAllowedFeeRecipients()).to.deep.eq([]);
-
-    expect(await token.getFeeRecipientIsAllowed(feeRecipient.address)).to.be
-      .false;
 
     await expect(
       token.updateAllowedFeeRecipient(feeRecipient.address, false)
@@ -498,14 +489,13 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     // Remove the original payer for branch coverage.
     await token.updatePayer(payer.address, false);
-    expect(await token.getPayerIsAllowed(payer.address)).to.eq(false);
+    expect(await token.getPayers()).to.deep.eq([payer.address]);
 
     // Add two signers and remove the second for branch coverage.
     await token.updatePayer(payer.address, true);
     await token.updatePayer(payer2.address, true);
     await token.updatePayer(payer2.address, false);
-    expect(await token.getPayerIsAllowed(payer.address)).to.eq(true);
-    expect(await token.getPayerIsAllowed(payer2.address)).to.eq(false);
+    expect(await token.getPayers()).to.deep.eq([payer.address]);
   });
 
   it("Should only let the owner call update functions", async () => {

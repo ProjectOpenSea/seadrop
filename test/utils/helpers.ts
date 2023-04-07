@@ -5,8 +5,8 @@ import { toBN } from "../seaport-utils/encoding";
 import { whileImpersonating } from "./impersonate";
 
 import type {
-  ERC721SeaDrop,
   ConsiderationInterface,
+  ERC721SeaDrop,
 } from "../../typechain-types";
 import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
 import type { BigNumberish, Wallet, providers } from "ethers";
@@ -50,25 +50,29 @@ export const createMintOrder = async ({
       itemType: 3, // ERC1155
       token: token.address,
       identifierOrCriteria: toBN(0),
-      startAmount: toBN(1),
-      endAmount: toBN(1),
+      startAmount: toBN(quantity),
+      endAmount: toBN(quantity),
     },
   ];
 
-  const totalValue = toBN(mintPrice).mul(quantity);
-  const feeAmount = totalValue.mul(feeBps).div(toBN(10_000));
-  const creatorAmount = totalValue.sub(feeAmount);
+  const value = toBN(mintPrice).mul(quantity);
+  const feeAmount = value.mul(feeBps).div(10_000);
+  const creatorAmount = value.sub(feeAmount);
 
-  const considerationItemFeeRecipient = {
-    itemType: 0, // NATIVE
-    token: constants.AddressZero,
-    identifierOrCriteria: toBN(0),
-    startAmount: feeAmount,
-    endAmount: feeAmount,
-    recipient: feeRecipient.address,
-  };
+  const consideration = [];
 
-  const considerationItemsCreatorPayouts = [];
+  if (feeAmount.gt(0)) {
+    const considerationItemFeeRecipient = {
+      itemType: 0, // NATIVE
+      token: constants.AddressZero,
+      identifierOrCriteria: toBN(0),
+      startAmount: feeAmount,
+      endAmount: feeAmount,
+      recipient: feeRecipient.address,
+    };
+    consideration.push(considerationItemFeeRecipient);
+  }
+
   const creatorPayouts = await token.getCreatorPayouts();
   for (const creatorPayout of creatorPayouts) {
     const amount = creatorAmount.mul(creatorPayout.basisPoints).div(10_000);
@@ -80,13 +84,8 @@ export const createMintOrder = async ({
       endAmount: amount,
       recipient: creatorPayout.payoutAddress,
     };
-    considerationItemsCreatorPayouts.push(considerationItem);
+    consideration.push(considerationItem);
   }
-
-  const consideration = [
-    considerationItemFeeRecipient,
-    ...considerationItemsCreatorPayouts,
-  ];
 
   const parameters: OrderParameters = {
     offerer: token.address,
@@ -119,7 +118,7 @@ export const createMintOrder = async ({
     extraData,
   };
 
-  return order;
+  return { order, value };
 };
 
 export const mintTokens = async ({

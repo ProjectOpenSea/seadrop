@@ -16,9 +16,9 @@ import {
 
 import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
 
-import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
+import { CreatorPayout } from "../lib/SeaDropStructs.sol";
 
 contract MaliciousRecipient {
     bool public startAttack;

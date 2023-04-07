@@ -419,7 +419,7 @@ contract ERC721SeaDropContractOfferer is
                 minimumReceived.length == 1 &&
                     minimumReceived[0].itemType == ItemType.ERC1155 &&
                     minimumReceived[0].token == address(this) &&
-                    minimumReceived[0].amount > 0
+                    minimumReceived[0].amount != 0
             )
         );
 
@@ -1415,7 +1415,7 @@ contract ERC721SeaDropContractOfferer is
         uint256 creatorPayoutsLength = creatorPayouts.length;
 
         // Put the start index including the fee on the stack.
-        uint256 startIndexWithFee = feeAmount > 0 ? 1 : 0;
+        uint256 startIndexWithFee = feeAmount != 0 ? 1 : 0;
 
         // Initialize the returned array with the correct length.
         receivedItems = new ReceivedItem[](
@@ -1423,7 +1423,7 @@ contract ERC721SeaDropContractOfferer is
         );
 
         // Add a consideration item for the fee recipient.
-        if (feeAmount > 0) {
+        if (feeAmount != 0) {
             receivedItems[0] = ReceivedItem({
                 itemType: itemType,
                 token: paymentToken,
@@ -1914,7 +1914,7 @@ contract ERC721SeaDropContractOfferer is
         }
         // Use maxMaxTotalMintableByWallet as sentry for add/update or delete.
         bool addOrUpdate = signedMintValidationParams
-            .maxMaxTotalMintableByWallet > 0;
+            .maxMaxTotalMintableByWallet != 0;
 
         if (addOrUpdate) {
             signedMintValidationParamsMap[signer] = signedMintValidationParams;
@@ -2109,7 +2109,7 @@ contract ERC721SeaDropContractOfferer is
     function multiConfigure(
         MultiConfigureStruct calldata config
     ) external onlyOwner {
-        if (config.maxSupply > 0) {
+        if (config.maxSupply != 0) {
             this.setMaxSupply(config.maxSupply);
         }
         if (bytes(config.baseURI).length != 0) {
@@ -2137,7 +2137,7 @@ contract ERC721SeaDropContractOfferer is
         if (config.provenanceHash != bytes32(0)) {
             this.setProvenanceHash(config.provenanceHash);
         }
-        if (config.allowedFeeRecipients.length > 0) {
+        if (config.allowedFeeRecipients.length != 0) {
             for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
                 this.updateAllowedFeeRecipient(
                     config.allowedFeeRecipients[i],
@@ -2148,7 +2148,7 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
         }
-        if (config.disallowedFeeRecipients.length > 0) {
+        if (config.disallowedFeeRecipients.length != 0) {
             for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
                 this.updateAllowedFeeRecipient(
                     config.disallowedFeeRecipients[i],
@@ -2159,7 +2159,7 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
         }
-        if (config.allowedPayers.length > 0) {
+        if (config.allowedPayers.length != 0) {
             for (uint256 i = 0; i < config.allowedPayers.length; ) {
                 this.updatePayer(config.allowedPayers[i], true);
                 unchecked {
@@ -2167,7 +2167,7 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
         }
-        if (config.disallowedPayers.length > 0) {
+        if (config.disallowedPayers.length != 0) {
             for (uint256 i = 0; i < config.disallowedPayers.length; ) {
                 this.updatePayer(config.disallowedPayers[i], false);
                 unchecked {
@@ -2175,7 +2175,7 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
         }
-        if (config.tokenGatedDropStages.length > 0) {
+        if (config.tokenGatedDropStages.length != 0) {
             if (
                 config.tokenGatedDropStages.length !=
                 config.tokenGatedAllowedNftTokens.length
@@ -2192,7 +2192,7 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
         }
-        if (config.disallowedTokenGatedAllowedNftTokens.length > 0) {
+        if (config.disallowedTokenGatedAllowedNftTokens.length != 0) {
             for (
                 uint256 i = 0;
                 i < config.disallowedTokenGatedAllowedNftTokens.length;
@@ -2208,7 +2208,7 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
         }
-        if (config.signedMintValidationParams.length > 0) {
+        if (config.signedMintValidationParams.length != 0) {
             if (
                 config.signedMintValidationParams.length !=
                 config.signers.length
@@ -2229,7 +2229,7 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
         }
-        if (config.disallowedSigners.length > 0) {
+        if (config.disallowedSigners.length != 0) {
             for (uint256 i = 0; i < config.disallowedSigners.length; ) {
                 SignedMintValidationParams memory emptyParams;
                 this.updateSignedMintValidationParams(

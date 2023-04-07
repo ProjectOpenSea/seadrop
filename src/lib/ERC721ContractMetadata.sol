@@ -155,7 +155,7 @@ contract ERC721ContractMetadata is
         _onlyOwnerOrSelf();
 
         // Revert if any items have been minted.
-        if (_totalMinted() > 0) {
+        if (_totalMinted() != 0) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
         }
 

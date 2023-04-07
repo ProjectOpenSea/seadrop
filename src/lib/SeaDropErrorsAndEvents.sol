@@ -127,11 +127,6 @@ interface SeaDropErrorsAndEvents {
     error InvalidCreatorPayoutBasisPoints(uint256 totalReceivedBasisPoints);
 
     /**
-     * @dev Revert with an error if the received payment is incorrect.
-     */
-    error IncorrectPayment(uint256 got, uint256 want);
-
-    /**
      * @dev Revert with an error if the allow list proof is invalid.
      */
     error InvalidProof();
