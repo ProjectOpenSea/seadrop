@@ -5,7 +5,9 @@ import "forge-std/Script.sol";
 
 import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
 
-import { CreatorPayout, PublicDrop } from "../src/lib/SeaDropStructs.sol";
+import {
+    SeaDropStructsErrorsAndEvents
+} from "../src/lib/SeaDropStructsErrorsAndEvents.sol";
 
 import {
     ConsiderationInterface
@@ -24,7 +26,10 @@ import {
 
 import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
-contract DeployAndConfigureExampleToken is Script {
+contract DeployAndConfigureExampleToken is
+    Script,
+    SeaDropStructsErrorsAndEvents
+{
     // Addresses: Seaport
     address seaport = 0x00000000000001ad428e4906aE43D8F9852d0dD6;
     address conduit = 0x1E0049783F008A0085193E00003D00cd54003c71;

@@ -3,6 +3,7 @@ artifacts
 cache
 coverage*
 gasReporterOutput.json
-lib
+lib/*
+!/src/lib/*
 temp-src-coverage
 src-upgradeable/lib-upgradeable

@@ -7,3 +7,19 @@ pragma solidity 0.8.17;
  * feedback than running an extra yarn build.
  */
 import { MaliciousRecipient } from "../test/MaliciousRecipient.sol";
+
+/**
+ * @dev Use structs in an external function so typechain compiles them to use
+ *      in HardHat tests.
+ */
+import {
+    SeaDropStructsErrorsAndEvents
+} from "../lib/SeaDropStructsErrorsAndEvents.sol";
+
+contract Shim is SeaDropStructsErrorsAndEvents {
+    function _shim(
+        MintParams calldata mintParams,
+        AllowListData calldata allowListData,
+        TokenGatedMintParams calldata tokenGatedMintParams
+    ) external {}
+}

@@ -11,19 +11,6 @@ import {
 } from "../interfaces/INonFungibleSeaDropToken.sol";
 
 import {
-    AllowListData,
-    CreatorPayout,
-    MintParams,
-    PublicDrop,
-    SignedMintValidationMinMintPrice,
-    SignedMintValidationParams,
-    TokenGatedDropStage,
-    TokenGatedMintParams
-} from "./SeaDropStructs.sol";
-
-import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
-
-import {
     ERC721SeaDropStructsErrorsAndEvents
 } from "./ERC721SeaDropStructsErrorsAndEvents.sol";
 
@@ -66,7 +53,6 @@ contract ERC721SeaDropContractOfferer is
     ERC721ContractMetadata,
     ERC721SeaDropStructsErrorsAndEvents,
     INonFungibleSeaDropToken,
-    SeaDropErrorsAndEvents,
     ReentrancyGuard
 {
     using ECDSA for bytes32;
@@ -123,6 +109,9 @@ contract ERC721SeaDropContractOfferer is
 
     /// @notice The token IDs and redeemed counts for token gated drop stages.
     mapping(address => mapping(uint256 => uint256)) private _tokenGatedRedeemed;
+
+    /// @notice The mint recipient set during the execution of a mint order.
+    address private _mintRecipient;
 
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
@@ -305,7 +294,8 @@ contract ERC721SeaDropContractOfferer is
             fulfiller,
             minimumReceived,
             maximumSpent,
-            context
+            context,
+            true
         );
     }
 
@@ -366,12 +356,40 @@ contract ERC721SeaDropContractOfferer is
         override
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
+        // To avoid the solidity compiler complaining about calling a non-view
+        // function here (_createOrder), we will cast it as a view and use it.
+        // This is okay because we are not modifying any state when passing
+        // withEffects=false.
+        function(
+            address,
+            SpentItem[] calldata,
+            SpentItem[] calldata,
+            bytes calldata,
+            bool
+        ) internal view returns (SpentItem[] memory, ReceivedItem[] memory) fn;
+        function(
+            address,
+            SpentItem[] calldata,
+            SpentItem[] calldata,
+            bytes calldata,
+            bool
+        )
+            internal
+            returns (
+                SpentItem[] memory,
+                ReceivedItem[] memory
+            ) fn2 = _createOrder;
+        assembly {
+            fn := fn2
+        }
+
         // Derive the offer and consideration.
-        (offer, consideration) = _validateOrder(
+        (offer, consideration) = fn(
             fulfiller,
             minimumReceived,
             maximumSpent,
-            context
+            context,
+            false
         );
     }
 
@@ -463,105 +481,6 @@ contract ERC721SeaDropContractOfferer is
     }
 
     /**
-     * @dev Validates an order with the required mint payment.
-     *
-     * @param fulfiller       The fulfiller of the order.
-     * @param minimumReceived The minimum items that the caller must
-     *                        receive.
-     * @param maximumSpent    The maximum items that the caller is
-     *                        willing to spend.
-     * @param context         Context of the order according to SIP-12,
-     *                        containing the mint parameters.
-     *
-     * @return offer An array containing the offer items.
-     * @return consideration An array containing the consideration items.
-     */
-    function _validateOrder(
-        address fulfiller,
-        SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
-        bytes calldata context
-    )
-        internal
-        view
-        returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
-    {
-        // Define a variable for the substandard version.
-        uint8 substandard;
-
-        (offer, substandard) = _decodeOrder(
-            fulfiller,
-            minimumReceived,
-            maximumSpent,
-            context
-        );
-
-        // Quantity is the amount of the ERC-1155 min received item.
-        uint256 quantity = minimumReceived[0].amount;
-
-        // All substandards have feeRecipient and minter as first two params.
-        address feeRecipient = address(bytes20(context[2:22]));
-        address minter = address(bytes20(context[22:42]));
-
-        // Put the fulfiller back on the stack to avoid stack too deep.
-        address fulfiller_ = fulfiller;
-
-        if (substandard == 0) {
-            // 0: Public mint
-            consideration = _validateMintPublic(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity
-            );
-        } else if (substandard == 1) {
-            // 1: Allow list mint
-            MintParams memory mintParams = abi.decode(
-                context[42:330],
-                (MintParams)
-            );
-            bytes32[] memory proof = _bytesToBytes32Array(context[330:]);
-            consideration = _validateMintAllowList(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity,
-                mintParams,
-                proof
-            );
-        } else if (substandard == 2) {
-            // 2: Token gated mint
-            TokenGatedMintParams memory mintParams = abi.decode(
-                context[42:],
-                (TokenGatedMintParams)
-            );
-            consideration = _validateMintAllowedTokenHolder(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                mintParams
-            );
-        } else if (substandard == 3) {
-            // 3: Signed mint
-            MintParams memory mintParams = abi.decode(
-                context[42:330],
-                (MintParams)
-            );
-            uint256 salt = uint256(bytes32(context[330:362]));
-            bytes memory signature = context[362:];
-            (consideration, ) = _validateMintSigned(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity,
-                mintParams,
-                salt,
-                signature
-            );
-        }
-    }
-
-    /**
      * @dev Creates an order with the required mint payment.
      *
      * @param fulfiller           The fulfiller of the order.
@@ -571,6 +490,7 @@ contract ERC721SeaDropContractOfferer is
      *                            willing to spend.
      * @param context             Context of the order according to SIP-12,
      *                            containing the mint parameters.
+     * @param withEffects         Whether to apply the effects of the order.
      *
      * @return offer An array containing the offer items.
      * @return consideration An array containing the consideration items.
@@ -579,7 +499,8 @@ contract ERC721SeaDropContractOfferer is
         address fulfiller,
         SpentItem[] calldata minimumReceived,
         SpentItem[] calldata maximumSpent,
-        bytes calldata context
+        bytes calldata context,
+        bool withEffects
     )
         internal
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
@@ -601,6 +522,11 @@ contract ERC721SeaDropContractOfferer is
         address feeRecipient = address(bytes20(context[2:22]));
         address minter = address(bytes20(context[22:42]));
 
+        // If the minter is the zero address, set it to the fulfiller.
+        if (minter == address(0)) {
+            minter = fulfiller;
+        }
+
         // Put the fulfiller back on the stack to avoid stack too deep.
         address fulfiller_ = fulfiller;
 
@@ -614,7 +540,9 @@ contract ERC721SeaDropContractOfferer is
                 quantity
             );
             // Effects
-            _mintPublic(feeRecipient, fulfiller, minter, quantity);
+            if (withEffects) {
+                _mintPublic(feeRecipient, fulfiller_, minter, quantity);
+            }
         } else if (substandard == 1) {
             // 1: Allow list mint
             MintParams memory mintParams = abi.decode(
@@ -632,14 +560,16 @@ contract ERC721SeaDropContractOfferer is
                 proof
             );
             // Effects
-            _mintAllowList(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity,
-                mintParams,
-                proof
-            );
+            if (withEffects) {
+                _mintAllowList(
+                    feeRecipient,
+                    fulfiller_,
+                    minter,
+                    quantity,
+                    mintParams,
+                    proof
+                );
+            }
         } else if (substandard == 2) {
             // 2: Token gated mint
             TokenGatedMintParams memory mintParams = abi.decode(
@@ -654,12 +584,14 @@ contract ERC721SeaDropContractOfferer is
                 mintParams
             );
             // Effects
-            _mintAllowedTokenHolder(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                mintParams
-            );
+            if (withEffects) {
+                _mintAllowedTokenHolder(
+                    feeRecipient,
+                    fulfiller_,
+                    minter,
+                    mintParams
+                );
+            }
         } else if (substandard == 3) {
             // 3: Signed mint
             MintParams memory mintParams = abi.decode(
@@ -680,16 +612,18 @@ contract ERC721SeaDropContractOfferer is
                 signature
             );
             // Effects
-            _mintSigned(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity,
-                mintParams,
-                salt,
-                signature,
-                digest
-            );
+            if (withEffects) {
+                _mintSigned(
+                    feeRecipient,
+                    fulfiller_,
+                    minter,
+                    quantity,
+                    mintParams,
+                    salt,
+                    signature,
+                    digest
+                );
+            }
         }
     }
 
@@ -722,7 +656,7 @@ contract ERC721SeaDropContractOfferer is
                 !_allowedPayers[payer] &&
                 !delegationRegistry.checkDelegateForAll(payer, minter)
             ) {
-                revert PayerNotAllowed();
+                revert PayerNotAllowed(payer);
             }
         }
 
@@ -764,6 +698,9 @@ contract ERC721SeaDropContractOfferer is
         address minter,
         uint256 quantity
     ) internal {
+        // Set the mint recipient.
+        _mintRecipient = minter;
+
         // Put the public drop data on the stack.
         PublicDrop memory publicDrop = _publicDrop;
 
@@ -810,7 +747,7 @@ contract ERC721SeaDropContractOfferer is
                 !_allowedPayers[payer] &&
                 !delegationRegistry.checkDelegateForAll(payer, minter)
             ) {
-                revert PayerNotAllowed();
+                revert PayerNotAllowed(payer);
             }
         }
 
@@ -867,6 +804,9 @@ contract ERC721SeaDropContractOfferer is
         MintParams memory mintParams,
         bytes32[] memory proof
     ) internal {
+        // Set the mint recipient.
+        _mintRecipient = minter;
+
         // Emit an event for the mint, for analytics.
         _emitSeaDropMint(
             minter,
@@ -915,7 +855,7 @@ contract ERC721SeaDropContractOfferer is
                 !_allowedPayers[payer] &&
                 !delegationRegistry.checkDelegateForAll(payer, minter)
             ) {
-                revert PayerNotAllowed();
+                revert PayerNotAllowed(payer);
             }
         }
 
@@ -984,6 +924,9 @@ contract ERC721SeaDropContractOfferer is
         bytes memory signature,
         bytes32 digest
     ) internal {
+        // Set the mint recipient.
+        _mintRecipient = minter;
+
         // Mark the digest as used.
         _usedDigests[digest] = true;
 
@@ -1119,7 +1062,7 @@ contract ERC721SeaDropContractOfferer is
                 !_allowedPayers[payer] &&
                 !delegationRegistry.checkDelegateForAll(payer, minter)
             ) {
-                revert PayerNotAllowed();
+                revert PayerNotAllowed(payer);
             }
         }
 
@@ -1223,6 +1166,9 @@ contract ERC721SeaDropContractOfferer is
         address minter,
         TokenGatedMintParams memory mintParams
     ) internal returns (ReceivedItem[] memory consideration) {
+        // Set the mint recipient.
+        _mintRecipient = minter;
+
         // Put the allowedNftToken on the stack for more efficient access.
         address allowedNftToken = mintParams.allowedNftToken;
 
@@ -1308,7 +1254,7 @@ contract ERC721SeaDropContractOfferer is
         // Revert if the fee recipient is restricted and not allowed.
         if (restrictFeeRecipients)
             if (!_allowedFeeRecipients[feeRecipient]) {
-                revert FeeRecipientNotAllowed();
+                revert FeeRecipientNotAllowed(feeRecipient);
             }
     }
 
@@ -2094,7 +2040,10 @@ contract ERC721SeaDropContractOfferer is
         }
 
         // Mint tokens with "value" representing the quantity.
-        _mint(to, value);
+        _mint(_mintRecipient, value);
+
+        // Clear the mint recipient.
+        _mintRecipient = address(0);
     }
 
     /**
@@ -2242,7 +2191,6 @@ contract ERC721SeaDropContractOfferer is
             }
         }
     }
-
 
     /**
      * @notice Internal utility function to remove an address from a supplied

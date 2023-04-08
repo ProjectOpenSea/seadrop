@@ -7,3 +7,4 @@ coverage
 lib
 temp-src-coverage
 src-upgradeable
+test/seaport-utils

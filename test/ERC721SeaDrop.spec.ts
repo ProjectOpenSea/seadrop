@@ -13,13 +13,9 @@ import {
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import {
-  MintType,
-  VERSION,
-  createMintOrder,
-  mintTokens,
-} from "./utils/helpers";
+import { VERSION, mintTokens } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
+import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
 import type {
@@ -28,12 +24,18 @@ import type {
   ERC721SeaDrop,
 } from "../typechain-types";
 import type {
-  AllowListDataStruct,
   PublicDropStruct,
   SignedMintValidationParamsStruct,
   TokenGatedDropStageStruct,
-} from "../typechain-types/src/ERC721SeaDrop";
+} from "../typechain-types/src/lib/SeaDropErrorsAndEvents";
+import type { SeaDropStructsErrorsAndEvents } from "../typechain-types/src/shim/Shim";
 import type { BigNumberish, Wallet } from "ethers";
+
+type AllowListDataStruct = SeaDropStructsErrorsAndEvents.AllowListDataStruct;
+
+const { BigNumber } = ethers;
+const { AddressZero, HashZero } = ethers.constants;
+const { parseEther } = ethers.utils;
 
 describe(`ERC721SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
@@ -86,8 +88,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     );
 
     publicDrop = {
-      mintPrice: ethers.utils.parseEther("0.1"),
-      paymentToken: ethers.constants.AddressZero,
+      mintPrice: parseEther("0.1"),
+      paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 100,
@@ -96,8 +98,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     };
 
     tokenGatedDropStage = {
-      mintPrice: ethers.utils.parseEther("0.1"),
-      paymentToken: ethers.constants.AddressZero,
+      mintPrice: parseEther("0.1"),
+      paymentToken: AddressZero,
       maxMintablePerRedeemedToken: 3,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
@@ -109,9 +111,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     };
 
     signedMintValidationParams = {
-      minMintPrices: [
-        { paymentToken: ethers.constants.AddressZero, minMintPrice: 10 },
-      ],
+      minMintPrices: [{ paymentToken: AddressZero, minMintPrice: 10 }],
       maxMaxTotalMintableByWallet: 5,
       minStartTime: 50,
       maxEndTime: 100,
@@ -166,8 +166,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       marketplaceContract.fulfillAdvancedOrder(
         order,
         [],
-        ethers.constants.HashZero,
-        ethers.constants.AddressZero,
+        HashZero,
+        AddressZero,
         { value }
       )
     )
@@ -198,7 +198,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     expect(await token.getAllowedFeeRecipients()).to.deep.eq([]);
 
     await expect(
-      token.updateAllowedFeeRecipient(ethers.constants.AddressZero, true)
+      token.updateAllowedFeeRecipient(AddressZero, true)
     ).to.be.revertedWithCustomError(token, "FeeRecipientCannotBeZeroAddress");
 
     await expect(token.updateAllowedFeeRecipient(feeRecipient.address, true))
@@ -227,7 +227,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   it("Should only let the owner set the provenance hash", async () => {
     await token.setMaxSupply(1);
-    expect(await token.provenanceHash()).to.equal(ethers.constants.HashZero);
+    expect(await token.provenanceHash()).to.equal(HashZero);
 
     const defaultProvenanceHash = `0x${"0".repeat(64)}`;
     const firstProvenanceHash = `0x${"1".repeat(64)}`;
@@ -280,7 +280,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
             )
         )
           .to.emit(token, "Transfer")
-          .withArgs(ethers.constants.AddressZero, minter.address, 1);
+          .withArgs(AddressZero, minter.address, 1);
       }
     );
 
@@ -301,7 +301,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
             )
         )
           .to.emit(token, "Transfer")
-          .withArgs(ethers.constants.AddressZero, minter.address, 2);
+          .withArgs(AddressZero, minter.address, 2);
       }
     );
 
@@ -484,7 +484,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     // Ensure that the zero address cannot be added as a payer.
     await expect(
-      token.updatePayer(ethers.constants.AddressZero, true)
+      token.updatePayer(AddressZero, true)
     ).to.be.revertedWithCustomError(token, "PayerCannotBeZeroAddress");
 
     // Remove the original payer for branch coverage.
@@ -659,7 +659,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       );
       for (const [i, allowed] of config.tokenGatedAllowedNftTokens.entries()) {
         expect(await token.getTokenGatedDrop(allowed)).to.deep.eq([
-          ethers.BigNumber.from(config.tokenGatedDropStages[i].mintPrice),
+          BigNumber.from(config.tokenGatedDropStages[i].mintPrice),
           config.tokenGatedDropStages[i].paymentToken,
           config.tokenGatedDropStages[i].maxMintablePerRedeemedToken,
           config.tokenGatedDropStages[i].maxTotalMintableByWallet,
@@ -678,7 +678,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
             [
               config.signedMintValidationParams[i].minMintPrices[0]
                 .paymentToken,
-              ethers.BigNumber.from(
+              BigNumber.from(
                 config.signedMintValidationParams[i].minMintPrices[0]
                   .minMintPrice as BigNumberish
               ),
@@ -703,7 +703,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       seaDropImpl: token.address,
       publicDrop: {
         mintPrice: 0,
-        paymentToken: ethers.constants.AddressZero,
+        paymentToken: AddressZero,
         maxTotalMintableByWallet: 0,
         startTime: 0,
         endTime: 0,
@@ -712,12 +712,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       },
       dropURI: "",
       allowListData: {
-        merkleRoot: ethers.constants.HashZero,
+        merkleRoot: HashZero,
         publicKeyURIs: [],
         allowListURI: "",
       },
       creatorPayouts: [],
-      provenanceHash: ethers.constants.HashZero,
+      provenanceHash: HashZero,
       allowedFeeRecipients: [],
       disallowedFeeRecipients: [],
       allowedPayers: [],
@@ -763,7 +763,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       .to.emit(token, "TokenGatedDropStageUpdated")
       .withArgs(config.tokenGatedAllowedNftTokens[0], [
         0,
-        ethers.constants.AddressZero,
+        AddressZero,
         0,
         0,
         0,
@@ -788,7 +788,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     // Set a public drop with maxTotalMintableByWallet: 1
     // and restrictFeeRecipient: false
     await token.setMaxSupply(10);
-    const oneEther = ethers.utils.parseEther("1");
+    const oneEther = parseEther("1");
     await token.connect(owner).updatePublicDrop({
       ...publicDrop,
       mintPrice: oneEther,

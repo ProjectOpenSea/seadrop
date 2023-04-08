@@ -10,7 +10,7 @@ remappings = [
 ]
 optimizer_runs = 1_000_000
 # via_ir = true
-ignored_error_codes = []
+ignored_error_codes = ["func-mutability"]
 bytecode_hash = "none"
 fs_permissions = [
     { access = "read", path = "./optimized-out" },

@@ -52,7 +52,7 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   preprocess: {
-    eachLine: (hre) => ({
+    eachLine: () => ({
       transform: (line: string) => {
         if (line.match(/ from "/i)) {
           getRemappings().forEach(([find, replace]: string[]) => {

@@ -13,6 +13,9 @@ import type {
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
+const { BigNumber } = ethers;
+const { AddressZero } = ethers.constants;
+
 describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
 
@@ -114,11 +117,9 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should not let the owner set the max supply over 2**64", async () => {
-    await expect(
-      token.connect(owner).setMaxSupply(ethers.BigNumber.from(2).pow(70))
-    )
+    await expect(token.connect(owner).setMaxSupply(BigNumber.from(2).pow(70)))
       .to.be.revertedWithCustomError(token, "CannotExceedMaxSupplyOfUint64")
-      .withArgs(ethers.BigNumber.from(2).pow(70));
+      .withArgs(BigNumber.from(2).pow(70));
   });
 
   it("Should only let the owner notify update of batch token URIs", async () => {
@@ -132,10 +133,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should only let the owner update the royalties address and basis points", async () => {
-    expect(await token.royaltyInfo(0, 100)).to.deep.equal([
-      ethers.constants.AddressZero,
-      0,
-    ]);
+    expect(await token.royaltyInfo(0, 100)).to.deep.equal([AddressZero, 0]);
 
     await expect(
       token.connect(bob).setDefaultRoyalty(owner.address, 100)
@@ -143,9 +141,9 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await expect(token.connect(owner).setDefaultRoyalty(owner.address, 10_001))
       .to.be.revertedWithCustomError(token, "InvalidRoyaltyBasisPoints")
-      .withArgs(ethers.BigNumber.from(10_001));
+      .withArgs(BigNumber.from(10_001));
     await expect(
-      token.connect(owner).setDefaultRoyalty(ethers.constants.AddressZero, 200)
+      token.connect(owner).setDefaultRoyalty(AddressZero, 200)
     ).to.be.revertedWithCustomError(
       token,
       "RoyaltyReceiverCannotBeZeroAddress"
@@ -160,11 +158,11 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     expect(await token.royaltyInfo(0, 100)).to.deep.equal([
       bob.address,
-      ethers.BigNumber.from(5),
+      BigNumber.from(5),
     ]);
     expect(await token.royaltyInfo(1, 100_000)).to.deep.equal([
       bob.address,
-      ethers.BigNumber.from(5000),
+      BigNumber.from(5000),
     ]);
 
     // interface id for EIP-2981 is 0x2a55205a

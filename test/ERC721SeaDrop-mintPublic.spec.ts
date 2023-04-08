@@ -4,7 +4,8 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { MintType, VERSION, createMintOrder } from "./utils/helpers";
+import { VERSION } from "./utils/helpers";
+import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
 import type {
@@ -12,8 +13,11 @@ import type {
   ConsiderationInterface,
   ERC721SeaDrop,
 } from "../typechain-types";
-import type { PublicDropStruct } from "../typechain-types/src/ERC721SeaDrop";
+import type { PublicDropStruct } from "../typechain-types/src/lib/SeaDropErrorsAndEvents";
 import type { Wallet } from "ethers";
+
+const { AddressZero, HashZero } = ethers.constants;
+const { parseEther } = ethers.utils;
 
 describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   const { provider } = ethers;
@@ -32,7 +36,6 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   let publicDrop: AwaitedObject<PublicDropStruct>;
 
   const _PUBLIC_DROP_STAGE_INDEX = 0;
-  const _NATIVE_PAYMENT_TOKEN = ethers.constants.AddressZero;
 
   after(async () => {
     await network.provider.request({
@@ -77,8 +80,8 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         { payoutAddress: creator.address, basisPoints: 10_000 },
       ]);
     publicDrop = {
-      mintPrice: ethers.utils.parseEther("0.1"),
-      paymentToken: ethers.constants.AddressZero,
+      mintPrice: parseEther("0.1"),
+      paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 100,
@@ -107,13 +110,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(payer)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -127,13 +124,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(payer)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
@@ -142,26 +133,20 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         payer.address,
         quantity,
         publicDrop.mintPrice,
-        _NATIVE_PAYMENT_TOKEN,
+        publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 
     let minterBalance = await token.balanceOf(minter.address);
-    // expect(minterBalance).to.eq(quantity); TODO fix
+    expect(minterBalance).to.eq(quantity);
     expect(await token.totalSupply()).to.eq(quantity);
 
     // Mint public with minter being payer.
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
@@ -170,13 +155,13 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         minter.address, // payer
         quantity,
         publicDrop.mintPrice,
-        _NATIVE_PAYMENT_TOKEN,
+        publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 
     minterBalance = await token.balanceOf(minter.address);
-    // expect(minterBalance).to.eq(quantity * 2); TODO fix
+    expect(minterBalance).to.eq(quantity * 2);
     expect(await token.totalSupply()).to.eq(quantity * 2);
   });
 
@@ -201,13 +186,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(payer)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -217,13 +196,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -251,13 +224,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(payer)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -267,13 +234,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -304,13 +265,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
@@ -319,7 +274,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         minter.address, // payer
         quantity,
         publicDrop.mintPrice,
-        _NATIVE_PAYMENT_TOKEN,
+        publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
@@ -328,13 +283,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -347,13 +296,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
@@ -362,7 +305,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         minter.address, // payer
         quantity,
         publicDrop.mintPrice,
-        _NATIVE_PAYMENT_TOKEN,
+        publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
@@ -371,13 +314,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -401,13 +338,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InsufficientNativeTokensSupplied"
@@ -429,13 +360,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InsufficientNativeTokensSupplied"
@@ -447,7 +372,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       quantity,
-      feeRecipient: { address: ethers.constants.AddressZero } as any,
+      feeRecipient: { address: AddressZero } as any,
       feeBps: publicDrop.feeBps,
       mintPrice: publicDrop.mintPrice,
       minter,
@@ -457,13 +382,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -482,13 +401,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -518,13 +431,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
@@ -533,7 +440,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         minter.address, // payer
         quantity,
         publicDrop.mintPrice,
-        _NATIVE_PAYMENT_TOKEN,
+        publicDrop.paymentToken,
         0, // fee bps
         _PUBLIC_DROP_STAGE_INDEX
       );
@@ -554,13 +461,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(
-          order,
-          [],
-          ethers.constants.HashZero,
-          ethers.constants.AddressZero,
-          { value }
-        )
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"

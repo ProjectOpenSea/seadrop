@@ -14,14 +14,9 @@ import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
-import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
-
 import {
-    AllowListData,
-    CreatorPayout,
-    PublicDrop,
-    MintParams
-} from "seadrop/lib/SeaDropStructs.sol";
+    SeaDropStructsErrorsAndEvents
+} from "seadrop/lib/SeaDropStructsErrorsAndEvents.sol";
 
 import {
     ZoneInteractionErrors
@@ -32,7 +27,7 @@ import { Merkle } from "murky/Merkle.sol";
 contract SeaDropTest is
     BaseOrderTest,
     ZoneInteractionErrors,
-    SeaDropErrorsAndEvents
+    SeaDropStructsErrorsAndEvents
 {
     /// @dev The contract offerer.
     ERC721SeaDrop offerer;

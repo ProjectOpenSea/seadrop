@@ -3,9 +3,17 @@ import { ethers } from "ethers";
 
 import type { utils } from "ethers";
 
+const { BigNumber } = ethers;
+
 const SeededRNG = require("./seeded-rng");
 
 const GAS_REPORT_MODE = process.env.REPORT_GAS;
+
+export const toPaddedBuffer = (data: any) =>
+  Buffer.from(
+    BigNumber.from(data).toHexString().slice(2).padStart(64, "0"),
+    "hex"
+  );
 
 let randomBytes: (n: number) => string;
 if (GAS_REPORT_MODE) {

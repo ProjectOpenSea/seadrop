@@ -168,6 +168,8 @@ contract ERC721SeaDrop is
      * @param tokenId The token id to burn.
      */
     function burn(uint256 tokenId) external {
+        // Passing true to _burn will check that the caller
+        // owns or is approved to interact with the token.
         _burn(tokenId, true);
     }
 }

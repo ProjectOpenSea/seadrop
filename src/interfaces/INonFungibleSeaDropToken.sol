@@ -10,16 +10,13 @@ import {
 } from "./ISeaDropTokenContractMetadata.sol";
 
 import {
-    AllowListData,
-    CreatorPayout,
-    PublicDrop,
-    TokenGatedDropStage,
-    SignedMintValidationParams
-} from "../lib/SeaDropStructs.sol";
+    SeaDropStructsErrorsAndEvents
+} from "../lib/SeaDropStructsErrorsAndEvents.sol";
 
 // TODO rename to IERC721SeaDrop?
 interface INonFungibleSeaDropToken is
     ISeaDropTokenContractMetadata,
+    SeaDropStructsErrorsAndEvents,
     ContractOffererInterface
 {
     /**

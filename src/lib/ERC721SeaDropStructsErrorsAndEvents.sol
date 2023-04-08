@@ -2,14 +2,10 @@
 pragma solidity 0.8.17;
 
 import {
-    AllowListData,
-    CreatorPayout,
-    PublicDrop,
-    SignedMintValidationParams,
-    TokenGatedDropStage
-} from "./SeaDropStructs.sol";
+    SeaDropStructsErrorsAndEvents
+} from "./SeaDropStructsErrorsAndEvents.sol";
 
-interface ERC721SeaDropStructsErrorsAndEvents {
+interface ERC721SeaDropStructsErrorsAndEvents is SeaDropStructsErrorsAndEvents {
     /**
      * @notice A struct to configure multiple contract options at a time.
      */

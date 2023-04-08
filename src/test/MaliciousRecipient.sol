@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
+
+import {
+    SeaDropStructsErrorsAndEvents
+} from "../lib/SeaDropStructsErrorsAndEvents.sol";
+
 import {
     ConsiderationInterface
 } from "seaport/interfaces/ConsiderationInterface.sol";
@@ -16,11 +22,7 @@ import {
 
 import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
-import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
-
-import { CreatorPayout } from "../lib/SeaDropStructs.sol";
-
-contract MaliciousRecipient {
+contract MaliciousRecipient is SeaDropStructsErrorsAndEvents {
     bool public startAttack;
     address public token;
     ConsiderationInterface public seaport;
