@@ -2021,8 +2021,10 @@ contract ERC721SeaDropContractOfferer is
     }
 
     /**
-     * @dev Handle ERC-1155 safeTransferFrom. When "from" is this contract,
-     *      mint a quantity of tokens.
+     * @dev Handle ERC-1155 safeTransferFrom for SeaDrop minting.
+     *      When "from" is this contract, mint a quantity of tokens.
+     *
+     *      Only allowed Seaport or conduit can use this function.
      */
     function safeTransferFrom(
         address from,

@@ -13,7 +13,11 @@ import {
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, mintTokens } from "./utils/helpers";
+import {
+  VERSION,
+  mintTokens,
+  setMintRecipientStorageSlot,
+} from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 import { MintType, createMintOrder } from "./utils/order";
 
@@ -264,6 +268,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   it("Should only let allowed seaport or conduit call the ERC1155 safeTransferFrom", async () => {
     await token.setMaxSupply(3);
 
+    await setMintRecipientStorageSlot(provider, token, minter);
     await whileImpersonating(
       marketplaceContract.address,
       provider,
@@ -285,6 +290,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     );
 
     // Mint as conduit
+    await setMintRecipientStorageSlot(provider, token, minter);
     await whileImpersonating(
       conduitOne.address,
       provider,
@@ -306,6 +312,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     );
 
     // Mint as owner
+    await setMintRecipientStorageSlot(provider, token, minter);
     await expect(
       token
         .connect(owner)
@@ -489,7 +496,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     // Remove the original payer for branch coverage.
     await token.updatePayer(payer.address, false);
-    expect(await token.getPayers()).to.deep.eq([payer.address]);
+    expect(await token.getPayers()).to.deep.eq([]);
 
     // Add two signers and remove the second for branch coverage.
     await token.updatePayer(payer.address, true);

@@ -126,7 +126,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         });
     }
 
-    function testMintAllowedTokenHolder(
+    function testMintAllowList(
         Context memory context
     ) public fuzzConstraints(context.args) {
         offerer = new ERC721SeaDrop("", "", allowedSeaport, address(0));
@@ -138,34 +138,26 @@ contract ERC721SeaDropTest is SeaDropTest {
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
-        // Configure the drop stage.
-        TokenGatedDropStage memory dropStage = TokenGatedDropStage({
+        MintParams memory mintParams = MintParams({
             mintPrice: 1 ether,
             paymentToken: address(0),
-            maxMintablePerRedeemedToken: 3,
-            maxTotalMintableByWallet: 10,
+            maxTotalMintableByWallet: 5,
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp) + 1000,
             dropStageIndex: 2,
             maxTokenSupplyForStage: 1000,
-            feeBps: uint16(feeBps),
+            feeBps: feeBps,
             restrictFeeRecipients: false
         });
-        offerer.updateTokenGatedDrop(address(test721_1), dropStage);
 
-        // Mint a token gated token to the minter.
-        test721_1.mint(address(this), 1);
-
-        // Set the mint params.
-        uint256[] memory allowedTokenIds = new uint256[](1);
-        allowedTokenIds[0] = 1;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 3;
-        TokenGatedMintParams memory mintParams = TokenGatedMintParams({
-            allowedNftToken: address(test721_1),
-            allowedNftTokenIds: allowedTokenIds,
-            amounts: amounts
-        });
+        address[] memory allowList = new address[](2);
+        allowList[0] = address(this);
+        allowList[1] = makeAddr("fred");
+        bytes32[] memory proof = setAllowListMerkleRootAndReturnProof(
+            allowList,
+            0,
+            mintParams
+        );
 
         addSeaDropOfferItem(3); // 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -174,10 +166,11 @@ contract ERC721SeaDropTest is SeaDropTest {
         address minter = address(this);
         bytes memory extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x02), // substandard version byte: token holder mint
+            bytes1(0x01), // substandard version byte: allow list mint
             bytes20(feeRecipient),
             bytes20(minter),
-            abi.encode(mintParams)
+            abi.encode(mintParams),
+            abi.encodePacked(proof)
         );
 
         AdvancedOrder memory order = AdvancedOrder({
@@ -230,7 +223,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         });
     }
 
-    function testMintAllowList(
+    function testMintAllowedTokenHolder(
         Context memory context
     ) public fuzzConstraints(context.args) {
         offerer = new ERC721SeaDrop("", "", allowedSeaport, address(0));
@@ -242,26 +235,34 @@ contract ERC721SeaDropTest is SeaDropTest {
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
-        MintParams memory mintParams = MintParams({
+        // Configure the drop stage.
+        TokenGatedDropStage memory dropStage = TokenGatedDropStage({
             mintPrice: 1 ether,
             paymentToken: address(0),
-            maxTotalMintableByWallet: 5,
+            maxMintablePerRedeemedToken: 3,
+            maxTotalMintableByWallet: 10,
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp) + 1000,
             dropStageIndex: 2,
             maxTokenSupplyForStage: 1000,
-            feeBps: feeBps,
+            feeBps: uint16(feeBps),
             restrictFeeRecipients: false
         });
+        offerer.updateTokenGatedDrop(address(test721_1), dropStage);
 
-        address[] memory allowList = new address[](2);
-        allowList[0] = address(this);
-        allowList[1] = makeAddr("fred");
-        bytes32[] memory proof = setAllowListMerkleRootAndReturnProof(
-            allowList,
-            0,
-            mintParams
-        );
+        // Mint a token gated token to the minter.
+        test721_1.mint(address(this), 1);
+
+        // Set the mint params.
+        uint256[] memory allowedTokenIds = new uint256[](1);
+        allowedTokenIds[0] = 1;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 3;
+        TokenGatedMintParams memory mintParams = TokenGatedMintParams({
+            allowedNftToken: address(test721_1),
+            allowedNftTokenIds: allowedTokenIds,
+            amounts: amounts
+        });
 
         addSeaDropOfferItem(3); // 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -270,11 +271,10 @@ contract ERC721SeaDropTest is SeaDropTest {
         address minter = address(this);
         bytes memory extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x01), // substandard version byte: allow list mint
+            bytes1(0x02), // substandard version byte: token holder mint
             bytes20(feeRecipient),
             bytes20(minter),
-            abi.encode(mintParams),
-            abi.encodePacked(proof)
+            abi.encode(mintParams)
         );
 
         AdvancedOrder memory order = AdvancedOrder({

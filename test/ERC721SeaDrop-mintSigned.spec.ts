@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
+import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
@@ -62,6 +63,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     for (const wallet of [owner, payer, minter]) {
       await faucet(wallet.address, provider);
     }
+
+    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
 
     emptySignedMintValidationParams = {
       minMintPrices: [],
@@ -186,7 +189,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   it("Should mint a signed mint", async () => {
     // Mint signed with payer for minter.
-    const signature = await signMint(
+    let signature = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -212,7 +215,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(payer)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // PayerNotAllowed
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // PayerNotAllowed
     // withArgs(payer.address)
 
     // Allow the payer.
@@ -220,7 +226,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     await expect(
       marketplaceContract
-        .connect(minter)
+        .connect(payer)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
@@ -243,14 +249,17 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     // Mint again with the same params.
     await expect(
       marketplaceContract
-        .connect(minter)
+        .connect(payer)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // SignatureAlreadyUsed
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // SignatureAlreadyUsed
 
     // Mint signed with minter being payer.
     // Change the salt to use a new digest.
     const newSalt = randomHex();
-    await signMint(
+    signature = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -320,7 +329,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignature
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignature
 
     // Test with different fee recipient
     await token.updateAllowedFeeRecipient(payer.address, true);
@@ -343,7 +355,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignature
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignature
 
     // Test with different token contract
     const ERC721SeaDrop = await ethers.getContractFactory(
@@ -395,7 +410,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignature
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignature
 
     // Test with signer that is not allowed
     const signer2 = new ethers.Wallet(randomHex(32), provider);
@@ -409,7 +427,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
     expect(
       await token.getSignedMintValidationParams(signer2.address)
-    ).to.deep.eq([[], 0, 0, 0, 0, AddressZero, 0, 0]);
+    ).to.deep.eq([[], 0, 0, 0, 0, 0, 0]);
     expect(await token.getSigners()).to.deep.eq([signer.address]);
     const signature2 = await signMint(
       token.address,
@@ -435,7 +453,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignature
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignature
 
     // Test with different mint params
     const differentMintParams = {
@@ -458,7 +479,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignature
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignature
 
     // Test with different salt
     ({ order, value } = await createMintOrder({
@@ -477,7 +501,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignature
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignature
 
     // Ensure that the zero address cannot be added as a signer.
     await expect(
@@ -509,9 +536,6 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       signer2.address,
       emptySignedMintValidationParams
     );
-    expect(
-      await token.getSignedMintValidationParams(signer.address)
-    ).to.deep.eq([[], 0, 0, 0, 0, 0, 0]);
     expect(
       await token.getSignedMintValidationParams(signer2.address)
     ).to.deep.eq([[], 0, 0, 0, 0, 0, 0]);
@@ -574,7 +598,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // MintQuantityExceedsMaxMintedPerWallet
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // MintQuantityExceedsMaxMintedPerWallet
 
     // Try to mint one more with manipulated mintParams.
     ({ order, value } = await createMintOrder({
@@ -593,7 +620,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignature
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignature
   });
 
   it("Should mint a signed mint with fee amount that rounds down to zero", async () => {
@@ -612,8 +642,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       token,
       quantity: 3,
       feeRecipient,
-      feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      feeBps: mintParamsZeroFee.feeBps,
+      mintPrice: mintParamsZeroFee.mintPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: mintParamsZeroFee,
@@ -672,7 +702,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedFeeBps
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedFeeBps
   });
 
   it("Should not mint a signed mint that violates the validation params", async () => {
@@ -708,7 +741,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedMintPrice
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedMintPrice
     // withArgs(newMintParams.mintPrice, signedMintValidationParams.minMintPrice)
 
     newMintParams = { ...mintParams, maxTotalMintableByWallet: 12 };
@@ -732,7 +768,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedMaxTotalMintableByWallet
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedMaxTotalMintableByWallet
     // withArgs(newMintParams.maxTotalMintableByWallet, signedMintValidationParams.maxMaxTotalMintableByWallet)
 
     newMintParams = { ...mintParams, startTime: 30 };
@@ -756,7 +795,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedStartTime
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedStartTime
     // withArgs(newMintParams.startTime, ${signedMintValidationParams.minStartTime)`
 
     newMintParams = {
@@ -783,7 +825,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedEndTime
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedEndTime
     // withArgs(newMintParams.endTime, signedMintValidationParams.maxEndTime)
 
     newMintParams = {
@@ -810,7 +855,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedMaxTokenSupplyForStage
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedMaxTokenSupplyForStage
     // withArgs(newMintParams.maxTokenSupplyForStage, signedMintValidationParams.maxMaxTokenSupplyForStage)
 
     newMintParams = {
@@ -837,7 +885,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedFeeBps
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedFeeBps
     // withArgs(newMintParams.feeBps, signedMintValidationParams.minFeeBps)
 
     newMintParams = {
@@ -864,7 +915,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // InvalidSignedFeeBps
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSignedFeeBps
     // withArgs(newMintParams.feeBps, signedMintValidationParams.maxFeeBps)
 
     newMintParams = {
@@ -891,7 +945,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
-    ).to.be.revertedWithCustomError(token, "InvalidContractOrder"); // SignedMintsMustRestrictFeeRecipients
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // SignedMintsMustRestrictFeeRecipients
 
     expect(await token.totalSupply()).to.eq(0);
   });

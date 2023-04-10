@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
+import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
@@ -53,6 +54,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     for (const wallet of [owner, minter]) {
       await faucet(wallet.address, provider);
     }
+
+    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
@@ -137,9 +140,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       .withArgs(
         minter.address,
         feeRecipient.address,
-        minter.address,
+        minter.address, // payer
         1, // mint quantity
         dropStage.mintPrice,
+        dropStage.paymentToken,
         dropStage.feeBps,
         dropStage.dropStageIndex
       );
@@ -180,7 +184,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     // The payer must be allowed first.
     await expect(
       marketplaceContract
-        .connect(minter)
+        .connect(owner)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
@@ -192,7 +196,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     await expect(
       marketplaceContract
-        .connect(minter)
+        .connect(owner)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
@@ -435,7 +439,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     await allowedNftToken.mint(minter.address, 0);
 
     // Deploy a new ERC721PartnerSeaDrop.
-    const ERC721SeaDrop = await ethers.getContractFactory("ERC721SeaDrop");
+    const ERC721SeaDrop = await ethers.getContractFactory(
+      "ERC721SeaDrop",
+      owner
+    );
     const differentToken = await ERC721SeaDrop.deploy(
       "",
       "",
@@ -445,9 +452,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
-    await differentToken
-      .connect(owner)
-      .updateAllowedFeeRecipient(feeRecipient.address, true);
+    await differentToken.updateAllowedFeeRecipient(feeRecipient.address, true);
     await token.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
@@ -459,7 +464,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const mostRecentBlockTimestamp = mostRecentBlock.timestamp;
 
     const { order, value } = await createMintOrder({
-      token,
+      token: differentToken,
       feeRecipient,
       feeBps: dropStage.feeBps,
       mintPrice: dropStage.mintPrice,
@@ -715,12 +720,13 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     expect(await token.getTokenGatedAllowedTokens()).to.deep.eq([]);
     expect(await token.getTokenGatedDrop(allowedNftToken.address)).to.deep.eq([
       BigNumber.from(0),
-      0,
-      0,
-      0,
-      0,
-      0,
       AddressZero,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
       0,
       false,
     ]);

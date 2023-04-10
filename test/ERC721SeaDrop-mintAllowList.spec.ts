@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { randomInt } from "crypto";
 import { ethers, network } from "hardhat";
 
+import { seaportFixture } from "./seaport-utils/fixtures";
 import { createAllowListAndGetProof } from "./utils/allow-list";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
@@ -55,6 +56,8 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     for (const wallet of [owner, minter]) {
       await faucet(wallet.address, provider);
     }
+
+    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
@@ -71,7 +74,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Set a random feeBps.
-    feeBps = randomInt(1, 10000);
+    feeBps = randomInt(1, 10_000);
 
     // Update the fee recipient and creator payout address for the token.
     await token.setMaxSupply(1000);
@@ -176,7 +179,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintPrice: mintParams.mintPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
-      mintParams,
+      mintParams: mintParamsFreeMint,
       proof,
     });
 
@@ -231,7 +234,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // The payer needs to be allowed first.
     await expect(
       marketplaceContract
-        .connect(minter)
+        .connect(owner)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
@@ -347,7 +350,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       quantity,
-      feeRecipient: { address: invalidFeeRecipient } as any,
+      feeRecipient: invalidFeeRecipient,
       feeBps: mintParams.feeBps,
       mintPrice: mintParams.mintPrice,
       minter,
@@ -384,18 +387,6 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       allowListURI: "",
     });
 
-    const { order, value } = await createMintOrder({
-      token,
-      quantity,
-      feeRecipient,
-      feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
-      minter,
-      mintType: MintType.ALLOW_LIST,
-      mintParams,
-      proof,
-    });
-
     // Deploy a new ERC721SeaDrop.
     const SeaDropToken = await ethers.getContractFactory(
       "ERC721SeaDrop",
@@ -414,6 +405,18 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     await differentToken.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
+
+    const { order, value } = await createMintOrder({
+      token: differentToken,
+      quantity,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      mintPrice: mintParams.mintPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams,
+      proof,
+    });
 
     await expect(
       marketplaceContract
@@ -553,7 +556,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Add eth to the second minter's wallet.
     await faucet(secondMinter.address, provider);
 
-    const { root, proof: proofMinter } = await createAllowListAndGetProof(
+    const { root, proof } = await createAllowListAndGetProof(
       [minter, secondMinter],
       mintParams,
       0
@@ -580,7 +583,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
-      proof: proofMinter,
+      proof,
     });
 
     // Mint the maxTotalMintableByWallet to the minter and verify
@@ -629,7 +632,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   it("Should not mint an allow list stage after exceeding max token supply", async () => {
     // Update the max supply.
-    await token.setMaxSupply(11);
+    await token.setMaxSupply(10);
 
     // Create the second minter that will call the transaction exceeding
     // the drop stage supply.
@@ -658,7 +661,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
-      quantity: 11,
+      quantity: 10,
       feeRecipient,
       feeBps: mintParams.feeBps,
       mintPrice: mintParams.mintPrice,

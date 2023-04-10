@@ -2,7 +2,6 @@ import { ethers } from "ethers";
 
 import { toBN } from "../seaport-utils/encoding";
 
-import { allowListElementsBuffer } from "./allow-list";
 import { toPaddedBuffer } from "./encoding";
 
 import type { ERC721SeaDrop } from "../../typechain-types";
@@ -15,6 +14,7 @@ type TokenGatedMintParamsStruct =
   SeaDropStructsErrorsAndEvents.TokenGatedMintParamsStruct;
 
 const { AddressZero, HashZero } = ethers.constants;
+const { defaultAbiCoder } = ethers.utils;
 
 export enum MintType {
   PUBLIC = 0,
@@ -65,7 +65,8 @@ export const createMintOrder = async ({
       0
     );
   }
-  if (!quantity) throw new Error("Quantity missing for mint order");
+  if (quantity === undefined)
+    throw new Error("Quantity missing for mint order");
 
   const offer = [
     {
@@ -115,7 +116,7 @@ export const createMintOrder = async ({
     offer,
     consideration,
     startTime: startTime ?? Math.round(Date.now() / 1000) - 100,
-    endTime: endTime ?? Math.round(Date.now() / 1000) + 100,
+    endTime: endTime ?? Math.round(Date.now() / 1000) + 500,
     zone: AddressZero,
     zoneHash: HashZero,
     salt: "0x00",
@@ -144,7 +145,7 @@ export const createMintOrder = async ({
         extraDataBuffer,
         Buffer.from(feeRecipient.address.slice(2), "hex"),
         Buffer.from(minter.address.slice(2), "hex"),
-        allowListElementsBuffer([[minter.address, mintParams]])[0],
+        mintParamsBuffer(mintParams),
         ...proof.map((p) => Buffer.from(p.slice(2), "hex")),
       ]);
       break;
@@ -206,8 +207,14 @@ export const mintParamsBuffer = (mintParams: MintParamsStruct) =>
   );
 
 const tokenGatedMintParamsBuffer = (mintParams: TokenGatedMintParamsStruct) =>
-  Buffer.concat(
-    [mintParams.allowedNftToken, mintParams.allowedNftTokenIds].map(
-      toPaddedBuffer
-    )
+  Buffer.from(
+    defaultAbiCoder
+      .encode(
+        [
+          "tuple(address allowedNftToken, uint256[] allowedNftTokenIds, uint256[] amounts)",
+        ],
+        [mintParams]
+      )
+      .slice(2),
+    "hex"
   );

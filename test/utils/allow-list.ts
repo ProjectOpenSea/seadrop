@@ -40,7 +40,7 @@ export const allowListElementsBuffer = (leaves: Leaf[]) =>
 export const createAllowListAndGetProof = async (
   minters: Wallet[],
   mintParams: MintParamsStruct,
-  minterIndexForProof: number = 0
+  minterIndexForProof = 0
 ) => {
   // Construct the leaves.
   const leaves = minters.map((minter) => [minter.address, mintParams] as Leaf);
@@ -51,13 +51,18 @@ export const createAllowListAndGetProof = async (
   // Construct a merkle tree from the allow list elements.
   const merkleTree = createMerkleTree(elementsBuffer);
 
-  // Store the merkle root.
+  // Get the merkle root.
   const root = merkleTree.getHexRoot();
 
   // Get the leaf at the specified index.
-  const leaf = merkleTree.getLeaf(minterIndexForProof);
+  const targetLeaf = Buffer.from(
+    keccak256(elementsBuffer[minterIndexForProof]).slice(2),
+    "hex"
+  );
+  const leafIndex = merkleTree.getLeafIndex(targetLeaf);
+  const leaf = merkleTree.getLeaf(leafIndex);
 
-  // Get the proof of the leaf to pass into the transaction.
+  // Get the proof of the leaf to pass to the order.
   const proof = merkleTree.getHexProof(leaf);
 
   return { root, proof };
