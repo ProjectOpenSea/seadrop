@@ -14,8 +14,11 @@ import type {
   ERC721SeaDrop,
   TestERC721,
 } from "../typechain-types";
-import type { TokenGatedDropStageStruct } from "../typechain-types/src/lib/SeaDropErrorsAndEvents";
+import type { SeaDropStructsErrorsAndEvents } from "../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
+
+type TokenGatedDropStageStruct =
+  SeaDropStructsErrorsAndEvents.TokenGatedDropStageStruct;
 
 const { BigNumber } = ethers;
 const { AddressZero, HashZero } = ethers.constants;
@@ -84,7 +87,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Create the drop stage object.
     dropStage = {
-      mintPrice: parseEther("0.1"),
+      startPrice: parseEther("0.1"),
+      endPrice: parseEther("0.1"),
       paymentToken: AddressZero,
       maxMintablePerRedeemedToken: 3,
       maxTotalMintableByWallet: 10,
@@ -124,7 +128,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -142,7 +146,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         1, // mint quantity
-        dropStage.mintPrice,
+        dropStage.startPrice,
         dropStage.paymentToken,
         dropStage.feeBps,
         dropStage.dropStageIndex
@@ -175,7 +179,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -205,7 +209,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         feeRecipient.address,
         owner.address,
         1, // mint quantity
-        dropStage.mintPrice,
+        dropStage.startPrice,
         dropStage.paymentToken,
         dropStage.feeBps,
         dropStage.dropStageIndex
@@ -217,7 +221,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should mint a token to a user with the allowed NFT token when the mint is free", async () => {
     // Create the free mint drop stage object.
-    const dropStageFreeMint = { ...dropStage, mintPrice: 0 };
+    const dropStageFreeMint = { ...dropStage, startPrice: 0, endPrice: 0 };
 
     // Update the token gated drop for the deployed allowed NFT token.
     await token.updateTokenGatedDrop(
@@ -238,7 +242,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -279,7 +283,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -296,7 +300,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address,
         3, // mint quantity
-        dropStage.mintPrice,
+        dropStage.endPrice,
         dropStage.paymentToken,
         dropStage.feeBps,
         dropStage.dropStageIndex
@@ -327,7 +331,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -375,7 +379,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -408,7 +412,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient: minter,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -467,7 +471,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token: differentToken,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -513,7 +517,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -552,7 +556,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -604,7 +608,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -653,7 +657,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      mintPrice: dropStage.mintPrice,
+      startPrice: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -719,6 +723,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     });
     expect(await token.getTokenGatedAllowedTokens()).to.deep.eq([]);
     expect(await token.getTokenGatedDrop(allowedNftToken.address)).to.deep.eq([
+      BigNumber.from(0),
       BigNumber.from(0),
       AddressZero,
       0,

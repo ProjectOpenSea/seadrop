@@ -28,7 +28,7 @@ export const createMintOrder = async ({
   quantity,
   feeRecipient,
   feeBps,
-  mintPrice,
+  startPrice,
   minter,
   mintType,
   startTime,
@@ -46,7 +46,7 @@ export const createMintOrder = async ({
   quantity?: BigNumberish;
   feeRecipient: Wallet;
   feeBps: BigNumberish;
-  mintPrice: BigNumberish;
+  startPrice: BigNumberish;
   minter: Wallet;
   mintType: MintType;
   startTime?: number;
@@ -78,7 +78,7 @@ export const createMintOrder = async ({
     },
   ];
 
-  const value = toBN(mintPrice).mul(quantity);
+  const value = toBN(startPrice).mul(quantity);
   const feeAmount = value.mul(feeBps).div(10_000);
   const creatorAmount = value.sub(feeAmount);
 
@@ -194,7 +194,8 @@ export const createMintOrder = async ({
 export const mintParamsBuffer = (mintParams: MintParamsStruct) =>
   Buffer.concat(
     [
-      mintParams.mintPrice,
+      mintParams.startPrice,
+      mintParams.endPrice,
       mintParams.paymentToken,
       mintParams.maxTotalMintableByWallet,
       mintParams.startTime,

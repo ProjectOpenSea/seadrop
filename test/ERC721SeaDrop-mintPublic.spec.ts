@@ -13,8 +13,10 @@ import type {
   ConsiderationInterface,
   ERC721SeaDrop,
 } from "../typechain-types";
-import type { PublicDropStruct } from "../typechain-types/src/lib/SeaDropErrorsAndEvents";
+import type { SeaDropStructsErrorsAndEvents } from "../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
+
+type PublicDropStruct = SeaDropStructsErrorsAndEvents.PublicDropStruct;
 
 const { AddressZero, HashZero } = ethers.constants;
 const { parseEther } = ethers.utils;
@@ -80,7 +82,8 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         { payoutAddress: creator.address, basisPoints: 10_000 },
       ]);
     publicDrop = {
-      mintPrice: parseEther("0.1"),
+      startPrice: parseEther("0.1"),
+      endPrice: parseEther("0.1"),
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
@@ -102,7 +105,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -132,7 +135,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         feeRecipient.address,
         payer.address,
         quantity,
-        publicDrop.mintPrice,
+        publicDrop.startPrice,
         publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
@@ -154,7 +157,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         quantity,
-        publicDrop.mintPrice,
+        publicDrop.endPrice,
         publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
@@ -179,7 +182,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -217,7 +220,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -258,7 +261,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -273,7 +276,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         quantity,
-        publicDrop.mintPrice,
+        publicDrop.startPrice,
         publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
@@ -304,7 +307,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         quantity,
-        publicDrop.mintPrice,
+        publicDrop.endPrice,
         publicDrop.paymentToken,
         publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
@@ -329,7 +332,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -351,7 +354,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     }));
@@ -374,7 +377,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient: { address: AddressZero } as any,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -393,7 +396,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient: creator,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     }));
@@ -423,7 +426,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: 0,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -439,7 +442,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         quantity,
-        publicDrop.mintPrice,
+        publicDrop.startPrice,
         publicDrop.paymentToken,
         0, // fee bps
         _PUBLIC_DROP_STAGE_INDEX
@@ -453,7 +456,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient: creator,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });

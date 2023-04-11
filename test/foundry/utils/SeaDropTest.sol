@@ -63,7 +63,8 @@ contract SeaDropTest is
                 "uint256 salt"
             ")"
             "MintParams("
-                "uint256 mintPrice,"
+                "uint256 startPrice,"
+                "uint256 endPrice,"
                 "address paymentToken,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
@@ -78,7 +79,8 @@ contract SeaDropTest is
         // prettier-ignore
         keccak256(
             "MintParams("
-                "uint256 mintPrice,"
+                "uint256 startPrice,"
+                "uint256 endPrice,"
                 "address paymentToken,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
@@ -125,23 +127,6 @@ contract SeaDropTest is
             basisPoints: 10_000
         });
         offerer.updateCreatorPayouts(creatorPayouts);
-    }
-
-    function setPublicDrop(
-        uint256 mintPrice,
-        uint256 maxTotalMintableByWallet,
-        uint256 feeBps
-    ) internal {
-        PublicDrop memory publicDrop = PublicDrop({
-            mintPrice: uint80(mintPrice),
-            paymentToken: address(0),
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp + 100),
-            maxTotalMintableByWallet: uint16(maxTotalMintableByWallet),
-            feeBps: uint16(feeBps),
-            restrictFeeRecipients: true
-        });
-        offerer.updatePublicDrop(publicDrop);
     }
 
     function setAllowListMerkleRootAndReturnProof(
@@ -224,7 +209,8 @@ contract SeaDropTest is
         bytes32 mintParamsHashStruct = keccak256(
             abi.encode(
                 _MINT_PARAMS_TYPEHASH,
-                mintParams.mintPrice,
+                mintParams.startPrice,
+                mintParams.endPrice,
                 mintParams.paymentToken,
                 mintParams.maxTotalMintableByWallet,
                 mintParams.startTime,

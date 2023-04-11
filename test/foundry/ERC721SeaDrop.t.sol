@@ -62,7 +62,18 @@ contract ERC721SeaDropTest is SeaDropTest {
         offerer.updateAllowedFeeRecipient(feeRecipient, true);
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
-        setPublicDrop(1 ether, 5, feeBps);
+
+        PublicDrop memory publicDrop = PublicDrop({
+            startPrice: 1 ether,
+            endPrice: 1 ether,
+            paymentToken: address(0),
+            startTime: uint48(block.timestamp),
+            endTime: uint48(block.timestamp + 100),
+            maxTotalMintableByWallet: 5,
+            feeBps: uint16(feeBps),
+            restrictFeeRecipients: true
+        });
+        offerer.updatePublicDrop(publicDrop);
 
         addSeaDropOfferItem(3); // 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -139,7 +150,8 @@ contract ERC721SeaDropTest is SeaDropTest {
         setSingleCreatorPayout(context.args.creator);
 
         MintParams memory mintParams = MintParams({
-            mintPrice: 1 ether,
+            startPrice: 1 ether,
+            endPrice: 1 ether,
             paymentToken: address(0),
             maxTotalMintableByWallet: 5,
             startTime: uint48(block.timestamp),
@@ -237,7 +249,8 @@ contract ERC721SeaDropTest is SeaDropTest {
 
         // Configure the drop stage.
         TokenGatedDropStage memory dropStage = TokenGatedDropStage({
-            mintPrice: 1 ether,
+            startPrice: 1 ether,
+            endPrice: 1 ether,
             paymentToken: address(0),
             maxMintablePerRedeemedToken: 3,
             maxTotalMintableByWallet: 10,
@@ -359,7 +372,8 @@ contract ERC721SeaDropTest is SeaDropTest {
 
         uint256 feeBps = 500;
         MintParams memory mintParams = MintParams({
-            mintPrice: 1 ether,
+            startPrice: 1 ether,
+            endPrice: 1 ether,
             paymentToken: address(0),
             maxTotalMintableByWallet: 4,
             startTime: uint48(block.timestamp),

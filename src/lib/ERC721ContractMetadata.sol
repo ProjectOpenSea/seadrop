@@ -276,7 +276,16 @@ contract ERC721ContractMetadata is
         bytes4 interfaceId
     ) public view virtual override(IERC165, ERC721A, ERC2981) returns (bool) {
         return
-            // interfaceId == type(IERC2981).interfaceId ||
+            interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
+            //
+            //
+            // TODO find a way to fix this as it doesn't seem to be calling ERC721A supportsInterface,
+            //      below values are from there
+            interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165.
+            interfaceId == 0x80ac58cd || // ERC165 interface ID for ERC721.
+            interfaceId == 0x5b5e139f || // ERC165 interface ID for ERC721Metadata.
+            //
+            //
             interfaceId == 0x49064906 || // ERC-4906
             super.supportsInterface(interfaceId);
     }

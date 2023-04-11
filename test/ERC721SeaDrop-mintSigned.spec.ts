@@ -13,11 +13,12 @@ import type {
   ConsiderationInterface,
   ERC721SeaDrop,
 } from "../typechain-types";
-import type { SignedMintValidationParamsStruct } from "../typechain-types/src/lib/SeaDropErrorsAndEvents";
 import type { SeaDropStructsErrorsAndEvents } from "../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
 
 type MintParamsStruct = SeaDropStructsErrorsAndEvents.MintParamsStruct;
+type SignedMintValidationParamsStruct =
+  SeaDropStructsErrorsAndEvents.SignedMintValidationParamsStruct;
 
 const { AddressZero, HashZero } = ethers.constants;
 const { parseEther } = ethers.utils;
@@ -115,7 +116,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         { name: "salt", type: "uint256" },
       ],
       MintParams: [
-        { name: "mintPrice", type: "uint256" },
+        { name: "startPrice", type: "uint256" },
+        { name: "endPrice", type: "uint256" },
         { name: "paymentToken", type: "address" },
         { name: "maxTotalMintableByWallet", type: "uint256" },
         { name: "startTime", type: "uint256" },
@@ -135,7 +137,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await token.updateAllowedFeeRecipient(feeRecipient.address, true);
 
     mintParams = {
-      mintPrice: parseEther("0.1"),
+      startPrice: parseEther("0.1"),
+      endPrice: parseEther("0.1"),
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
@@ -203,7 +206,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -235,7 +238,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         feeRecipient.address,
         payer.address,
         3, // mint quantity
-        mintParams.mintPrice,
+        mintParams.startPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -272,7 +275,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -291,7 +294,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         3, // mint quantity
-        mintParams.mintPrice,
+        mintParams.startPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -317,7 +320,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter: payer, // Test with different minter address
       mintType: MintType.SIGNED,
       mintParams,
@@ -343,7 +346,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient: payer, // Test with different fee recipient
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -399,7 +402,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -442,7 +445,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -468,7 +471,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: differentMintParams,
@@ -490,7 +493,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: differentMintParams,
@@ -556,7 +559,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 10, // Max mints per wallet is 10. Mint 10
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -575,7 +578,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address,
         10, // mint quantity
-        mintParams.mintPrice,
+        mintParams.endPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -587,7 +590,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -609,7 +612,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: { ...mintParams, maxTotalMintableByWallet: 11 },
@@ -627,7 +630,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
   });
 
   it("Should mint a signed mint with fee amount that rounds down to zero", async () => {
-    const mintParamsZeroFee = { ...mintParams, mintPrice: 1, feeBps: 1 };
+    const mintParamsZeroFee = {
+      ...mintParams,
+      startPrice: 1,
+      endPrice: 1,
+      feeBps: 1,
+    };
 
     const signature = await signMint(
       token.address,
@@ -643,7 +651,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParamsZeroFee.feeBps,
-      mintPrice: mintParamsZeroFee.mintPrice,
+      startPrice: mintParamsZeroFee.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: mintParamsZeroFee,
@@ -662,7 +670,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         3, // mint quantity
-        mintParamsZeroFee.mintPrice,
+        mintParamsZeroFee.endPrice,
         mintParams.paymentToken,
         mintParamsZeroFee.feeBps,
         mintParams.dropStageIndex
@@ -690,7 +698,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: mintParamsInvalidFeeBps,
@@ -709,7 +717,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
   });
 
   it("Should not mint a signed mint that violates the validation params", async () => {
-    let newMintParams: any = { ...mintParams, mintPrice: 0 };
+    let newMintParams: any = { ...mintParams, startPrice: 0, endPrice: 0 };
 
     let signature = await signMint(
       token.address,
@@ -725,7 +733,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       salt,
@@ -745,7 +753,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // InvalidSignedMintPrice
-    // withArgs(newMintParams.mintPrice, signedMintValidationParams.minMintPrice)
+    // withArgs(newMintParams.endPrice, signedMintValidationParams.minMintPrice)
 
     newMintParams = { ...mintParams, maxTotalMintableByWallet: 12 };
 

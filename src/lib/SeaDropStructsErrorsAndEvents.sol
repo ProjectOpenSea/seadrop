@@ -18,10 +18,13 @@ interface SeaDropStructsErrorsAndEvents {
      * @notice A struct defining public drop data.
      *         Designed to fit efficiently in two storage slots.
      *
-     * @param mintPrice                The mint price per token. (Up to 1.2m
+     * @param startPrice               The start price per token. (Up to 1.2m
      *                                 of native token, e.g. ETH, MATIC)
-     * @param paymentToken             The payment token address.
-     *                                 Null for native token.
+     * @param endPrice                 The end price per token. If this differs
+     *                                 from startPrice, the current price will
+     *                                 be calculated based on the current time.
+     * @param paymentToken             The payment token address. Null for
+     *                                 native token.
      * @param startTime                The start time, ensure this is not zero.
      * @param endTime                  The end time, ensure this is not zero.
      * @param maxTotalMintableByWallet Maximum total number of mints a user is
@@ -33,23 +36,27 @@ interface SeaDropStructsErrorsAndEvents {
      *                                 if true, check fee recipient is allowed.
      */
     struct PublicDrop {
-        uint96 mintPrice; // 80/512 bits
-        address paymentToken; // 256/512 bits
-        uint48 startTime; // 304/512 bits
-        uint48 endTime; // 352/512 bits
-        uint24 maxTotalMintableByWallet; // 376/512 bits
-        uint16 feeBps; // 392/512 bits
-        bool restrictFeeRecipients; // 400/512 bits
+        uint80 startPrice; // 80/512 bits
+        uint80 endPrice; // 160/512 bits
+        address paymentToken; // 320/512 bits
+        uint48 startTime; // 368/512 bits
+        uint48 endTime; // 416/512 bits
+        uint16 maxTotalMintableByWallet; // 432/512 bits
+        uint16 feeBps; // 448/512 bits
+        bool restrictFeeRecipients; // 456/512 bits
     }
 
     /**
      * @notice A struct defining token gated drop stage data.
      *         Designed to fit efficiently in two storage slots.
      *
-     * @param mintPrice                The mint price per token. (Up to 1.2m
-     *                                 of token)
-     * @param paymentToken             The payment token for the mint.
-     *                                 Null for native token.
+     * @param startPrice               The start price per token. (Up to 1.2m
+     *                                 of native token, e.g. ETH, MATIC)
+     * @param endPrice                 The end price per token. If this differs
+     *                                 from startPrice, the current price will
+     *                                 be calculated based on the current time.
+     * @param paymentToken             The payment token for the mint. Null for
+     *                                 native token.
      * @param maxTotalMintableByWallet Maximum total number of mints a user is
      *                                 allowed. (The limit for this field is
      *                                 2^16 - 1)
@@ -68,16 +75,17 @@ interface SeaDropStructsErrorsAndEvents {
      *                                 if true, check fee recipient is allowed.
      */
     struct TokenGatedDropStage {
-        uint96 mintPrice; // 80/512 bits
-        address paymentToken; // 240/512 bits
-        uint16 maxMintablePerRedeemedToken; // 256/512 bits
-        uint24 maxTotalMintableByWallet; // 280/512 bits
-        uint48 startTime; // 328/512 bits
-        uint48 endTime; // 376/512 bits
-        uint8 dropStageIndex; // non-zero. 384/512 bits
-        uint32 maxTokenSupplyForStage; // 232/512 bits
-        uint16 feeBps; // 248/512 bits
-        bool restrictFeeRecipients; // 256/512 bits
+        uint80 startPrice; // 80/512 bits
+        uint80 endPrice; // 160/512 bits
+        address paymentToken; // 320/512 bits
+        uint16 maxMintablePerRedeemedToken; // 346/512 bits
+        uint24 maxTotalMintableByWallet; // 370/512 bits
+        uint48 startTime; // 418/512 bits
+        uint48 endTime; // 466/512 bits
+        uint8 dropStageIndex; // non-zero. 474/512 bits
+        uint32 maxTokenSupplyForStage; // 506/512 bits
+        uint16 feeBps; // 522/512 bits
+        bool restrictFeeRecipients; // 530/512 bits
     }
 
     /**
@@ -88,9 +96,13 @@ interface SeaDropStructsErrorsAndEvents {
      *         Note: Since feeBps is encoded in the leaf, backend should ensure
      *         that feeBps is acceptable before generating a proof.
      *
-     * @param mintPrice                The mint price per token.
-     * @param paymentToken             The payment token for the mint.
-     *                                 Null for native token.
+     * @param startPrice               The start price per token. (Up to 1.2m
+     *                                 of native token, e.g. ETH, MATIC)
+     * @param endPrice                 The end price per token. If this differs
+     *                                 from startPrice, the current price will
+     *                                 be calculated based on the current time.
+     * @param paymentToken             The payment token for the mint. Null for
+     *                                 native token.
      * @param maxTotalMintableByWallet Maximum total number of mints a user is
      *                                 allowed.
      * @param startTime                The start time, ensure this is not zero.
@@ -107,7 +119,8 @@ interface SeaDropStructsErrorsAndEvents {
      *                                 if true, check fee recipient is allowed.
      */
     struct MintParams {
-        uint256 mintPrice;
+        uint256 startPrice;
+        uint256 endPrice;
         address paymentToken;
         uint256 maxTotalMintableByWallet;
         uint256 startTime;

@@ -27,15 +27,15 @@ import type {
   ConsiderationInterface,
   ERC721SeaDrop,
 } from "../typechain-types";
-import type {
-  PublicDropStruct,
-  SignedMintValidationParamsStruct,
-  TokenGatedDropStageStruct,
-} from "../typechain-types/src/lib/SeaDropErrorsAndEvents";
 import type { SeaDropStructsErrorsAndEvents } from "../typechain-types/src/shim/Shim";
 import type { BigNumberish, Wallet } from "ethers";
 
 type AllowListDataStruct = SeaDropStructsErrorsAndEvents.AllowListDataStruct;
+type PublicDropStruct = SeaDropStructsErrorsAndEvents.PublicDropStruct;
+type SignedMintValidationParamsStruct =
+  SeaDropStructsErrorsAndEvents.SignedMintValidationParamsStruct;
+type TokenGatedDropStageStruct =
+  SeaDropStructsErrorsAndEvents.TokenGatedDropStageStruct;
 
 const { BigNumber } = ethers;
 const { AddressZero, HashZero } = ethers.constants;
@@ -92,7 +92,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     );
 
     publicDrop = {
-      mintPrice: parseEther("0.1"),
+      startPrice: parseEther("0.1"),
+      endPrice: parseEther("0.1"),
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
@@ -102,7 +103,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     };
 
     tokenGatedDropStage = {
-      mintPrice: parseEther("0.1"),
+      startPrice: parseEther("0.1"),
+      endPrice: parseEther("0.1"),
       paymentToken: AddressZero,
       maxMintablePerRedeemedToken: 3,
       maxTotalMintableByWallet: 10,
@@ -161,7 +163,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      mintPrice: publicDrop.mintPrice,
+      startPrice: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -364,6 +366,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     // Ensure the interface `INonFungibleSeaDropToken` returns true.
     // expect(await token.supportsInterface("0x1890fe8e")).to.be.true;
     // TODO uncomment above once interface id is derived
+
+    // Ensure the interface for ERC721Metadata (from ERC721A) returns true.
+    expect(await token.supportsInterface("0x5b5e139f")).to.be.true;
 
     // Ensure the interface for ERC-4906 returns true.
     expect(await token.supportsInterface("0x49064906")).to.be.true;
@@ -601,7 +606,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         tokenGatedDropStage,
         {
           ...tokenGatedDropStage,
-          mintPrice: tokenGatedDropStage.mintPrice + "1",
+          startPrice: tokenGatedDropStage.startPrice + "1",
+          endPrice: tokenGatedDropStage.endPrice + "1",
         },
       ],
       disallowedTokenGatedAllowedNftTokens: [],
@@ -642,7 +648,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       expect(await token.baseURI()).to.eq("https://example1.com");
       expect(await token.contractURI()).to.eq("https://example2.com");
       expect(await token.getPublicDrop()).to.deep.eq([
-        publicDrop.mintPrice,
+        publicDrop.startPrice,
+        publicDrop.endPrice,
         publicDrop.paymentToken,
         publicDrop.startTime,
         publicDrop.endTime,
@@ -666,7 +673,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       );
       for (const [i, allowed] of config.tokenGatedAllowedNftTokens.entries()) {
         expect(await token.getTokenGatedDrop(allowed)).to.deep.eq([
-          BigNumber.from(config.tokenGatedDropStages[i].mintPrice),
+          BigNumber.from(config.tokenGatedDropStages[i].startPrice),
+          BigNumber.from(config.tokenGatedDropStages[i].endPrice),
           config.tokenGatedDropStages[i].paymentToken,
           config.tokenGatedDropStages[i].maxMintablePerRedeemedToken,
           config.tokenGatedDropStages[i].maxTotalMintableByWallet,
@@ -709,7 +717,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       contractURI: "",
       seaDropImpl: token.address,
       publicDrop: {
-        mintPrice: 0,
+        startPrice: 0,
+        endPrice: 0,
         paymentToken: AddressZero,
         maxTotalMintableByWallet: 0,
         startTime: 0,
@@ -770,6 +779,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       .to.emit(token, "TokenGatedDropStageUpdated")
       .withArgs(config.tokenGatedAllowedNftTokens[0], [
         0,
+        0,
         AddressZero,
         0,
         0,
@@ -798,7 +808,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     const oneEther = parseEther("1");
     await token.connect(owner).updatePublicDrop({
       ...publicDrop,
-      mintPrice: oneEther,
+      startPrice: oneEther,
+      endPrice: oneEther,
       maxTotalMintableByWallet: 1,
       restrictFeeRecipients: false,
     });

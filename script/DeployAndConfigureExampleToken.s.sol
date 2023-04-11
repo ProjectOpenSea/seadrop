@@ -64,7 +64,8 @@ contract DeployAndConfigureExampleToken is
         token.updateAllowedFeeRecipient(feeRecipient, true);
         token.updatePublicDrop(
             PublicDrop({
-                mintPrice: mintPrice,
+                startPrice: mintPrice,
+                endPrice: mintPrice,
                 paymentToken: address(0),
                 startTime: uint48(block.timestamp),
                 endTime: uint48(block.timestamp) + 10_000_000,

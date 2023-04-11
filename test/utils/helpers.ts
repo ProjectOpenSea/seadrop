@@ -23,7 +23,7 @@ export const setMintRecipientStorageSlot = async (
 ) => {
   // If the below storage slot changes, the updated value can be found
   // with `forge inspect ERC721SeaDropContractOfferer storage-layout`
-  const mintRecipientStorageSlot = "0x21";
+  const mintRecipientStorageSlot = "0x22";
   // Storage value must be a 32 bytes long padded with leading zeros hex string
   const mintRecipientStorageValue = hexlify(zeroPad(minter.address, 32));
   await provider.send("hardhat_setStorageAt", [

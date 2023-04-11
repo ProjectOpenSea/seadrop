@@ -24,7 +24,8 @@ export const allowListElementsBuffer = (leaves: Leaf[]) =>
     Buffer.concat(
       [
         minter,
-        mintParams.mintPrice,
+        mintParams.startPrice,
+        mintParams.endPrice,
         mintParams.paymentToken,
         mintParams.maxTotalMintableByWallet,
         mintParams.startTime,

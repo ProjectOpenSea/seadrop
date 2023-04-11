@@ -125,7 +125,8 @@ contract ERC721SeaDropContractOfferer is
                 "uint256 salt"
             ")"
             "MintParams("
-                "uint256 mintPrice,"
+                "uint256 startPrice,"
+                "uint256 endPrice,"
                 "address paymentToken,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
@@ -140,7 +141,8 @@ contract ERC721SeaDropContractOfferer is
         // prettier-ignore
         keccak256(
             "MintParams("
-                "uint256 mintPrice,"
+                "uint256 startPrice,"
+                "uint256 endPrice,"
                 "address paymentToken,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
@@ -282,7 +284,7 @@ contract ERC721SeaDropContractOfferer is
     function generateOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
+        SpentItem[] memory maximumSpent,
         bytes calldata context // encoded based on the schemaID
     )
         external
@@ -348,7 +350,7 @@ contract ERC721SeaDropContractOfferer is
         address /* caller */,
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
+        SpentItem[] memory maximumSpent,
         bytes calldata context
     )
         external
@@ -363,14 +365,14 @@ contract ERC721SeaDropContractOfferer is
         function(
             address,
             SpentItem[] calldata,
-            SpentItem[] calldata,
+            SpentItem[] memory,
             bytes calldata,
             bool
         ) internal view returns (SpentItem[] memory, ReceivedItem[] memory) fn;
         function(
             address,
             SpentItem[] calldata,
-            SpentItem[] calldata,
+            SpentItem[] memory,
             bytes calldata,
             bool
         )
@@ -427,7 +429,7 @@ contract ERC721SeaDropContractOfferer is
     function _decodeOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
+        SpentItem[] memory maximumSpent,
         bytes calldata context
     ) internal view returns (SpentItem[] memory offer, uint8 substandard) {
         // Declare an error buffer; first check that the minimumReceived has the
@@ -498,7 +500,7 @@ contract ERC721SeaDropContractOfferer is
     function _createOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
+        SpentItem[] memory maximumSpent,
         bytes calldata context,
         bool withEffects
     )
@@ -530,10 +532,13 @@ contract ERC721SeaDropContractOfferer is
         // Put the fulfiller back on the stack to avoid stack too deep.
         address fulfiller_ = fulfiller;
 
+        // Define a variable for the current price.
+        uint256 currentPrice;
+
         if (substandard == 0) {
             // 0: Public mint
             // Checks
-            consideration = _validateMintPublic(
+            (consideration, currentPrice) = _validateMintPublic(
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -541,17 +546,23 @@ contract ERC721SeaDropContractOfferer is
             );
             // Effects
             if (withEffects) {
-                _mintPublic(feeRecipient, fulfiller_, minter, quantity);
+                _mintPublic(
+                    feeRecipient,
+                    fulfiller_,
+                    minter,
+                    quantity,
+                    currentPrice
+                );
             }
         } else if (substandard == 1) {
             // 1: Allow list mint
             MintParams memory mintParams = abi.decode(
-                context[42:330],
+                context[42:362],
                 (MintParams)
             );
-            bytes32[] memory proof = _bytesToBytes32Array(context[330:]);
+            bytes32[] memory proof = _bytesToBytes32Array(context[362:]);
             // Checks
-            consideration = _validateMintAllowList(
+            (consideration, currentPrice) = _validateMintAllowList(
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -566,6 +577,7 @@ contract ERC721SeaDropContractOfferer is
                     fulfiller_,
                     minter,
                     quantity,
+                    currentPrice,
                     mintParams,
                     proof
                 );
@@ -577,7 +589,7 @@ contract ERC721SeaDropContractOfferer is
                 (TokenGatedMintParams)
             );
             // Checks
-            consideration = _validateMintAllowedTokenHolder(
+            (consideration, currentPrice) = _validateMintAllowedTokenHolder(
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -589,20 +601,21 @@ contract ERC721SeaDropContractOfferer is
                     feeRecipient,
                     fulfiller_,
                     minter,
+                    currentPrice,
                     mintParams
                 );
             }
         } else if (substandard == 3) {
             // 3: Signed mint
             MintParams memory mintParams = abi.decode(
-                context[42:330],
+                context[42:362],
                 (MintParams)
             );
-            uint256 salt = uint256(bytes32(context[330:362]));
-            bytes memory signature = context[362:];
+            uint256 salt = uint256(bytes32(context[362:394]));
+            bytes memory signature = context[394:];
             bytes32 digest;
             // Checks
-            (consideration, digest) = _validateMintSigned(
+            (consideration, currentPrice, digest) = _validateMintSigned(
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -618,11 +631,24 @@ contract ERC721SeaDropContractOfferer is
                     fulfiller_,
                     minter,
                     quantity,
+                    currentPrice,
                     mintParams,
                     salt,
                     signature,
                     digest
                 );
+            }
+        }
+
+        // Modify maximumSpent to reflect the consideration items, in case
+        // it is a descending price stage the recipient will be refunded
+        // if the fulfiller overpaid.
+        if (consideration.length != 0) {
+            for (uint256 i = 0; i < maximumSpent.length; ) {
+                maximumSpent[i].amount = consideration[i].amount;
+                unchecked {
+                    ++i;
+                }
             }
         }
     }
@@ -640,15 +666,16 @@ contract ERC721SeaDropContractOfferer is
         address payer,
         address minter,
         uint256 quantity
-    ) internal view returns (ReceivedItem[] memory consideration) {
+    )
+        internal
+        view
+        returns (ReceivedItem[] memory consideration, uint256 currentPrice)
+    {
         // Put the public drop data on the stack.
         PublicDrop memory publicDrop = _publicDrop;
 
         // Ensure that the drop has started.
         _checkActive(publicDrop.startTime, publicDrop.endTime);
-
-        // Put the mint price on the stack.
-        uint256 mintPrice = publicDrop.mintPrice;
 
         // Ensure the payer is allowed if not the minter.
         if (payer != minter) {
@@ -674,10 +701,19 @@ contract ERC721SeaDropContractOfferer is
             publicDrop.restrictFeeRecipients
         );
 
+        // Derive the current price.
+        currentPrice = _currentPrice(
+            publicDrop.startPrice,
+            publicDrop.endPrice,
+            publicDrop.startTime,
+            publicDrop.endTime,
+            true
+        );
+
         // Set the required consideration items.
         consideration = _requiredItems(
             quantity,
-            publicDrop.mintPrice,
+            currentPrice,
             publicDrop.paymentToken,
             feeRecipient,
             publicDrop.feeBps
@@ -691,12 +727,14 @@ contract ERC721SeaDropContractOfferer is
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
      * @param quantity     The number of tokens to mint.
+     * @param currentPrice The current price for each token.
      */
     function _mintPublic(
         address feeRecipient,
         address payer,
         address minter,
-        uint256 quantity
+        uint256 quantity,
+        uint256 currentPrice
     ) internal {
         // Set the mint recipient.
         _mintRecipient = minter;
@@ -710,7 +748,7 @@ contract ERC721SeaDropContractOfferer is
             feeRecipient,
             payer,
             quantity,
-            publicDrop.mintPrice,
+            currentPrice,
             publicDrop.paymentToken,
             publicDrop.feeBps,
             _PUBLIC_DROP_STAGE_INDEX
@@ -734,12 +772,13 @@ contract ERC721SeaDropContractOfferer is
         uint256 quantity,
         MintParams memory mintParams,
         bytes32[] memory proof
-    ) internal view returns (ReceivedItem[] memory consideration) {
+    )
+        internal
+        view
+        returns (ReceivedItem[] memory consideration, uint256 currentPrice)
+    {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
-
-        // Put the mint price on the stack.
-        uint256 mintPrice = mintParams.mintPrice;
 
         // Ensure the payer is allowed if not the minter.
         if (payer != minter) {
@@ -776,10 +815,19 @@ contract ERC721SeaDropContractOfferer is
             revert InvalidProof();
         }
 
+        // Derive the current price.
+        currentPrice = _currentPrice(
+            mintParams.startPrice,
+            mintParams.endPrice,
+            mintParams.startTime,
+            mintParams.endTime,
+            true
+        );
+
         // Set the required consideration items.
         consideration = _requiredItems(
             quantity,
-            mintParams.mintPrice,
+            currentPrice,
             mintParams.paymentToken,
             feeRecipient,
             mintParams.feeBps
@@ -794,6 +842,7 @@ contract ERC721SeaDropContractOfferer is
      * @param minter       The mint recipient.
      * @param quantity     The number of tokens to mint.
      * @param mintParams   The mint parameters.
+     * @param currentPrice The current price for each token.
      * @param proof        The proof for the leaf of the allow list.
      */
     function _mintAllowList(
@@ -801,6 +850,7 @@ contract ERC721SeaDropContractOfferer is
         address payer,
         address minter,
         uint256 quantity,
+        uint256 currentPrice,
         MintParams memory mintParams,
         bytes32[] memory proof
     ) internal {
@@ -813,7 +863,7 @@ contract ERC721SeaDropContractOfferer is
             feeRecipient,
             payer,
             quantity,
-            mintParams.mintPrice,
+            currentPrice,
             mintParams.paymentToken,
             mintParams.feeBps,
             mintParams.dropStageIndex
@@ -844,7 +894,11 @@ contract ERC721SeaDropContractOfferer is
     )
         internal
         view
-        returns (ReceivedItem[] memory consideration, bytes32 digest)
+        returns (
+            ReceivedItem[] memory consideration,
+            uint256 currentPrice,
+            bytes32 digest
+        )
     {
         // Check that the drop stage is active.
         _checkActive(mintParams.startTime, mintParams.endTime);
@@ -873,6 +927,15 @@ contract ERC721SeaDropContractOfferer is
             mintParams.restrictFeeRecipients
         );
 
+        // Derive the current price.
+        currentPrice = _currentPrice(
+            mintParams.startPrice,
+            mintParams.endPrice,
+            mintParams.startTime,
+            mintParams.endTime,
+            true
+        );
+
         // Validate the signature in a block scope to avoid "stack too deep".
         {
             // Get the digest to verify the EIP-712 signature.
@@ -888,13 +951,17 @@ contract ERC721SeaDropContractOfferer is
             // Note that if the digest doesn't exactly match what was signed we'll
             // get a random recovered address.
             address recoveredAddress = digest.recover(signature);
-            _validateSignerAndParams(mintParams, recoveredAddress);
+            _validateSignerAndParams(
+                mintParams,
+                recoveredAddress,
+                currentPrice
+            );
         }
 
         // Set the required consideration items.
         consideration = _requiredItems(
             quantity,
-            mintParams.mintPrice,
+            currentPrice,
             mintParams.paymentToken,
             feeRecipient,
             mintParams.feeBps
@@ -909,6 +976,7 @@ contract ERC721SeaDropContractOfferer is
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
      * @param quantity     The number of tokens to mint.
+     * @param currentPrice The current price of each token.
      * @param mintParams   The mint parameters.
      * @param salt         The salt for the signed mint.
      * @param signature    The server-side signature, must be an allowed
@@ -919,6 +987,7 @@ contract ERC721SeaDropContractOfferer is
         address payer,
         address minter,
         uint256 quantity,
+        uint256 currentPrice,
         MintParams memory mintParams,
         uint256 salt,
         bytes memory signature,
@@ -936,7 +1005,7 @@ contract ERC721SeaDropContractOfferer is
             feeRecipient,
             payer,
             quantity,
-            mintParams.mintPrice,
+            currentPrice,
             mintParams.paymentToken,
             mintParams.feeBps,
             mintParams.dropStageIndex
@@ -946,10 +1015,15 @@ contract ERC721SeaDropContractOfferer is
     /**
      * @notice Enforce stored parameters for signed mints to mitigate
      *         the effects of a malicious signer.
+     *
+     * @param mintParams   The mint parameters.
+     * @param signer       The signer.
+     * @param currentPrice The current price.
      */
     function _validateSignerAndParams(
         MintParams memory mintParams,
-        address signer
+        address signer,
+        uint256 currentPrice
     ) internal view {
         SignedMintValidationParams
             memory signedMintValidationParams = _signedMintValidationParams[
@@ -988,10 +1062,10 @@ contract ERC721SeaDropContractOfferer is
                 ++i;
             }
         }
-        if (mintParams.mintPrice < minMintPrice) {
+        if (currentPrice < minMintPrice) {
             revert InvalidSignedMintPrice(
                 mintParams.paymentToken,
-                mintParams.mintPrice,
+                currentPrice,
                 minMintPrice
             );
         }
@@ -1055,7 +1129,11 @@ contract ERC721SeaDropContractOfferer is
         address payer,
         address minter,
         TokenGatedMintParams memory mintParams
-    ) internal view returns (ReceivedItem[] memory consideration) {
+    )
+        internal
+        view
+        returns (ReceivedItem[] memory consideration, uint256 currentPrice)
+    {
         // Ensure the payer is allowed if not the minter.
         if (payer != minter) {
             if (
@@ -1142,10 +1220,19 @@ contract ERC721SeaDropContractOfferer is
             dropStage.maxTokenSupplyForStage
         );
 
+        // Derive the current price.
+        currentPrice = _currentPrice(
+            dropStage.startPrice,
+            dropStage.endPrice,
+            dropStage.startTime,
+            dropStage.endTime,
+            true
+        );
+
         // Set the required consideration items.
         consideration = _requiredItems(
             totalMintQuantity,
-            dropStage.mintPrice,
+            currentPrice,
             dropStage.paymentToken,
             feeRecipient,
             dropStage.feeBps
@@ -1158,12 +1245,14 @@ contract ERC721SeaDropContractOfferer is
      * @param feeRecipient The fee recipient.
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
+     * @param currentPrice The current price of each token.
      * @param mintParams   The token gated mint params.
      */
     function _mintAllowedTokenHolder(
         address feeRecipient,
         address payer,
         address minter,
+        uint256 currentPrice,
         TokenGatedMintParams memory mintParams
     ) internal returns (ReceivedItem[] memory consideration) {
         // Set the mint recipient.
@@ -1212,7 +1301,7 @@ contract ERC721SeaDropContractOfferer is
             feeRecipient,
             payer,
             totalMintQuantity,
-            dropStage.mintPrice,
+            currentPrice,
             dropStage.paymentToken,
             dropStage.feeBps,
             dropStage.dropStageIndex
@@ -1314,21 +1403,21 @@ contract ERC721SeaDropContractOfferer is
      *         includes the fee recipient and creator payouts.
      *
      * @param quantity     The number of tokens to mint.
-     * @param mintPrice    The mint price per token.
+     * @param currentPrice The current price of each token.
      * @param paymentToken The payment token.
      * @param feeRecipient The fee recipient.
      * @param feeBps       The fee basis points.
      */
     function _requiredItems(
         uint256 quantity,
-        uint256 mintPrice,
+        uint256 currentPrice,
         address paymentToken,
         address feeRecipient,
         uint256 feeBps
     ) internal view returns (ReceivedItem[] memory receivedItems) {
         // If the mint price is zero, return early as there
         // are no required consideration items.
-        if (mintPrice == 0) return new ReceivedItem[](0);
+        if (currentPrice == 0) return new ReceivedItem[](0);
 
         // Revert if the fee basis points are greater than 10_000.
         if (feeBps > 10_000) {
@@ -1341,17 +1430,17 @@ contract ERC721SeaDropContractOfferer is
             : ItemType.ERC20;
 
         // Put the total mint price on the stack.
-        uint256 totalMintPrice = quantity * mintPrice;
+        uint256 totalPrice = quantity * currentPrice;
 
         // Get the fee amount.
         // Note that the fee amount is rounded down in favor of the creator.
-        uint256 feeAmount = (totalMintPrice * feeBps) / 10_000;
+        uint256 feeAmount = (totalPrice * feeBps) / 10_000;
 
         // Get the creator payout amount.
-        // Fee amount is <= totalMintPrice per above.
+        // Fee amount is <= totalPrice per above.
         uint256 payoutAmount;
         unchecked {
-            payoutAmount = totalMintPrice - feeAmount;
+            payoutAmount = totalPrice - feeAmount;
         }
 
         // Put the creator payouts on the stack.
@@ -1942,7 +2031,8 @@ contract ERC721SeaDropContractOfferer is
         bytes32 mintParamsHashStruct = keccak256(
             abi.encode(
                 _MINT_PARAMS_TYPEHASH,
-                mintParams.mintPrice,
+                mintParams.startPrice,
+                mintParams.endPrice,
                 mintParams.paymentToken,
                 mintParams.maxTotalMintableByWallet,
                 mintParams.startTime,
@@ -2008,15 +2098,15 @@ contract ERC721SeaDropContractOfferer is
         public
         view
         virtual
-        override(ERC721ContractMetadata, IERC165)
+        override(IERC165, ERC721ContractMetadata)
         returns (bool)
     {
         return
             interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
             // ERC721ContractMetadata returns supportsInterface true for
-            //     EIP-2981
+            //     ISeaDropTokenContractMetadata, EIP-2981
             // ERC721A returns supportsInterface true for
-            //     ERC165, ERC721, ERC721Metadata
+            //     ERC721, ERC721Metadata, ERC165
             super.supportsInterface(interfaceId);
     }
 
@@ -2248,6 +2338,73 @@ contract ERC721SeaDropContractOfferer is
         }
         // Return data list
         return (dataList);
+    }
+
+    /**
+     * @dev Internal view function to derive the current price of a stage
+     *      based on the the starting price and ending price. If the start
+     *      and end prices differ, the current price will be interpolated on
+     *      a linear basis. Note that this function expects that the startTime
+     *      is not greater than the current block timestamp and endTime is
+     *      greater than the current block timestamp. If this condition is not
+     *      upheld, duration / elapsed / remaining variables will underflow.
+     *
+     * @param startPrice The starting price of the stage.
+     * @param endPrice   The ending price of the stage.
+     * @param startTime  The starting time of the stage.
+     * @param endTime    The end time of the stage.
+     * @param roundUp    A boolean indicating whether the resultant amount
+     *                   should be rounded up or down.
+     *
+     * @return price The current price.
+     */
+    function _currentPrice(
+        uint256 startPrice,
+        uint256 endPrice,
+        uint256 startTime,
+        uint256 endTime,
+        bool roundUp
+    ) internal view returns (uint256 price) {
+        // Return the price if startPrice == endPrice.
+        if (startPrice == endPrice) {
+            return endPrice;
+        }
+
+        // Declare variables to derive in the subsequent unchecked scope.
+        uint256 duration;
+        uint256 elapsed;
+        uint256 remaining;
+
+        // Skip underflow checks as startTime <= block.timestamp < endTime.
+        unchecked {
+            // Derive the duration for the stage and place it on the stack.
+            duration = endTime - startTime;
+
+            // Derive time elapsed since the stage started & place on stack.
+            elapsed = block.timestamp - startTime;
+
+            // Derive time remaining until stage expires and place on stack.
+            remaining = duration - elapsed;
+        }
+
+        // Aggregate new amounts weighted by time with rounding factor.
+        uint256 totalBeforeDivision = ((startPrice * remaining) +
+            (endPrice * elapsed));
+
+        // Use assembly to combine operations and skip divide-by-zero check.
+        assembly {
+            // Multiply by iszero(iszero(totalBeforeDivision)) to ensure
+            // amount is set to zero if totalBeforeDivision is zero,
+            // as intermediate overflow can occur if it is zero.
+            price := mul(
+                iszero(iszero(totalBeforeDivision)),
+                // Subtract 1 from the numerator and add 1 to the result if
+                // roundUp is true to get the proper rounding direction.
+                // Division is performed with no zero check as duration
+                // cannot be zero as long as startTime < endTime.
+                add(div(sub(totalBeforeDivision, roundUp), duration), roundUp)
+            )
+        }
     }
 
     /**

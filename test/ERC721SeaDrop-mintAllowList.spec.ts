@@ -85,7 +85,8 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     // Set the allow list mint params.
     mintParams = {
-      mintPrice: parseEther("0.1"),
+      startPrice: parseEther("0.1"),
+      endPrice: parseEther("0.1"),
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
@@ -123,7 +124,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -141,7 +142,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         quantity,
-        mintParams.mintPrice,
+        mintParams.startPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -149,8 +150,8 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   });
 
   it("Should mint a free mint allow list stage", async () => {
-    // Create a mintParams with mintPrice of 0.
-    const mintParamsFreeMint = { ...mintParams, mintPrice: 0 };
+    // Create a mintParams with price of 0.
+    const mintParamsFreeMint = { ...mintParams, startPrice: 0, endPrice: 0 };
 
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
@@ -176,7 +177,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParamsFreeMint.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams: mintParamsFreeMint,
@@ -194,7 +195,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         quantity,
-        0, // mintPrice: free
+        0, // mint price: free
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -224,7 +225,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -256,7 +257,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         feeRecipient.address,
         owner.address, // payer
         quantity,
-        mintParams.mintPrice,
+        mintParams.startPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -286,7 +287,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -310,7 +311,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter: { address: AddressZero } as any,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -352,7 +353,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient: invalidFeeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -411,7 +412,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -457,7 +458,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams: differentMintParams,
@@ -498,7 +499,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -518,7 +519,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         quantity,
-        mintParams.mintPrice,
+        mintParams.startPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -530,7 +531,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -579,7 +580,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -599,7 +600,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address, // payer
         mintParams.maxTotalMintableByWallet,
-        mintParams.mintPrice,
+        mintParams.startPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -610,7 +611,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter: secondMinter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -664,7 +665,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: 10,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -684,7 +685,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         feeRecipient.address,
         minter.address,
         mintParams.maxTotalMintableByWallet,
-        mintParams.mintPrice,
+        mintParams.startPrice,
         mintParams.paymentToken,
         mintParams.feeBps,
         mintParams.dropStageIndex
@@ -695,7 +696,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter: secondMinter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -732,7 +733,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -755,7 +756,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -799,7 +800,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      mintPrice: mintParams.mintPrice,
+      startPrice: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
