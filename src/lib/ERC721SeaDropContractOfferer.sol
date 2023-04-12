@@ -188,8 +188,10 @@ contract ERC721SeaDropContractOfferer is
      *
      * @param name           The name of the token.
      * @param symbol         The symbol of the token.
-     * @param allowedSeaport The address of the Seaport contract allowed to interact.
-     * @param allowedConduit The address of the conduit contract allowed to interact.
+     * @param allowedSeaport The address of the Seaport contract allowed to
+     *                       interact.
+     * @param allowedConduit The address of the conduit contract allowed to
+     *                       interact.
      */
     constructor(
         string memory name,
@@ -706,8 +708,7 @@ contract ERC721SeaDropContractOfferer is
             publicDrop.startPrice,
             publicDrop.endPrice,
             publicDrop.startTime,
-            publicDrop.endTime,
-            true
+            publicDrop.endTime
         );
 
         // Set the required consideration items.
@@ -820,8 +821,7 @@ contract ERC721SeaDropContractOfferer is
             mintParams.startPrice,
             mintParams.endPrice,
             mintParams.startTime,
-            mintParams.endTime,
-            true
+            mintParams.endTime
         );
 
         // Set the required consideration items.
@@ -932,8 +932,7 @@ contract ERC721SeaDropContractOfferer is
             mintParams.startPrice,
             mintParams.endPrice,
             mintParams.startTime,
-            mintParams.endTime,
-            true
+            mintParams.endTime
         );
 
         // Validate the signature in a block scope to avoid "stack too deep".
@@ -1225,8 +1224,7 @@ contract ERC721SeaDropContractOfferer is
             dropStage.startPrice,
             dropStage.endPrice,
             dropStage.startTime,
-            dropStage.endTime,
-            true
+            dropStage.endTime
         );
 
         // Set the required consideration items.
@@ -1448,6 +1446,11 @@ contract ERC721SeaDropContractOfferer is
 
         // Put the length of total creator payouts on the stack.
         uint256 creatorPayoutsLength = creatorPayouts.length;
+
+        // Revert if the creator payouts are not set.
+        if (creatorPayoutsLength == 0) {
+            revert CreatorPayoutsNotSet();
+        }
 
         // Put the start index including the fee on the stack.
         uint256 startIndexWithFee = feeAmount != 0 ? 1 : 0;
@@ -1818,13 +1821,13 @@ contract ERC721SeaDropContractOfferer is
         // Reset the creator payout array.
         delete _creatorPayouts;
 
-        // Track the total bais points.
+        // Track the total basis points.
         uint256 totalBasisPoints;
 
         // Put the total creator payouts length on the stack.
         uint256 creatorPayoutsLength = creatorPayouts.length;
 
-        for (uint256 i; i < creatorPayoutsLength; i++) {
+        for (uint256 i; i < creatorPayoutsLength; ) {
             // Get the creator payout.
             CreatorPayout memory creatorPayout = creatorPayouts[i];
 
@@ -1843,6 +1846,10 @@ contract ERC721SeaDropContractOfferer is
 
             // Push to storage.
             _creatorPayouts.push(creatorPayout);
+
+            unchecked {
+                ++i;
+            }
         }
 
         // Ensure the total basis points equals 10_000 exactly.
@@ -2349,12 +2356,13 @@ contract ERC721SeaDropContractOfferer is
      *      greater than the current block timestamp. If this condition is not
      *      upheld, duration / elapsed / remaining variables will underflow.
      *
+     *      Since this function is only used for consideration items, it will
+     *      round up.
+     *
      * @param startPrice The starting price of the stage.
      * @param endPrice   The ending price of the stage.
      * @param startTime  The starting time of the stage.
      * @param endTime    The end time of the stage.
-     * @param roundUp    A boolean indicating whether the resultant amount
-     *                   should be rounded up or down.
      *
      * @return price The current price.
      */
@@ -2362,8 +2370,7 @@ contract ERC721SeaDropContractOfferer is
         uint256 startPrice,
         uint256 endPrice,
         uint256 startTime,
-        uint256 endTime,
-        bool roundUp
+        uint256 endTime
     ) internal view returns (uint256 price) {
         // Return the price if startPrice == endPrice.
         if (startPrice == endPrice) {
@@ -2402,7 +2409,7 @@ contract ERC721SeaDropContractOfferer is
                 // roundUp is true to get the proper rounding direction.
                 // Division is performed with no zero check as duration
                 // cannot be zero as long as startTime < endTime.
-                add(div(sub(totalBeforeDivision, roundUp), duration), roundUp)
+                add(div(sub(totalBeforeDivision, 1), duration), 1)
             )
         }
     }

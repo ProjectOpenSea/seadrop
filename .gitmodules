@@ -2,9 +2,15 @@
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
 	branch = v1.5.0
+[submodule "lib/ds-test"]
+	path = lib/ds-test
+	url = https://github.com/dapphub/ds-test
 [submodule "lib/ERC721A"]
 	path = lib/ERC721A
 	url = https://github.com/chiru-labs/ERC721A
+[submodule "lib/ERC721A-Upgradeable"]
+	path = lib/ERC721A-Upgradeable
+	url = https://github.com/chiru-labs/ERC721A-Upgradeable
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
@@ -19,20 +25,14 @@
 	url = https://github.com/openzeppelin/openzeppelin-contracts
 [submodule "lib/operator-filter-registry"]
 	path = lib/operator-filter-registry
-	url = git@github.com:ProjectOpenSea/operator-filter-registry.git
+	url = https://github.com/ProjectOpenSea/operator-filter-registry
 [submodule "lib/openzeppelin-contracts-upgradeable"]
 	path = lib/openzeppelin-contracts-upgradeable
-	url = git@github.com:OpenZeppelin/openzeppelin-contracts-upgradeable.git
-[submodule "lib/ERC721A-Upgradeable"]
-	path = lib/ERC721A-Upgradeable
-	url = git@github.com:chiru-labs/ERC721A-Upgradeable.git
-[submodule "lib/ds-test"]
-	path = lib/ds-test
-	url = https://github.com/dapphub/ds-test
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
 [submodule "lib/create2-helpers"]
 	path = lib/create2-helpers
 	url = https://github.com/emo-eth/create2-helpers
 	branch = v0.1.3
 [submodule "lib/seaport"]
 	path = lib/seaport
-	url = git@github.com:ProjectOpenSea/seaport.git
+	url = https://github.com/ProjectOpenSea/seaport

@@ -4,7 +4,10 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION } from "./utils/helpers";
+import {
+  VERSION,
+  deployDelegationRegistryToCanonicalAddress,
+} from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
@@ -206,7 +209,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -275,7 +278,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -320,7 +323,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter: payer, // Test with different minter address
       mintType: MintType.SIGNED,
       mintParams,
@@ -346,7 +349,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient: payer, // Test with different fee recipient
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -402,7 +405,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -445,7 +448,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -471,7 +474,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: differentMintParams,
@@ -493,7 +496,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: differentMintParams,
@@ -559,7 +562,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 10, // Max mints per wallet is 10. Mint 10
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -590,7 +593,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams,
@@ -612,7 +615,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: { ...mintParams, maxTotalMintableByWallet: 11 },
@@ -651,7 +654,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 3,
       feeRecipient,
       feeBps: mintParamsZeroFee.feeBps,
-      startPrice: mintParamsZeroFee.startPrice,
+      price: mintParamsZeroFee.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: mintParamsZeroFee,
@@ -698,7 +701,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       mintParams: mintParamsInvalidFeeBps,
@@ -733,7 +736,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
       salt,
@@ -979,5 +982,74 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     )
       .to.be.revertedWithCustomError(token, "InvalidFeeBps")
       .withArgs(12000);
+  });
+
+  it("Should allow delegated payers to mint via the DelegationRegistry", async () => {
+    const delegationRegistry =
+      await deployDelegationRegistryToCanonicalAddress();
+
+    await token.updateCreatorPayouts([
+      { payoutAddress: creator.address, basisPoints: 5_000 },
+      { payoutAddress: owner.address, basisPoints: 5_000 },
+    ]);
+
+    const signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      salt,
+      signer
+    );
+
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 3,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.SIGNED,
+      mintParams,
+      salt,
+      signature,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // PayerNotAllowed
+    // withArgs(payer.address)
+
+    // Delegate payer for minter
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, true);
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        payer.address,
+        3,
+        mintParams.endPrice,
+        mintParams.paymentToken,
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+
+    // Remove delegation
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, false);
   });
 });

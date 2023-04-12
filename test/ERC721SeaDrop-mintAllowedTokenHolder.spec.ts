@@ -4,7 +4,10 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION } from "./utils/helpers";
+import {
+  VERSION,
+  deployDelegationRegistryToCanonicalAddress,
+} from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
@@ -90,7 +93,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
       paymentToken: AddressZero,
-      maxMintablePerRedeemedToken: 3,
+      maxMintablePerRedeemedToken: 2,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
@@ -110,7 +113,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const mintParams = {
       allowedNftToken: allowedNftToken.address,
       allowedNftTokenIds: [0],
-      amounts: [1],
+      amounts: [3, 1],
     };
 
     // Mint an allowedNftToken to the minter.
@@ -124,15 +127,58 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       )
     ).to.eq(0);
 
-    const { order, value } = await createMintOrder({
+    let { order, value } = await createMintOrder({
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
     });
+
+    // This should fail because of the amounts mismatch.
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // TokenGatedTokenIdsAndAmountsLengthMismatch
+
+    mintParams.amounts = [3];
+    ({ order, value } = await createMintOrder({
+      token,
+      feeRecipient,
+      feeBps: dropStage.feeBps,
+      price: dropStage.startPrice,
+      minter,
+      mintType: MintType.TOKEN_GATED,
+      tokenGatedMintParams: mintParams,
+    }));
+
+    // This should fail because the max mintable per redeemed token is 2.
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // TokenGatedTokenIdMintExceedsQuantityRemaining
+    // withArgs(allowedNftToken.address, mintParams.allowedNftTokenIds[0], 2, 2, 1)
+
+    mintParams.amounts = [1];
+    ({ order, value } = await createMintOrder({
+      token,
+      feeRecipient,
+      feeBps: dropStage.feeBps,
+      price: dropStage.startPrice,
+      minter,
+      mintType: MintType.TOKEN_GATED,
+      tokenGatedMintParams: mintParams,
+    }));
 
     // Mint the token to the minter and verify the expected event was emitted.
     await expect(
@@ -160,6 +206,51 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       )
     ).to.eq(1);
 
+    // Mint the token to the minter and verify the expected event was emitted.
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        minter.address, // payer
+        1, // mint quantity
+        dropStage.startPrice,
+        dropStage.paymentToken,
+        dropStage.feeBps,
+        dropStage.dropStageIndex
+      );
+
+    // Ensure the token id redeemed count is accurate.
+    expect(
+      await token.getAllowedNftTokenIdRedeemedCount(
+        mintParams.allowedNftToken,
+        mintParams.allowedNftTokenIds[0]
+      )
+    ).to.eq(2);
+
+    // This should fail because the max mintable per redeemed token is 2.
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // TokenGatedTokenIdMintExceedsQuantityRemaining
+    // withArgs(allowedNftToken.address, mintParams.allowedNftTokenIds[0], 2, 2, 1)
+
+    // Ensure the token id redeemed count is accurate.
+    expect(
+      await token.getAllowedNftTokenIdRedeemedCount(
+        mintParams.allowedNftToken,
+        mintParams.allowedNftTokenIds[0]
+      )
+    ).to.eq(2);
+
     expect(await token.getTokenGatedAllowedTokens()).to.deep.eq([
       allowedNftToken.address,
     ]);
@@ -179,7 +270,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -242,7 +333,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -273,7 +364,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const mintParams = {
       allowedNftToken: allowedNftToken.address,
       allowedNftTokenIds: [0],
-      amounts: [3],
+      amounts: [2],
     };
 
     // Mint an allowedNftToken to the minter.
@@ -283,7 +374,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -299,7 +390,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         minter.address,
         feeRecipient.address,
         minter.address,
-        3, // mint quantity
+        2, // mint quantity
         dropStage.endPrice,
         dropStage.paymentToken,
         dropStage.feeBps,
@@ -314,7 +405,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // TokenGatedTokenIdMintExceedsQuantityRemaining
-    // withArgs(allowedNftToken.address, mintParams.allowedNftTokenIds[0], dropStage.maxMintablePerRedeemedToken, 3, 3)
+    // withArgs(allowedNftToken.address, mintParams.allowedNftTokenIds[0], dropStage.maxMintablePerRedeemedToken, 2, 2)
   });
 
   it("Should revert if the minter does not own the allowed NFT token passed into the call", async () => {
@@ -331,7 +422,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -379,7 +470,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -412,7 +503,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient: minter,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -471,7 +562,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token: differentToken,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -517,7 +608,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -556,7 +647,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -608,7 +699,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -657,7 +748,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       token,
       feeRecipient,
       feeBps: dropStage.feeBps,
-      startPrice: dropStage.startPrice,
+      price: dropStage.startPrice,
       minter,
       mintType: MintType.TOKEN_GATED,
       tokenGatedMintParams: mintParams,
@@ -735,5 +826,68 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       0,
       false,
     ]);
+  });
+
+  it("Should allow delegated payers to mint via the DelegationRegistry", async () => {
+    const delegationRegistry =
+      await deployDelegationRegistryToCanonicalAddress();
+
+    const payer = new ethers.Wallet(randomHex(32), provider);
+    await faucet(payer.address, provider);
+
+    await token.updateCreatorPayouts([
+      { payoutAddress: creator.address, basisPoints: 5_000 },
+      { payoutAddress: owner.address, basisPoints: 5_000 },
+    ]);
+
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: [0],
+      amounts: [1],
+    };
+
+    await allowedNftToken.mint(minter.address, 0);
+
+    const { order, value } = await createMintOrder({
+      token,
+      feeRecipient,
+      feeBps: dropStage.feeBps,
+      price: dropStage.startPrice,
+      minter,
+      mintType: MintType.TOKEN_GATED,
+      tokenGatedMintParams: mintParams,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // PayerNotAllowed
+    // withArgs(payer.address)
+
+    // Delegate payer for minter
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, true);
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        payer.address,
+        1,
+        dropStage.endPrice,
+        dropStage.paymentToken,
+        dropStage.feeBps,
+        dropStage.dropStageIndex
+      );
   });
 });

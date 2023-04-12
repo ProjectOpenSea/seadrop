@@ -6,7 +6,10 @@ import { seaportFixture } from "./seaport-utils/fixtures";
 import { createAllowListAndGetProof } from "./utils/allow-list";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION } from "./utils/helpers";
+import {
+  VERSION,
+  deployDelegationRegistryToCanonicalAddress,
+} from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
@@ -124,7 +127,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -177,7 +180,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParamsFreeMint.startPrice,
+      price: mintParamsFreeMint.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams: mintParamsFreeMint,
@@ -225,7 +228,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -287,7 +290,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -311,7 +314,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter: { address: AddressZero } as any,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -353,7 +356,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient: invalidFeeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -412,7 +415,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -458,7 +461,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams: differentMintParams,
@@ -499,7 +502,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -531,7 +534,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -580,7 +583,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -611,7 +614,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter: secondMinter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -665,7 +668,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: 10,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -696,7 +699,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter: secondMinter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -733,7 +736,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -756,7 +759,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -800,7 +803,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
-      startPrice: mintParams.startPrice,
+      price: mintParams.startPrice,
       minter,
       mintType: MintType.ALLOW_LIST,
       mintParams,
@@ -817,5 +820,91 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // InvalidFeeBps
     // withArgs(10100)
+  });
+
+  it("Should allow delegated payers to mint via the DelegationRegistry", async () => {
+    const delegationRegistry =
+      await deployDelegationRegistryToCanonicalAddress();
+
+    const payer = new ethers.Wallet(randomHex(32), provider);
+    await faucet(payer.address, provider);
+
+    await token.updateCreatorPayouts([
+      { payoutAddress: creator.address, basisPoints: 5_000 },
+      { payoutAddress: owner.address, basisPoints: 5_000 },
+    ]);
+
+    // Allow list mint
+    const mintParams = {
+      startPrice: parseEther("0.1"),
+      endPrice: parseEther("0.1"),
+      paymentToken: AddressZero,
+      maxTotalMintableByWallet: 10,
+      startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 300,
+      dropStageIndex: 1,
+      maxTokenSupplyForStage: 11,
+      feeBps: 899,
+      restrictFeeRecipients: true,
+    };
+    const { root, proof } = await createAllowListAndGetProof(
+      [minter],
+      mintParams
+    );
+
+    await token.updateAllowList({
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    });
+
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams,
+      proof,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // PayerNotAllowed
+    // withArgs(payer.address)
+
+    // Delegate payer for minter
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, true);
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        payer.address,
+        1,
+        mintParams.endPrice,
+        mintParams.paymentToken,
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+
+    // Remove delegation
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, false);
   });
 });

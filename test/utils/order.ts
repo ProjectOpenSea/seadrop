@@ -4,7 +4,7 @@ import { toBN } from "../seaport-utils/encoding";
 
 import { toPaddedBuffer } from "./encoding";
 
-import type { ERC721SeaDrop } from "../../typechain-types";
+import type { ERC721SeaDrop, TestERC20 } from "../../typechain-types";
 import type { SeaDropStructsErrorsAndEvents } from "../../typechain-types/src/shim/Shim";
 import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
 import type { BigNumberish, Wallet } from "ethers";
@@ -15,6 +15,29 @@ type TokenGatedMintParamsStruct =
 
 const { AddressZero, HashZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
+
+export const expectedPrice = ({
+  startPrice,
+  endPrice,
+  startTime,
+  endTime,
+  blockTimestamp,
+}: {
+  startPrice: BigNumberish;
+  endPrice: BigNumberish;
+  startTime: BigNumberish;
+  endTime: BigNumberish;
+  blockTimestamp: BigNumberish;
+}) => {
+  const duration = toBN(endTime).sub(startTime);
+  const elapsed = toBN(blockTimestamp).sub(startTime);
+  const remaining = duration.sub(elapsed);
+  const totalBeforeDivision = toBN(startPrice)
+    .mul(remaining)
+    .add(toBN(endPrice).mul(elapsed));
+  const price = totalBeforeDivision.div(duration);
+  return price;
+};
 
 export enum MintType {
   PUBLIC = 0,
@@ -28,7 +51,8 @@ export const createMintOrder = async ({
   quantity,
   feeRecipient,
   feeBps,
-  startPrice,
+  price,
+  paymentToken,
   minter,
   mintType,
   startTime,
@@ -46,7 +70,8 @@ export const createMintOrder = async ({
   quantity?: BigNumberish;
   feeRecipient: Wallet;
   feeBps: BigNumberish;
-  startPrice: BigNumberish;
+  price: BigNumberish;
+  paymentToken?: TestERC20;
   minter: Wallet;
   mintType: MintType;
   startTime?: number;
@@ -57,6 +82,8 @@ export const createMintOrder = async ({
   signature?: string;
   salt?: string;
 }) => {
+  const paymentTokenAddress = paymentToken?.address ?? AddressZero;
+
   if (mintType === MintType.TOKEN_GATED) {
     if (!tokenGatedMintParams)
       throw new Error("Token gated mint params required for token gated mint");
@@ -78,16 +105,17 @@ export const createMintOrder = async ({
     },
   ];
 
-  const value = toBN(startPrice).mul(quantity);
+  const value = toBN(price).mul(quantity);
   const feeAmount = value.mul(feeBps).div(10_000);
   const creatorAmount = value.sub(feeAmount);
 
+  const itemType = paymentTokenAddress === AddressZero ? 0 : 1;
   const consideration = [];
 
   if (feeAmount.gt(0)) {
     const considerationItemFeeRecipient = {
-      itemType: 0, // NATIVE
-      token: AddressZero,
+      itemType,
+      token: paymentTokenAddress,
       identifierOrCriteria: toBN(0),
       startAmount: feeAmount,
       endAmount: feeAmount,
@@ -100,8 +128,8 @@ export const createMintOrder = async ({
   for (const creatorPayout of creatorPayouts) {
     const amount = creatorAmount.mul(creatorPayout.basisPoints).div(10_000);
     const considerationItem = {
-      itemType: 0, // NATIVE
-      token: AddressZero,
+      itemType,
+      token: paymentTokenAddress,
       identifierOrCriteria: toBN(0),
       startAmount: amount,
       endAmount: amount,

@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.17;
 
-import {
-    IDelegationRegistry
-} from "seadrop/interfaces/IDelegationRegistry.sol";
+import { IDelegationRegistry } from "../interfaces/IDelegationRegistry.sol";
 import {
     EnumerableSet
 } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {
-    ERC165
-} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /**
  * @title DelegationRegistry

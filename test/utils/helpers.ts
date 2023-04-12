@@ -1,4 +1,5 @@
-import { ethers } from "ethers";
+import { setCode } from "@nomicfoundation/hardhat-network-helpers";
+import { ethers } from "hardhat";
 
 import { whileImpersonating } from "./impersonate";
 
@@ -63,4 +64,21 @@ export const mintTokens = async ({
         );
     }
   );
+};
+
+export const deployDelegationRegistryToCanonicalAddress = async () => {
+  const DelegationRegistry = await ethers.getContractFactory(
+    "DelegationRegistry"
+  );
+  const exampleDelegationRegistry = await DelegationRegistry.deploy();
+  const delegationRegistryBytecode = await ethers.provider.getCode(
+    exampleDelegationRegistry.address
+  );
+  const canonicalDelegationRegistryAddress =
+    "0x00000000000076A84feF008CDAbe6409d2FE638B";
+  await setCode(canonicalDelegationRegistryAddress, delegationRegistryBytecode);
+  const delegationRegistry = DelegationRegistry.attach(
+    canonicalDelegationRegistryAddress
+  );
+  return delegationRegistry;
 };

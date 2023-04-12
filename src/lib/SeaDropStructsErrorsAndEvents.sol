@@ -78,14 +78,14 @@ interface SeaDropStructsErrorsAndEvents {
         uint80 startPrice; // 80/512 bits
         uint80 endPrice; // 160/512 bits
         address paymentToken; // 320/512 bits
-        uint16 maxMintablePerRedeemedToken; // 346/512 bits
-        uint24 maxTotalMintableByWallet; // 370/512 bits
-        uint48 startTime; // 418/512 bits
-        uint48 endTime; // 466/512 bits
-        uint8 dropStageIndex; // non-zero. 474/512 bits
-        uint32 maxTokenSupplyForStage; // 506/512 bits
-        uint16 feeBps; // 522/512 bits
-        bool restrictFeeRecipients; // 530/512 bits
+        uint16 maxMintablePerRedeemedToken; // 336/512 bits
+        uint16 maxTotalMintableByWallet; // 352/512 bits
+        uint40 startTime; // 392/512 bits
+        uint40 endTime; // 432/512 bits
+        uint8 dropStageIndex; // non-zero. 450/512 bits
+        uint32 maxTokenSupplyForStage; // 482/512 bits
+        uint16 feeBps; // 498/512 bits
+        bool restrictFeeRecipients; // 506/512 bits
     }
 
     /**
@@ -185,13 +185,13 @@ interface SeaDropStructsErrorsAndEvents {
      * @param maxFeeBps                   The maximum fee allowed.
      */
     struct SignedMintValidationParams {
-        SignedMintValidationMinMintPrice[] minMintPrices;
-        uint24 maxMaxTotalMintableByWallet; // 104/256 bits
-        uint40 minStartTime; // 144/256 bits
-        uint40 maxEndTime; // 184/256 bits
-        uint40 maxMaxTokenSupplyForStage; // 224/256 bits
-        uint16 minFeeBps; // 240/256 bits
-        uint16 maxFeeBps; // 256/256 bits
+        SignedMintValidationMinMintPrice[] minMintPrices; // 240/512 bits TODO is this the right size for array?
+        uint24 maxMaxTotalMintableByWallet; // 264/512 bits
+        uint40 minStartTime; // 304/512 bits
+        uint40 maxEndTime; // 344/512 bits
+        uint40 maxMaxTokenSupplyForStage; // 384/512 bits
+        uint16 minFeeBps; // 400/512 bits
+        uint16 maxFeeBps; // 416/512 bits
     }
 
     /**
@@ -292,6 +292,11 @@ interface SeaDropStructsErrorsAndEvents {
      * @dev Revert if the creator payout address is the zero address.
      */
     error CreatorPayoutAddressCannotBeZeroAddress();
+
+    /**
+     * @dev Revert if the creator payouts are not set.
+     */
+    error CreatorPayoutsNotSet();
 
     /**
      * @dev Revert if the creator payout basis points are zero.

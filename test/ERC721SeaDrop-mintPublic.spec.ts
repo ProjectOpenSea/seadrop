@@ -4,7 +4,10 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION } from "./utils/helpers";
+import {
+  VERSION,
+  deployDelegationRegistryToCanonicalAddress,
+} from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
@@ -105,7 +108,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -182,7 +185,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -220,7 +223,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -261,7 +264,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -332,7 +335,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -354,7 +357,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     }));
@@ -377,7 +380,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient: { address: AddressZero } as any,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -396,7 +399,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient: creator,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     }));
@@ -426,7 +429,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient,
       feeBps: 0,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -456,7 +459,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       quantity,
       feeRecipient: creator,
       feeBps: publicDrop.feeBps,
-      startPrice: publicDrop.startPrice,
+      price: publicDrop.startPrice,
       minter,
       mintType: MintType.PUBLIC,
     });
@@ -469,5 +472,57 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // MintQuantityCannotBeZero
+  });
+
+  it("Should allow delegated payers to mint via the DelegationRegistry", async () => {
+    const delegationRegistry =
+      await deployDelegationRegistryToCanonicalAddress();
+
+    await token.updateCreatorPayouts([
+      { payoutAddress: creator.address, basisPoints: 5_000 },
+      { payoutAddress: owner.address, basisPoints: 5_000 },
+    ]);
+
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // PayerNotAllowed
+    // withArgs(payer.address)
+
+    // Delegate payer for minter
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, true);
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        payer.address, // payer
+        1, // quantity
+        publicDrop.endPrice,
+        publicDrop.paymentToken,
+        publicDrop.feeBps,
+        0 // public drop stage index
+      );
   });
 });

@@ -27,8 +27,10 @@ contract ERC721SeaDrop is
      *
      * @param name           The name of the token.
      * @param symbol         The symbol of the token.
-     * @param allowedSeaport The address of the Seaport contract allowed to interact.
-     * @param allowedConduit The address of the conduit contract allowed to interact.
+     * @param allowedSeaport The address of the Seaport contract allowed to
+     *                       interact.
+     * @param allowedConduit The address of the conduit contract allowed to
+     *                       interact.
      */
     constructor(
         string memory name,
