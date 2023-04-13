@@ -138,6 +138,7 @@ To run tests:
 forge test
 ```
 
+
 To run gas snapshot:
 
 ```
@@ -153,6 +154,11 @@ The following modifiers are also available:
 
 ```bash
 forge test  -vv
+```
+
+Be sure to set an `ETHEREUM_RPC_URL` environment variable for anvil to fork from:
+```bash
+export ETHEREUM_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/{your_key_here}
 ```
 
 For more information on foundry testing and use, see [Foundry Book installation instructions](https://book.getfoundry.sh/getting-started/installation).

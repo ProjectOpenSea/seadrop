@@ -492,7 +492,12 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * Emits an {Approval} event.
      */
-    function approve(address to, uint256 tokenId) public payable virtual override {
+    function approve(address to, uint256 tokenId)
+        public
+        payable
+        virtual
+        override
+    {
         address owner = ownerOf(tokenId);
 
         if (_msgSenderERC721A() != owner) {
