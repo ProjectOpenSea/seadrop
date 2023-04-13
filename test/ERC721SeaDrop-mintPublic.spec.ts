@@ -6,6 +6,7 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import {
   VERSION,
+  convertToStruct,
   deployDelegationRegistryToCanonicalAddress,
 } from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
@@ -94,7 +95,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
-    await token.connect(owner).updatePublicDrop(publicDrop);
+    await token.updatePublicDrop(publicDrop);
     await token
       .connect(owner)
       .updateAllowedFeeRecipient(feeRecipient.address, true);
@@ -416,12 +417,12 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
 
   it("Should not be able to set an invalid fee bps", async () => {
     await expect(
-      token.connect(owner).updatePublicDrop({ ...publicDrop, feeBps: 15_000 })
+      token.updatePublicDrop({ ...publicDrop, feeBps: 15_000 })
     ).to.be.revertedWithCustomError(token, "InvalidFeeBps");
   });
 
   it("Should mint when feeBps is zero", async () => {
-    await token.connect(owner).updatePublicDrop({ ...publicDrop, feeBps: 0 });
+    await token.updatePublicDrop({ ...publicDrop, feeBps: 0 });
 
     const quantity = 1;
     const { order, value } = await createMintOrder({
@@ -524,5 +525,70 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         publicDrop.feeBps,
         0 // public drop stage index
       );
+  });
+
+  it("Should not allow a mint quantity of zero", async () => {
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 0,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    );
+  });
+
+  it("Should return the expected offer and consideration in previewOrder", async () => {
+    const { order } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.endPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    });
+
+    const minimumReceived = order.parameters.offer.map((o) => ({
+      itemType: o.itemType,
+      token: o.token,
+      identifier: o.identifierOrCriteria,
+      amount: o.endAmount,
+    }));
+    const maximumSpent = order.parameters.consideration.map((c) => ({
+      itemType: c.itemType,
+      token: c.token,
+      identifier: c.identifierOrCriteria,
+      amount: c.endAmount,
+      recipient: c.recipient,
+    }));
+
+    const { offer, consideration } = await token
+      .connect(minter)
+      .previewOrder(
+        AddressZero,
+        minter.address,
+        minimumReceived,
+        maximumSpent,
+        order.extraData
+      );
+
+    expect({
+      offer: offer.map((o) => convertToStruct(o)),
+      consideration: consideration.map((c) => convertToStruct(c)),
+    }).to.deep.eq({
+      offer: minimumReceived,
+      consideration: maximumSpent,
+    });
   });
 });

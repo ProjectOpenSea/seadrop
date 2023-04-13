@@ -5,6 +5,6 @@ cache
 constants
 coverage
 lib
-temp-src-coverage
+temp-coverage-*
 src-upgradeable
 test/seaport-utils

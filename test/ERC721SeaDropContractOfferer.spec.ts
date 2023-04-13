@@ -17,6 +17,7 @@ import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import {
   VERSION,
+  convertToStruct,
   mintTokens,
   setMintRecipientStorageSlot,
 } from "./utils/helpers";
@@ -42,7 +43,7 @@ type TokenGatedDropStageStruct =
 
 const { BigNumber } = ethers;
 const { AddressZero, HashZero } = ethers.constants;
-const { parseEther } = ethers.utils;
+const { defaultAbiCoder, parseEther } = ethers.utils;
 
 describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   const { provider } = ethers;
@@ -58,10 +59,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   let owner: Wallet;
   let creator: Wallet;
   let minter: Wallet;
+  let feeRecipient: Wallet;
   let publicDrop: AwaitedObject<PublicDropStruct>;
   let tokenGatedDropStage: AwaitedObject<TokenGatedDropStageStruct>;
   let signedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
   let allowListData: AwaitedObject<AllowListDataStruct>;
+
+  const _PUBLIC_DROP_STAGE_INDEX = 0;
 
   after(async () => {
     await network.provider.request({
@@ -74,9 +78,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     owner = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
+    feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    for (const wallet of [owner, minter, creator]) {
+    for (const wallet of [owner, minter, creator, feeRecipient]) {
       await faucet(wallet.address, provider);
     }
 
@@ -137,6 +142,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
+
+    await token.setMaxSupply(5);
+    await token.updatePublicDrop(publicDrop);
+    await token.updateAllowedFeeRecipient(feeRecipient.address, true);
+    await token.updateCreatorPayouts([
+      { payoutAddress: creator.address, basisPoints: 10_000 },
+    ]);
   });
 
   it("Should emit an event when the contract is deployed", async () => {
@@ -158,13 +170,28 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   });
 
   it("Should not be able to mint until the creator payout is set", async () => {
-    await token.connect(owner).updatePublicDrop(publicDrop);
-    await token.setMaxSupply(5);
+    const ERC721SeaDrop = await ethers.getContractFactory(
+      "ERC721SeaDrop",
+      owner
+    );
+    token = await ERC721SeaDrop.deploy(
+      "",
+      "",
+      marketplaceContract.address,
+      conduitOne.address
+    );
 
-    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
+    await token.setMaxSupply(5);
+    await token.updatePublicDrop(publicDrop);
     await token.updateAllowedFeeRecipient(feeRecipient.address, true);
 
-    const { order, value } = await createMintOrder({
+    expect(await token.getCreatorPayouts()).to.deep.equal([]);
+    await expect(token.updateCreatorPayouts([])).to.be.revertedWithCustomError(
+      token,
+      "CreatorPayoutsNotSet"
+    );
+
+    let { order, value } = await createMintOrder({
       token,
       quantity: 1,
       feeRecipient,
@@ -182,6 +209,38 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // CreatorPayoutsNotSet
+
+    await token.updateCreatorPayouts([
+      { payoutAddress: creator.address, basisPoints: 1_000 },
+      { payoutAddress: owner.address, basisPoints: 9_000 },
+    ]);
+
+    ({ order, value } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    }));
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        minter.address, // payer
+        1, // quantity
+        publicDrop.endPrice,
+        publicDrop.paymentToken,
+        publicDrop.feeBps,
+        _PUBLIC_DROP_STAGE_INDEX
+      );
   });
 
   it("Should only let the token owner update the drop URI", async () => {
@@ -189,14 +248,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       token.connect(creator).updateDropURI("http://test.com")
     ).to.revertedWithCustomError(token, "OnlyOwner");
 
-    await expect(token.connect(owner).updateDropURI("http://test.com"))
+    await expect(token.updateDropURI("http://test.com"))
       .to.emit(token, "DropURIUpdated")
       .withArgs("http://test.com");
   });
 
   it("Should only let the owner update the allowed fee recipients", async () => {
-    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
-
+    await token.updateAllowedFeeRecipient(feeRecipient.address, false);
     expect(await token.getAllowedFeeRecipients()).to.deep.eq([]);
 
     await expect(
@@ -235,20 +293,14 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     };
     await token.updatePublicDrop(publicDropDescMintPrice);
 
-    await token.setMaxSupply(5);
-    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
-    await token.updateAllowedFeeRecipient(feeRecipient.address, true);
-    await token.updateCreatorPayouts([
-      { payoutAddress: creator.address, basisPoints: 10_000 },
-    ]);
-
     let { order, value } = await createMintOrder({
       token,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDropDescMintPrice.startPrice,
-      minter,
+      // Specifying null address for minter means the fulfiller should be assigned as the minter.
+      minter: { address: AddressZero } as any,
       mintType: MintType.PUBLIC,
     });
 
@@ -280,7 +332,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         expected,
         publicDrop.paymentToken,
         publicDrop.feeBps,
-        0 // public drop stage index
+        _PUBLIC_DROP_STAGE_INDEX
       );
 
     let receipt = await (await tx).wait();
@@ -295,7 +347,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       startPrice: parseEther(".1"),
       endPrice: parseEther("1"),
     };
-    await token.connect(owner).updatePublicDrop(publicDropAscMintPrice);
+    await token.updatePublicDrop(publicDropAscMintPrice);
     ({ order, value } = await createMintOrder({
       token,
       quantity: 1,
@@ -331,7 +383,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         expected,
         publicDrop.paymentToken,
         publicDrop.feeBps,
-        0 // public drop stage index
+        _PUBLIC_DROP_STAGE_INDEX
       );
 
     receipt = await (await tx).wait();
@@ -339,55 +391,6 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // Should refund the difference between the expected price and the provided amount.
     balanceAfter = await provider.getBalance(minter.address);
     expect(balanceAfter).to.eq(balanceBefore.sub(expected).sub(txCost));
-
-    /* TODO decide if this code is needed
-    // Should allow fulfillAdvancedOrder to be called with the specified recipient receiving the refund.
-    const payer = new ethers.Wallet(randomHex(32), provider);
-    await faucet(payer.address, provider);
-    await token.updatePayer(payer.address, true);
-
-    const balanceBeforePayer = await provider.getBalance(payer.address);
-    const balanceBeforeMinter = await provider.getBalance(minter.address);
-
-    nextTimestamp += 50;
-    await time.setNextBlockTimestamp(nextTimestamp);
-    expected = expectedPrice({
-      startPrice: publicDropAscMintPrice.startPrice,
-      endPrice: publicDropAscMintPrice.endPrice,
-      startTime: publicDrop.startTime,
-      endTime: publicDrop.endTime,
-      blockTimestamp: nextTimestamp,
-    });
-
-    await expect(
-      (tx = marketplaceContract
-        .connect(payer)
-        .fulfillAdvancedOrder(order, [], HashZero, minter.address, {
-          value,
-        }))
-    )
-      .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        payer.address,
-        1, // quantity
-        expected,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
-        0 // public drop stage index
-      );
-
-    receipt = await (await tx).wait();
-    txCost = receipt.gasUsed.mul(receipt.effectiveGasPrice);
-    // Should refund the difference between the expected price and the provided amount to the recipient.
-    const balanceAfterPayer = await provider.getBalance(payer.address);
-    const balanceAfterMinter = await provider.getBalance(minter.address);
-    // expect(balanceAfterPayer).to.eq(balanceBeforePayer.sub(value).sub(txCost));
-    // expect(balanceAfterMinter).to.eq(
-    //   balanceBeforeMinter.add(value.sub(expected))
-    // );
-    */
 
     // Should allow newly minted tokens to be transferred in Seaport secondary sales.
     expect(await token.ownerOf(1)).to.eq(minter.address);
@@ -436,7 +439,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       token.connect(creator).setProvenanceHash(firstProvenanceHash)
     ).to.revertedWithCustomError(token, "OnlyOwner");
 
-    await expect(token.connect(owner).setProvenanceHash(firstProvenanceHash))
+    await expect(token.setProvenanceHash(firstProvenanceHash))
       .to.emit(token, "ProvenanceHashUpdated")
       .withArgs(defaultProvenanceHash, firstProvenanceHash);
 
@@ -451,7 +454,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     });
 
     await expect(
-      token.connect(owner).setProvenanceHash(secondProvenanceHash)
+      token.setProvenanceHash(secondProvenanceHash)
     ).to.be.revertedWithCustomError(
       token,
       "ProvenanceHashCannotBeSetAfterMintStarted"
@@ -512,6 +515,24 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         .connect(owner)
         ["safeTransferFrom(address,address,uint256,uint256,bytes)"](
           token.address,
+          minter.address,
+          0,
+          1,
+          []
+        )
+    )
+      .to.be.revertedWithCustomError(
+        token,
+        "InvalidCallerOnlyAllowedSeaportOrConduit"
+      )
+      .withArgs(owner.address);
+
+    // Mint with wrong "from" address
+    await expect(
+      token
+        .connect(owner)
+        ["safeTransferFrom(address,address,uint256,uint256,bytes)"](
+          marketplaceContract.address,
           minter.address,
           0,
           1,
@@ -742,7 +763,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   });
 
   it("Should be able to use the multiConfigure method", async () => {
-    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
+    await token.updateAllowedFeeRecipient(feeRecipient.address, false);
+
     const config = {
       maxSupply: 100,
       baseURI: "https://example1.com",
@@ -784,7 +806,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Should revert if tokenGatedAllowedNftToken.length != tokenGatedDropStages.length
     await expect(
-      token.connect(owner).multiConfigure({
+      token.multiConfigure({
         ...config,
         tokenGatedAllowedNftTokens: config.tokenGatedAllowedNftTokens.slice(1),
       })
@@ -792,13 +814,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Should revert if signers.length != signedMintValidationParams.length
     await expect(
-      token.connect(owner).multiConfigure({
+      token.multiConfigure({
         ...config,
         signers: config.signers.slice(1),
       })
     ).to.be.revertedWithCustomError(token, "SignersMismatch");
 
-    await expect(token.connect(owner).multiConfigure(config))
+    await expect(token.multiConfigure(config))
       .to.emit(token, "DropURIUpdated")
       .withArgs("https://example3.com");
 
@@ -904,7 +926,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       signedMintValidationParams: [],
       disallowedSigners: [],
     };
-    await expect(token.connect(owner).multiConfigure(zeroedConfig)).to.not.emit(
+    await expect(token.multiConfigure(zeroedConfig)).to.not.emit(
       token,
       "DropURIUpdated"
     );
@@ -912,7 +934,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Should unset properties
     await expect(
-      token.connect(owner).multiConfigure({
+      token.multiConfigure({
         ...zeroedConfig,
         disallowedFeeRecipients: config.allowedFeeRecipients,
       })
@@ -920,7 +942,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "AllowedFeeRecipientUpdated")
       .withArgs(feeRecipient.address, false);
     await expect(
-      token.connect(owner).multiConfigure({
+      token.multiConfigure({
         ...zeroedConfig,
         disallowedPayers: config.allowedPayers,
       })
@@ -928,7 +950,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "PayerUpdated")
       .withArgs(config.allowedPayers[0], false);
     await expect(
-      token.connect(owner).multiConfigure({
+      token.multiConfigure({
         ...zeroedConfig,
         disallowedTokenGatedAllowedNftTokens: [
           config.tokenGatedAllowedNftTokens[0],
@@ -950,7 +972,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         false,
       ]);
     await expect(
-      token.connect(owner).multiConfigure({
+      token.multiConfigure({
         ...zeroedConfig,
         disallowedSigners: [config.signers[0]],
       })
@@ -963,9 +985,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   it("Should not allow reentrancy during mint", async () => {
     // Set a public drop with maxTotalMintableByWallet: 1
     // and restrictFeeRecipient: false
-    await token.setMaxSupply(10);
     const oneEther = parseEther("1");
-    await token.connect(owner).updatePublicDrop({
+    await token.updatePublicDrop({
       ...publicDrop,
       startPrice: oneEther,
       endPrice: oneEther,
@@ -1012,10 +1033,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         { payoutAddress: owner.address, basisPoints: 5_000 },
       ])
     ).to.emit(token, "CreatorPayoutsUpdated");
-
     // withArgs not working, might be fixed when this is resolved:
     // https://github.com/NomicFoundation/hardhat/issues/3833
-
     // .withArgs([
     //   [creator.address, 5_000],
     //   [owner.address, 5_000],
@@ -1150,14 +1169,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       ...publicDrop,
       paymentToken: paymentToken.address,
     };
-    await token.connect(owner).updatePublicDrop(publicDropERC20PaymentToken);
-
-    await token.setMaxSupply(5);
-    const feeRecipient = new ethers.Wallet(randomHex(32), provider);
-    await token.updateAllowedFeeRecipient(feeRecipient.address, true);
-    await token.updateCreatorPayouts([
-      { payoutAddress: creator.address, basisPoints: 10_000 },
-    ]);
+    await token.updatePublicDrop(publicDropERC20PaymentToken);
 
     const { order, value } = await createMintOrder({
       token,
@@ -1198,7 +1210,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         publicDrop.startPrice,
         paymentToken.address,
         publicDrop.feeBps,
-        0 // public drop stage index
+        _PUBLIC_DROP_STAGE_INDEX
       );
 
     // Confirm the payment token was transferred and user has no balance left.
@@ -1247,7 +1259,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         publicDrop.startPrice,
         paymentToken.address,
         publicDrop.feeBps,
-        0 // public drop stage index
+        _PUBLIC_DROP_STAGE_INDEX
       );
 
     // Confirm the payment token was transferred and user has no balance left.
@@ -1259,5 +1271,83 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     expect(await paymentToken.balanceOf(creator.address)).to.eq(
       creatorAmount.mul(2)
     );
+  });
+
+  it("Should return the expected values for getSeaportMetadata", async () => {
+    const { name, schemas } = await token.getSeaportMetadata();
+
+    const supportedSubstandards = [0, 1, 2, 3];
+    const metadata = defaultAbiCoder.encode(
+      ["uint256[]"],
+      [supportedSubstandards]
+    );
+
+    expect({
+      name,
+      schemas: schemas.map((s) => convertToStruct(s)),
+    }).to.deep.eq({
+      name: "ERC721SeaDrop",
+      schemas: [{ id: 12, metadata }],
+    });
+  });
+
+  it("Should return errors for invalid encodings", async () => {
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(
+          { ...order, extraData: "0x01" + order.extraData.slice(4) },
+          [],
+          HashZero,
+          AddressZero,
+          { value }
+        )
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // UnsupportedExtraDataVersion
+    // withArgs(1)
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(
+          { ...order, extraData: "0x0004" + order.extraData.slice(6) },
+          [],
+          HashZero,
+          AddressZero,
+          { value }
+        )
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidSubstandard
+    // withArgs(4)
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(
+          { ...order, extraData: order.extraData.slice(0, 20) },
+          [],
+          HashZero,
+          AddressZero,
+          { value }
+        )
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidExtraDataEncoding
+    // withArgs(0)
   });
 });

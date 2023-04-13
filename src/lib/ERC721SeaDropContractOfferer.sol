@@ -26,8 +26,6 @@ import {
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
-import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
-
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {
@@ -52,8 +50,7 @@ import {
 contract ERC721SeaDropContractOfferer is
     ERC721ContractMetadata,
     ERC721SeaDropStructsErrorsAndEvents,
-    INonFungibleSeaDropToken,
-    ReentrancyGuard
+    INonFungibleSeaDropToken
 {
     using ECDSA for bytes32;
 
@@ -417,10 +414,12 @@ contract ERC721SeaDropContractOfferer is
         schemas[0].id = 12;
 
         // Encode the SIP-12 information.
-        uint256[] memory substandards = new uint256[](2);
+        uint256[] memory substandards = new uint256[](4);
         substandards[0] = 0;
         substandards[1] = 1;
-        schemas[0].metadata = abi.encode(substandards, "No documentation");
+        substandards[2] = 2;
+        substandards[3] = 3;
+        schemas[0].metadata = abi.encode(substandards);
 
         return ("ERC721SeaDrop", schemas);
     }
@@ -454,7 +453,7 @@ contract ERC721SeaDropContractOfferer is
             contextLength := and(calldataload(context.offset), 0xfffffff)
         }
 
-        // Put the substandard version on the stack.
+        // Set the substandard version.
         substandard = uint8(context[1]);
 
         // Next, check for SIP-6 version byte.
@@ -463,9 +462,10 @@ contract ERC721SeaDropContractOfferer is
         // Next, check for supported substandard.
         errorBuffer |= _castAndInvert(substandard < 4) << 2;
 
-        // Next, check for correct context length.
+        // Next, check for correct context length. Minimum is 42 bytes
+        // (version byte, substandard byte, feeRecipient, minter)
         unchecked {
-            errorBuffer |= _castAndInvert(contextLength > 42) << 3;
+            errorBuffer |= _castAndInvert(context.length > 41) << 3;
         }
 
         // Handle decoding errors.
@@ -478,9 +478,10 @@ contract ERC721SeaDropContractOfferer is
                 revert UnsupportedExtraDataVersion(version);
             } else if (errorBuffer << 253 != 0) {
                 revert InvalidSubstandard(substandard);
-            } else if (errorBuffer << 252 != 0) {
+            } else {
+                // errorBuffer << 252 != 0
                 revert InvalidExtraDataEncoding(version);
-            } else if (errorBuffer << 251 != 0) {}
+            }
         }
     }
 
@@ -607,7 +608,8 @@ contract ERC721SeaDropContractOfferer is
                     mintParams
                 );
             }
-        } else if (substandard == 3) {
+        } else {
+            // substandard == 3
             // 3: Signed mint
             MintParams memory mintParams = abi.decode(
                 context[42:362],
@@ -1359,11 +1361,6 @@ contract ERC721SeaDropContractOfferer is
         uint256 maxTotalMintableByWallet,
         uint256 maxTokenSupplyForStage
     ) internal view {
-        // Mint quantity of zero is not valid.
-        if (quantity == 0) {
-            revert MintQuantityCannotBeZero();
-        }
-
         // Get the mint stats.
         (
             uint256 minterNumMinted,
@@ -1475,11 +1472,6 @@ contract ERC721SeaDropContractOfferer is
         for (uint256 i = 0; i < creatorPayoutsLength; ) {
             // Put the creator payout on the stack.
             CreatorPayout memory creatorPayout = creatorPayouts[i];
-
-            // Ensure the creator payout address is not the zero address.
-            if (creatorPayout.payoutAddress == address(0)) {
-                revert CreatorPayoutAddressCannotBeZeroAddress();
-            }
 
             // Get the creator payout amount.
             // Note that the payout amount is rounded down.
@@ -1827,6 +1819,11 @@ contract ERC721SeaDropContractOfferer is
         // Put the total creator payouts length on the stack.
         uint256 creatorPayoutsLength = creatorPayouts.length;
 
+        // Revert if no creator payouts were provided.
+        if (creatorPayoutsLength == 0) {
+            revert CreatorPayoutsNotSet();
+        }
+
         for (uint256 i; i < creatorPayoutsLength; ) {
             // Get the creator payout.
             CreatorPayout memory creatorPayout = creatorPayouts[i];
@@ -2129,7 +2126,8 @@ contract ERC721SeaDropContractOfferer is
         uint256 id,
         uint256 value,
         bytes calldata data
-    ) external nonReentrant {
+    ) external {
+        // TODO decide if we need `nonReentrant` modifier in this function
         // Revert if caller or from is invalid.
         if (
             from != address(this) ||

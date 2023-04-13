@@ -1,8 +1,8 @@
 import type { HardhatUserConfig } from "hardhat/config";
 
 import "dotenv/config";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-ethers";
 import "solidity-coverage";
 
 // You need to export an object to set up your config
@@ -33,8 +33,9 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   paths: {
-    sources: "./temp-src-coverage",
-    cache: "./hh-cache-coverage",
+    artifacts: "./temp-coverage-artifacts",
+    sources: "./temp-coverage-src",
+    cache: "./temp-coverage-cache",
   },
 };
 

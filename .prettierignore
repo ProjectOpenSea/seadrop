@@ -5,5 +5,5 @@ coverage*
 gasReporterOutput.json
 lib/*
 !/src/lib/*
-temp-src-coverage
+temp-coverage-*
 src-upgradeable/lib-upgradeable

@@ -58,7 +58,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       conduitOne.address
     );
 
-    await token.connect(owner).setMaxSupply(5);
+    await token.setMaxSupply(5);
   });
 
   it("Should only let the owner set and get the base URI", async () => {
@@ -70,9 +70,10 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.baseURI()).to.equal("");
 
     // it should not emit BatchMetadataUpdate when totalSupply is 0
-    await expect(
-      token.connect(owner).setBaseURI("http://example.com")
-    ).to.not.emit(token, "BatchMetadataUpdate");
+    await expect(token.setBaseURI("http://example.com")).to.not.emit(
+      token,
+      "BatchMetadataUpdate"
+    );
 
     // it should emit BatchMetadataUpdate when totalSupply is greater than 0
     await mintTokens({
@@ -82,7 +83,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       minter: owner,
       quantity: 1,
     });
-    await expect(token.connect(owner).setBaseURI("http://example.com"))
+    await expect(token.setBaseURI("http://example.com"))
       .to.emit(token, "BatchMetadataUpdate")
       .withArgs(1, await token.totalSupply());
     expect(await token.baseURI()).to.equal("http://example.com");
@@ -96,7 +97,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
     expect(await token.contractURI()).to.equal("");
 
-    await expect(token.connect(owner).setContractURI("http://example.com"))
+    await expect(token.setContractURI("http://example.com"))
       .to.emit(token, "ContractURIUpdated")
       .withArgs("http://example.com");
     expect(await token.contractURI()).to.equal("http://example.com");
@@ -110,14 +111,14 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
     expect(await token.maxSupply()).to.equal(5);
 
-    await expect(token.connect(owner).setMaxSupply(25))
+    await expect(token.setMaxSupply(25))
       .to.emit(token, "MaxSupplyUpdated")
       .withArgs(25);
     expect(await token.maxSupply()).to.equal(25);
   });
 
   it("Should not let the owner set the max supply over 2**64", async () => {
-    await expect(token.connect(owner).setMaxSupply(BigNumber.from(2).pow(70)))
+    await expect(token.setMaxSupply(BigNumber.from(2).pow(70)))
       .to.be.revertedWithCustomError(token, "CannotExceedMaxSupplyOfUint64")
       .withArgs(BigNumber.from(2).pow(70));
   });
@@ -127,7 +128,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token.connect(bob).emitBatchMetadataUpdate(5, 10)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
-    await expect(token.connect(owner).emitBatchMetadataUpdate(5, 10))
+    await expect(token.emitBatchMetadataUpdate(5, 10))
       .to.emit(token, "BatchMetadataUpdate")
       .withArgs(5, 10);
   });
@@ -139,20 +140,20 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token.connect(bob).setDefaultRoyalty(owner.address, 100)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
-    await expect(token.connect(owner).setDefaultRoyalty(owner.address, 10_001))
+    await expect(token.setDefaultRoyalty(owner.address, 10_001))
       .to.be.revertedWithCustomError(token, "InvalidRoyaltyBasisPoints")
       .withArgs(BigNumber.from(10_001));
     await expect(
-      token.connect(owner).setDefaultRoyalty(AddressZero, 200)
+      token.setDefaultRoyalty(AddressZero, 200)
     ).to.be.revertedWithCustomError(
       token,
       "RoyaltyReceiverCannotBeZeroAddress"
     );
 
-    await expect(token.connect(owner).setDefaultRoyalty(bob.address, 100))
+    await expect(token.setDefaultRoyalty(bob.address, 100))
       .to.emit(token, "RoyaltyInfoUpdated")
       .withArgs(bob.address, 100);
-    await expect(token.connect(owner).setDefaultRoyalty(bob.address, 500))
+    await expect(token.setDefaultRoyalty(bob.address, 500))
       .to.emit(token, "RoyaltyInfoUpdated")
       .withArgs(bob.address, 500);
 
@@ -177,10 +178,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     );
 
     // If the baseURI is empty then the tokenURI should be empty
-    await expect(token.connect(owner).setBaseURI("")).to.emit(
-      token,
-      "BatchMetadataUpdate"
-    );
+    await expect(token.setBaseURI("")).to.emit(token, "BatchMetadataUpdate");
     expect(await token.baseURI()).to.equal("");
     expect(await token.tokenURI(1)).to.be.revertedWithCustomError(
       token,
@@ -188,9 +186,10 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     );
 
     // If the baseURI ends with "/" then the tokenURI should be baseURI + tokenId
-    await expect(
-      token.connect(owner).setBaseURI("http://example.com/")
-    ).to.emit(token, "BatchMetadataUpdate");
+    await expect(token.setBaseURI("http://example.com/")).to.emit(
+      token,
+      "BatchMetadataUpdate"
+    );
 
     await mintTokens({
       marketplaceContract,
@@ -204,7 +203,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.tokenURI(2)).to.equal("http://example.com/2");
 
     // If the baseURI does not end with "/" then the tokenURI should just be baseURI
-    await expect(token.connect(owner).setBaseURI("http://example.com")).to.emit(
+    await expect(token.setBaseURI("http://example.com")).to.emit(
       token,
       "BatchMetadataUpdate"
     );

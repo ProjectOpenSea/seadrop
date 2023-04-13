@@ -1,11 +1,13 @@
 import { expect } from "chai";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 
 import { seaportFixture } from "./seaport-utils/fixtures";
+import { getCustomRevertSelector } from "./seaport-utils/helpers";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import {
   VERSION,
+  convertToStruct,
   deployDelegationRegistryToCanonicalAddress,
 } from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
@@ -390,6 +392,17 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         emptySignedMintValidationParams
       )
     ).to.be.revertedWithCustomError(token, "SignerNotPresent");
+
+    // Test coverage for error SignedMintValidationParamsMinMintPriceNotSet()
+    await expect(
+      token.updateSignedMintValidationParams(signer.address, {
+        ...signedMintValidationParams,
+        minMintPrices: [],
+      })
+    ).to.be.revertedWithCustomError(
+      token,
+      "SignedMintValidationParamsMinMintPriceNotSet"
+    );
 
     await token2.updateSignedMintValidationParams(
       signer.address,
@@ -1051,5 +1064,258 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await delegationRegistry
       .connect(minter)
       .delegateForAll(payer.address, false);
+  });
+
+  it("Should not mint when paymentToken is not present in minMintPrices", async () => {
+    await token.updateSignedMintValidationParams(signer.address, {
+      ...signedMintValidationParams,
+      minMintPrices: [
+        { paymentToken: `0x${"1".repeat(40)}`, minMintPrice: 1 },
+        { paymentToken: `0x${"2".repeat(40)}`, minMintPrice: 2 },
+      ],
+    });
+
+    const signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      salt,
+      signer
+    );
+
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 3,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.SIGNED,
+      mintParams,
+      salt,
+      signature,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // SignedMintValidationParamsMinMintPriceNotSetForToken
+    // withArgs(AddressZero)
+
+    await token.updateSignedMintValidationParams(
+      signer.address,
+      signedMintValidationParams
+    );
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        minter.address,
+        3, // mint quantity
+        mintParams.startPrice,
+        mintParams.paymentToken,
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+  });
+
+  it("Should return the expected offer and consideration in previewOrder", async () => {
+    const signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      salt,
+      signer
+    );
+
+    const { order } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.SIGNED,
+      mintParams,
+      salt,
+      signature,
+    });
+
+    const minimumReceived = order.parameters.offer.map((o) => ({
+      itemType: o.itemType,
+      token: o.token,
+      identifier: o.identifierOrCriteria,
+      amount: o.endAmount,
+    }));
+    const maximumSpent = order.parameters.consideration.map((c) => ({
+      itemType: c.itemType,
+      token: c.token,
+      identifier: c.identifierOrCriteria,
+      amount: c.endAmount,
+      recipient: c.recipient,
+    }));
+
+    const { offer, consideration } = await token
+      .connect(minter)
+      .previewOrder(
+        AddressZero,
+        minter.address,
+        minimumReceived,
+        maximumSpent,
+        order.extraData
+      );
+
+    expect({
+      offer: offer.map((o) => convertToStruct(o)),
+      consideration: consideration.map((c) => convertToStruct(c)),
+    }).to.deep.eq({
+      offer: minimumReceived,
+      consideration: maximumSpent,
+    });
+  });
+
+  it("Should allow delegated payers to mint via the DelegationRegistry", async () => {
+    const delegationRegistry =
+      await deployDelegationRegistryToCanonicalAddress();
+
+    await token.updateCreatorPayouts([
+      { payoutAddress: creator.address, basisPoints: 5_000 },
+      { payoutAddress: owner.address, basisPoints: 5_000 },
+    ]);
+
+    const signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      salt,
+      signer
+    );
+
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 3,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.SIGNED,
+      mintParams,
+      salt,
+      signature,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // PayerNotAllowed
+    // withArgs(payer.address)
+
+    // Delegate payer for minter
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, true);
+
+    await expect(
+      marketplaceContract
+        .connect(payer)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address,
+        feeRecipient.address,
+        payer.address,
+        3,
+        mintParams.endPrice,
+        mintParams.paymentToken,
+        mintParams.feeBps,
+        mintParams.dropStageIndex
+      );
+
+    // Remove delegation
+    await delegationRegistry
+      .connect(minter)
+      .delegateForAll(payer.address, false);
+  });
+
+  // NOTE: Run this test last in this file as it hacks changing the hre
+  it("Reverts on changed chainId", async () => {
+    const signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      salt,
+      signer
+    );
+
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 3,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.SIGNED,
+      mintParams,
+      salt,
+      signature,
+    });
+
+    // Change chainId in-flight to test branch coverage for _deriveDomainSeparator()
+    // (hacky way, until https://github.com/NomicFoundation/hardhat/issues/3074 is added)
+    const changeChainId = () => {
+      const recurse = (obj: any) => {
+        for (const [key, value] of Object.entries(obj ?? {})) {
+          if (key === "transactions") continue;
+          if (key === "chainId") {
+            obj[key] = typeof value === "bigint" ? BigInt(1) : 1;
+          } else if (typeof value === "object") {
+            recurse(obj[key]);
+          }
+        }
+      };
+      const hreProvider = hre.network.provider as any;
+      recurse(
+        hreProvider._wrapped._wrapped._wrapped?._node?._vm ??
+          // When running coverage, there was an additional layer of wrapping
+          hreProvider._wrapped._wrapped._wrapped._wrapped._node._vm
+      );
+    };
+    changeChainId();
+
+    const expectedRevertReason = getCustomRevertSelector(
+      "InvalidContractOrder(bytes32)"
+    ); // InvalidSignature(address)
+
+    const tx = await marketplaceContract
+      .connect(minter)
+      .populateTransaction.fulfillAdvancedOrder(
+        order,
+        [],
+        HashZero,
+        AddressZero,
+        { value }
+      );
+    tx.chainId = 1;
+    const returnData = await provider.call(tx);
+    expect(returnData.slice(0, 10)).to.equal(expectedRevertReason);
   });
 });

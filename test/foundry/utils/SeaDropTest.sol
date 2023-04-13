@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
 
-import { DelegationRegistry } from "../../lib/DelegationRegistry.sol";
+import { DelegationRegistry } from "seadrop/test/DelegationRegistry.sol";
 
 import {
     CriteriaResolver,

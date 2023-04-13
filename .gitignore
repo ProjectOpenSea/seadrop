@@ -8,8 +8,7 @@ yarn-error.log
 # Hardhat files
 artifacts/
 hh-cache/
-hh-cache-coverage/
-temp-src-coverage/
+temp-coverage-*
 
 # Foundry test compilation files
 cache

@@ -8,6 +8,7 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import {
   VERSION,
+  convertToStruct,
   deployDelegationRegistryToCanonicalAddress,
 } from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
@@ -93,7 +94,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
       dropStageIndex: 1,
       maxTokenSupplyForStage: 11,
       feeBps,
@@ -835,18 +836,6 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ]);
 
     // Allow list mint
-    const mintParams = {
-      startPrice: parseEther("0.1"),
-      endPrice: parseEther("0.1"),
-      paymentToken: AddressZero,
-      maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 300,
-      dropStageIndex: 1,
-      maxTokenSupplyForStage: 11,
-      feeBps: 899,
-      restrictFeeRecipients: true,
-    };
     const { root, proof } = await createAllowListAndGetProof(
       [minter],
       mintParams
@@ -906,5 +895,103 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     await delegationRegistry
       .connect(minter)
       .delegateForAll(payer.address, false);
+  });
+
+  it("Should return the expected offer and consideration in previewOrder", async () => {
+    const { root, proof } = await createAllowListAndGetProof(
+      [minter],
+      mintParams
+    );
+
+    await token.updateAllowList({
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    });
+
+    const { order } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams,
+      proof,
+    });
+
+    const minimumReceived = order.parameters.offer.map((o) => ({
+      itemType: o.itemType,
+      token: o.token,
+      identifier: o.identifierOrCriteria,
+      amount: o.endAmount,
+    }));
+    const maximumSpent = order.parameters.consideration.map((c) => ({
+      itemType: c.itemType,
+      token: c.token,
+      identifier: c.identifierOrCriteria,
+      amount: c.endAmount,
+      recipient: c.recipient,
+    }));
+
+    const { offer, consideration } = await token
+      .connect(minter)
+      .previewOrder(
+        AddressZero,
+        minter.address,
+        minimumReceived,
+        maximumSpent,
+        order.extraData
+      );
+
+    expect({
+      offer: offer.map((o) => convertToStruct(o)),
+      consideration: consideration.map((c) => convertToStruct(c)),
+    }).to.deep.eq({
+      offer: minimumReceived,
+      consideration: maximumSpent,
+    });
+  });
+
+  it("Should not allow feeBps over 10_000", async () => {
+    const mintParamsFeeBpsOver10k = { ...mintParams, feeBps: 10_001 };
+
+    // Set a random quantity under maxTotalMintableByWallet.
+    const { root, proof } = await createAllowListAndGetProof(
+      [minter],
+      mintParamsFeeBpsOver10k
+    );
+
+    // Update the allow list of the token.
+    await token.updateAllowList({
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    });
+
+    // Mint the allow list stage to the minter and verify
+    // the expected event was emitted.
+    const { order, value } = await createMintOrder({
+      token,
+      quantity: 1,
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams: mintParamsFeeBpsOver10k,
+      proof,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // InvalidFeeBps
+    // withArgs(10_001)
   });
 });

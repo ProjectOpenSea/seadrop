@@ -155,24 +155,17 @@ export const createMintOrder = async ({
   let extraDataBuffer = Buffer.concat([
     Buffer.from([0]), // SIP-6 version byte
     Buffer.from([mintType]), // substandard version byte
+    Buffer.from(feeRecipient.address.slice(2), "hex"),
+    Buffer.from(minter.address.slice(2), "hex"),
   ]);
 
   switch (mintType) {
-    case MintType.PUBLIC:
-      extraDataBuffer = Buffer.concat([
-        extraDataBuffer,
-        Buffer.from(feeRecipient.address.slice(2), "hex"),
-        Buffer.from(minter.address.slice(2), "hex"),
-      ]);
-      break;
     case MintType.ALLOW_LIST:
       if (!mintParams)
         throw new Error("Mint params required for allow list mint");
       if (!proof) throw new Error("Proof required for allow list mint");
       extraDataBuffer = Buffer.concat([
         extraDataBuffer,
-        Buffer.from(feeRecipient.address.slice(2), "hex"),
-        Buffer.from(minter.address.slice(2), "hex"),
         mintParamsBuffer(mintParams),
         ...proof.map((p) => Buffer.from(p.slice(2), "hex")),
       ]);
@@ -184,8 +177,6 @@ export const createMintOrder = async ({
         );
       extraDataBuffer = Buffer.concat([
         extraDataBuffer,
-        Buffer.from(feeRecipient.address.slice(2), "hex"),
-        Buffer.from(minter.address.slice(2), "hex"),
         tokenGatedMintParamsBuffer(tokenGatedMintParams),
       ]);
       break;
@@ -195,15 +186,13 @@ export const createMintOrder = async ({
       if (!signature) throw new Error("Signature required for signed mint");
       extraDataBuffer = Buffer.concat([
         extraDataBuffer,
-        Buffer.from(feeRecipient.address.slice(2), "hex"),
-        Buffer.from(minter.address.slice(2), "hex"),
         mintParamsBuffer(mintParams),
         Buffer.from(salt.slice(2), "hex"),
         Buffer.from(signature.slice(2), "hex"),
       ]);
       break;
     default:
-      throw new Error("Invalid mint type");
+      break;
   }
 
   const extraData = "0x" + extraDataBuffer.toString("hex");

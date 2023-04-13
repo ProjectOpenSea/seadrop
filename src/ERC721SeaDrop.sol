@@ -117,13 +117,6 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId
     ) public override onlyAllowedOperator(from) {
-        // If "from" is this contract, it represents a mint.
-        if (from == address(this)) {
-            // Mint the tokens with tokenId representing the quantity.
-            _mint(to, tokenId);
-            return;
-        }
-
         super.transferFrom(from, to, tokenId);
     }
 
@@ -170,8 +163,8 @@ contract ERC721SeaDrop is
      * @param tokenId The token id to burn.
      */
     function burn(uint256 tokenId) external {
-        // Passing true to _burn will check that the caller
-        // owns or is approved to interact with the token.
+        // Passing `true` to `_burn` checks that the caller owns the token
+        // or is an approved operator.
         _burn(tokenId, true);
     }
 }

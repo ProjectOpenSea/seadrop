@@ -24,7 +24,7 @@ export const setMintRecipientStorageSlot = async (
 ) => {
   // If the below storage slot changes, the updated value can be found
   // with `forge inspect ERC721SeaDropContractOfferer storage-layout`
-  const mintRecipientStorageSlot = "0x22";
+  const mintRecipientStorageSlot = "0x21";
   // Storage value must be a 32 bytes long padded with leading zeros hex string
   const mintRecipientStorageValue = hexlify(zeroPad(minter.address, 32));
   await provider.send("hardhat_setStorageAt", [
@@ -81,4 +81,27 @@ export const deployDelegationRegistryToCanonicalAddress = async () => {
     canonicalDelegationRegistryAddress
   );
   return delegationRegistry;
+};
+
+/**
+ * This is to remove unnecessary properties from the output type.
+ * Use it eg. `ExtractPropsFromArray<Inventory.ItemStructOutput>`
+ */
+export type ExtractPropsFromArray<T> = Omit<
+  T,
+  keyof Array<unknown> | `${number}`
+>;
+
+/**
+ * convertToStruct takes an array type
+ * eg. Inventory.ItemStructOutput and converts it to an object type.
+ */
+export const convertToStruct = <A extends Array<unknown>>(
+  arr: A
+): ExtractPropsFromArray<A> => {
+  const keys = Object.keys(arr).filter((key) => isNaN(Number(key)));
+  const result = {};
+  // @ts-ignore
+  arr.forEach((item, index) => (result[keys[index]] = item));
+  return result as A;
 };

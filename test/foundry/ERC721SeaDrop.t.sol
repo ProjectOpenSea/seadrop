@@ -17,8 +17,6 @@ import {
     FulfillmentComponent
 } from "seaport/lib/ConsiderationStructs.sol";
 
-import "forge-std/console.sol";
-
 contract ERC721SeaDropTest is SeaDropTest {
     FuzzArgs empty;
 

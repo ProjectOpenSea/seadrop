@@ -6,6 +6,7 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import {
   VERSION,
+  convertToStruct,
   deployDelegationRegistryToCanonicalAddress,
 } from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
@@ -287,7 +288,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     ); // PayerNotAllowed
 
     // Allow the payer.
-    await token.connect(owner).updatePayer(owner.address, true);
+    await token.updatePayer(owner.address, true);
 
     await expect(
       marketplaceContract
@@ -769,14 +770,14 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should not be able to set an allowedNftToken to the drop token itself or zero address", async () => {
     await expect(
-      token.connect(owner).updateTokenGatedDrop(token.address, dropStage)
+      token.updateTokenGatedDrop(token.address, dropStage)
     ).to.be.revertedWithCustomError(
       token,
       "TokenGatedDropAllowedNftTokenCannotBeDropToken"
     );
 
     await expect(
-      token.connect(owner).updateTokenGatedDrop(AddressZero, dropStage)
+      token.updateTokenGatedDrop(AddressZero, dropStage)
     ).to.be.revertedWithCustomError(
       token,
       "TokenGatedDropAllowedNftTokenCannotBeZeroAddress"
@@ -785,7 +786,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should not be able to set an invalid fee bps", async () => {
     await expect(
-      token.connect(owner).updateTokenGatedDrop(allowedNftToken.address, {
+      token.updateTokenGatedDrop(allowedNftToken.address, {
         ...dropStage,
         feeBps: 15_000,
       })
@@ -803,12 +804,12 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const token2 = `0x${"2".repeat(40)}`;
 
     await expect(
-      token.connect(owner).updateTokenGatedDrop(token2, zeroMintDropStage)
+      token.updateTokenGatedDrop(token2, zeroMintDropStage)
     ).to.be.revertedWithCustomError(token, "TokenGatedDropStageNotPresent");
   });
 
   it("Should clear from enumeration when deleted", async () => {
-    await token.connect(owner).updateTokenGatedDrop(allowedNftToken.address, {
+    await token.updateTokenGatedDrop(allowedNftToken.address, {
       ...dropStage,
       maxTotalMintableByWallet: 0,
     });
@@ -889,5 +890,57 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         dropStage.feeBps,
         dropStage.dropStageIndex
       );
+  });
+
+  it("Should return the expected offer and consideration in previewOrder", async () => {
+    const mintParams = {
+      allowedNftToken: allowedNftToken.address,
+      allowedNftTokenIds: [0],
+      amounts: [1],
+    };
+
+    await allowedNftToken.mint(minter.address, 0);
+
+    const { order } = await createMintOrder({
+      token,
+      feeRecipient,
+      feeBps: dropStage.feeBps,
+      price: dropStage.startPrice,
+      minter,
+      mintType: MintType.TOKEN_GATED,
+      tokenGatedMintParams: mintParams,
+    });
+
+    const minimumReceived = order.parameters.offer.map((o) => ({
+      itemType: o.itemType,
+      token: o.token,
+      identifier: o.identifierOrCriteria,
+      amount: o.endAmount,
+    }));
+    const maximumSpent = order.parameters.consideration.map((c) => ({
+      itemType: c.itemType,
+      token: c.token,
+      identifier: c.identifierOrCriteria,
+      amount: c.endAmount,
+      recipient: c.recipient,
+    }));
+
+    const { offer, consideration } = await token
+      .connect(minter)
+      .previewOrder(
+        AddressZero,
+        minter.address,
+        minimumReceived,
+        maximumSpent,
+        order.extraData
+      );
+
+    expect({
+      offer: offer.map((o) => convertToStruct(o)),
+      consideration: consideration.map((c) => convertToStruct(c)),
+    }).to.deep.eq({
+      offer: minimumReceived,
+      consideration: maximumSpent,
+    });
   });
 });
