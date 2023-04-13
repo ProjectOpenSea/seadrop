@@ -28,6 +28,7 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
   });
 
   before(async () => {
+    await network.provider.send("hardhat_mine", ["0x15b3"]);
     // Set the wallets
     owner = new ethers.Wallet(randomHex(32), provider);
     admin = new ethers.Wallet(randomHex(32), provider);
@@ -58,12 +59,67 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
     );
   });
 
-  it("Should only let the owner call setRandomOffset once the max supply is reached", async () => {
+  it("Should only let the owner call allowReveal", async () => {
     await token.setMaxSupply(100);
 
-    await expect(token.connect(admin).setRandomOffset()).to.be.revertedWith(
+    await expect(token.connect(admin).allowReveal()).to.be.revertedWith(
       "OnlyOwner()"
     );
+
+    // Mint to the max supply.
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await token
+          .connect(impersonatedSigner)
+          .mintSeaDrop(minter.address, 100);
+      }
+    );
+
+    await expect(token.connect(admin).allowReveal()).to.be.revertedWith(
+      "OnlyOwner()"
+    );
+
+    expect(await token.randomOffset()).to.equal(ethers.constants.Zero);
+
+    await token.connect(owner).allowReveal();
+
+    expect(await token.randomOffset()).to.equal(ethers.constants.Zero);
+
+    await network.provider.send("hardhat_mine", ["0x37"]);
+
+    await token.connect(owner).setRandomOffset();
+
+    expect(await token.randomOffset()).to.not.equal(ethers.constants.Zero);
+
+    await expect(token.connect(owner).setRandomOffset()).to.be.revertedWith(
+      "AlreadyRevealed()"
+    );
+
+    expect(await token.randomOffset()).to.not.equal(ethers.constants.Zero);
+  });
+
+  it("Should only allow setRandomOffset once the max supply is reached", async () => {
+    await token.setMaxSupply(100);
+
+    await expect(token.connect(minter).setRandomOffset()).to.be.revertedWith(
+      "RevealNotAllowed()"
+    );
+
+    await expect(token.connect(owner).setRandomOffset()).to.be.revertedWith(
+      "RevealNotAllowed()"
+    );
+
+    expect(await token.randomOffset()).to.equal(ethers.constants.Zero);
+
+    await token.connect(owner).allowReveal();
+
+    await expect(token.connect(minter).setRandomOffset()).to.be.revertedWith(
+      "NotFullyMinted()"
+    );
+
+    expect(await token.randomOffset()).to.equal(ethers.constants.Zero);
 
     await expect(token.connect(owner).setRandomOffset()).to.be.revertedWith(
       "NotFullyMinted()"
@@ -80,23 +136,17 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
       }
     );
 
-    await expect(token.connect(admin).setRandomOffset()).to.be.revertedWith(
-      "OnlyOwner()"
-    );
-
-    expect(await token.randomOffset()).to.equal(ethers.constants.Zero);
-
+    await token.connect(minter).setRandomOffset();
+    await network.provider.send("hardhat_mine", ["0x37"]);
     await token.connect(owner).setRandomOffset();
-
-    await expect(token.connect(owner).setRandomOffset()).to.be.revertedWith(
-      "AlreadyRevealed()"
-    );
 
     expect(await token.randomOffset()).to.not.equal(ethers.constants.Zero);
   });
 
   it("Should return the tokenURI correctly offset by randomOffset", async () => {
     await token.setMaxSupply(100);
+
+    await token.connect(owner).allowReveal();
 
     await expect(token.tokenURI(1)).to.be.revertedWith(
       "URIQueryForNonexistentToken()"
@@ -119,6 +169,8 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
 
     expect(await token.tokenURI(1)).to.equal("http://example.com/");
 
+    await token.connect(owner).setRandomOffset();
+    await network.provider.send("hardhat_mine", ["0x37"]);
     await token.connect(owner).setRandomOffset();
 
     const randomOffset = (await token.randomOffset()).toNumber();
