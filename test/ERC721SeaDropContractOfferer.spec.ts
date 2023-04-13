@@ -580,8 +580,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // expect(await token.supportsInterface("0x1890fe8e")).to.be.true;
     // TODO uncomment above once interface id is derived
 
-    // Ensure the interface for ERC721Metadata (from ERC721A) returns true.
+    // Ensure the supported interfaces from ERC721A return true.
+    // 0x80ac58cd: ERC721
+    expect(await token.supportsInterface("0x80ac58cd")).to.be.true;
+    // 0x5b5e139f: ERC721Metadata
     expect(await token.supportsInterface("0x5b5e139f")).to.be.true;
+    // 0x01ffc9a7: ERC165
+    expect(await token.supportsInterface("0x01ffc9a7")).to.be.true;
 
     // Ensure the interface for ERC-4906 returns true.
     expect(await token.supportsInterface("0x49064906")).to.be.true;

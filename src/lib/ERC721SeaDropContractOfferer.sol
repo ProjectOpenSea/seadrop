@@ -447,12 +447,6 @@ contract ERC721SeaDropContractOfferer is
         // The offer is the minimumReceived.
         offer = minimumReceived;
 
-        // Get the length of the context array from calldata (masked).
-        uint256 contextLength;
-        assembly {
-            contextLength := and(calldataload(context.offset), 0xfffffff)
-        }
-
         // Set the substandard version.
         substandard = uint8(context[1]);
 
