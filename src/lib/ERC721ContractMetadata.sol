@@ -31,17 +31,17 @@ contract ERC721ContractMetadata is
     ISeaDropTokenContractMetadata
 {
     /// @notice The max supply.
-    uint256 _maxSupply;
+    uint256 internal _maxSupply;
 
     /// @notice The base URI for token metadata.
-    string _tokenBaseURI;
+    string internal _tokenBaseURI;
 
     /// @notice The contract URI for contract metadata.
-    string _contractURI;
+    string internal _contractURI;
 
     /// @notice The provenance hash for guaranteeing metadata order
     ///         for random reveals.
-    bytes32 _provenanceHash;
+    bytes32 internal _provenanceHash;
 
     /**
      * @dev Reverts if the sender is not the owner or the contract itself.
@@ -49,10 +49,7 @@ contract ERC721ContractMetadata is
      *      to save contract space from being inlined N times.
      */
     function _onlyOwnerOrSelf() internal view {
-        if (
-            _cast(msg.sender == owner()) | _cast(msg.sender == address(this)) ==
-            0
-        ) {
+        if (_cast(msg.sender == owner() || msg.sender == address(this)) == 0) {
             revert OnlyOwner();
         }
     }

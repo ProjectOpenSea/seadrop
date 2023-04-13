@@ -57,7 +57,10 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
      *         reveal.
      */
     // solhint-disable-next-line comprehensive-interface
-    function setRandomOffset() external onlyOwner {
+    function setRandomOffset() external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
         // Revert setting the offset if already revealed.
         if (revealed == _REVEALED_TRUE) {
             revert AlreadyRevealed();

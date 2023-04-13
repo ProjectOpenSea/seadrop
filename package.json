@@ -8,7 +8,8 @@
   },
   "scripts": {
     "postinstall": "yarn buildAndLinkSeaport",
-    "build": "hardhat compile --config ./hardhat.config.ts && yarn show:headroom",
+    "build": "hardhat compile --config ./hardhat.config.ts",
+    "build:forge": "forge build && yarn show:headroom",
     "buildAndLinkSeaport": "git submodule init && git submodule update && cd lib/seaport && yarn && yarn build && FOUNDRY_PROFILE=reference forge build && FOUNDRY_PROFILE=optimized forge build && cd ../../ && ln -sf lib/seaport/reference-out reference-out && ln -sf lib/seaport/optimized-out optimized-out && cd src && ln -sf ../lib/seaport/contracts seaport-contracts && cd ../test && ln -sf ../lib/seaport/test/utils seaport-utils",
     "clean": "hardhat clean; hardhat clean --config ./hardhat-coverage.config.ts; forge clean; rm -rf coverage coverage.json hh-cache temp-coverage-cache",
     "test": "hardhat test --config ./hardhat.config.ts",
@@ -28,7 +29,7 @@
     "lint:fix:format": "prettier --write **.{sol,js,ts}",
     "lint:fix:eslint": "eslint --fix . --ext js,ts",
     "prepare": "husky install",
-    "show:headroom": "jq -r '.deployedBytecode' artifacts/src/ERC721SeaDrop.sol/ERC721SeaDrop.json | tr -d '\n' | wc -m | awk '{print 24577 - ($1 - 2)/2}'"
+    "show:headroom": "jq -r '.deployedBytecode' out/ERC721SeaDrop.sol/ERC721SeaDrop.json | tr -d '\n' | wc -m | awk '{print 24577 - ($1 - 2)/2}'"
   },
   "lint-staged": {
     "*.sol": "prettier --write",
