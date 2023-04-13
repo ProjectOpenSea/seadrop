@@ -103,7 +103,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintPrice: "10000000000000",
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
+      endTime: Math.round(Date.now() / 1000) + 1000,
       dropStageIndex: 1,
       maxTokenSupplyForStage: 11,
       feeBps,

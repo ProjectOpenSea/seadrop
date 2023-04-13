@@ -66,7 +66,7 @@ describe(`SeaDrop (v${VERSION})`, function () {
           mintPrice: 1000,
           maxTotalMintableByWallet: 1,
           startTime: Math.round(Date.now() / 1000) - 100,
-          endTime: Math.round(Date.now() / 1000) + 100,
+          endTime: Math.round(Date.now() / 1000) + 1000,
           feeBps: 1000,
           restrictFeeRecipients: false,
         };
@@ -87,7 +87,7 @@ describe(`SeaDrop (v${VERSION})`, function () {
           mintPrice: "10000000000000000", // 0.01 ether
           maxTotalMintableByWallet: 10,
           startTime: Math.round(Date.now() / 1000) - 100,
-          endTime: Math.round(Date.now() / 1000) + 500,
+          endTime: Math.round(Date.now() / 1000) + 1000,
           dropStageIndex: 1,
           maxTokenSupplyForStage: 100,
           feeBps: 100,
@@ -154,8 +154,8 @@ describe(`SeaDrop (v${VERSION})`, function () {
     const publicDrop = {
       mintPrice: oneEther,
       maxTotalMintableByWallet: 1,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
+      startTime: Math.round(Date.now() / 1000) - 1000,
+      endTime: Math.round(Date.now() / 1000) + 1000,
       feeBps: 1000,
       restrictFeeRecipients: false,
     };

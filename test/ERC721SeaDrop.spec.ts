@@ -61,7 +61,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       mintPrice: "100000000000000000", // 0.1 ether
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
+      endTime: Math.round(Date.now() / 1000) + 1000,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -358,7 +358,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       mintPrice: "10000000000000000", // 0.01 ether
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 500,
+      endTime: Math.round(Date.now() / 1000) + 1000,
       dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
       feeBps: 100,
@@ -480,7 +480,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       mintPrice: "10000000000000000", // 0.01 ether
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 500,
+      endTime: Math.round(Date.now() / 1000) + 1000,
       dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
       feeBps: 100,
@@ -589,7 +589,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       mintPrice: "10000000000000000", // 0.01 ether
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 500,
+      endTime: Math.round(Date.now() / 1000) + 1000,
       dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
       feeBps: 100,
