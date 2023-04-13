@@ -492,7 +492,7 @@ contract ERC721ACloneable is IERC721A, Initializable {
      *
      * Emits an {Approval} event.
      */
-    function approve(address to, uint256 tokenId) public virtual override {
+    function approve(address to, uint256 tokenId) public payable virtual override {
         address owner = ownerOf(tokenId);
 
         if (_msgSenderERC721A() != owner) {
@@ -628,7 +628,7 @@ contract ERC721ACloneable is IERC721A, Initializable {
         address from,
         address to,
         uint256 tokenId
-    ) public virtual override {
+    ) public payable virtual override {
         uint256 prevOwnershipPacked = _packedOwnershipOf(tokenId);
 
         if (address(uint160(prevOwnershipPacked)) != from)
@@ -707,7 +707,7 @@ contract ERC721ACloneable is IERC721A, Initializable {
         address from,
         address to,
         uint256 tokenId
-    ) public virtual override {
+    ) public payable virtual override {
         safeTransferFrom(from, to, tokenId, "");
     }
 
@@ -731,7 +731,7 @@ contract ERC721ACloneable is IERC721A, Initializable {
         address to,
         uint256 tokenId,
         bytes memory _data
-    ) public virtual override {
+    ) public payable virtual override {
         transferFrom(from, to, tokenId);
         if (to.code.length != 0) {
             if (!_checkContractOnERC721Received(from, to, tokenId, _data)) {

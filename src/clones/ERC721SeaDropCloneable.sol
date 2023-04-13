@@ -500,6 +500,7 @@ contract ERC721SeaDropCloneable is
      */
     function approve(address operator, uint256 tokenId)
         public
+        payable
         override
         onlyAllowedOperatorApproval(operator)
     {
@@ -524,7 +525,7 @@ contract ERC721SeaDropCloneable is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -535,7 +536,7 @@ contract ERC721SeaDropCloneable is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -560,7 +561,7 @@ contract ERC721SeaDropCloneable is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
