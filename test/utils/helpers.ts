@@ -7,8 +7,9 @@ import type {
   ConsiderationInterface,
   ERC721SeaDrop,
 } from "../../typechain-types";
-import type { Wallet, providers } from "ethers";
+import type { Wallet } from "ethers";
 
+const { provider } = ethers;
 const { hexlify, zeroPad } = ethers.utils;
 
 export const VERSION = "2.0.0";
@@ -18,7 +19,6 @@ export type AwaitedObject<T> = {
 };
 
 export const setMintRecipientStorageSlot = async (
-  provider: providers.JsonRpcProvider,
   token: ERC721SeaDrop,
   minter: Wallet
 ) => {
@@ -36,18 +36,16 @@ export const setMintRecipientStorageSlot = async (
 
 export const mintTokens = async ({
   marketplaceContract,
-  provider,
   token,
   minter,
   quantity,
 }: {
-  provider: providers.JsonRpcProvider;
   marketplaceContract: ConsiderationInterface;
   token: ERC721SeaDrop;
   minter: Wallet;
   quantity: number;
 }) => {
-  await setMintRecipientStorageSlot(provider, token, minter);
+  await setMintRecipientStorageSlot(token, minter);
 
   await whileImpersonating(
     marketplaceContract.address,
@@ -71,7 +69,7 @@ export const deployDelegationRegistryToCanonicalAddress = async () => {
     "DelegationRegistry"
   );
   const exampleDelegationRegistry = await DelegationRegistry.deploy();
-  const delegationRegistryBytecode = await ethers.provider.getCode(
+  const delegationRegistryBytecode = await provider.getCode(
     exampleDelegationRegistry.address
   );
   const canonicalDelegationRegistryAddress =

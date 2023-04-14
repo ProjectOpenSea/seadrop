@@ -38,19 +38,6 @@ contract SeaDropTest is
     /// @dev SeaDrop doesn't use criteria resolvers.
     CriteriaResolver[] internal criteriaResolvers;
 
-    /// @dev Token contract addresses to ignore for fuzzing.
-    address[9] ignoredTokenContracts = [
-        address(token1),
-        address(token2),
-        address(token3),
-        address(test721_1),
-        address(test721_2),
-        address(test721_3),
-        address(test1155_1),
-        address(test1155_2),
-        address(test1155_3)
-    ];
-
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =

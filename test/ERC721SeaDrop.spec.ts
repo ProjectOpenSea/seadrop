@@ -5,6 +5,7 @@ import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION, mintTokens } from "./utils/helpers";
+import { whileImpersonating } from "./utils/impersonate";
 
 import type {
   ConduitInterface,
@@ -63,7 +64,6 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   it("Should be able to transfer successfully", async () => {
     await mintTokens({
       marketplaceContract,
-      provider,
       token,
       minter,
       quantity: 5,
@@ -99,7 +99,6 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     // Mint 3 tokens to the minter.
     await mintTokens({
       marketplaceContract,
-      provider,
       token,
       minter,
       quantity: 3,
@@ -169,5 +168,61 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         token.connect(minter).burn(tokenId)
       ).to.be.revertedWithCustomError(token, "OwnerQueryForNonexistentToken");
     }
+  });
+
+  it("Should allow the contract owner to withdraw all funds in the contract", async () => {
+    await expect(
+      token.connect(minter).withdraw()
+    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+
+    await expect(token.connect(owner).withdraw()).to.be.revertedWithCustomError(
+      token,
+      "NoBalanceToWithdraw"
+    );
+
+    // Send some balance to the contract.
+    await mintTokens({
+      marketplaceContract,
+      token,
+      minter,
+      quantity: 1,
+    });
+    await token.connect(minter).approve(owner.address, 1, { value: 100 });
+
+    let contractBalance = await provider.getBalance(token.address);
+    expect(contractBalance).to.equal(100);
+
+    const ownerBalanceBefore = await provider.getBalance(owner.address);
+    const tx = await token.connect(owner).withdraw();
+    const receipt = await tx.wait();
+    const txCost = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+
+    const ownerBalanceAfter = await provider.getBalance(owner.address);
+    expect(ownerBalanceAfter).to.equal(ownerBalanceBefore.sub(txCost).add(100));
+
+    contractBalance = await provider.getBalance(token.address);
+    expect(contractBalance).to.equal(0);
+
+    // Set the owner to a contract without a payable fallback function to get coverage for WithdrawalFailed.
+    // Note: If the below storage slot changes, the updated value can be found
+    // with `forge inspect ERC721SeaDrop storage-layout`
+    const ownerStorageSlot = "0xa";
+    const ownerStorageValue = "0x" + token.address.slice(2).padStart(64, "0");
+    await provider.send("hardhat_setStorageAt", [
+      token.address,
+      ownerStorageSlot,
+      ownerStorageValue,
+    ]);
+    expect(await token.owner()).to.equal(token.address);
+    await token.connect(minter).approve(owner.address, 1, { value: 100 });
+    await whileImpersonating(
+      token.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(token.connect(impersonatedSigner).withdraw())
+          .to.be.revertedWithCustomError(token, "WithdrawalFailed")
+          .withArgs("0x");
+      }
+    );
   });
 });

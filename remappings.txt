@@ -1,4 +1,3 @@
-ds-test/=lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 ERC721A/=lib/ERC721A/contracts/
 ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/contracts/
@@ -15,3 +14,4 @@ operator-filter-registry/=lib/operator-filter-registry/src/
 seadrop/=src/
 seaport/=lib/seaport/contracts/
 seaport-test-utils/=lib/seaport/test/foundry/utils
+solady/=lib/seaport/lib/solady/

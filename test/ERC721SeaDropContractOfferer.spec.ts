@@ -447,7 +447,6 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // Mint a token.
     await mintTokens({
       marketplaceContract,
-      provider,
       token,
       minter,
       quantity: 1,
@@ -466,7 +465,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   it("Should only let allowed seaport or conduit call the ERC1155 safeTransferFrom", async () => {
     await token.setMaxSupply(3);
 
-    await setMintRecipientStorageSlot(provider, token, minter);
+    await setMintRecipientStorageSlot(token, minter);
     await whileImpersonating(
       marketplaceContract.address,
       provider,
@@ -488,7 +487,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     );
 
     // Mint as conduit
-    await setMintRecipientStorageSlot(provider, token, minter);
+    await setMintRecipientStorageSlot(token, minter);
     await whileImpersonating(
       conduitOne.address,
       provider,

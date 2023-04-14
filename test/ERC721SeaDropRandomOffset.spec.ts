@@ -75,7 +75,6 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     // Mint to the max supply.
     await mintTokens({
       marketplaceContract,
-      provider,
       token,
       minter,
       quantity: 100,
@@ -104,7 +103,6 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     // Mint to the max supply.
     await mintTokens({
       marketplaceContract,
-      provider,
       token,
       minter,
       quantity: 100,

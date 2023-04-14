@@ -78,7 +78,6 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     // it should emit BatchMetadataUpdate when totalSupply is greater than 0
     await mintTokens({
       marketplaceContract,
-      provider,
       token,
       minter: owner,
       quantity: 1,
@@ -193,7 +192,6 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await mintTokens({
       marketplaceContract,
-      provider,
       token,
       minter: owner,
       quantity: 2,

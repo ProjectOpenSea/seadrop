@@ -94,7 +94,7 @@ contract ERC721SeaDrop is
     function approve(
         address operator,
         uint256 tokenId
-    ) public override onlyAllowedOperatorApproval(operator) {
+    ) public payable override onlyAllowedOperatorApproval(operator) {
         super.approve(operator, tokenId);
     }
 
@@ -116,7 +116,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -127,7 +127,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -152,8 +152,38 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
+    }
+
+    /**
+     * @notice Withdraws contract balance to the contract owner.
+     *         Provided as a safety measure to rescue stuck funds since ERC721A
+     *         makes all methods payable for gas efficiency reasons.
+     *
+     *         Only the owner can use this function.
+     */
+    function withdraw() external {
+        // Ensure the sender is only the owner or contract itself.
+        _onlyOwnerOrSelf();
+
+        // Put the balance on the stack.
+        uint256 balance = address(this).balance;
+
+        // Revert if the contract has no balance.
+        if (balance == 0) {
+            revert NoBalanceToWithdraw();
+        }
+
+        // Send contract balance to the owner.
+        (bool success, bytes memory data) = payable(owner()).call{
+            value: balance
+        }("");
+
+        // Revert if call was unsuccessful.
+        if (!success) {
+            revert WithdrawalFailed(data);
+        }
     }
 
     /**

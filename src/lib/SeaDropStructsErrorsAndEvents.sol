@@ -469,6 +469,16 @@ interface SeaDropStructsErrorsAndEvents {
     error SignatureAlreadyUsed();
 
     /**
+     * @dev Revert with an error if the contract has no balance to withdraw.
+     */
+    error NoBalanceToWithdraw();
+
+    /**
+     * @dev Revert with an error if the withdrawal call to the owner failed.
+     */
+    error WithdrawalFailed(bytes data);
+
+    /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
      *
      * @param minter         The mint recipient.

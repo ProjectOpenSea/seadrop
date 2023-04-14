@@ -37,11 +37,9 @@ contract ERC721SeaDropTest is SeaDropTest {
         // Assume the feeRecipient is not the creator.
         vm.assume(args.feeRecipient != args.creator);
 
-        // Assume the feeRecipient and creator are not any test token contracts.
-        for (uint256 i = 0; i < ignoredTokenContracts.length; i++) {
-            vm.assume(args.feeRecipient != ignoredTokenContracts[i]);
-            vm.assume(args.creator != ignoredTokenContracts[i]);
-        }
+        // Assume the feeRecipient and creator are EOAs.
+        vm.assume(args.feeRecipient.code.length == 0);
+        vm.assume(args.creator.code.length == 0);
 
         assumeNoPrecompiles(args.feeRecipient);
         assumeNoPrecompiles(args.creator);
