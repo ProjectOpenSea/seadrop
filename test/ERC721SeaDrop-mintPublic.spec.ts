@@ -91,7 +91,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -176,7 +176,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     // Set start time in the future.
     await token.updatePublicDrop({
       ...publicDrop,
-      startTime: Math.round(Date.now() / 1000) + 100,
+      startTime: Math.round(Date.now() / 1000) + 1000,
     });
 
     // Mint public with payer for minter.
@@ -211,7 +211,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
   });
 
   it("Should not mint a public stage that has ended", async () => {
-    // Set start time in the future.
+    // Set end time in the past.
     await token.updatePublicDrop({
       ...publicDrop,
       endTime: Math.round(Date.now() / 1000) - 100,

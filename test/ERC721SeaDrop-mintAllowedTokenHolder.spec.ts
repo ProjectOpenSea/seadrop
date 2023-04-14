@@ -441,7 +441,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   });
 
   it("Should revert if the drop stage is not active", async () => {
-    // Create the drop stage object.
+    // Create the expired drop stage.
     const dropStageExpired = {
       ...dropStage,
       endTime: Math.round(Date.now() / 1000) - 500,

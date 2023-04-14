@@ -147,7 +147,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
       dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
       feeBps: 1000,
