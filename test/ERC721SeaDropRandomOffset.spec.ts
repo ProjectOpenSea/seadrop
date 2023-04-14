@@ -116,7 +116,9 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
 
     expect(await token.tokenURI(1)).to.equal("http://example.com/");
 
-    await token.setRandomOffset();
+    await expect(token.setRandomOffset())
+      .to.emit(token, "BatchMetadataUpdate")
+      .withArgs(1, 100);
 
     const randomOffset = (await token.randomOffset()).toNumber();
 

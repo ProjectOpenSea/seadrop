@@ -85,6 +85,9 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
 
         // Set revealed to true.
         revealed = _REVEALED_TRUE;
+
+        // Emit an event with the update.
+        emit BatchMetadataUpdate(1, _nextTokenId() - 1);
     }
 
     /**
