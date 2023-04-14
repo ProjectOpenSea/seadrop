@@ -10,7 +10,7 @@
     "postinstall": "yarn buildAndLinkSeaport",
     "build": "hardhat compile --config ./hardhat.config.ts",
     "build:forge": "forge build && yarn show:headroom",
-    "buildAndLinkSeaport": "git submodule init && git submodule update && cd lib/seaport && yarn && yarn build && FOUNDRY_PROFILE=reference forge build && FOUNDRY_PROFILE=optimized forge build && cd ../../ && ln -sf lib/seaport/reference-out reference-out && ln -sf lib/seaport/optimized-out optimized-out && cd src && ln -sf ../lib/seaport/contracts seaport-contracts && cd ../test && ln -sf ../lib/seaport/test/utils seaport-utils",
+    "buildAndLinkSeaport": "git submodule init && git submodule update && cd lib/seaport && yarn && yarn build && FOUNDRY_PROFILE=reference forge build && FOUNDRY_PROFILE=optimized forge build && cd ../../ && ln -sfn lib/seaport/reference-out reference-out && ln -sfn lib/seaport/optimized-out optimized-out && cd src && ln -sfn ../lib/seaport/contracts seaport-contracts && cd ../test && ln -sfn ../lib/seaport/test/utils seaport-utils && cd ../ && find ./src/seaport-contracts -type f -print0 | xargs -0 perl -pi -e 's/pragma solidity 0/pragma solidity ^0/g'",
     "clean": "hardhat clean; hardhat clean --config ./hardhat-coverage.config.ts; forge clean; rm -rf coverage coverage.json hh-cache temp-coverage-cache",
     "test": "hardhat test --config ./hardhat.config.ts",
     "test:upgradeable": "hardhat test --config ./src-upgradeable/hardhat.config.ts",
