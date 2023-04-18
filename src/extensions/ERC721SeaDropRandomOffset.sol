@@ -79,7 +79,7 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
         // NOTE: do not use this on other chains
         // randomOffset returns between 1 and MAX_SUPPLY
         randomOffset =
-            (uint256(keccak256(abi.encode(block.difficulty))) %
+            (uint256(keccak256(abi.encode(block.prevrandao))) %
                 (maxSupply - 1)) +
             1;
 

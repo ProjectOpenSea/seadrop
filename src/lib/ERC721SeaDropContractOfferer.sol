@@ -294,7 +294,7 @@ contract ERC721SeaDropContractOfferer is
         override
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
-        // Derive the offer and consideration.
+        // Derive the offer and consideration with effects.
         (offer, consideration) = _createOrder(
             fulfiller,
             minimumReceived,
@@ -383,7 +383,7 @@ contract ERC721SeaDropContractOfferer is
             fn := fn2
         }
 
-        // Derive the offer and consideration.
+        // Derive the offer and consideration without effects.
         (offer, consideration) = fn(
             fulfiller,
             minimumReceived,
@@ -596,6 +596,8 @@ contract ERC721SeaDropContractOfferer is
                     ++i;
                 }
             }
+        } else {
+            maximumSpent = new SpentItem[](0);
         }
     }
 
@@ -859,11 +861,11 @@ contract ERC721SeaDropContractOfferer is
 
         // Apply the state changes of the mint.
         if (withEffects) {
-            // Set the mint recipient.
-            _mintRecipient = minter;
-
             // Mark the digest as used.
             _usedDigests[digest] = true;
+
+            // Set the mint recipient.
+            _mintRecipient = minter;
 
             // Emit an event for the mint, for analytics.
             _emitSeaDropMint(
@@ -1941,8 +1943,9 @@ contract ERC721SeaDropContractOfferer is
     {
         return
             interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
+            interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
             // ERC721ContractMetadata returns supportsInterface true for
-            //     ISeaDropTokenContractMetadata, EIP-2981
+            //     ISeaDropTokenContractMetadata, ERC-4906, ERC-2981
             // ERC721A returns supportsInterface true for
             //     ERC721, ERC721Metadata, ERC165
             super.supportsInterface(interfaceId);

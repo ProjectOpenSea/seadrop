@@ -590,6 +590,9 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // Ensure the interface for ERC-4906 returns true.
     expect(await token.supportsInterface("0x49064906")).to.be.true;
 
+    // Ensure the interface for SIP-5 (getSeaportMetadata) returns true.
+    expect(await token.supportsInterface("0x2e778efc")).to.be.true;
+
     // Ensure invalid interfaces return false.
     const invalidInterfaceIds = ["0x00000000", "0x10000000", "0x00000001"];
     for (const interfaceId of invalidInterfaceIds) {
