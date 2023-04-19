@@ -15,6 +15,10 @@ import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import {
+    ERC721SeaDropConfigurer
+} from "seadrop/lib/ERC721SeaDropConfigurer.sol";
+
+import {
     SeaDropStructsErrorsAndEvents
 } from "seadrop/lib/SeaDropStructsErrorsAndEvents.sol";
 
@@ -31,6 +35,9 @@ contract SeaDropTest is
 {
     /// @dev The contract offerer.
     ERC721SeaDrop offerer;
+
+    /// @dev The configurer contract.
+    ERC721SeaDropConfigurer configurer;
 
     /// @dev The allowed Seaport address to interact with the contract offerer.
     address internal allowedSeaport;
@@ -95,6 +102,9 @@ contract SeaDropTest is
     function setUp() public virtual override {
         super.setUp();
 
+        // Set configurer
+        configurer = new ERC721SeaDropConfigurer();
+
         // Set allowedSeaport
         allowedSeaport = address(consideration);
 
@@ -113,7 +123,7 @@ contract SeaDropTest is
             payoutAddress: creator,
             basisPoints: 10_000
         });
-        offerer.updateCreatorPayouts(creatorPayouts);
+        configurer.updateCreatorPayouts(address(offerer), creatorPayouts);
     }
 
     function setAllowListMerkleRootAndReturnProof(
@@ -131,7 +141,7 @@ contract SeaDropTest is
             publicKeyURIs: new string[](0),
             allowListURI: ""
         });
-        offerer.updateAllowList(allowListData);
+        configurer.updateAllowList(address(offerer), allowListData);
         return proof;
     }
 
@@ -250,7 +260,9 @@ contract SeaDropTest is
         );
 
         // Add consideration items for creator payouts.
-        CreatorPayout[] memory creatorPayouts = offerer.getCreatorPayouts();
+        CreatorPayout[] memory creatorPayouts = configurer.getCreatorPayouts(
+            address(offerer)
+        );
         for (uint256 i = 0; i < creatorPayouts.length; i++) {
             uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /
                 10_000;

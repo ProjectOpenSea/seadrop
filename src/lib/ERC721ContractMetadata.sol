@@ -43,24 +43,38 @@ contract ERC721ContractMetadata is
     ///         for random reveals.
     bytes32 internal _provenanceHash;
 
+    /// @notice The allowed contract that can configure SeaDrop parameters.
+    address internal immutable _CONFIGURER;
+
     /**
-     * @dev Reverts if the sender is not the owner or the contract itself.
+     * @dev Reverts if the sender is not the owner or the allowed
+     *      configurer contract.
+     *
      *      This function is inlined instead of being a modifier
      *      to save contract space from being inlined N times.
      */
-    function _onlyOwnerOrSelf() internal view {
-        if (_cast(msg.sender == owner() || msg.sender == address(this)) == 0) {
+    function _onlyOwnerOrConfigurer() internal view {
+        if (_cast(msg.sender != _CONFIGURER && msg.sender != owner()) == 1) {
             revert OnlyOwner();
         }
     }
 
     /**
-     * @notice Deploy the token contract with its name and symbol.
+     * @notice Deploy the token contract.
+     *
+     * @param name              The name of the token.
+     * @param symbol            The symbol of the token.
+     * @param allowedConfigurer The address of the contract allowed to
+     *                          configure parameters.
      */
     constructor(
         string memory name,
-        string memory symbol
-    ) ERC721A(name, symbol) {}
+        string memory symbol,
+        address allowedConfigurer
+    ) ERC721A(name, symbol) {
+        // Set the allowed configurer contract to interact with this contract.
+        _CONFIGURER = allowedConfigurer;
+    }
 
     /**
      * @notice Sets the base URI for the token metadata and emits an event.
@@ -68,8 +82,8 @@ contract ERC721ContractMetadata is
      * @param newBaseURI The new base URI to set.
      */
     function setBaseURI(string calldata newBaseURI) external override {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Set the new base URI.
         _tokenBaseURI = newBaseURI;
@@ -86,8 +100,8 @@ contract ERC721ContractMetadata is
      * @param newContractURI The new contract URI.
      */
     function setContractURI(string calldata newContractURI) external override {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Set the new contract URI.
         _contractURI = newContractURI;
@@ -107,8 +121,8 @@ contract ERC721ContractMetadata is
         uint256 fromTokenId,
         uint256 toTokenId
     ) external {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Emit an event with the update.
         emit BatchMetadataUpdate(fromTokenId, toTokenId);
@@ -120,8 +134,8 @@ contract ERC721ContractMetadata is
      * @param newMaxSupply The new max supply to set.
      */
     function setMaxSupply(uint256 newMaxSupply) external {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Ensure the max supply does not exceed the maximum value of uint64,
         // a limit due to the storage of bit-packed variables in ERC721A.
@@ -148,8 +162,8 @@ contract ERC721ContractMetadata is
      * @param newProvenanceHash The new provenance hash to set.
      */
     function setProvenanceHash(bytes32 newProvenanceHash) external {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Revert if any items have been minted.
         if (_totalMinted() != 0) {
@@ -175,8 +189,8 @@ contract ERC721ContractMetadata is
      * - `feeNumerator` cannot be greater than the fee denominator of 10_000 basis points.
      */
     function setDefaultRoyalty(address receiver, uint96 feeNumerator) external {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Revert if the receiver is the zero address.
         if (receiver == address(0)) {

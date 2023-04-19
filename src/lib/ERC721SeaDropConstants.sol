@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+/// @dev Selectors for getters used in the fallback function.
+bytes4 constant GET_ALLOWED_FEE_RECIPIENTS_SELECTOR = 0x12345678;
+bytes4 constant GET_CREATOR_PAYOUTS_SELECTOR = 0x12345678;
+bytes4 constant GET_PUBLIC_DROP_SELECTOR = 0x12345678;
+bytes4 constant GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR = 0x12345678;
+bytes4 constant GET_SIGNERS_SELECTOR = 0x12345678;
+bytes4 constant GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR = 0x12345678;
+bytes4 constant GET_TOKEN_GATED_ALLOWED_TOKENS_SELECTOR = 0x12345678;
+bytes4 constant GET_TOKEN_GATED_DROP_SELECTOR = 0x12345678;
+bytes4 constant GET_ALLOWED_NFT_TOKEN_ID_REDEEMED_COUNT_SELECTOR = 0x12345678;
+bytes4 constant GET_PAYERS_SELECTOR = 0x12345678;
+bytes4 constant GET_MINT_STATS_SELECTOR = 0x12345678;
+
+/// @dev Selectors for setters used in the fallback function.
+bytes4 constant UPDATE_ALLOWED_SEAPORT_SELECTOR = 0x6aba5018;
+bytes4 constant UPDATE_DROP_URI_SELECTOR = 0x12345678;
+bytes4 constant UPDATE_CREATOR_PAYOUTS_SELECTOR = 0x1ecdfb8c;
+bytes4 constant UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR = 0x8e7d1e43;
+bytes4 constant UPDATE_PUBLIC_DROP_SELECTOR = 0xf0fe0866;
+bytes4 constant UPDATE_ALLOW_LIST_SELECTOR = 0xebb4a55f;
+bytes4 constant UPDATE_TOKEN_GATED_DROP_SELECTOR = 0x12345678;
+bytes4 constant UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR = 0x12345678;
+bytes4 constant UPDATE_PAYER_SELECTOR = 0x12345678;
+
+/// @dev Selectors for Seaport contract offerer methods used in the fallback function.
+bytes4 constant PREVIEW_ORDER_SELECTOR = 0x12345678;
+bytes4 constant GENERATE_ORDER_SELECTOR = 0x98919765;
+bytes4 constant RATIFY_ORDER_SELECTOR = 0x12345678;
+bytes4 constant SAFE_TRANSFER_FROM_1155_ORDER_SELECTOR = 0xf242432a;
+bytes4 constant GET_SEAPORT_METADATA_SELECTOR = 0x12345678;
+//bytes4 constant SUPPORTS_INTERFACE_SELECTOR = 0x01ffc9a7;

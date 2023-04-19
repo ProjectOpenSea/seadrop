@@ -36,19 +36,30 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
     /**
      * @notice Deploy the token contract.
      *
-     * @param name           The name of the token.
-     * @param symbol         The symbol of the token.
-     * @param allowedSeaport The address of the Seaport contract allowed to
-     *                       interact.
-     * @param allowedConduit The address of the conduit contract allowed to
-     *                       interact.
+     * @param name              The name of the token.
+     * @param symbol            The symbol of the token.
+     * @param allowedConfigurer The address of the contract allowed to
+     *                          configure parameters.
+     * @param allowedConduit    The address of the conduit contract allowed to
+     *                          interact.
+     * @param allowedSeaport    The address of the Seaport contract allowed to
+     *                          interact.
      */
     constructor(
         string memory name,
         string memory symbol,
+        address allowedConfigurer,
         address allowedSeaport,
         address allowedConduit
-    ) ERC721SeaDrop(name, symbol, allowedSeaport, allowedConduit) {}
+    )
+        ERC721SeaDrop(
+            name,
+            symbol,
+            allowedConfigurer,
+            allowedConduit,
+            allowedSeaport
+        )
+    {}
 
     /**
      * @notice Set the random offset, for a fair metadata reveal. Only callable
@@ -58,8 +69,8 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
      */
     // solhint-disable-next-line comprehensive-interface
     function setRandomOffset() external {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Revert setting the offset if already revealed.
         if (revealed == _REVEALED_TRUE) {

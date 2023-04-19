@@ -22,6 +22,8 @@ import {
 
 import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
+import "../lib/ERC721SeaDropConstants.sol";
+
 contract MaliciousRecipient is SeaDropStructsErrorsAndEvents {
     bool public startAttack;
     address public token;
@@ -81,8 +83,13 @@ contract MaliciousRecipient is SeaDropStructsErrorsAndEvents {
             endAmount: 1
         });
 
-        CreatorPayout[] memory creatorPayouts = ERC721SeaDrop(token)
-            .getCreatorPayouts();
+        (, bytes memory data) = token.staticcall(
+            abi.encode(GET_CREATOR_PAYOUTS_SELECTOR)
+        );
+        CreatorPayout[] memory creatorPayouts = abi.decode(
+            data,
+            (CreatorPayout[])
+        );
         ConsiderationItem[] memory considerationItems = new ConsiderationItem[](
             creatorPayouts.length + 1
         );

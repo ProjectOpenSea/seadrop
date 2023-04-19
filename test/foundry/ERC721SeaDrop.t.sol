@@ -50,12 +50,22 @@ contract ERC721SeaDropTest is SeaDropTest {
     function testMintPublic(
         Context memory context
     ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop("", "", allowedSeaport, address(0));
+        offerer = new ERC721SeaDrop(
+            "",
+            "",
+            address(configurer),
+            address(0),
+            allowedSeaport
+        );
 
         address feeRecipient = context.args.feeRecipient;
         uint256 feeBps = 500;
 
-        offerer.updateAllowedFeeRecipient(feeRecipient, true);
+        configurer.updateAllowedFeeRecipient(
+            address(offerer),
+            feeRecipient,
+            true
+        );
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -69,7 +79,7 @@ contract ERC721SeaDropTest is SeaDropTest {
             feeBps: uint16(feeBps),
             restrictFeeRecipients: true
         });
-        offerer.updatePublicDrop(publicDrop);
+        configurer.updatePublicDrop(address(offerer), publicDrop);
 
         addSeaDropOfferItem(3); // 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -136,12 +146,22 @@ contract ERC721SeaDropTest is SeaDropTest {
     function testMintAllowList(
         Context memory context
     ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop("", "", allowedSeaport, address(0));
+        offerer = new ERC721SeaDrop(
+            "",
+            "",
+            address(configurer),
+            address(0),
+            allowedSeaport
+        );
 
         address feeRecipient = context.args.feeRecipient;
         uint256 feeBps = 500;
 
-        offerer.updateAllowedFeeRecipient(feeRecipient, true);
+        configurer.updateAllowedFeeRecipient(
+            address(offerer),
+            feeRecipient,
+            true
+        );
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -234,12 +254,22 @@ contract ERC721SeaDropTest is SeaDropTest {
     function testMintAllowedTokenHolder(
         Context memory context
     ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop("", "", allowedSeaport, address(0));
+        offerer = new ERC721SeaDrop(
+            "",
+            "",
+            address(configurer),
+            address(0),
+            allowedSeaport
+        );
 
         address feeRecipient = context.args.feeRecipient;
         uint256 feeBps = 500;
 
-        offerer.updateAllowedFeeRecipient(feeRecipient, true);
+        configurer.updateAllowedFeeRecipient(
+            address(offerer),
+            feeRecipient,
+            true
+        );
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -257,7 +287,11 @@ contract ERC721SeaDropTest is SeaDropTest {
             feeBps: uint16(feeBps),
             restrictFeeRecipients: false
         });
-        offerer.updateTokenGatedDrop(address(test721_1), dropStage);
+        configurer.updateTokenGatedDrop(
+            address(offerer),
+            address(test721_1),
+            dropStage
+        );
 
         // Mint a token gated token to the minter.
         test721_1.mint(address(this), 1);
@@ -339,11 +373,21 @@ contract ERC721SeaDropTest is SeaDropTest {
     function testMintSigned(
         Context memory context
     ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop("", "", allowedSeaport, address(0));
+        offerer = new ERC721SeaDrop(
+            "",
+            "",
+            address(configurer),
+            address(0),
+            allowedSeaport
+        );
 
         address feeRecipient = context.args.feeRecipient;
 
-        offerer.updateAllowedFeeRecipient(feeRecipient, true);
+        configurer.updateAllowedFeeRecipient(
+            address(offerer),
+            feeRecipient,
+            true
+        );
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -364,7 +408,11 @@ contract ERC721SeaDropTest is SeaDropTest {
                 maxFeeBps: 1000
             });
         address signer = makeAddr("signer-doug");
-        offerer.updateSignedMintValidationParams(signer, validationParams);
+        configurer.updateSignedMintValidationParams(
+            address(offerer),
+            signer,
+            validationParams
+        );
 
         uint256 feeBps = 500;
         MintParams memory mintParams = MintParams({

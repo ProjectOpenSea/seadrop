@@ -214,6 +214,11 @@ interface SeaDropStructsErrorsAndEvents {
     event SeaDropTokenDeployed(SEADROP_TOKEN_TYPE tokenType);
 
     /**
+     * @notice Revert with an error if the function selector is not supported.
+     */
+    error UnsupportedFunctionSelector(bytes4 selector);
+
+    /**
      * @notice Revert with an error if the number of token gated
      *         allowedNftTokens doesn't match the length of supplied
      *         drop stages.

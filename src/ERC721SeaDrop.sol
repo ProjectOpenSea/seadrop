@@ -25,24 +25,28 @@ contract ERC721SeaDrop is
     /**
      * @notice Deploy the token contract.
      *
-     * @param name           The name of the token.
-     * @param symbol         The symbol of the token.
-     * @param allowedSeaport The address of the Seaport contract allowed to
-     *                       interact.
-     * @param allowedConduit The address of the conduit contract allowed to
-     *                       interact.
+     * @param name              The name of the token.
+     * @param symbol            The symbol of the token.
+     * @param allowedConfigurer The address of the contract allowed to
+     *                          configure parameters.
+     * @param allowedConduit    The address of the conduit contract allowed to
+     *                          interact.
+     * @param allowedSeaport    The address of the Seaport contract allowed to
+     *                          interact.
      */
     constructor(
         string memory name,
         string memory symbol,
-        address allowedSeaport,
-        address allowedConduit
+        address allowedConfigurer,
+        address allowedConduit,
+        address allowedSeaport
     )
         ERC721SeaDropContractOfferer(
             name,
             symbol,
-            allowedSeaport,
-            allowedConduit
+            allowedConfigurer,
+            allowedConduit,
+            allowedSeaport
         )
     {}
 
@@ -164,8 +168,8 @@ contract ERC721SeaDrop is
      *         Only the owner can use this function.
      */
     function withdraw() external {
-        // Ensure the sender is only the owner or contract itself.
-        _onlyOwnerOrSelf();
+        // Ensure the sender is only the owner or configurer contract.
+        _onlyOwnerOrConfigurer();
 
         // Put the balance on the stack.
         uint256 balance = address(this).balance;

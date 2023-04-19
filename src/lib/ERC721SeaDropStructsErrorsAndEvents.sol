@@ -30,5 +30,8 @@ interface ERC721SeaDropStructsErrorsAndEvents is SeaDropStructsErrorsAndEvents {
         address[] signers;
         SignedMintValidationParams[] signedMintValidationParams;
         address[] disallowedSigners;
+        // ERC-2981
+        address royaltyReceiver;
+        uint96 royaltyBps;
     }
 }
