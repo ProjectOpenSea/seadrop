@@ -181,7 +181,7 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @dev Sets the default royalty information.
+     * @notice Sets the default royalty information.
      *
      * Requirements:
      *

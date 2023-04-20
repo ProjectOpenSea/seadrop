@@ -184,10 +184,8 @@ contract ERC721SeaDrop is
             value: balance
         }("");
 
-        // Revert if call was unsuccessful.
-        if (!success) {
-            revert WithdrawalFailed(data);
-        }
+        // Require that the call was successful.
+        require(success, string(data));
     }
 
     /**

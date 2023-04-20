@@ -6,6 +6,16 @@ import { SeaDropTest } from "./utils/SeaDropTest.sol";
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import {
+    MintParams,
+    PublicDrop,
+    SignedMintValidationMinMintPrice,
+    SignedMintValidationParams,
+    TokenGatedDropStage
+} from "seadrop/lib/ERC721SeaDropStructs.sol";
+
+import { TokenGatedMintParams } from "seadrop/lib/SeaDropStructs.sol";
+
+import {
     ConsiderationInterface
 } from "seaport/interfaces/ConsiderationInterface.sol";
 

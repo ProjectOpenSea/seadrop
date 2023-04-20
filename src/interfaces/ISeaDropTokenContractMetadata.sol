@@ -113,4 +113,14 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      *         after mint has started.
      */
     function provenanceHash() external view returns (bytes32);
+
+    /**
+     * @notice Sets the default royalty information.
+     *
+     * Requirements:
+     *
+     * - `receiver` cannot be the zero address.
+     * - `feeNumerator` cannot be greater than the fee denominator of 10_000 basis points.
+     */
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external;
 }

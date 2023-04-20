@@ -3,9 +3,7 @@ pragma solidity ^0.8.19;
 
 import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
 
-import {
-    SeaDropStructsErrorsAndEvents
-} from "../lib/SeaDropStructsErrorsAndEvents.sol";
+import { CreatorPayout } from "../lib/ERC721SeaDropStructs.sol";
 
 import {
     ConsiderationInterface
@@ -24,7 +22,7 @@ import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
 import "../lib/ERC721SeaDropConstants.sol";
 
-contract MaliciousRecipient is SeaDropStructsErrorsAndEvents {
+contract MaliciousRecipient {
     bool public startAttack;
     address public token;
     ConsiderationInterface public seaport;

@@ -1,13 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
+import {
+    ERC721SeaDropContractOffererImplementation
+} from "./ERC721SeaDropContractOffererImplementation.sol";
 
 import {
-    ERC721SeaDropStructsErrorsAndEvents
-} from "./ERC721SeaDropStructsErrorsAndEvents.sol";
+    PublicDrop,
+    MultiConfigureStruct,
+    SignedMintValidationParams,
+    TokenGatedDropStage
+} from "./ERC721SeaDropStructs.sol";
+
+import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 
 import "./ERC721SeaDropConstants.sol";
+
+import {
+    ISeaDropTokenContractMetadata
+} from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
 /**
  * @title  ERC721SeaDropConfigurer
@@ -15,35 +26,9 @@ import "./ERC721SeaDropConstants.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice A helper contract to configure the SeaDrop parameters for
- *         ERC721SeaDrop.
+ * @notice A helper contract to configure parameters for ERC721SeaDrop.
  */
-contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
-    /**
-     * @dev Revert with an error if not the owner or this contract.
-     */
-    error OnlyOwnerOrSelf();
-
-    /**
-     * @dev Reverts if the sender is not this contract or the owner of the
-     *      token contract.
-     *
-     *      This function is inlined instead of being a modifier
-     *      to save contract space from being inlined N times.
-     *
-     * @param token The ERC721SeaDrop contract address.
-     */
-    function _onlyOwnerOrSelf(address token) internal view {
-        if (
-            _cast(
-                msg.sender != address(this) &&
-                    msg.sender != ERC721SeaDrop(token).owner()
-            ) == 1
-        ) {
-            revert OnlyOwnerOrSelf();
-        }
-    }
-
+contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     /**
      * @notice Returns the mint public drop data.
      *
@@ -283,9 +268,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
             uint256 maxSupply
         )
     {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call getMintStats on the token contract.
         (bool success, bytes memory data) = token.staticcall(
             abi.encodeWithSelector(GET_MINT_STATS_SELECTOR, minter)
@@ -313,9 +295,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address token,
         address[] calldata allowedSeaport
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updateAllowedSeaport on the token contract.
         (bool success, bytes memory result) = token.call(
             abi.encodeWithSelector(
@@ -337,9 +316,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
      * @param dropURI The new drop URI.
      */
     function updateDropURI(address token, string calldata dropURI) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updateDropURI on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_DROP_URI_SELECTOR, dropURI)
@@ -361,9 +337,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address token,
         PublicDrop calldata publicDrop
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updatePublicDrop on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_PUBLIC_DROP_SELECTOR, publicDrop)
@@ -386,9 +359,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address token,
         AllowListData calldata allowListData
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updateAllowList on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_ALLOW_LIST_SELECTOR, allowListData)
@@ -419,9 +389,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updateTokenGatedDrop on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -448,9 +415,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address token,
         CreatorPayout[] calldata creatorPayouts
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updateCreatorPayouts on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -477,9 +441,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address feeRecipient,
         bool allowed
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updateAllowedFeeRecipient on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -508,9 +469,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address signer,
         SignedMintValidationParams calldata signedMintValidationParams
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updateSignedMintValidationParams on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -534,9 +492,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
      * @param allowed Whether to add or remove the payer.
      */
     function updatePayer(address token, address payer, bool allowed) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         // Call updatePayer on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_PAYER_SELECTOR, payer, allowed)
@@ -560,27 +515,28 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
         address token,
         MultiConfigureStruct calldata config
     ) external {
-        // Ensure the sender is only the owner or this contract itself.
-        _onlyOwnerOrSelf(token);
-
         if (config.maxSupply != 0) {
-            ERC721SeaDrop(token).setMaxSupply(config.maxSupply);
+            ISeaDropTokenContractMetadata(token).setMaxSupply(config.maxSupply);
         }
         if (bytes(config.baseURI).length != 0) {
-            ERC721SeaDrop(token).setBaseURI(config.baseURI);
+            ISeaDropTokenContractMetadata(token).setBaseURI(config.baseURI);
         }
         if (bytes(config.contractURI).length != 0) {
-            ERC721SeaDrop(token).setContractURI(config.contractURI);
+            ISeaDropTokenContractMetadata(token).setContractURI(
+                config.contractURI
+            );
         }
         if (config.provenanceHash != bytes32(0)) {
-            ERC721SeaDrop(token).setProvenanceHash(config.provenanceHash);
+            ISeaDropTokenContractMetadata(token).setProvenanceHash(
+                config.provenanceHash
+            );
         }
         if (
             _cast(
                 config.royaltyReceiver != address(0) && config.royaltyBps != 0
             ) == 1
         ) {
-            ERC721SeaDrop(token).setDefaultRoyalty(
+            ISeaDropTokenContractMetadata(token).setDefaultRoyalty(
                 config.royaltyReceiver,
                 config.royaltyBps
             );
@@ -724,19 +680,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropStructsErrorsAndEvents {
             let size := returndatasize()
             returndatacopy(ptr, 0, size)
             revert(ptr, size)
-        }
-    }
-
-    /**
-     * @dev Internal pure function to cast a `bool` value to a `uint256` value.
-     *
-     * @param b The `bool` value to cast.
-     *
-     * @return u The `uint256` value.
-     */
-    function _cast(bool b) internal pure returns (uint256 u) {
-        assembly {
-            u := b
         }
     }
 }

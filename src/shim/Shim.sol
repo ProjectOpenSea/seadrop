@@ -12,11 +12,11 @@ import { MaliciousRecipient } from "../test/MaliciousRecipient.sol";
  * @dev Use structs in an external function so typechain compiles them to use
  *      in HardHat tests.
  */
-import {
-    SeaDropStructsErrorsAndEvents
-} from "../lib/SeaDropStructsErrorsAndEvents.sol";
+import { MintParams } from "../lib/ERC721SeaDropStructs.sol";
 
-contract Shim is SeaDropStructsErrorsAndEvents {
+import { AllowListData, TokenGatedMintParams } from "../lib/SeaDropStructs.sol";
+
+contract Shim {
     function _shim(
         MintParams calldata mintParams,
         AllowListData calldata allowListData,

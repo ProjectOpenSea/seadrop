@@ -1,16 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
-
 import { DelegationRegistry } from "seadrop/test/DelegationRegistry.sol";
-
-import {
-    CriteriaResolver,
-    ItemType
-} from "seaport/lib/ConsiderationStructs.sol";
-
-import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
@@ -18,9 +9,20 @@ import {
     ERC721SeaDropConfigurer
 } from "seadrop/lib/ERC721SeaDropConfigurer.sol";
 
+import { MintParams } from "seadrop/lib/ERC721SeaDropStructs.sol";
+
+import { AllowListData, CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
+
+import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
+
+import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
+
 import {
-    SeaDropStructsErrorsAndEvents
-} from "seadrop/lib/SeaDropStructsErrorsAndEvents.sol";
+    CriteriaResolver,
+    ItemType
+} from "seaport/lib/ConsiderationStructs.sol";
+
+import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
 import {
     ZoneInteractionErrors
@@ -30,8 +32,8 @@ import { Merkle } from "murky/Merkle.sol";
 
 contract SeaDropTest is
     BaseOrderTest,
-    ZoneInteractionErrors,
-    SeaDropStructsErrorsAndEvents
+    SeaDropErrorsAndEvents,
+    ZoneInteractionErrors
 {
     /// @dev The contract offerer.
     ERC721SeaDrop offerer;
