@@ -65,7 +65,7 @@ contract ERC721PartnerSeaDropUpgradeable is
                 _cast(msg.sender == address(this)) ==
             0
         ) {
-            revert OnlyOwner();
+            revert OnlyOwnerOrAdministrator();
         }
     }
 
