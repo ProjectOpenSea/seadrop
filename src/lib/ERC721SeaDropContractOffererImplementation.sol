@@ -353,8 +353,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @notice Emits an event to notify update of the drop URI.
      *
-     *         Only the owner can use this function.
-     *
      * @param dropURI The new drop URI.
      */
     function _updateDropURI(string memory dropURI) internal {
@@ -364,8 +362,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
     /**
      * @notice Updates the public drop data and emits an event.
-     *
-     *         Only the owner can use this function.
      *
      * @param publicDrop The public drop data.
      */
@@ -385,8 +381,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the allow list merkle root for the nft contract
      *         and emits an event.
-     *
-     *         Only the owner can use this function.
      *
      * @param allowListData The allow list data.
      */
@@ -463,6 +457,16 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         bytes32[] calldata /* orderHashes */,
         uint256 /* contractNonce */
     ) internal pure returns (bytes4) {
+        // * TODO should we check that _mintRecipient is zeroed out?
+        // Ensure that _mintRecipient is zeroed out, meaning the mint
+        // was successfully executed.
+        // if (
+        //     ERC721SeaDropContractOffererStorage.layout()._mintRecipient !=
+        //     address(0)
+        // ) {
+        //     revert MintNotExecuted();
+        // }
+
         // Utilize assembly to efficiently return the ratifyOrder magic value.
         assembly {
             mstore(0, 0xf4dd92ce)
@@ -1568,8 +1572,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     *         Only the owner can use this function.
-     *
      *         Note: If two SeaDrop tokens are doing simultaneous token gated
      *         drop promotions for each other, they can be minted by the same
      *         actor until `maxTokenSupplyForStage` is reached. Please ensure
@@ -1646,8 +1648,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @notice Updates the creator payouts and emits an event.
      *         The basis points must add up to 10_000 exactly.
      *
-     *         Only the owner can use this function.
-     *
      * @param creatorPayouts The creator payout address and basis points.
      */
     function _updateCreatorPayouts(
@@ -1706,8 +1706,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @notice Updates the allowed fee recipient and emits an event.
      *
-     *         Only the owner can use this function.
-     *
      * @param feeRecipient The fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
@@ -1751,8 +1749,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
     /**
      * @notice Updates the allowed server-side signers and emits an event.
-     *
-     *         Only the owner can use this function.
      *
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
@@ -1835,8 +1831,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
     /**
      * @notice Updates the allowed payer and emits an event.
-     *
-     *         Only the owner can use this function.
      *
      * @param payer   The payer to add or remove.
      * @param allowed Whether to add or remove the payer.

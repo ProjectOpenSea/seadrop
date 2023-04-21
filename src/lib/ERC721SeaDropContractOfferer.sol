@@ -22,8 +22,6 @@ import {
     INonFungibleSeaDropToken
 } from "../interfaces/INonFungibleSeaDropToken.sol";
 
-import { ERC721A } from "ERC721A/ERC721A.sol";
-
 import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -109,6 +107,8 @@ contract ERC721SeaDropContractOfferer is
                     selector == UPDATE_PAYER_SELECTOR ||
                     selector == PREVIEW_ORDER_SELECTOR ||
                     selector == GENERATE_ORDER_SELECTOR ||
+                    selector == RATIFY_ORDER_SELECTOR ||
+                    selector == GET_SEAPORT_METADATA_SELECTOR ||
                     selector == GET_PUBLIC_DROP_SELECTOR ||
                     selector == GET_CREATOR_PAYOUTS_SELECTOR ||
                     selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR ||
@@ -117,12 +117,27 @@ contract ERC721SeaDropContractOfferer is
                     selector == GET_PAYERS_SELECTOR ||
                     selector == GET_TOKEN_GATED_ALLOWED_TOKENS_SELECTOR ||
                     selector == GET_TOKEN_GATED_DROP_SELECTOR ||
-                    selector == GET_ALLOWED_NFT_TOKEN_ID_REDEEMED_COUNT_SELECTOR ||
-                    selector == GET_SEAPORT_METADATA_SELECTOR ||
+                    selector == GET_ALLOWED_NFT_TOKEN_ID_REDEEMED_COUNT_SELECTOR
             ) == 1
         ) {
-            // Ensure the sender is only the owner or configurer contract.
-            _onlyOwnerOrConfigurer();
+            // For update calls, ensure the sender is only the owner
+            // or configurer contract.
+            if (
+                _cast(
+                    selector == UPDATE_ALLOWED_SEAPORT_SELECTOR ||
+                        selector == UPDATE_DROP_URI_SELECTOR ||
+                        selector == UPDATE_PUBLIC_DROP_SELECTOR ||
+                        selector == UPDATE_ALLOW_LIST_SELECTOR ||
+                        selector == UPDATE_TOKEN_GATED_DROP_SELECTOR ||
+                        selector == UPDATE_CREATOR_PAYOUTS_SELECTOR ||
+                        selector == UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR ||
+                        selector ==
+                        UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
+                        selector == UPDATE_PAYER_SELECTOR
+                ) == 1
+            ) {
+                _onlyOwnerOrConfigurer();
+            }
 
             // Forward the call to the implementation contract.
             (bool success, bytes memory returnedData) = _CONFIGURER
@@ -192,30 +207,6 @@ contract ERC721SeaDropContractOfferer is
     }
 
     /**
-     * @notice Returns whether the interface is supported.
-     *
-     * @param interfaceId The interface id to check against.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    )
-        public
-        view
-        virtual
-        override(IERC165, ERC721ContractMetadata)
-        returns (bool)
-    {
-        return
-            interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
-            interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
-            // ERC721ContractMetadata returns supportsInterface true for
-            //     ISeaDropTokenContractMetadata, ERC-4906, ERC-2981
-            // ERC721A returns supportsInterface true for
-            //     ERC721, ERC721Metadata, ERC165
-            super.supportsInterface(interfaceId);
-    }
-
-    /**
      * @dev Handle ERC-1155 safeTransferFrom for SeaDrop minting.
      *      When "from" is this contract, mint a quantity of tokens.
      *
@@ -251,5 +242,29 @@ contract ERC721SeaDropContractOfferer is
         ERC721SeaDropContractOffererStorage.layout()._mintRecipient = address(
             0
         );
+    }
+
+    /**
+     * @notice Returns whether the interface is supported.
+     *
+     * @param interfaceId The interface id to check against.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    )
+        public
+        view
+        virtual
+        override(IERC165, ERC721ContractMetadata)
+        returns (bool)
+    {
+        return
+            interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
+            interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
+            // ERC721ContractMetadata returns supportsInterface true for
+            //     ISeaDropTokenContractMetadata, ERC-4906, ERC-2981
+            // ERC721A returns supportsInterface true for
+            //     ERC721, ERC721Metadata, ERC165
+            super.supportsInterface(interfaceId);
     }
 }

@@ -20,6 +20,13 @@ import {
     ISeaDropTokenContractMetadata
 } from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
+interface IERC173 {
+    /**
+     * @notice Returns the address of the owner.
+     */
+    function owner() external view returns (address);
+}
+
 /**
  * @title  ERC721SeaDropConfigurer
  * @author James Wenzel (emo.eth)
@@ -29,6 +36,24 @@ import {
  * @notice A helper contract to configure parameters for ERC721SeaDrop.
  */
 contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
+    /**
+     * @notice Revert with an error if the sender is not the owner
+     *         of the token contract.
+     */
+    error OnlyOwner;
+
+    /**
+     * @dev Reverts if the sender is not the owner of the token.
+     *
+     *      This function is inlined instead of being a modifier
+     *      to save contract space from being inlined N times.
+     */
+    function _onlyOwner(address token) internal view {
+        if (msg.sender != IERC173(token).owner()) {
+            revert OnlyOwner();
+        }
+    }
+
     /**
      * @notice Returns the mint public drop data.
      *
@@ -286,7 +311,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
      *         Warning: this lets the provided addresses mint tokens on this
      *         contract, be sure to only set official Seaport releases.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token          The ERC721SeaDrop contract address.
      * @param allowedSeaport The allowed SeaDrop addresses.
@@ -295,6 +320,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address token,
         address[] calldata allowedSeaport
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updateAllowedSeaport on the token contract.
         (bool success, bytes memory result) = token.call(
             abi.encodeWithSelector(
@@ -310,12 +338,15 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     /**
      * @notice Emits an event to notify update of the drop URI.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token   The ERC721SeaDrop contract address.
      * @param dropURI The new drop URI.
      */
     function updateDropURI(address token, string calldata dropURI) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updateDropURI on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_DROP_URI_SELECTOR, dropURI)
@@ -328,7 +359,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     /**
      * @notice Updates the public drop data and emits an event.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token      The ERC721SeaDrop contract address.
      * @param publicDrop The public drop data.
@@ -337,6 +368,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address token,
         PublicDrop calldata publicDrop
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updatePublicDrop on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_PUBLIC_DROP_SELECTOR, publicDrop)
@@ -350,7 +384,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
      * @notice Updates the allow list merkle root for the nft contract
      *         and emits an event.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token         The ERC721SeaDrop contract address.
      * @param allowListData The allow list data.
@@ -359,6 +393,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address token,
         AllowListData calldata allowListData
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updateAllowList on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_ALLOW_LIST_SELECTOR, allowListData)
@@ -372,7 +409,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      *         Note: If two SeaDrop tokens are doing simultaneous token gated
      *         drop promotions for each other, they can be minted by the same
@@ -389,6 +426,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updateTokenGatedDrop on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -406,7 +446,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
      * @notice Updates the creator payouts and emits an event.
      *         The basis points must add up to 10_000 exactly.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token          The ERC721SeaDrop contract address.
      * @param creatorPayouts The creator payout address and basis points.
@@ -415,6 +455,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address token,
         CreatorPayout[] calldata creatorPayouts
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updateCreatorPayouts on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -430,7 +473,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     /**
      * @notice Updates the allowed fee recipient and emits an event.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token        The ERC721SeaDrop contract address.
      * @param feeRecipient The fee recipient.
@@ -441,6 +484,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address feeRecipient,
         bool allowed
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updateAllowedFeeRecipient on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -457,7 +503,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     /**
      * @notice Updates the allowed server-side signers and emits an event.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token                      The ERC721SeaDrop contract address.
      * @param signer                     The signer to update.
@@ -469,6 +515,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address signer,
         SignedMintValidationParams calldata signedMintValidationParams
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updateSignedMintValidationParams on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
@@ -485,13 +534,16 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     /**
      * @notice Updates the allowed payer and emits an event.
      *
-     *         Only the owner can use this function.
+     *         Only the token owner can use this function.
      *
      * @param token   The ERC721SeaDrop contract address.
      * @param payer   The payer to add or remove.
      * @param allowed Whether to add or remove the payer.
      */
     function updatePayer(address token, address payer, bool allowed) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         // Call updatePayer on the token contract.
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(UPDATE_PAYER_SELECTOR, payer, allowed)
@@ -504,6 +556,8 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     /**
      * @notice Configure multiple properties at a time.
      *
+     *         Only the owner of the token can use this function.
+     *
      *         Note: The individual configure methods should be used
      *         to unset or reset any properties to zero, as this method
      *         will ignore zero-value properties in the config struct.
@@ -515,6 +569,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         address token,
         MultiConfigureStruct calldata config
     ) external {
+        // Ensure the sender is the owner of the token.
+        _onlyOwner(token);
+
         if (config.maxSupply != 0) {
             ISeaDropTokenContractMetadata(token).setMaxSupply(config.maxSupply);
         }
@@ -541,31 +598,59 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 config.royaltyBps
             );
         }
+
+        // Define variables for the low-level calls.
+        bool success;
+        bytes memory data;
+
         if (
             _cast(
                 config.publicDrop.startTime != 0 &&
                     config.publicDrop.endTime != 0
             ) == 1
         ) {
-            this.updatePublicDrop(token, config.publicDrop);
+            (success, data) = token.call(
+                abi.encodeWithSelector(
+                    UPDATE_PUBLIC_DROP_SELECTOR,
+                    config.publicDrop
+                )
+            );
+            require(success, string(data));
         }
         if (bytes(config.dropURI).length != 0) {
-            this.updateDropURI(token, config.dropURI);
+            (success, data) = token.call(
+                abi.encodeWithSelector(UPDATE_DROP_URI_SELECTOR, config.dropURI)
+            );
+            require(success, string(data));
         }
         if (config.allowListData.merkleRoot != bytes32(0)) {
-            this.updateAllowList(token, config.allowListData);
+            (success, data) = token.call(
+                abi.encodeWithSelector(
+                    UPDATE_ALLOW_LIST_SELECTOR,
+                    config.allowListData
+                )
+            );
+            require(success, string(data));
         }
         if (config.creatorPayouts.length != 0) {
-            this.updateCreatorPayouts(token, config.creatorPayouts);
+            (success, data) = token.call(
+                abi.encodeWithSelector(
+                    UPDATE_CREATOR_PAYOUTS_SELECTOR,
+                    config.creatorPayouts
+                )
+            );
+            require(success, string(data));
         }
-
         if (config.allowedFeeRecipients.length != 0) {
             for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
-                this.updateAllowedFeeRecipient(
-                    token,
-                    config.allowedFeeRecipients[i],
-                    true
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR,
+                        config.allowedFeeRecipients[i],
+                        true
+                    )
                 );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
@@ -573,11 +658,14 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
         if (config.disallowedFeeRecipients.length != 0) {
             for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
-                this.updateAllowedFeeRecipient(
-                    token,
-                    config.disallowedFeeRecipients[i],
-                    false
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR,
+                        config.allowedFeeRecipients[i],
+                        false
+                    )
                 );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
@@ -585,7 +673,14 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
         if (config.allowedPayers.length != 0) {
             for (uint256 i = 0; i < config.allowedPayers.length; ) {
-                this.updatePayer(token, config.allowedPayers[i], true);
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_PAYER_SELECTOR,
+                        config.allowedPayers[i],
+                        true
+                    )
+                );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
@@ -594,6 +689,14 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         if (config.disallowedPayers.length != 0) {
             for (uint256 i = 0; i < config.disallowedPayers.length; ) {
                 this.updatePayer(token, config.disallowedPayers[i], false);
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_PAYER_SELECTOR,
+                        config.allowedPayers[i],
+                        false
+                    )
+                );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
@@ -607,28 +710,34 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 revert TokenGatedMismatch();
             }
             for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
-                this.updateTokenGatedDrop(
-                    token,
-                    config.tokenGatedAllowedNftTokens[i],
-                    config.tokenGatedDropStages[i]
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_TOKEN_GATED_DROP_SELECTOR,
+                        config.tokenGatedAllowedNftTokens[i],
+                        config.tokenGatedDropStages[i]
+                    )
                 );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedTokenGatedAllowedNftTokens.length != 0) {
+            TokenGatedDropStage memory emptyStage;
             for (
                 uint256 i = 0;
                 i < config.disallowedTokenGatedAllowedNftTokens.length;
 
             ) {
-                TokenGatedDropStage memory emptyStage;
-                this.updateTokenGatedDrop(
-                    token,
-                    config.disallowedTokenGatedAllowedNftTokens[i],
-                    emptyStage
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_TOKEN_GATED_DROP_SELECTOR,
+                        config.tokenGatedAllowedNftTokens[i],
+                        emptyStage
+                    )
                 );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
@@ -646,24 +755,30 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 i < config.signedMintValidationParams.length;
 
             ) {
-                this.updateSignedMintValidationParams(
-                    token,
-                    config.signers[i],
-                    config.signedMintValidationParams[i]
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR,
+                        config.signers[i],
+                        config.signedMintValidationParams[i]
+                    )
                 );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedSigners.length != 0) {
+            SignedMintValidationParams memory emptyParams;
             for (uint256 i = 0; i < config.disallowedSigners.length; ) {
-                SignedMintValidationParams memory emptyParams;
-                this.updateSignedMintValidationParams(
-                    token,
-                    config.disallowedSigners[i],
-                    emptyParams
+                (success, data) = token.call(
+                    abi.encodeWithSelector(
+                        UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR,
+                        config.signers[i],
+                        emptyParams
+                    )
                 );
+                require(success, string(data));
                 unchecked {
                     ++i;
                 }
