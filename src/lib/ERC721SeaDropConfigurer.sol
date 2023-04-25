@@ -40,7 +40,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
      * @notice Revert with an error if the sender is not the owner
      *         of the token contract.
      */
-    error OnlyOwner;
+    error OnlyOwner();
 
     /**
      * @dev Reverts if the sender is not the owner of the token.

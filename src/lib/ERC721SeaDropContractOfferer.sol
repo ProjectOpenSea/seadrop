@@ -148,7 +148,7 @@ contract ERC721SeaDropContractOfferer is
 
             // Return the data from the delegate call.
             return returnedData;
-        } else if (selector == SAFE_TRANSFER_FROM_1155_ORDER_SELECTOR) {
+        } else if (selector == SAFE_TRANSFER_FROM_1155_SELECTOR) {
             // Get the parameters.
             (
                 address from,
