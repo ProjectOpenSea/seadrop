@@ -121,23 +121,11 @@ struct MintParams {
 }
 
 /**
- * @notice A struct defining the minimum mint price and payment token
- *         for SignedMintValidationParams.
- *
- * @param paymentToken The required payment token. Null for native token.
- * @param minMintPrice The minimum mint price allowed.
- */
-struct SignedMintValidationMinMintPrice {
-    address paymentToken;
-    uint80 minMintPrice;
-}
-
-/**
  * @notice A struct defining minimum and maximum parameters to validate for
  *         signed mints, to minimize negative effects of a compromised signer.
  *
- * @param minMintPrices               The minimum mint prices allowed
- *                                    by payment token.
+ * @param minMintPrice                The minimum mint price allowed.
+ * @param paymentToken                The required paymentToken.
  * @param maxMaxTotalMintableByWallet The maximum total number of mints allowed
  *                                    by a wallet.
  * @param minStartTime                The minimum start time allowed.
@@ -147,7 +135,8 @@ struct SignedMintValidationMinMintPrice {
  * @param maxFeeBps                   The maximum fee allowed.
  */
 struct SignedMintValidationParams {
-    SignedMintValidationMinMintPrice[] minMintPrices; // 240/512 bits TODO is this the right size for array?
+    uint80 minMintPrice; // 80/512 bits
+    address paymentToken; // 240/512 bits
     uint24 maxMaxTotalMintableByWallet; // 264/512 bits
     uint40 minStartTime; // 304/512 bits
     uint40 maxEndTime; // 344/512 bits

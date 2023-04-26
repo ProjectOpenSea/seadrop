@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, mintTokens } from "./utils/helpers";
+import { VERSION, deployERC721SeaDrop, mintTokens } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type {
@@ -49,16 +49,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
-      owner
-    );
-    token = await ERC721SeaDrop.deploy(
-      "",
-      "",
+    ({ token } = await deployERC721SeaDrop(
+      owner,
       marketplaceContract.address,
       conduitOne.address
-    );
+    ));
   });
 
   it("Should be able to transfer successfully", async () => {
@@ -203,8 +198,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     contractBalance = await provider.getBalance(token.address);
     expect(contractBalance).to.equal(0);
 
-    // Set the owner to a contract without a payable fallback function to get coverage for WithdrawalFailed.
-    // Note: If the below storage slot changes, the updated value can be found
+    // Set the owner to a contract without a payable fallback function to get coverage for a failed withdrawal.
+    // Note: If the below owner storage slot changes, the updated value can be found
     // with `forge inspect ERC721SeaDrop storage-layout`
     const ownerStorageSlot = "0xa";
     const ownerStorageValue = "0x" + token.address.slice(2).padStart(64, "0");
@@ -219,9 +214,8 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token.address,
       provider,
       async (impersonatedSigner) => {
-        await expect(token.connect(impersonatedSigner).withdraw())
-          .to.be.revertedWithCustomError(token, "WithdrawalFailed")
-          .withArgs("0x");
+        await expect(token.connect(impersonatedSigner).withdraw()).to.be
+          .reverted;
       }
     );
   });

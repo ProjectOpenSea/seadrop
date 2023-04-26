@@ -68,7 +68,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the public drop.
         return abi.decode(data, (PublicDrop));
@@ -88,7 +88,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the creator payouts.
         return abi.decode(data, (CreatorPayout[]));
@@ -108,7 +108,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the allow list merkle root.
         return abi.decode(data, (bytes32));
@@ -129,7 +129,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the allowed fee recipients.
         return abi.decode(data, (address[]));
@@ -149,7 +149,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the signers.
         return abi.decode(data, (address[]));
@@ -167,11 +167,14 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     ) external view returns (SignedMintValidationParams memory) {
         // Call getSignedMintValidationParams on the token contract.
         (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR)
+            abi.encodeWithSelector(
+                GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR,
+                signer
+            )
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the signed mint validation params.
         return abi.decode(data, (SignedMintValidationParams));
@@ -189,7 +192,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the payers.
         return abi.decode(data, (address[]));
@@ -209,7 +212,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the allowed token addresses.
         return abi.decode(data, (address[]));
@@ -234,7 +237,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the token gated drop stage.
         return abi.decode(data, (TokenGatedDropStage));
@@ -263,7 +266,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the redeemed mint count.
         return abi.decode(data, (uint256));
@@ -299,7 +302,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
 
         // Return the mint stats.
         return abi.decode(data, (uint256, uint256, uint256));
@@ -324,7 +327,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         _onlyOwner(token);
 
         // Call updateAllowedSeaport on the token contract.
-        (bool success, bytes memory result) = token.call(
+        (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(
                 UPDATE_ALLOWED_SEAPORT_SELECTOR,
                 allowedSeaport
@@ -332,7 +335,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -353,7 +356,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -377,7 +380,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -402,7 +405,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -439,7 +442,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -467,7 +470,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -497,7 +500,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -528,7 +531,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -550,7 +553,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         );
 
         // Revert with the reason if the call failed.
-        if (!success) _revertWithReason();
+        if (!success) _revertWithReason(data);
     }
 
     /**
@@ -615,13 +618,13 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                     config.publicDrop
                 )
             );
-            require(success, string(data));
+            if (!success) _revertWithReason(data);
         }
         if (bytes(config.dropURI).length != 0) {
             (success, data) = token.call(
                 abi.encodeWithSelector(UPDATE_DROP_URI_SELECTOR, config.dropURI)
             );
-            require(success, string(data));
+            if (!success) _revertWithReason(data);
         }
         if (config.allowListData.merkleRoot != bytes32(0)) {
             (success, data) = token.call(
@@ -630,7 +633,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                     config.allowListData
                 )
             );
-            require(success, string(data));
+            if (!success) _revertWithReason(data);
         }
         if (config.creatorPayouts.length != 0) {
             (success, data) = token.call(
@@ -639,7 +642,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                     config.creatorPayouts
                 )
             );
-            require(success, string(data));
+            if (!success) _revertWithReason(data);
         }
         if (config.allowedFeeRecipients.length != 0) {
             for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
@@ -650,7 +653,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                         true
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -661,11 +664,11 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 (success, data) = token.call(
                     abi.encodeWithSelector(
                         UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR,
-                        config.allowedFeeRecipients[i],
+                        config.disallowedFeeRecipients[i],
                         false
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -680,7 +683,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                         true
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -688,15 +691,14 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
         if (config.disallowedPayers.length != 0) {
             for (uint256 i = 0; i < config.disallowedPayers.length; ) {
-                this.updatePayer(token, config.disallowedPayers[i], false);
                 (success, data) = token.call(
                     abi.encodeWithSelector(
                         UPDATE_PAYER_SELECTOR,
-                        config.allowedPayers[i],
+                        config.disallowedPayers[i],
                         false
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -717,7 +719,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                         config.tokenGatedDropStages[i]
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -733,11 +735,11 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 (success, data) = token.call(
                     abi.encodeWithSelector(
                         UPDATE_TOKEN_GATED_DROP_SELECTOR,
-                        config.tokenGatedAllowedNftTokens[i],
+                        config.disallowedTokenGatedAllowedNftTokens[i],
                         emptyStage
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -762,7 +764,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                         config.signedMintValidationParams[i]
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -774,11 +776,11 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 (success, data) = token.call(
                     abi.encodeWithSelector(
                         UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR,
-                        config.signers[i],
+                        config.disallowedSigners[i],
                         emptyParams
                     )
                 );
-                require(success, string(data));
+                if (!success) _revertWithReason(data);
                 unchecked {
                     ++i;
                 }
@@ -787,7 +789,8 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     }
 
     /**
-     * @dev Revert with reason from a low-level call
+     * @dev Internal pure function to revert with reason from a low-level call
+     *      where the revert reason is encoded in the return data.
      */
     function _revertWithReason() internal pure {
         assembly {

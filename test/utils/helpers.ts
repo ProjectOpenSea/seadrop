@@ -6,11 +6,14 @@ import { whileImpersonating } from "./impersonate";
 import type {
   ConsiderationInterface,
   ERC721SeaDrop,
+  ERC721SeaDropConfigurer,
 } from "../../typechain-types";
 import type { Wallet } from "ethers";
 
-const { provider } = ethers;
-const { hexlify, zeroPad } = ethers.utils;
+const { BigNumber, provider } = ethers;
+const { AddressZero } = ethers.constants;
+const { defaultAbiCoder, hexlify, keccak256, toUtf8Bytes, zeroPad } =
+  ethers.utils;
 
 export const VERSION = "2.0.0";
 
@@ -18,13 +21,44 @@ export type AwaitedObject<T> = {
   [K in keyof T]: Awaited<T[K]>;
 };
 
+export const deployERC721SeaDrop = async (
+  owner: Wallet,
+  marketplaceContract: string,
+  conduit: string
+) => {
+  // Deploy configurer
+  const ERC721SeaDropConfigurer = await ethers.getContractFactory(
+    "ERC721SeaDropConfigurer",
+    owner
+  );
+  const configurer = await ERC721SeaDropConfigurer.deploy();
+
+  // Deploy token
+  const ERC721SeaDrop = await ethers.getContractFactory("ERC721SeaDrop", owner);
+  const token = await ERC721SeaDrop.deploy(
+    "",
+    "",
+    configurer.address,
+    marketplaceContract,
+    conduit
+  );
+
+  return { configurer, token };
+};
+
 export const setMintRecipientStorageSlot = async (
   token: ERC721SeaDrop,
   minter: Wallet
 ) => {
-  // If the below storage slot changes, the updated value can be found
-  // with `forge inspect ERC721SeaDropContractOfferer storage-layout`
-  const mintRecipientStorageSlot = "0x21";
+  // Storage slot from ERC721SeaDropContractOffererStorage
+  const libStorageSlot = keccak256(
+    toUtf8Bytes("openzeppelin.contracts.storage.ERC721SeaDropContractOfferer")
+  );
+  // _mintRecipient is slot 17. This can be found by creating a new Test.sol contract
+  // with the storage fields and using `forge inspect Test storage-layout`
+  const mintRecipientStorageSlot = BigNumber.from(libStorageSlot)
+    .add(17)
+    .toHexString();
   // Storage value must be a 32 bytes long padded with leading zeros hex string
   const mintRecipientStorageValue = hexlify(zeroPad(minter.address, 32));
   await provider.send("hardhat_setStorageAt", [
@@ -47,19 +81,18 @@ export const mintTokens = async ({
 }) => {
   await setMintRecipientStorageSlot(token, minter);
 
+  const safeTransferFrom1155Selector = "0xf242432a";
+  const encodedParams = defaultAbiCoder.encode(
+    ["address", "address", "uint256", "uint256", "bytes"],
+    [token.address, AddressZero, 0, quantity, []]
+  );
+  const data = safeTransferFrom1155Selector + encodedParams.slice(2);
+
   await whileImpersonating(
     marketplaceContract.address,
     provider,
     async (impersonatedSigner) => {
-      await token
-        .connect(impersonatedSigner)
-        ["safeTransferFrom(address,address,uint256,uint256,bytes)"](
-          token.address,
-          minter.address,
-          0,
-          quantity,
-          []
-        );
+      await impersonatedSigner.sendTransaction({ to: token.address, data });
     }
   );
 };
@@ -102,4 +135,56 @@ export const convertToStruct = <A extends Array<unknown>>(
   // @ts-ignore
   arr.forEach((item, index) => (result[keys[index]] = item));
   return result as A;
+};
+
+export const txDataForPreviewOrder = (
+  minter: Wallet,
+  minimumReceived: any,
+  maximumSpent: any,
+  order: any
+) => {
+  const previewOrderSelector = "0x582d4241";
+  const encodedParams = defaultAbiCoder.encode(
+    [
+      "address",
+      "address",
+      "tuple(uint8 itemType, address token, uint256 identifier, uint256 amount)[]",
+      "tuple(uint8 itemType, address token, uint256 identifier, uint256 amount)[]",
+      "bytes",
+    ],
+    [
+      AddressZero,
+      minter.address,
+      minimumReceived,
+      maximumSpent,
+      order.extraData,
+    ]
+  );
+  const data = previewOrderSelector + encodedParams.slice(2);
+  return data;
+};
+
+export const returnDataToOfferAndConsideration = (returnData: string) => {
+  const [offer, consideration] = defaultAbiCoder.decode(
+    [
+      "tuple(uint8, address, uint256, uint256)[]",
+      "tuple(uint8, address, uint256, uint256, address)[]",
+    ],
+    returnData
+  );
+  return {
+    offer: offer.map((o: any) => ({
+      itemType: o[0],
+      token: o[1],
+      identifier: o[2],
+      amount: o[3],
+    })),
+    consideration: consideration.map((c: any) => ({
+      itemType: c[0],
+      token: c[1],
+      identifier: c[2],
+      amount: c[3],
+      recipient: c[4],
+    })),
+  };
 };

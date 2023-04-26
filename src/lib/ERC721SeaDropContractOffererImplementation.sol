@@ -8,7 +8,6 @@ import {
 import {
     MintParams,
     PublicDrop,
-    SignedMintValidationMinMintPrice,
     SignedMintValidationParams,
     TokenGatedDropStage
 } from "./ERC721SeaDropStructs.sol";
@@ -177,11 +176,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             _updateAllowList(allowListData);
         } else if (selector == UPDATE_TOKEN_GATED_DROP_SELECTOR) {
             // Get the allowedNfToken and dropStage.
-            address allowedNftToken = abi.decode(data[:20], (address));
-            TokenGatedDropStage memory dropStage = abi.decode(
-                data[21:],
-                (TokenGatedDropStage)
-            );
+            (
+                address allowedNftToken,
+                TokenGatedDropStage memory dropStage
+            ) = abi.decode(data, (address, TokenGatedDropStage));
 
             // Update the token gated drop.
             _updateTokenGatedDrop(allowedNftToken, dropStage);
@@ -196,16 +194,16 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             _updateCreatorPayouts(creatorPayouts);
         } else if (selector == UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR) {
             // Get the allowed fee recipient parameters.
-            address feeRecipient = abi.decode(data[:20], (address));
-            bool allowed = abi.decode(data[21:], (bool));
+            address feeRecipient = address(bytes20(data[12:32]));
+            bool allowed = bytes1(data[63:64]) == 0x01;
 
             // Update the allowed fee recipient.
             _updateAllowedFeeRecipient(feeRecipient, allowed);
         } else if (selector == UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR) {
-            // Get the signer and params.
-            address signer = abi.decode(data[:20], (address));
-            SignedMintValidationParams memory signedMintValidationParams = abi
-                .decode(data[21:], (SignedMintValidationParams));
+            (
+                address signer,
+                SignedMintValidationParams memory signedMintValidationParams
+            ) = abi.decode(data, (address, SignedMintValidationParams));
 
             // Update the signed mint validation params.
             _updateSignedMintValidationParams(
@@ -214,8 +212,8 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             );
         } else if (selector == UPDATE_PAYER_SELECTOR) {
             // Get the payer params.
-            address payer = abi.decode(data[:20], (address));
-            bool allowed = abi.decode(data[21:], (bool));
+            address payer = address(bytes20(data[12:32]));
+            bool allowed = bytes1(data[63:64]) == 0x01;
 
             // Update the payer.
             _updatePayer(payer, allowed);
@@ -255,9 +253,9 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                         .layout()
                         ._enumeratedSigners
                 );
-        } else if (selector == GET_SIGNERS_SELECTOR) {
+        } else if (selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR) {
             // Get the signers.
-            address signer = abi.decode(data, (address));
+            address signer = address(bytes20(data[12:32]));
 
             // Return the signed mint validation params for the signer.
             return
@@ -284,7 +282,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 );
         } else if (selector == GET_TOKEN_GATED_DROP_SELECTOR) {
             // Get the allowed nft token.
-            address allowedNftToken = abi.decode(data, (address));
+            address allowedNftToken = address(bytes20(data[12:32]));
 
             // Return the token gated drop.
             return
@@ -297,9 +295,9 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             selector == GET_ALLOWED_NFT_TOKEN_ID_REDEEMED_COUNT_SELECTOR
         ) {
             // Get the allowed nft token.
-            address allowedNftToken = abi.decode(data[:20], (address));
+            address allowedNftToken = address(bytes20(data[12:32]));
             // Get the allowed nft token id.
-            uint256 allowedNftTokenId = abi.decode(data[21:], (uint256));
+            uint256 allowedNftTokenId = uint256(bytes32(data[33:64]));
 
             // Return the token gated drop.
             return
@@ -426,7 +424,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         SpentItem[] memory maximumSpent,
         bytes calldata context // encoded based on the schemaID
     )
-        internal
+        external
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
         // Derive the offer and consideration with effects.
@@ -456,7 +454,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         bytes calldata /* context */, // encoded based on the schemaID
         bytes32[] calldata /* orderHashes */,
         uint256 /* contractNonce */
-    ) internal pure returns (bytes4) {
+    ) external pure returns (bytes4) {
         // * TODO should we check that _mintRecipient is zeroed out?
         // Ensure that _mintRecipient is zeroed out, meaning the mint
         // was successfully executed.
@@ -496,7 +494,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         SpentItem[] memory maximumSpent,
         bytes calldata context
     )
-        internal
+        external
         view
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
@@ -940,36 +938,19 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         }
 
         // Validate individual params.
-        uint256 minMintPrice;
-        uint256 validationMintPriceLength = signedMintValidationParams
-            .minMintPrices
-            .length;
-        for (uint256 i = 0; i < validationMintPriceLength; ) {
-            if (
-                mintParams.paymentToken ==
-                signedMintValidationParams.minMintPrices[i].paymentToken
-            ) {
-                minMintPrice = signedMintValidationParams
-                    .minMintPrices[i]
-                    .minMintPrice;
-                break;
-            }
-            // Revert if we've iterated through the whole array without finding
-            // a match.
-            if (i == validationMintPriceLength - 1) {
-                revert SignedMintValidationParamsMinMintPriceNotSetForToken(
-                    mintParams.paymentToken
-                );
-            }
-            unchecked {
-                ++i;
-            }
+        if (
+            mintParams.paymentToken != signedMintValidationParams.paymentToken
+        ) {
+            revert InvalidSignedPaymentToken(
+                mintParams.paymentToken,
+                signedMintValidationParams.paymentToken
+            );
         }
-        if (currentPrice < minMintPrice) {
+        if (currentPrice < signedMintValidationParams.minMintPrice) {
             revert InvalidSignedMintPrice(
                 mintParams.paymentToken,
                 currentPrice,
-                minMintPrice
+                signedMintValidationParams.minMintPrice
             );
         }
         if (
@@ -1171,11 +1152,11 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Set the required consideration items.
         consideration = _requiredConsideration(
+            feeRecipient,
+            feeBps,
             quantity,
             currentPrice,
-            paymentToken,
-            feeRecipient,
-            feeBps
+            paymentToken
         );
 
         // Apply the state changes of the mint.
@@ -1351,7 +1332,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         );
 
         // Require that the call was successful.
-        require(success, string(data));
+        if (!success) _revertWithReason(data);
 
         // Decode the returned mint stats.
         (
@@ -1389,18 +1370,18 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @notice Derive the required consideration items for the mint,
      *         includes the fee recipient and creator payouts.
      *
+     * @param feeRecipient The fee recipient.
+     * @param feeBps       The fee basis points.
      * @param quantity     The number of tokens to mint.
      * @param currentPrice The current price of each token.
      * @param paymentToken The payment token.
-     * @param feeRecipient The fee recipient.
-     * @param feeBps       The fee basis points.
      */
     function _requiredConsideration(
+        address feeRecipient,
+        uint256 feeBps,
         uint256 quantity,
         uint256 currentPrice,
-        address paymentToken,
-        address feeRecipient,
-        uint256 feeBps
+        address paymentToken
     ) internal view returns (ReceivedItem[] memory receivedItems) {
         // If the mint price is zero, return early as there
         // are no required consideration items.
@@ -1498,10 +1479,12 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @return The domain separator.
      */
     function _domainSeparator() internal view returns (bytes32) {
+        // TODO can we cache at all, or remove the immutable logic?
+        return _deriveDomainSeparator();
         // prettier-ignore
-        return block.chainid == _CHAIN_ID
-            ? _DOMAIN_SEPARATOR
-            : _deriveDomainSeparator();
+        // return block.chainid == _CHAIN_ID
+        //     ? _DOMAIN_SEPARATOR
+        //     : _deriveDomainSeparator();
     }
 
     /**
@@ -1770,16 +1753,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             revert InvalidFeeBps(signedMintValidationParams.maxFeeBps);
         }
 
-        // Revert if at least one payment token min mint price is not set.
-        if (
-            _cast(
-                signedMintValidationParams.maxMaxTotalMintableByWallet != 0 &&
-                    signedMintValidationParams.minMintPrices.length == 0
-            ) == 1
-        ) {
-            revert SignedMintValidationParamsMinMintPriceNotSet();
-        }
-
         // Track the enumerated storage.
         address[]
             storage enumeratedStorage = ERC721SeaDropContractOffererStorage
@@ -1805,7 +1778,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             .maxMaxTotalMintableByWallet != 0;
 
         if (addOrUpdate) {
-            // signedMintValidationParamsMap[signer] = signedMintValidationParams;
+            signedMintValidationParamsMap[signer] = signedMintValidationParams;
             if (signedMintValidationParamsDoNotExist) {
                 enumeratedStorage.push(signer);
             }
@@ -1974,6 +1947,20 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         }
         // Return data list
         return (dataList);
+    }
+
+    /**
+     * @dev Internal pure function to revert with a provided reason.
+     *      If no reason is provided, reverts with no message.
+     */
+    function _revertWithReason(bytes memory data) internal pure {
+        // Revert if no revert reason.
+        if (data.length == 0) revert();
+
+        // Bubble up the revert reason.
+        assembly {
+            revert(add(32, data), mload(data))
+        }
     }
 
     /**

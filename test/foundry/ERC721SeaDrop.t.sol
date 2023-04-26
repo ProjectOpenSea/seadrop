@@ -8,7 +8,6 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 import {
     MintParams,
     PublicDrop,
-    SignedMintValidationMinMintPrice,
     SignedMintValidationParams,
     TokenGatedDropStage
 } from "seadrop/lib/ERC721SeaDropStructs.sol";
@@ -401,15 +400,10 @@ contract ERC721SeaDropTest is SeaDropTest {
         offerer.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
-        SignedMintValidationMinMintPrice[]
-            memory minMintPrices = new SignedMintValidationMinMintPrice[](1);
-        minMintPrices[0] = SignedMintValidationMinMintPrice({
-            paymentToken: address(0),
-            minMintPrice: 1 ether
-        });
         SignedMintValidationParams
             memory validationParams = SignedMintValidationParams({
-                minMintPrices: minMintPrices,
+                minMintPrice: 1 ether,
+                paymentToken: address(0),
                 maxMaxTotalMintableByWallet: 10,
                 minStartTime: uint40(block.timestamp),
                 maxEndTime: uint40(block.timestamp + 500),

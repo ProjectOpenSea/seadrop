@@ -6,8 +6,10 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import {
   VERSION,
-  convertToStruct,
   deployDelegationRegistryToCanonicalAddress,
+  deployERC721SeaDrop,
+  returnDataToOfferAndConsideration,
+  txDataForPreviewOrder,
 } from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
 
@@ -16,13 +18,11 @@ import type {
   ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
+  ERC721SeaDropConfigurer,
   TestERC721,
 } from "../typechain-types";
-import type { SeaDropStructsErrorsAndEvents } from "../typechain-types/src/shim/Shim";
+import type { TokenGatedDropStageStruct } from "../typechain-types/src/ERC721SeaDrop";
 import type { Wallet } from "ethers";
-
-type TokenGatedDropStageStruct =
-  SeaDropStructsErrorsAndEvents.TokenGatedDropStageStruct;
 
 const { BigNumber } = ethers;
 const { AddressZero, HashZero } = ethers.constants;
@@ -37,6 +37,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
+  let configurer: ERC721SeaDropConfigurer;
   let allowedNftToken: TestERC721;
   let owner: Wallet;
   let creator: Wallet;
@@ -67,27 +68,26 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
-      owner
-    );
-    token = await ERC721SeaDrop.deploy(
-      "",
-      "",
+    ({ token, configurer } = await deployERC721SeaDrop(
+      owner,
       marketplaceContract.address,
       conduitOne.address
-    );
+    ));
 
     // Deploy the allowed NFT token.
-    const AllowedNftToken = await ethers.getContractFactory("TestERC721");
-    allowedNftToken = await AllowedNftToken.deploy();
+    const TestERC721 = await ethers.getContractFactory("TestERC721");
+    allowedNftToken = await TestERC721.deploy();
 
     // Configure token.
     await token.setMaxSupply(100);
-    await token.updateCreatorPayouts([
+    await configurer.updateCreatorPayouts(token.address, [
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
-    await token.updateAllowedFeeRecipient(feeRecipient.address, true);
+    await configurer.updateAllowedFeeRecipient(
+      token.address,
+      feeRecipient.address,
+      true
+    );
 
     // Create the drop stage object.
     dropStage = {
@@ -105,7 +105,11 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
-    await token.updateTokenGatedDrop(allowedNftToken.address, dropStage);
+    await configurer.updateTokenGatedDrop(
+      token.address,
+      allowedNftToken.address,
+      dropStage
+    );
   });
 
   it("Should mint a token to a user with the allowed NFT token", async () => {
@@ -122,7 +126,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Ensure the token id has not been redeemed.
     expect(
-      await token.getAllowedNftTokenIdRedeemedCount(
+      await configurer.getAllowedNftTokenIdRedeemedCount(
+        token.address,
         mintParams.allowedNftToken,
         mintParams.allowedNftTokenIds[0]
       )
@@ -130,6 +135,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -151,6 +157,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     mintParams.amounts = [3];
     ({ order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -173,6 +180,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     mintParams.amounts = [1];
     ({ order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -201,7 +209,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Ensure the token id redeemed count is accurate.
     expect(
-      await token.getAllowedNftTokenIdRedeemedCount(
+      await configurer.getAllowedNftTokenIdRedeemedCount(
+        token.address,
         mintParams.allowedNftToken,
         mintParams.allowedNftTokenIds[0]
       )
@@ -227,7 +236,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Ensure the token id redeemed count is accurate.
     expect(
-      await token.getAllowedNftTokenIdRedeemedCount(
+      await configurer.getAllowedNftTokenIdRedeemedCount(
+        token.address,
         mintParams.allowedNftToken,
         mintParams.allowedNftTokenIds[0]
       )
@@ -246,15 +256,16 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Ensure the token id redeemed count is accurate.
     expect(
-      await token.getAllowedNftTokenIdRedeemedCount(
+      await configurer.getAllowedNftTokenIdRedeemedCount(
+        token.address,
         mintParams.allowedNftToken,
         mintParams.allowedNftTokenIds[0]
       )
     ).to.eq(2);
 
-    expect(await token.getTokenGatedAllowedTokens()).to.deep.eq([
-      allowedNftToken.address,
-    ]);
+    expect(
+      await configurer.getTokenGatedAllowedTokens(token.address)
+    ).to.deep.eq([allowedNftToken.address]);
   });
 
   it("Should mint a token to a user with the allowed NFT token when the payer is different from the minter", async () => {
@@ -269,6 +280,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -288,7 +300,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     ); // PayerNotAllowed
 
     // Allow the payer.
-    await token.updatePayer(owner.address, true);
+    await configurer.updatePayer(token.address, owner.address, true);
 
     await expect(
       marketplaceContract
@@ -316,7 +328,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const dropStageFreeMint = { ...dropStage, startPrice: 0, endPrice: 0 };
 
     // Update the token gated drop for the deployed allowed NFT token.
-    await token.updateTokenGatedDrop(
+    await configurer.updateTokenGatedDrop(
+      token.address,
       allowedNftToken.address,
       dropStageFreeMint
     );
@@ -332,6 +345,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -373,6 +387,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -421,6 +436,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -448,7 +464,11 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
-    await token.updateTokenGatedDrop(allowedNftToken.address, dropStageExpired);
+    await configurer.updateTokenGatedDrop(
+      token.address,
+      allowedNftToken.address,
+      dropStageExpired
+    );
 
     const mintParams = {
       allowedNftToken: allowedNftToken.address,
@@ -469,6 +489,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -502,6 +523,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient: minter,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -535,21 +557,21 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     await allowedNftToken.mint(minter.address, 0);
 
     // Deploy a new ERC721PartnerSeaDrop.
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
-      owner
-    );
-    const differentToken = await ERC721SeaDrop.deploy(
-      "",
-      "",
-      marketplaceContract.address,
-      conduitOne.address
-    );
+    const { token: differentToken, configurer: differentConfigurer } =
+      await deployERC721SeaDrop(
+        owner,
+        marketplaceContract.address,
+        conduitOne.address
+      );
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
-    await differentToken.updateAllowedFeeRecipient(feeRecipient.address, true);
-    await token.updateCreatorPayouts([
+    await differentConfigurer.updateAllowedFeeRecipient(
+      differentToken.address,
+      feeRecipient.address,
+      true
+    );
+    await differentConfigurer.updateCreatorPayouts(differentToken.address, [
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
 
@@ -561,6 +583,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token: differentToken,
+      configurer: differentConfigurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -585,8 +608,8 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should not mint an allowed token holder stage with different mint params", async () => {
     // Deploy a different allowed NFT token.
-    const AllowedNftToken = await ethers.getContractFactory("TestERC721");
-    const differentAllowedNftToken = await AllowedNftToken.deploy();
+    const TestERC721 = await ethers.getContractFactory("TestERC721", owner);
+    const differentAllowedNftToken = await TestERC721.deploy();
 
     // Declare the mint params specifying the allowed NFT token addresses and
     // corresponding tokenIds.
@@ -607,6 +630,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -646,6 +670,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -676,9 +701,11 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
-    await token
-      .connect(owner)
-      .updateTokenGatedDrop(allowedNftToken.address, newDropStage);
+    await configurer.updateTokenGatedDrop(
+      token.address,
+      allowedNftToken.address,
+      newDropStage
+    );
 
     // Create an array of tokenIds with length exceeding maxTotalMintableByWallet.
     const tokenIds = [...Array(20).keys()];
@@ -698,6 +725,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -727,7 +755,11 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     };
 
     // Update the token gated drop for the deployed allowed NFT token.
-    await token.updateTokenGatedDrop(allowedNftToken.address, newDropStage);
+    await configurer.updateTokenGatedDrop(
+      token.address,
+      allowedNftToken.address,
+      newDropStage
+    );
 
     // Create an array of tokenIds with length exceeding maxTotalMintableByWallet.
     const tokenIds = [...Array(110).keys()];
@@ -747,6 +779,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -770,14 +803,14 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should not be able to set an allowedNftToken to the drop token itself or zero address", async () => {
     await expect(
-      token.updateTokenGatedDrop(token.address, dropStage)
+      configurer.updateTokenGatedDrop(token.address, token.address, dropStage)
     ).to.be.revertedWithCustomError(
       token,
       "TokenGatedDropAllowedNftTokenCannotBeDropToken"
     );
 
     await expect(
-      token.updateTokenGatedDrop(AddressZero, dropStage)
+      configurer.updateTokenGatedDrop(token.address, AddressZero, dropStage)
     ).to.be.revertedWithCustomError(
       token,
       "TokenGatedDropAllowedNftTokenCannotBeZeroAddress"
@@ -786,7 +819,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
   it("Should not be able to set an invalid fee bps", async () => {
     await expect(
-      token.updateTokenGatedDrop(allowedNftToken.address, {
+      configurer.updateTokenGatedDrop(token.address, allowedNftToken.address, {
         ...dropStage,
         feeBps: 15_000,
       })
@@ -804,17 +837,25 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const token2 = `0x${"2".repeat(40)}`;
 
     await expect(
-      token.updateTokenGatedDrop(token2, zeroMintDropStage)
+      configurer.updateTokenGatedDrop(token.address, token2, zeroMintDropStage)
     ).to.be.revertedWithCustomError(token, "TokenGatedDropStageNotPresent");
   });
 
   it("Should clear from enumeration when deleted", async () => {
-    await token.updateTokenGatedDrop(allowedNftToken.address, {
-      ...dropStage,
-      maxTotalMintableByWallet: 0,
-    });
-    expect(await token.getTokenGatedAllowedTokens()).to.deep.eq([]);
-    expect(await token.getTokenGatedDrop(allowedNftToken.address)).to.deep.eq([
+    await configurer.updateTokenGatedDrop(
+      token.address,
+      allowedNftToken.address,
+      {
+        ...dropStage,
+        maxTotalMintableByWallet: 0,
+      }
+    );
+    expect(
+      await configurer.getTokenGatedAllowedTokens(token.address)
+    ).to.deep.eq([]);
+    expect(
+      await configurer.getTokenGatedDrop(token.address, allowedNftToken.address)
+    ).to.deep.eq([
       BigNumber.from(0),
       BigNumber.from(0),
       AddressZero,
@@ -836,7 +877,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     const payer = new ethers.Wallet(randomHex(32), provider);
     await faucet(payer.address, provider);
 
-    await token.updateCreatorPayouts([
+    await configurer.updateCreatorPayouts(token.address, [
       { payoutAddress: creator.address, basisPoints: 5_000 },
       { payoutAddress: owner.address, basisPoints: 5_000 },
     ]);
@@ -851,6 +892,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -903,6 +945,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     const { order } = await createMintOrder({
       token,
+      configurer,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -925,19 +968,21 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       recipient: c.recipient,
     }));
 
-    const { offer, consideration } = await token
-      .connect(minter)
-      .previewOrder(
-        AddressZero,
-        minter.address,
-        minimumReceived,
-        maximumSpent,
-        order.extraData
-      );
+    const data = txDataForPreviewOrder(
+      minter,
+      minimumReceived,
+      maximumSpent,
+      order
+    );
+
+    const returnData = await minter.call({ to: token.address, data });
+
+    const { offer, consideration } =
+      returnDataToOfferAndConsideration(returnData);
 
     expect({
-      offer: offer.map((o) => convertToStruct(o)),
-      consideration: consideration.map((c) => convertToStruct(c)),
+      offer,
+      consideration,
     }).to.deep.eq({
       offer: minimumReceived,
       consideration: maximumSpent,

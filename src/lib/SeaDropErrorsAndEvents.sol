@@ -223,18 +223,9 @@ interface SeaDropErrorsAndEvents {
     error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
     /**
-     * @dev Revert with an error if a min mint price is not set in the signed
-     *      mint validation params.
+     * @dev Revert with an error if the signer payment token is not the same.
      */
-    error SignedMintValidationParamsMinMintPriceNotSet();
-
-    /**
-     * @dev Revert with an error if the min mint price for a given
-     *      paymentToken is not set.
-     */
-    error SignedMintValidationParamsMinMintPriceNotSetForToken(
-        address paymentToken
-    );
+    error InvalidSignedPaymentToken(address got, address want);
 
     /**
      * @dev Revert with an error if supplied signed mint price is less than

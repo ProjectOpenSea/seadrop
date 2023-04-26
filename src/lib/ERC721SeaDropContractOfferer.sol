@@ -114,6 +114,7 @@ contract ERC721SeaDropContractOfferer is
                     selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR ||
                     selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR ||
                     selector == GET_SIGNERS_SELECTOR ||
+                    selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
                     selector == GET_PAYERS_SELECTOR ||
                     selector == GET_TOKEN_GATED_ALLOWED_TOKENS_SELECTOR ||
                     selector == GET_TOKEN_GATED_DROP_SELECTOR ||
@@ -144,7 +145,15 @@ contract ERC721SeaDropContractOfferer is
                 .delegatecall(msg.data);
 
             // Require that the call was successful.
-            require(success, string(returnedData));
+            if (!success) {
+                // Revert if no revert reason.
+                if (returnedData.length == 0) revert();
+
+                // Bubble up the revert reason.
+                assembly {
+                    revert(add(32, returnedData), mload(returnedData))
+                }
+            }
 
             // Return the data from the delegate call.
             return returnedData;
@@ -211,6 +220,12 @@ contract ERC721SeaDropContractOfferer is
      *      When "from" is this contract, mint a quantity of tokens.
      *
      *      Only allowed Seaport or conduit can use this function.
+     *
+     * @param from        The address to transfer from. Must be this contract.
+     * @custom:param to   Unused parameter
+     * @custom:param id   Unused parameter
+     * @param value       The quantity of tokens to mint.
+     * @custom:param data Unused parameter
      */
     function _safeTransferFrom(
         address from,
@@ -259,7 +274,7 @@ contract ERC721SeaDropContractOfferer is
         returns (bool)
     {
         return
-            interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
+            // interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
             interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
             // ERC721ContractMetadata returns supportsInterface true for
             //     ISeaDropTokenContractMetadata, ERC-4906, ERC-2981

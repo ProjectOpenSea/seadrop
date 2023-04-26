@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, mintTokens } from "./utils/helpers";
+import { VERSION, deployERC721SeaDrop, mintTokens } from "./utils/helpers";
 
 import type {
   ConduitInterface,
@@ -47,16 +47,11 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
 
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
-      owner
-    );
-    token = await ERC721SeaDrop.deploy(
-      "",
-      "",
+    ({ token } = await deployERC721SeaDrop(
+      owner,
       marketplaceContract.address,
       conduitOne.address
-    );
+    ));
 
     await token.setMaxSupply(5);
   });

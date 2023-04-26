@@ -9,6 +9,7 @@ import { VERSION, mintTokens } from "./utils/helpers";
 import type {
   ConduitInterface,
   ConsiderationInterface,
+  ERC721SeaDropConfigurer,
   ERC721SeaDropRandomOffset,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
@@ -22,6 +23,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDropRandomOffset;
+  let configurer: ERC721SeaDropConfigurer;
   let owner: Wallet;
   let creator: Wallet;
   let minter: Wallet;
@@ -47,6 +49,12 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
   });
 
   beforeEach(async () => {
+    // Deploy configurer
+    const ERC721SeaDropConfigurer = await ethers.getContractFactory(
+      "ERC721SeaDropConfigurer"
+    );
+    configurer = await ERC721SeaDropConfigurer.deploy();
+
     // Deploy token
     const ERC721SeaDropRandomOffset = await ethers.getContractFactory(
       "ERC721SeaDropRandomOffset",
@@ -55,6 +63,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     token = await ERC721SeaDropRandomOffset.deploy(
       "",
       "",
+      configurer.address,
       marketplaceContract.address,
       conduitOne.address
     );

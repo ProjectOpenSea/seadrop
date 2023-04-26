@@ -4,14 +4,18 @@ import { toBN } from "../seaport-utils/encoding";
 
 import { toPaddedBuffer } from "./encoding";
 
-import type { ERC721SeaDrop, TestERC20 } from "../../typechain-types";
-import type { SeaDropStructsErrorsAndEvents } from "../../typechain-types/src/shim/Shim";
+import type {
+  ERC721SeaDrop,
+  ERC721SeaDropConfigurer,
+  TestERC20,
+} from "../../typechain-types";
+import type {
+  MintParamsStruct,
+  TokenGatedMintParamsStruct,
+} from "../../typechain-types/src/shim/Shim";
 import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
 import type { BigNumberish, Wallet } from "ethers";
-
-type MintParamsStruct = SeaDropStructsErrorsAndEvents.MintParamsStruct;
-type TokenGatedMintParamsStruct =
-  SeaDropStructsErrorsAndEvents.TokenGatedMintParamsStruct;
+import { AwaitedObject } from "./helpers";
 
 const { AddressZero, HashZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
@@ -48,6 +52,7 @@ export enum MintType {
 
 export const createMintOrder = async ({
   token,
+  configurer,
   quantity,
   feeRecipient,
   feeBps,
@@ -67,6 +72,7 @@ export const createMintOrder = async ({
   signature,
 }: {
   token: ERC721SeaDrop;
+  configurer: ERC721SeaDropConfigurer;
   quantity?: BigNumberish;
   feeRecipient: Wallet;
   feeBps: BigNumberish;
@@ -76,9 +82,9 @@ export const createMintOrder = async ({
   mintType: MintType;
   startTime?: number;
   endTime?: number;
-  mintParams?: MintParamsStruct;
+  mintParams?: AwaitedObject<MintParamsStruct>;
   proof?: string[];
-  tokenGatedMintParams?: TokenGatedMintParamsStruct;
+  tokenGatedMintParams?: AwaitedObject<TokenGatedMintParamsStruct>;
   signature?: string;
   salt?: string;
 }) => {
@@ -124,7 +130,7 @@ export const createMintOrder = async ({
     consideration.push(considerationItemFeeRecipient);
   }
 
-  const creatorPayouts = await token.getCreatorPayouts();
+  const creatorPayouts = await configurer.getCreatorPayouts(token.address);
   for (const creatorPayout of creatorPayouts) {
     const amount = creatorAmount.mul(creatorPayout.basisPoints).div(10_000);
     const considerationItem = {

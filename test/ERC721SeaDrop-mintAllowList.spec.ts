@@ -8,8 +8,10 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import {
   VERSION,
-  convertToStruct,
   deployDelegationRegistryToCanonicalAddress,
+  deployERC721SeaDrop,
+  returnDataToOfferAndConsideration,
+  txDataForPreviewOrder,
 } from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
 
@@ -18,11 +20,10 @@ import type {
   ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
+  ERC721SeaDropConfigurer,
 } from "../typechain-types";
-import type { SeaDropStructsErrorsAndEvents } from "../typechain-types/src/shim/Shim";
+import type { MintParamsStruct } from "../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
-
-type MintParamsStruct = SeaDropStructsErrorsAndEvents.MintParamsStruct;
 
 const { AddressZero, HashZero } = ethers.constants;
 const { parseEther } = ethers.utils;
@@ -36,6 +37,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
+  let configurer: ERC721SeaDropConfigurer;
   let creator: Wallet;
   let owner: Wallet;
   let minter: Wallet;
@@ -66,24 +68,23 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
-      owner
-    );
-    token = await ERC721SeaDrop.deploy(
-      "",
-      "",
+    ({ token, configurer } = await deployERC721SeaDrop(
+      owner,
       marketplaceContract.address,
       conduitOne.address
-    );
+    ));
 
     // Set a random feeBps.
     feeBps = randomInt(1, 10_000);
 
     // Update the fee recipient and creator payout address for the token.
     await token.setMaxSupply(1000);
-    await token.updateAllowedFeeRecipient(feeRecipient.address, true);
-    await token.updateCreatorPayouts([
+    await configurer.updateAllowedFeeRecipient(
+      token.address,
+      feeRecipient.address,
+      true
+    );
+    await configurer.updateCreatorPayouts(token.address, [
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
 
@@ -115,7 +116,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -125,6 +126,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // the expected event was emitted.
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -168,16 +170,17 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParamsFreeMint
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
     });
 
-    expect(await token.getAllowListMerkleRoot()).to.eq(root);
+    expect(await configurer.getAllowListMerkleRoot(token.address)).to.eq(root);
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -218,7 +221,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -226,6 +229,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -247,7 +251,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ); // PayerNotAllowed
 
     // Allow the payer.
-    await token.updatePayer(owner.address, true);
+    await configurer.updatePayer(token.address, owner.address, true);
 
     // Mint an allow list stage with a different payer than minter.
     await expect(
@@ -280,7 +284,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -288,6 +292,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -312,6 +317,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     ({ order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -344,7 +350,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -354,6 +360,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient: invalidFeeRecipient,
       feeBps: mintParams.feeBps,
@@ -386,33 +393,34 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
     });
 
     // Deploy a new ERC721SeaDrop.
-    const SeaDropToken = await ethers.getContractFactory(
-      "ERC721SeaDrop",
-      owner
-    );
-    const differentToken = await SeaDropToken.deploy(
-      "",
-      "",
-      marketplaceContract.address,
-      conduitOne.address
-    );
+    const { token: differentToken, configurer: differentConfigurer } =
+      await deployERC721SeaDrop(
+        owner,
+        marketplaceContract.address,
+        conduitOne.address
+      );
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
-    await differentToken.updateAllowedFeeRecipient(feeRecipient.address, true);
-    await differentToken.updateCreatorPayouts([
+    await differentConfigurer.updateAllowedFeeRecipient(
+      differentToken.address,
+      feeRecipient.address,
+      true
+    );
+    await differentConfigurer.updateCreatorPayouts(differentToken.address, [
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
 
     const { order, value } = await createMintOrder({
       token: differentToken,
+      configurer: differentConfigurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -445,7 +453,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -459,6 +467,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -492,7 +501,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -500,6 +509,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -532,6 +542,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Attempt to mint maxTotalMintableByWallet to the minter.
     ({ order, value } = await createMintOrder({
       token,
+      configurer,
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -573,7 +584,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -581,6 +592,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -612,6 +624,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     ({ order, value } = await createMintOrder({
       token,
+      configurer,
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -658,7 +671,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -666,6 +679,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity: 10,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -697,6 +711,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     ({ order, value } = await createMintOrder({
       token,
+      configurer,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -730,10 +745,13 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { proof } = await createAllowListAndGetProof([minter], mintParams);
 
     // We are skipping updating the allow list, the root should be zero.
-    expect(await token.getAllowListMerkleRoot()).to.eq(HashZero);
+    expect(await configurer.getAllowListMerkleRoot(token.address)).to.eq(
+      HashZero
+    );
 
     let { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -757,6 +775,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Try with proof of zero.
     ({ order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -793,7 +812,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -801,6 +820,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -830,7 +850,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const payer = new ethers.Wallet(randomHex(32), provider);
     await faucet(payer.address, provider);
 
-    await token.updateCreatorPayouts([
+    await configurer.updateCreatorPayouts(token.address, [
       { payoutAddress: creator.address, basisPoints: 5_000 },
       { payoutAddress: owner.address, basisPoints: 5_000 },
     ]);
@@ -841,7 +861,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -849,6 +869,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -903,7 +924,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -911,6 +932,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order } = await createMintOrder({
       token,
+      configurer,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -935,19 +957,21 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       recipient: c.recipient,
     }));
 
-    const { offer, consideration } = await token
-      .connect(minter)
-      .previewOrder(
-        AddressZero,
-        minter.address,
-        minimumReceived,
-        maximumSpent,
-        order.extraData
-      );
+    const data = txDataForPreviewOrder(
+      minter,
+      minimumReceived,
+      maximumSpent,
+      order
+    );
+
+    const returnData = await minter.call({ to: token.address, data });
+
+    const { offer, consideration } =
+      returnDataToOfferAndConsideration(returnData);
 
     expect({
-      offer: offer.map((o) => convertToStruct(o)),
-      consideration: consideration.map((c) => convertToStruct(c)),
+      offer,
+      consideration,
     }).to.deep.eq({
       offer: minimumReceived,
       consideration: maximumSpent,
@@ -964,7 +988,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await token.updateAllowList({
+    await configurer.updateAllowList(token.address, {
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -974,6 +998,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // the expected event was emitted.
     const { order, value } = await createMintOrder({
       token,
+      configurer,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,

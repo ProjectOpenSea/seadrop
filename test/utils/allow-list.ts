@@ -3,10 +3,8 @@ import { MerkleTree } from "merkletreejs";
 
 import { toPaddedBuffer } from "./encoding";
 
-import type { SeaDropStructsErrorsAndEvents } from "../../typechain-types/src/shim/Shim";
+import type { MintParamsStruct } from "../../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
-
-type MintParamsStruct = SeaDropStructsErrorsAndEvents.MintParamsStruct;
 
 const { keccak256 } = ethers.utils;
 
