@@ -41,12 +41,12 @@ library ERC721SeaDropContractOffererStorage {
         address[] _enumeratedTokenGatedTokens;
         /// @notice The token IDs and redeemed counts for token gated drop stages.
         mapping(address => mapping(uint256 => uint256)) _tokenGatedRedeemed;
-        /// @notice The mint recipient set during the execution of a mint order.
-        address _mintRecipient;
     }
 
     bytes32 internal constant STORAGE_SLOT =
-        keccak256("openzeppelin.contracts.storage.ERC721SeaDropContractOfferer");
+        keccak256(
+            "openzeppelin.contracts.storage.ERC721SeaDropContractOfferer"
+        );
 
     function layout() internal pure returns (Layout storage l) {
         bytes32 slot = STORAGE_SLOT;

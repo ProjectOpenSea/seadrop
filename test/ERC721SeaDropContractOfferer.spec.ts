@@ -15,12 +15,7 @@ import { getItemETH, toBN } from "./seaport-utils/encoding";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import {
-  VERSION,
-  deployERC721SeaDrop,
-  mintTokens,
-  setMintRecipientStorageSlot,
-} from "./utils/helpers";
+import { VERSION, deployERC721SeaDrop, mintTokens } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 import { MintType, createMintOrder, expectedPrice } from "./utils/order";
 
@@ -463,41 +458,6 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     expect(await token.ownerOf(2)).to.eq(owner.address);
   });
 
-  it("Should only let the owner set the provenance hash", async () => {
-    await token.setMaxSupply(1);
-    expect(await token.provenanceHash()).to.equal(HashZero);
-
-    const defaultProvenanceHash = `0x${"0".repeat(64)}`;
-    const firstProvenanceHash = `0x${"1".repeat(64)}`;
-    const secondProvenanceHash = `0x${"2".repeat(64)}`;
-
-    await expect(
-      token.connect(creator).setProvenanceHash(firstProvenanceHash)
-    ).to.revertedWithCustomError(token, "OnlyOwner");
-
-    await expect(token.setProvenanceHash(firstProvenanceHash))
-      .to.emit(token, "ProvenanceHashUpdated")
-      .withArgs(defaultProvenanceHash, firstProvenanceHash);
-
-    // Provenance hash should not be updatable after the first token has minted.
-    // Mint a token.
-    await mintTokens({
-      marketplaceContract,
-      token,
-      minter,
-      quantity: 1,
-    });
-
-    await expect(
-      token.setProvenanceHash(secondProvenanceHash)
-    ).to.be.revertedWithCustomError(
-      token,
-      "ProvenanceHashCannotBeSetAfterMintStarted"
-    );
-
-    expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
-  });
-
   it("Should only let allowed seaport or conduit call the ERC1155 safeTransferFrom", async () => {
     await token.setMaxSupply(3);
 
@@ -508,69 +468,30 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     );
     const data = safeTransferFrom1155Selector + encodedParams.slice(2);
 
-    await setMintRecipientStorageSlot(token, minter);
+    // Impersonate as Seaport
     await whileImpersonating(
       marketplaceContract.address,
       provider,
       async (impersonatedSigner) => {
-        await expect(
-          impersonatedSigner.sendTransaction({ to: token.address, data })
-        )
-          .to.emit(token, "Transfer")
-          .withArgs(AddressZero, minter.address, 1);
+        await impersonatedSigner.sendTransaction({ to: token.address, data });
       }
     );
 
-    // Mint as conduit
-    await setMintRecipientStorageSlot(token, minter);
+    // Impersonate as conduit
     await whileImpersonating(
       conduitOne.address,
       provider,
       async (impersonatedSigner) => {
-        await expect(
-          impersonatedSigner.sendTransaction({ to: token.address, data })
-        )
-          .to.emit(token, "Transfer")
-          .withArgs(AddressZero, minter.address, 2);
+        await impersonatedSigner.sendTransaction({ to: token.address, data });
       }
     );
 
-    // Mint as owner
+    // Impersonate as owner
     await expect(
       owner.sendTransaction({ to: token.address, data, gasLimit: 100_000 })
     )
-      .to.be.revertedWithCustomError(
-        token,
-        "InvalidCallerOnlyAllowedSeaportOrConduit"
-      )
+      .to.be.revertedWithCustomError(token, "InvalidCallerOnlyAllowedSeaport")
       .withArgs(owner.address);
-
-    // Mint with wrong "from" address
-    const dataWrongFrom =
-      safeTransferFrom1155Selector +
-      defaultAbiCoder
-        .encode(
-          ["address", "address", "uint256", "uint256", "bytes"],
-          [marketplaceContract.address, minter.address, 0, 1, []]
-        )
-        .slice(2);
-    await whileImpersonating(
-      conduitOne.address,
-      provider,
-      async (impersonatedSigner) => {
-        await expect(
-          impersonatedSigner.sendTransaction({
-            to: token.address,
-            data: dataWrongFrom,
-          })
-        )
-          .to.be.revertedWithCustomError(
-            token,
-            "InvalidCallerOnlyAllowedSeaportOrConduit"
-          )
-          .withArgs(conduitOne.address);
-      }
-    );
   });
 
   it("Should return supportsInterface true for supported interfaces", async () => {

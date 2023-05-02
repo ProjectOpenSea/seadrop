@@ -1,7 +1,7 @@
 import { setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 
-import { whileImpersonating } from "./impersonate";
+import { MintType, createMintOrder } from "./order";
 
 import type {
   ConsiderationInterface,
@@ -10,10 +10,9 @@ import type {
 } from "../../typechain-types";
 import type { Wallet } from "ethers";
 
-const { BigNumber, provider } = ethers;
-const { AddressZero } = ethers.constants;
-const { defaultAbiCoder, hexlify, keccak256, toUtf8Bytes, zeroPad } =
-  ethers.utils;
+const { provider } = ethers;
+const { AddressZero, HashZero } = ethers.constants;
+const { defaultAbiCoder } = ethers.utils;
 
 export const VERSION = "2.0.0";
 
@@ -39,62 +38,57 @@ export const deployERC721SeaDrop = async (
     "",
     "",
     configurer.address,
-    marketplaceContract,
-    conduit
+    conduit,
+    marketplaceContract
   );
 
   return { configurer, token };
 };
 
-export const setMintRecipientStorageSlot = async (
-  token: ERC721SeaDrop,
-  minter: Wallet
-) => {
-  // Storage slot from ERC721SeaDropContractOffererStorage
-  const libStorageSlot = keccak256(
-    toUtf8Bytes("openzeppelin.contracts.storage.ERC721SeaDropContractOfferer")
-  );
-  // _mintRecipient is slot 17. This can be found by creating a new Test.sol contract
-  // with the storage fields and using `forge inspect Test storage-layout`
-  const mintRecipientStorageSlot = BigNumber.from(libStorageSlot)
-    .add(17)
-    .toHexString();
-  // Storage value must be a 32 bytes long padded with leading zeros hex string
-  const mintRecipientStorageValue = hexlify(zeroPad(minter.address, 32));
-  await provider.send("hardhat_setStorageAt", [
-    token.address,
-    mintRecipientStorageSlot,
-    mintRecipientStorageValue,
-  ]);
-};
-
 export const mintTokens = async ({
   marketplaceContract,
   token,
+  configurer,
   minter,
   quantity,
 }: {
   marketplaceContract: ConsiderationInterface;
   token: ERC721SeaDrop;
+  configurer: ERC721SeaDropConfigurer;
   minter: Wallet;
   quantity: number;
 }) => {
-  await setMintRecipientStorageSlot(token, minter);
+  const prevPublicDrop = await configurer.getPublicDrop(token.address);
 
-  const safeTransferFrom1155Selector = "0xf242432a";
-  const encodedParams = defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "bytes"],
-    [token.address, AddressZero, 0, quantity, []]
-  );
-  const data = safeTransferFrom1155Selector + encodedParams.slice(2);
+  const temporaryPublicDrop = {
+    startPrice: 0,
+    endPrice: 0,
+    paymentToken: AddressZero,
+    maxTotalMintableByWallet: 1000,
+    startTime: Math.round(Date.now() / 1000) - 1000,
+    endTime: Math.round(Date.now() / 1000) + 5000,
+    feeBps: 0,
+    restrictFeeRecipients: false,
+  };
+  await configurer.updatePublicDrop(token.address, temporaryPublicDrop);
 
-  await whileImpersonating(
-    marketplaceContract.address,
-    provider,
-    async (impersonatedSigner) => {
-      await impersonatedSigner.sendTransaction({ to: token.address, data });
-    }
-  );
+  const { order, value } = await createMintOrder({
+    token,
+    configurer,
+    quantity,
+    feeRecipient: { address: `0x${"1".repeat(40)}` } as any,
+    feeBps: 0,
+    price: 0,
+    minter,
+    mintType: MintType.PUBLIC,
+  });
+
+  await marketplaceContract
+    .connect(minter)
+    .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value });
+
+  // Reset the public drop.
+  await configurer.updatePublicDrop(token.address, prevPublicDrop);
 };
 
 export const deployDelegationRegistryToCanonicalAddress = async () => {

@@ -21,9 +21,7 @@ import {
 } from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
 interface IERC173 {
-    /**
-     * @notice Returns the address of the owner.
-     */
+    /// @notice Returns the address of the owner.
     function owner() external view returns (address);
 }
 

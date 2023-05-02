@@ -51,7 +51,8 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
   beforeEach(async () => {
     // Deploy configurer
     const ERC721SeaDropConfigurer = await ethers.getContractFactory(
-      "ERC721SeaDropConfigurer"
+      "ERC721SeaDropConfigurer",
+      owner
     );
     configurer = await ERC721SeaDropConfigurer.deploy();
 
@@ -85,6 +86,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
+      configurer,
       minter,
       quantity: 100,
     });
@@ -113,6 +115,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
+      configurer,
       minter,
       quantity: 100,
     });

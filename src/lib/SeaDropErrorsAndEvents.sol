@@ -285,10 +285,9 @@ interface SeaDropErrorsAndEvents {
     error NoBalanceToWithdraw();
 
     /**
-     * @dev Revert with an error if the caller is not an allowed Seaport
-     *      or conduit address.
+     * @dev Revert with an error if the caller is not an allowed Seaport.
      */
-    error InvalidCallerOnlyAllowedSeaportOrConduit(address caller);
+    error InvalidCallerOnlyAllowedSeaport(address caller);
 
     /**
      * @dev Revert with an error if the order does not have the ERC1155 magic

@@ -421,12 +421,21 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     function generateOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] memory maximumSpent,
+        SpentItem[] calldata maximumSpent,
         bytes calldata context // encoded based on the schemaID
     )
         external
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
+        // Only an allowed Seaport can call this function.
+        if (
+            !ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
+                msg.sender
+            ]
+        ) {
+            revert InvalidCallerOnlyAllowedSeaport(msg.sender);
+        }
+
         // Derive the offer and consideration with effects.
         (offer, consideration) = _createOrder(
             fulfiller,
@@ -455,15 +464,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         bytes32[] calldata /* orderHashes */,
         uint256 /* contractNonce */
     ) external pure returns (bytes4) {
-        // * TODO should we check that _mintRecipient is zeroed out?
-        // Ensure that _mintRecipient is zeroed out, meaning the mint
-        // was successfully executed.
-        // if (
-        //     ERC721SeaDropContractOffererStorage.layout()._mintRecipient !=
-        //     address(0)
-        // ) {
-        //     revert MintNotExecuted();
-        // }
+        // This function is a no-op, nothing additional needs to happen here.
 
         // Utilize assembly to efficiently return the ratifyOrder magic value.
         assembly {
@@ -491,7 +492,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         address /* caller */,
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] memory maximumSpent,
+        SpentItem[] calldata maximumSpent,
         bytes calldata context
     )
         external
@@ -505,14 +506,14 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         function(
             address,
             SpentItem[] calldata,
-            SpentItem[] memory,
+            SpentItem[] calldata,
             bytes calldata,
             bool
         ) internal view returns (SpentItem[] memory, ReceivedItem[] memory) fn;
         function(
             address,
             SpentItem[] calldata,
-            SpentItem[] memory,
+            SpentItem[] calldata,
             bytes calldata,
             bool
         )
@@ -606,7 +607,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     function _createOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] memory maximumSpent,
+        SpentItem[] calldata maximumSpent,
         bytes calldata context,
         bool withEffects
     )
@@ -695,20 +696,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 signature,
                 withEffects_
             );
-        }
-
-        // Modify maximumSpent to reflect the consideration items, in case
-        // it is a descending price stage the recipient will be refunded
-        // if the fulfiller overpaid.
-        if (consideration.length != 0) {
-            for (uint256 i = 0; i < maximumSpent.length; ) {
-                maximumSpent[i].amount = consideration[i].amount;
-                unchecked {
-                    ++i;
-                }
-            }
-        } else {
-            maximumSpent = new SpentItem[](0);
         }
     }
 
@@ -1161,11 +1148,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Apply the state changes of the mint.
         if (withEffects) {
-            // Set the mint recipient.
-            ERC721SeaDropContractOffererStorage
-                .layout()
-                ._mintRecipient = minter;
-
             // Emit an event for the mint, for analytics.
             emit SeaDropMint(
                 minter,

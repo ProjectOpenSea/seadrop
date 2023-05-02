@@ -10,11 +10,12 @@ import type {
   ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
+  ERC721SeaDropConfigurer,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 const { BigNumber } = ethers;
-const { AddressZero } = ethers.constants;
+const { AddressZero, HashZero } = ethers.constants;
 
 describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
@@ -25,6 +26,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
+  let configurer: ERC721SeaDropConfigurer;
   let owner: Wallet;
   let bob: Wallet;
 
@@ -45,15 +47,15 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     }
 
     ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
+  });
 
+  beforeEach(async () => {
     // Deploy token
-    ({ token } = await deployERC721SeaDrop(
+    ({ token, configurer } = await deployERC721SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
     ));
-
-    await token.setMaxSupply(5);
   });
 
   it("Should only let the owner set and get the base URI", async () => {
@@ -71,9 +73,11 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     );
 
     // it should emit BatchMetadataUpdate when totalSupply is greater than 0
+    await token.setMaxSupply(1);
     await mintTokens({
       marketplaceContract,
       token,
+      configurer,
       minter: owner,
       quantity: 1,
     });
@@ -98,12 +102,12 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should only let the owner set and get the max supply", async () => {
-    expect(await token.maxSupply()).to.equal(5);
+    expect(await token.maxSupply()).to.equal(0);
 
     await expect(
       token.connect(bob).setMaxSupply(10)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
-    expect(await token.maxSupply()).to.equal(5);
+    expect(await token.maxSupply()).to.equal(0);
 
     await expect(token.setMaxSupply(25))
       .to.emit(token, "MaxSupplyUpdated")
@@ -165,8 +169,17 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should return the correct tokenURI based on baseURI's last character", async () => {
+    await token.setMaxSupply(2);
+    await mintTokens({
+      marketplaceContract,
+      token,
+      configurer,
+      minter: owner,
+      quantity: 2,
+    });
+
     // Revert on nonexistent token
-    await expect(token.tokenURI(100000)).to.be.revertedWithCustomError(
+    await expect(token.tokenURI(99)).to.be.revertedWithCustomError(
       token,
       "URIQueryForNonexistentToken"
     );
@@ -174,7 +187,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     // If the baseURI is empty then the tokenURI should be empty
     await expect(token.setBaseURI("")).to.emit(token, "BatchMetadataUpdate");
     expect(await token.baseURI()).to.equal("");
-    expect(await token.tokenURI(1)).to.be.revertedWithCustomError(
+    await expect(token.tokenURI(15)).to.be.revertedWithCustomError(
       token,
       "URIQueryForNonexistentToken"
     );
@@ -184,13 +197,8 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token,
       "BatchMetadataUpdate"
     );
+    console.log("12345");
 
-    await mintTokens({
-      marketplaceContract,
-      token,
-      minter: owner,
-      quantity: 2,
-    });
     expect(await token.baseURI()).to.equal("http://example.com/");
     expect(await token.tokenURI(1)).to.equal("http://example.com/1");
     expect(await token.tokenURI(2)).to.equal("http://example.com/2");
@@ -204,5 +212,42 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.baseURI()).to.equal("http://example.com");
     expect(await token.tokenURI(1)).to.equal("http://example.com");
     expect(await token.tokenURI(2)).to.equal("http://example.com");
+  });
+
+  it("Should only let the owner set the provenance hash", async () => {
+    await token.setMaxSupply(1);
+    expect(await token.provenanceHash()).to.equal(HashZero);
+
+    const defaultProvenanceHash = `0x${"0".repeat(64)}`;
+    const firstProvenanceHash = `0x${"1".repeat(64)}`;
+    const secondProvenanceHash = `0x${"2".repeat(64)}`;
+
+    await expect(
+      token.connect(bob).setProvenanceHash(firstProvenanceHash)
+    ).to.revertedWithCustomError(token, "OnlyOwner");
+
+    await expect(token.setProvenanceHash(firstProvenanceHash))
+      .to.emit(token, "ProvenanceHashUpdated")
+      .withArgs(defaultProvenanceHash, firstProvenanceHash);
+
+    // Provenance hash should not be updatable after the first token has minted.
+    // Mint a token.
+    await token.setMaxSupply(1);
+    await mintTokens({
+      marketplaceContract,
+      token,
+      configurer,
+      minter: owner,
+      quantity: 1,
+    });
+
+    await expect(
+      token.setProvenanceHash(secondProvenanceHash)
+    ).to.be.revertedWithCustomError(
+      token,
+      "ProvenanceHashCannotBeSetAfterMintStarted"
+    );
+
+    expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
   });
 });

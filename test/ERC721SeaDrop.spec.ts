@@ -11,6 +11,7 @@ import type {
   ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
+  ERC721SeaDropConfigurer,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
@@ -23,6 +24,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
+  let configurer: ERC721SeaDropConfigurer;
   let owner: Wallet;
   let creator: Wallet;
   let minter: Wallet;
@@ -49,7 +51,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token } = await deployERC721SeaDrop(
+    ({ token, configurer } = await deployERC721SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -57,9 +59,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   });
 
   it("Should be able to transfer successfully", async () => {
+    await token.setMaxSupply(5);
     await mintTokens({
       marketplaceContract,
       token,
+      configurer,
       minter,
       quantity: 5,
     });
@@ -89,12 +93,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   });
 
   it("Should only let the token owner burn their own token", async () => {
-    await token.setMaxSupply(3);
-
     // Mint 3 tokens to the minter.
+    await token.setMaxSupply(3);
     await mintTokens({
       marketplaceContract,
       token,
+      configurer,
       minter,
       quantity: 3,
     });
@@ -176,9 +180,11 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     );
 
     // Send some balance to the contract.
+    await token.setMaxSupply(1);
     await mintTokens({
       marketplaceContract,
       token,
+      configurer,
       minter,
       quantity: 1,
     });

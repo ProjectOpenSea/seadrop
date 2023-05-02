@@ -14,7 +14,7 @@ import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
 
 import { PublicDrop } from "./ERC721SeaDropStructs.sol";
 
-import { AllowListData } from "./SeaDropStructs.sol";
+import { AllowListData, SpentItem } from "./SeaDropStructs.sol";
 
 import "./ERC721SeaDropConstants.sol";
 
@@ -155,6 +155,9 @@ contract ERC721SeaDropContractOfferer is
                 }
             }
 
+            // If the call was to generateOrder, mint the tokens.
+            _mintIfGenerateOrder(selector, data);
+
             // Return the data from the delegate call.
             return returnedData;
         } else if (selector == SAFE_TRANSFER_FROM_1155_SELECTOR) {
@@ -167,7 +170,7 @@ contract ERC721SeaDropContractOfferer is
                 bytes memory transferData
             ) = abi.decode(data, (address, address, uint256, uint256, bytes));
 
-            // Call safeTransferFrom to initiate the mint.
+            // Call safeTransferFrom.
             _safeTransferFrom(from, to, id, value, transferData);
         } else if (selector == GET_MINT_STATS_SELECTOR) {
             // Get the minter.
@@ -216,26 +219,24 @@ contract ERC721SeaDropContractOfferer is
     }
 
     /**
-     * @dev Handle ERC-1155 safeTransferFrom for SeaDrop minting.
-     *      When "from" is this contract, mint a quantity of tokens.
+     * @dev Handle ERC-1155 safeTransferFrom. Nothing additional needs to happen here.
      *
      *      Only allowed Seaport or conduit can use this function.
      *
      * @param from        The address to transfer from. Must be this contract.
      * @custom:param to   Unused parameter
      * @custom:param id   Unused parameter
-     * @param value       The quantity of tokens to mint.
+     * @custom:param value       The quantity of tokens to mint.
      * @custom:param data Unused parameter
      */
     function _safeTransferFrom(
         address from,
         address /* to */,
         uint256 /* id */,
-        uint256 value,
+        uint256 /* value */,
         bytes memory /* data */
     ) internal {
-        // TODO decide if we need `nonReentrant` modifier in this function
-        // Revert if caller or from is invalid.
+        // Only Seaport or the conduit can use this function.
         if (
             _cast(
                 (msg.sender != _CONDUIT &&
@@ -244,19 +245,10 @@ contract ERC721SeaDropContractOfferer is
                         ._allowedSeaport[msg.sender]) || from != address(this)
             ) == 1
         ) {
-            revert InvalidCallerOnlyAllowedSeaportOrConduit(msg.sender);
+            revert InvalidCallerOnlyAllowedSeaport(msg.sender);
         }
 
-        // Mint tokens with "value" representing the quantity.
-        _mint(
-            ERC721SeaDropContractOffererStorage.layout()._mintRecipient,
-            value
-        );
-
-        // Clear the mint recipient.
-        ERC721SeaDropContractOffererStorage.layout()._mintRecipient = address(
-            0
-        );
+        // This function is a no-op, nothing additional needs to happen here.
     }
 
     /**
@@ -281,5 +273,44 @@ contract ERC721SeaDropContractOfferer is
             // ERC721A returns supportsInterface true for
             //     ERC721, ERC721Metadata, ERC165
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Internal function to mint tokens during a generateOrder call
+     *      from Seaport.
+     */
+    function _mintIfGenerateOrder(
+        bytes4 selector,
+        bytes calldata data
+    ) internal {
+        if (selector != GENERATE_ORDER_SELECTOR) return;
+
+        // Decode function parameters from calldata.
+        (
+            address fulfiller,
+            SpentItem[] memory minimumReceived,
+            ,
+            bytes memory context
+        ) = abi.decode(data, (address, SpentItem[], SpentItem[], bytes));
+
+        // Assign the minter in context[22:42]
+        address minter;
+        assembly {
+            minter := div(
+                mload(add(add(context, 0x20), 22)),
+                0x1000000000000000000000000
+            )
+        }
+
+        // If the minter is the zero address, set it to the fulfiller.
+        if (minter == address(0)) {
+            minter = fulfiller;
+        }
+
+        // Quantity is the amount of the ERC-1155 min received item.
+        uint256 quantity = minimumReceived[0].amount;
+
+        // Mint the tokens.
+        _mint(minter, quantity);
     }
 }
