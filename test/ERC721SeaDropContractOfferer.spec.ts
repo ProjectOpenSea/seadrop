@@ -15,7 +15,7 @@ import { getItemETH, toBN } from "./seaport-utils/encoding";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, deployERC721SeaDrop, mintTokens } from "./utils/helpers";
+import { VERSION, deployERC721SeaDrop } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 import { MintType, createMintOrder, expectedPrice } from "./utils/order";
 
@@ -95,10 +95,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     publicDrop = {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
-      paymentToken: AddressZero,
-      maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
+      paymentToken: AddressZero,
+      maxTotalMintableByWallet: 10,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -106,13 +106,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     tokenGatedDropStage = {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
+      startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
       paymentToken: AddressZero,
       maxMintablePerRedeemedToken: 3,
       maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 500,
-      dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
+      dropStageIndex: 1,
       feeBps: 100,
       restrictFeeRecipients: true,
     };
@@ -181,9 +181,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       true
     );
 
-    expect(await configurer2.getCreatorPayouts(token2.address)).to.deep.equal(
-      []
+    const { creatorPayouts } = await configurer2.getSeaDropSettings(
+      token2.address
     );
+    expect(creatorPayouts).to.deep.equal([]);
     await expect(
       configurer2.updateCreatorPayouts(token2.address, [])
     ).to.be.revertedWithCustomError(token2, "CreatorPayoutsNotSet");
@@ -231,13 +232,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token2, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        1, // quantity
-        publicDrop.endPrice,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
   });
@@ -260,9 +255,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       feeRecipient.address,
       false
     );
-    expect(await configurer.getAllowedFeeRecipients(token.address)).to.deep.eq(
-      []
+    let { allowedFeeRecipients } = await configurer.getSeaDropSettings(
+      token.address
     );
+    expect(allowedFeeRecipients).to.deep.eq([]);
 
     await expect(
       configurer.updateAllowedFeeRecipient(token.address, AddressZero, true)
@@ -286,9 +282,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       )
     ).to.be.revertedWithCustomError(token, "DuplicateFeeRecipient");
 
-    expect(await configurer.getAllowedFeeRecipients(token.address)).to.deep.eq([
-      feeRecipient.address,
-    ]);
+    ({ allowedFeeRecipients } = await configurer.getSeaDropSettings(
+      token.address
+    ));
+    expect(allowedFeeRecipients).to.deep.eq([feeRecipient.address]);
 
     // Now let's disallow the feeRecipient
     await expect(
@@ -301,9 +298,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "AllowedFeeRecipientUpdated")
       .withArgs(feeRecipient.address, false);
 
-    expect(await configurer.getAllowedFeeRecipients(token.address)).to.deep.eq(
-      []
-    );
+    ({ allowedFeeRecipients } = await configurer.getSeaDropSettings(
+      token.address
+    ));
+    expect(allowedFeeRecipients).to.deep.eq([]);
 
     await expect(
       configurer.updateAllowedFeeRecipient(
@@ -355,13 +353,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        1, // quantity
-        expected,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 
@@ -407,13 +399,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        1, // quantity
-        expected,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 
@@ -692,15 +678,15 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Remove the original payer for branch coverage.
     await configurer.updatePayer(token.address, payer.address, false);
-    expect(await configurer.getPayers(token.address)).to.deep.eq([]);
+    let { payers } = await configurer.getSeaDropSettings(token.address);
+    expect(payers).to.deep.eq([]);
 
     // Add two signers and remove the second for branch coverage.
     await configurer.updatePayer(token.address, payer.address, true);
     await configurer.updatePayer(token.address, payer2.address, true);
     await configurer.updatePayer(token.address, payer2.address, false);
-    expect(await configurer.getPayers(token.address)).to.deep.eq([
-      payer.address,
-    ]);
+    ({ payers } = await configurer.getSeaDropSettings(token.address));
+    expect(payers).to.deep.eq([payer.address]);
   });
 
   it("Should only let the owner call update functions", async () => {
@@ -818,52 +804,54 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       expect(await token.maxSupply()).to.eq(100);
       expect(await token.baseURI()).to.eq("https://example1.com");
       expect(await token.contractURI()).to.eq("https://example2.com");
-      expect(await configurer.getPublicDrop(token.address)).to.deep.eq([
+      expect(await token.provenanceHash()).to.eq(`0x${"3".repeat(64)}`);
+
+      const {
+        publicDrop,
+        creatorPayouts,
+        allowListMerkleRoot,
+        allowedFeeRecipients,
+        signers,
+        payers,
+        tokenGatedAllowedNftTokens,
+      } = await configurer.getSeaDropSettings(token.address);
+
+      expect(publicDrop).to.deep.eq([
         publicDrop.startPrice,
         publicDrop.endPrice,
-        publicDrop.paymentToken,
         publicDrop.startTime,
         publicDrop.endTime,
+        publicDrop.paymentToken,
         publicDrop.maxTotalMintableByWallet,
         publicDrop.feeBps,
         publicDrop.restrictFeeRecipients,
       ]);
-      expect(await configurer.getAllowListMerkleRoot(token.address)).to.eq(
-        allowListData.merkleRoot
+      expect(creatorPayouts).to.deep.eq([[creator.address, 10_000]]);
+      expect(allowListMerkleRoot).to.eq(allowListData.merkleRoot);
+      expect(allowedFeeRecipients).to.deep.eq([feeRecipient.address]);
+      expect(payers).to.deep.eq(config.allowedPayers);
+      expect(signers).to.deep.eq(config.signers);
+      expect(tokenGatedAllowedNftTokens).to.deep.eq(
+        config.tokenGatedAllowedNftTokens
       );
-      expect(await configurer.getCreatorPayouts(token.address)).to.deep.eq([
-        [creator.address, 10_000],
-      ]);
-      expect(
-        await configurer.getAllowedFeeRecipients(token.address)
-      ).to.deep.eq([feeRecipient.address]);
-      expect(await configurer.getPayers(token.address)).to.deep.eq(
-        config.allowedPayers
-      );
-      expect(await token.provenanceHash()).to.eq(`0x${"3".repeat(64)}`);
-      expect(
-        await configurer.getTokenGatedAllowedTokens(token.address)
-      ).to.deep.eq(config.tokenGatedAllowedNftTokens);
       for (const [i, allowed] of config.tokenGatedAllowedNftTokens.entries()) {
         expect(
           await configurer.getTokenGatedDrop(token.address, allowed)
         ).to.deep.eq([
           BigNumber.from(config.tokenGatedDropStages[i].startPrice),
           BigNumber.from(config.tokenGatedDropStages[i].endPrice),
+          config.tokenGatedDropStages[i].startTime,
+          config.tokenGatedDropStages[i].endTime,
           config.tokenGatedDropStages[i].paymentToken,
           config.tokenGatedDropStages[i].maxMintablePerRedeemedToken,
           config.tokenGatedDropStages[i].maxTotalMintableByWallet,
-          config.tokenGatedDropStages[i].startTime,
-          config.tokenGatedDropStages[i].endTime,
-          config.tokenGatedDropStages[i].dropStageIndex,
           config.tokenGatedDropStages[i].maxTokenSupplyForStage,
+          config.tokenGatedDropStages[i].dropStageIndex,
           config.tokenGatedDropStages[i].feeBps,
           config.tokenGatedDropStages[i].restrictFeeRecipients,
         ]);
       }
-      expect(await configurer.getSigners(token.address)).to.deep.eq(
-        config.signers
-      );
+
       for (const [i, signer] of config.signers.entries()) {
         expect(
           await configurer.getSignedMintValidationParams(token.address, signer)
@@ -894,10 +882,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       publicDrop: {
         startPrice: 0,
         endPrice: 0,
-        paymentToken: AddressZero,
-        maxTotalMintableByWallet: 0,
         startTime: 0,
         endTime: 0,
+        paymentToken: AddressZero,
+        maxTotalMintableByWallet: 0,
         feeBps: 0,
         restrictFeeRecipients: true,
       },
@@ -956,9 +944,9 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .withArgs(config.tokenGatedAllowedNftTokens[0], [
         0,
         0,
+        0,
+        0,
         AddressZero,
-        0,
-        0,
         0,
         0,
         0,
@@ -1017,9 +1005,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       ])
     ).to.emit(token, "CreatorPayoutsUpdated");
     // .withArgs([[creator.address, 10_000]]);
-    expect(await configurer.getCreatorPayouts(token.address)).to.deep.eq([
-      [creator.address, 10_000],
-    ]);
+    let { creatorPayouts } = await configurer.getSeaDropSettings(token.address);
+    expect(creatorPayouts).to.deep.eq([[creator.address, 10_000]]);
 
     await expect(
       configurer.updateCreatorPayouts(token.address, [
@@ -1033,7 +1020,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [creator.address, 5_000],
     //   [owner.address, 5_000],
     // ]);
-    expect(await configurer.getCreatorPayouts(token.address)).to.deep.eq([
+    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    expect(creatorPayouts).to.deep.eq([
       [creator.address, 5_000],
       [owner.address, 5_000],
     ]);
@@ -1050,7 +1038,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [owner.address, 500],
     //   [minter.address, 500],
     // ]);
-    expect(await configurer.getCreatorPayouts(token.address)).to.deep.eq([
+    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    expect(creatorPayouts).to.deep.eq([
       [creator.address, 9_000],
       [owner.address, 500],
       [minter.address, 500],
@@ -1068,7 +1057,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [owner.address, 100],
     //   [minter.address, 9_800],
     // ]);
-    expect(await configurer.getCreatorPayouts(token.address)).to.deep.eq([
+    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    expect(creatorPayouts).to.deep.eq([
       [creator.address, 100],
       [owner.address, 100],
       [minter.address, 9_800],
@@ -1092,7 +1082,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [owner.address, 1_000],
     //   [minter.address, 5_000],
     // ]);
-    expect(await configurer.getCreatorPayouts(token.address)).to.deep.eq([
+    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    expect(creatorPayouts).to.deep.eq([
       [creator.address, 1_000],
       [owner.address, 1_000],
       [minter.address, 1_000],
@@ -1188,7 +1179,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero)
-    ).to.be.revertedWithPanic(0x11);
+    ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Approve the payment token.
     await paymentToken.approve(marketplaceContract.address, value);
@@ -1201,13 +1192,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
-        minter.address, // payer
-        1, // quantity
-        publicDrop.startPrice,
-        paymentToken.address,
-        publicDrop.feeBps,
+        minter.address, // PAYER
         _PUBLIC_DROP_STAGE_INDEX
       );
 
@@ -1227,7 +1212,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
-    ).to.be.revertedWithPanic(0x11);
+    ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Approve the payment token.
     await paymentToken.approve(marketplaceContract.address, value);
@@ -1237,7 +1222,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       marketplaceContract
         .connect(minter)
         .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
-    ).to.be.revertedWithPanic(0x11);
+    ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Mint one more payment token to the minter.
     await paymentToken.mint(minter.address, 1);
@@ -1250,13 +1235,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        1, // quantity
-        publicDrop.startPrice,
-        paymentToken.address,
-        publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 

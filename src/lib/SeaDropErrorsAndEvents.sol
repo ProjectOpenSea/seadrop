@@ -318,27 +318,11 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
      *
-     * @param minter         The mint recipient.
-     * @param feeRecipient   The fee recipient.
      * @param payer          The address who payed for the tx.
-     * @param quantityMinted The number of tokens minted.
-     * @param unitMintPrice  The amount paid for each token.
-     * @param paymentToken   The payment token for the mint.
-     * @param feeBps         The fee out of 10_000 basis points collected.
-     * @param dropStageIndex The drop stage index. Items minted
-     *                       through mintPublic() have
-     *                       dropStageIndex of 0.
+     * @param dropStageIndex The drop stage index. Items minted through
+     *                       public mint have dropStageIndex of 0
      */
-    event SeaDropMint(
-        address indexed minter,
-        address indexed feeRecipient,
-        address payer,
-        uint256 quantityMinted,
-        uint256 unitMintPrice,
-        address paymentToken,
-        uint256 feeBps,
-        uint256 dropStageIndex
-    );
+    event SeaDropMint(address payer, uint256 dropStageIndex);
 
     /**
      * @dev An event with updated public drop data for an nft contract.

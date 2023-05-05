@@ -93,13 +93,13 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     dropStage = {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
+      startTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) + 500,
       paymentToken: AddressZero,
       maxMintablePerRedeemedToken: 2,
       maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 500,
-      dropStageIndex: 1,
       maxTokenSupplyForStage: 100,
+      dropStageIndex: 1,
       feeBps: 100,
       restrictFeeRecipients: true,
     };
@@ -197,13 +197,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        1, // mint quantity
-        dropStage.startPrice,
-        dropStage.paymentToken,
-        dropStage.feeBps,
         dropStage.dropStageIndex
       );
 
@@ -224,13 +218,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        1, // mint quantity
-        dropStage.startPrice,
-        dropStage.paymentToken,
-        dropStage.feeBps,
         dropStage.dropStageIndex
       );
 
@@ -263,9 +251,10 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
       )
     ).to.eq(2);
 
-    expect(
-      await configurer.getTokenGatedAllowedTokens(token.address)
-    ).to.deep.eq([allowedNftToken.address]);
+    const { tokenGatedAllowedNftTokens } = await configurer.getSeaDropSettings(
+      token.address
+    );
+    expect(tokenGatedAllowedNftTokens).to.deep.eq([allowedNftToken.address]);
   });
 
   it("Should mint a token to a user with the allowed NFT token when the payer is different from the minter", async () => {
@@ -309,13 +298,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
-        owner.address,
-        1, // mint quantity
-        dropStage.startPrice,
-        dropStage.paymentToken,
-        dropStage.feeBps,
+        owner.address, // payer
         dropStage.dropStageIndex
       );
 
@@ -361,13 +344,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
-        minter.address,
-        1, // mint quantity
-        0, // mint price: free
-        dropStage.paymentToken,
-        dropStage.feeBps,
+        minter.address, // payer
         dropStage.dropStageIndex
       );
 
@@ -403,13 +380,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
-        minter.address,
-        2, // mint quantity
-        dropStage.endPrice,
-        dropStage.paymentToken,
-        dropStage.feeBps,
+        minter.address, // payer
         dropStage.dropStageIndex
       );
 
@@ -850,17 +821,18 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         maxTotalMintableByWallet: 0,
       }
     );
-    expect(
-      await configurer.getTokenGatedAllowedTokens(token.address)
-    ).to.deep.eq([]);
+    const { tokenGatedAllowedNftTokens } = await configurer.getSeaDropSettings(
+      token.address
+    );
+    expect(tokenGatedAllowedNftTokens).to.deep.eq([]);
     expect(
       await configurer.getTokenGatedDrop(token.address, allowedNftToken.address)
     ).to.deep.eq([
       BigNumber.from(0),
       BigNumber.from(0),
+      0,
+      0,
       AddressZero,
-      0,
-      0,
       0,
       0,
       0,
@@ -922,16 +894,7 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        payer.address,
-        1,
-        dropStage.endPrice,
-        dropStage.paymentToken,
-        dropStage.feeBps,
-        dropStage.dropStageIndex
-      );
+      .withArgs(payer.address, dropStage.dropStageIndex);
   });
 
   it("Should return the expected offer and consideration in previewOrder", async () => {

@@ -107,7 +107,6 @@ contract ERC721SeaDropContractOfferer is
                     selector == UPDATE_PAYER_SELECTOR ||
                     selector == PREVIEW_ORDER_SELECTOR ||
                     selector == GENERATE_ORDER_SELECTOR ||
-                    selector == RATIFY_ORDER_SELECTOR ||
                     selector == GET_SEAPORT_METADATA_SELECTOR ||
                     selector == GET_PUBLIC_DROP_SELECTOR ||
                     selector == GET_CREATOR_PAYOUTS_SELECTOR ||
@@ -185,6 +184,13 @@ contract ERC721SeaDropContractOfferer is
 
             // Encode the return data.
             return abi.encode(minterNumMinted, currentTotalSupply, maxSupply);
+        } else if (selector == RATIFY_ORDER_SELECTOR) {
+            // This function is a no-op, nothing additional needs to happen here.
+            // Utilize assembly to efficiently return the ratifyOrder magic value.
+            assembly {
+                mstore(0, 0xf4dd92ce)
+                return(0x1c, 0x04)
+            }
         } else {
             // Revert if the function selector is not supported.
             revert UnsupportedFunctionSelector(selector);
@@ -235,7 +241,7 @@ contract ERC721SeaDropContractOfferer is
         uint256 /* id */,
         uint256 /* value */,
         bytes memory /* data */
-    ) internal {
+    ) internal view {
         // Only Seaport or the conduit can use this function.
         if (
             _cast(

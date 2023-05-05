@@ -92,12 +92,12 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     mintParams = {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
-      paymentToken: AddressZero,
-      maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
-      dropStageIndex: 1,
+      paymentToken: AddressZero,
+      maxTotalMintableByWallet: 10,
       maxTokenSupplyForStage: 11,
+      dropStageIndex: 1,
       feeBps,
       restrictFeeRecipients: true,
     };
@@ -144,13 +144,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        quantity,
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
         mintParams.dropStageIndex
       );
   });
@@ -176,7 +170,10 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       allowListURI: "",
     });
 
-    expect(await configurer.getAllowListMerkleRoot(token.address)).to.eq(root);
+    const { allowListMerkleRoot } = await configurer.getSeaDropSettings(
+      token.address
+    );
+    expect(allowListMerkleRoot).to.eq(root);
 
     const { order, value } = await createMintOrder({
       token,
@@ -198,13 +195,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        quantity,
-        0, // mint price: free
-        mintParams.paymentToken,
-        mintParams.feeBps,
         mintParams.dropStageIndex
       );
   });
@@ -261,13 +252,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         owner.address, // payer
-        quantity,
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
         mintParams.dropStageIndex
       );
   });
@@ -529,13 +514,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        quantity,
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
         mintParams.dropStageIndex
       );
 
@@ -612,13 +591,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        mintParams.maxTotalMintableByWallet,
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
         mintParams.dropStageIndex
       );
 
@@ -698,16 +671,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        minter.address,
-        mintParams.maxTotalMintableByWallet,
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
-        mintParams.dropStageIndex
-      );
+      .withArgs(minter.address, mintParams.dropStageIndex);
 
     ({ order, value } = await createMintOrder({
       token,
@@ -745,9 +709,10 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { proof } = await createAllowListAndGetProof([minter], mintParams);
 
     // We are skipping updating the allow list, the root should be zero.
-    expect(await configurer.getAllowListMerkleRoot(token.address)).to.eq(
-      HashZero
+    const { allowListMerkleRoot } = await configurer.getSeaDropSettings(
+      token.address
     );
+    expect(allowListMerkleRoot).to.eq(HashZero);
 
     let { order, value } = await createMintOrder({
       token,
@@ -901,16 +866,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        payer.address,
-        1,
-        mintParams.endPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
-        mintParams.dropStageIndex
-      );
+      .withArgs(payer.address, mintParams.dropStageIndex);
 
     // Remove delegation
     await delegationRegistry

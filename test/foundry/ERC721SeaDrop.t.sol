@@ -14,20 +14,12 @@ import {
 
 import { TokenGatedMintParams } from "seadrop/lib/SeaDropStructs.sol";
 
-import {
-    ConsiderationInterface
-} from "seaport/interfaces/ConsiderationInterface.sol";
-
-import {
-    OfferItem,
-    ConsiderationItem,
-    AdvancedOrder,
-    OrderComponents,
-    FulfillmentComponent
-} from "seaport/lib/ConsiderationStructs.sol";
+import { AdvancedOrder } from "seaport/lib/ConsiderationStructs.sol";
 
 contract ERC721SeaDropTest is SeaDropTest {
     FuzzArgs empty;
+
+    uint256 feeBps = 500;
 
     struct FuzzArgs {
         address feeRecipient;
@@ -43,10 +35,13 @@ contract ERC721SeaDropTest is SeaDropTest {
         vm.assume(args.feeRecipient != address(0));
         vm.assume(args.creator != address(0));
 
-        // Assume the feeRecipient is not the creator.
+        // Assume creator has zero balance.
+        vm.assume(args.creator.balance == 0);
+
+        // Assume feeRecipient is not the creator.
         vm.assume(args.feeRecipient != args.creator);
 
-        // Assume the feeRecipient and creator are EOAs.
+        // Assume feeRecipient and creator are EOAs.
         vm.assume(args.feeRecipient.code.length == 0);
         vm.assume(args.creator.code.length == 0);
 
@@ -56,39 +51,40 @@ contract ERC721SeaDropTest is SeaDropTest {
         _;
     }
 
-    function testMintPublic(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop(
+    function setUp() public override {
+        super.setUp();
+        token = new ERC721SeaDrop(
             "",
             "",
             address(configurer),
             address(0),
             allowedSeaport
         );
+    }
 
+    function testMintPublic(
+        Context memory context
+    ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        uint256 feeBps = 500;
-
         configurer.updateAllowedFeeRecipient(
-            address(offerer),
+            address(token),
             feeRecipient,
             true
         );
-        offerer.setMaxSupply(10);
+        token.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
         PublicDrop memory publicDrop = PublicDrop({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            paymentToken: address(0),
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp + 500),
+            paymentToken: address(0),
             maxTotalMintableByWallet: 5,
             feeBps: uint16(feeBps),
             restrictFeeRecipients: true
         });
-        configurer.updatePublicDrop(address(offerer), publicDrop);
+        configurer.updatePublicDrop(address(token), publicDrop);
 
         addSeaDropOfferItem(3); // 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -112,17 +108,8 @@ contract ERC721SeaDropTest is SeaDropTest {
 
         vm.deal(address(this), 10 ether);
 
-        vm.expectEmit(true, true, true, true, address(offerer));
-        emit SeaDropMint(
-            minter,
-            feeRecipient,
-            address(this),
-            3,
-            1 ether,
-            address(0),
-            feeBps,
-            0
-        );
+        vm.expectEmit(true, true, true, true, address(token));
+        emit SeaDropMint(address(this), 0);
 
         consideration.fulfillAdvancedOrder{ value: 3 ether }({
             advancedOrder: order,
@@ -131,17 +118,17 @@ contract ERC721SeaDropTest is SeaDropTest {
             recipient: address(0)
         });
 
-        assertEq(offerer.ownerOf(1), minter);
-        assertEq(offerer.ownerOf(2), minter);
-        assertEq(offerer.ownerOf(3), minter);
+        assertEq(token.ownerOf(1), minter);
+        assertEq(token.ownerOf(2), minter);
+        assertEq(token.ownerOf(3), minter);
         assertEq(context.args.creator.balance, 3 ether * 0.95);
 
         // Minting any more should exceed maxTotalMintableByWallet
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(offerer))) << 96) +
-                    consideration.getContractOffererNonce(address(offerer))
+                (uint256(uint160(address(token))) << 96) +
+                    consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -155,23 +142,13 @@ contract ERC721SeaDropTest is SeaDropTest {
     function testMintAllowList(
         Context memory context
     ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop(
-            "",
-            "",
-            address(configurer),
-            address(0),
-            allowedSeaport
-        );
-
         address feeRecipient = context.args.feeRecipient;
-        uint256 feeBps = 500;
-
         configurer.updateAllowedFeeRecipient(
-            address(offerer),
+            address(token),
             feeRecipient,
             true
         );
-        offerer.setMaxSupply(10);
+        token.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
         MintParams memory mintParams = MintParams({
@@ -181,8 +158,8 @@ contract ERC721SeaDropTest is SeaDropTest {
             maxTotalMintableByWallet: 5,
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp) + 500,
-            dropStageIndex: 2,
             maxTokenSupplyForStage: 1000,
+            dropStageIndex: 2,
             feeBps: feeBps,
             restrictFeeRecipients: false
         });
@@ -220,17 +197,8 @@ contract ERC721SeaDropTest is SeaDropTest {
 
         vm.deal(address(this), 10 ether);
 
-        vm.expectEmit(true, true, true, true, address(offerer));
-        emit SeaDropMint(
-            minter,
-            feeRecipient,
-            address(this),
-            3,
-            1 ether,
-            address(0),
-            feeBps,
-            2
-        );
+        vm.expectEmit(true, true, true, true, address(token));
+        emit SeaDropMint(address(this), 2);
 
         consideration.fulfillAdvancedOrder{ value: 3 ether }({
             advancedOrder: order,
@@ -239,17 +207,17 @@ contract ERC721SeaDropTest is SeaDropTest {
             recipient: address(0)
         });
 
-        assertEq(offerer.ownerOf(1), minter);
-        assertEq(offerer.ownerOf(2), minter);
-        assertEq(offerer.ownerOf(3), minter);
+        assertEq(token.ownerOf(1), minter);
+        assertEq(token.ownerOf(2), minter);
+        assertEq(token.ownerOf(3), minter);
         assertEq(context.args.creator.balance, 3 ether * 0.95);
 
         // Minting any more should exceed maxTotalMintableByWallet
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(offerer))) << 96) +
-                    consideration.getContractOffererNonce(address(offerer))
+                (uint256(uint160(address(token))) << 96) +
+                    consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -263,41 +231,31 @@ contract ERC721SeaDropTest is SeaDropTest {
     function testMintAllowedTokenHolder(
         Context memory context
     ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop(
-            "",
-            "",
-            address(configurer),
-            address(0),
-            allowedSeaport
-        );
-
         address feeRecipient = context.args.feeRecipient;
-        uint256 feeBps = 500;
-
         configurer.updateAllowedFeeRecipient(
-            address(offerer),
+            address(token),
             feeRecipient,
             true
         );
-        offerer.setMaxSupply(10);
+        token.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
         // Configure the drop stage.
         TokenGatedDropStage memory dropStage = TokenGatedDropStage({
             startPrice: 1 ether,
             endPrice: 1 ether,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp) + 500,
             paymentToken: address(0),
             maxMintablePerRedeemedToken: 3,
             maxTotalMintableByWallet: 10,
-            startTime: uint40(block.timestamp),
-            endTime: uint40(block.timestamp) + 500,
             dropStageIndex: 2,
             maxTokenSupplyForStage: 1000,
             feeBps: uint16(feeBps),
             restrictFeeRecipients: false
         });
         configurer.updateTokenGatedDrop(
-            address(offerer),
+            address(token),
             address(test721_1),
             dropStage
         );
@@ -339,17 +297,8 @@ contract ERC721SeaDropTest is SeaDropTest {
 
         vm.deal(address(this), 10 ether);
 
-        vm.expectEmit(true, true, true, true, address(offerer));
-        emit SeaDropMint(
-            minter,
-            feeRecipient,
-            address(this),
-            3,
-            1 ether,
-            address(0),
-            feeBps,
-            2
-        );
+        vm.expectEmit(true, true, true, true, address(token));
+        emit SeaDropMint(address(this), 2);
 
         consideration.fulfillAdvancedOrder{ value: 3 ether }({
             advancedOrder: order,
@@ -358,17 +307,17 @@ contract ERC721SeaDropTest is SeaDropTest {
             recipient: address(0)
         });
 
-        assertEq(offerer.ownerOf(1), minter);
-        assertEq(offerer.ownerOf(2), minter);
-        assertEq(offerer.ownerOf(3), minter);
+        assertEq(token.ownerOf(1), minter);
+        assertEq(token.ownerOf(2), minter);
+        assertEq(token.ownerOf(3), minter);
         assertEq(context.args.creator.balance, 3 ether * 0.95);
 
         // Minting any more should exceed maxTotalMintableByWallet
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(offerer))) << 96) +
-                    consideration.getContractOffererNonce(address(offerer))
+                (uint256(uint160(address(token))) << 96) +
+                    consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -382,22 +331,13 @@ contract ERC721SeaDropTest is SeaDropTest {
     function testMintSigned(
         Context memory context
     ) public fuzzConstraints(context.args) {
-        offerer = new ERC721SeaDrop(
-            "",
-            "",
-            address(configurer),
-            address(0),
-            allowedSeaport
-        );
-
         address feeRecipient = context.args.feeRecipient;
-
         configurer.updateAllowedFeeRecipient(
-            address(offerer),
+            address(token),
             feeRecipient,
             true
         );
-        offerer.setMaxSupply(10);
+        token.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
         SignedMintValidationParams
@@ -413,21 +353,20 @@ contract ERC721SeaDropTest is SeaDropTest {
             });
         address signer = makeAddr("signer-doug");
         configurer.updateSignedMintValidationParams(
-            address(offerer),
+            address(token),
             signer,
             validationParams
         );
 
-        uint256 feeBps = 500;
         MintParams memory mintParams = MintParams({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            paymentToken: address(0),
-            maxTotalMintableByWallet: 4,
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp) + 500,
-            dropStageIndex: 3,
+            paymentToken: address(0),
+            maxTotalMintableByWallet: 4,
             maxTokenSupplyForStage: 1000,
+            dropStageIndex: 3,
             feeBps: feeBps,
             restrictFeeRecipients: true
         });
@@ -437,11 +376,12 @@ contract ERC721SeaDropTest is SeaDropTest {
         uint256 salt = 123;
         bytes memory signature = getSignedMint(
             "signer-doug",
-            address(offerer),
+            address(token),
             minter,
             feeRecipient,
             mintParams,
-            salt
+            salt,
+            false
         );
 
         addSeaDropOfferItem(2); // 2 mints
@@ -468,17 +408,8 @@ contract ERC721SeaDropTest is SeaDropTest {
 
         vm.deal(address(this), 10 ether);
 
-        vm.expectEmit(true, true, true, true, address(offerer));
-        emit SeaDropMint(
-            minter,
-            feeRecipient,
-            address(this),
-            2,
-            1 ether,
-            address(0),
-            feeBps,
-            3
-        );
+        vm.expectEmit(true, true, true, true, address(token));
+        emit SeaDropMint(address(this), 3);
 
         consideration.fulfillAdvancedOrder{ value: 2 ether }({
             advancedOrder: order,
@@ -487,16 +418,16 @@ contract ERC721SeaDropTest is SeaDropTest {
             recipient: address(0)
         });
 
-        assertEq(offerer.ownerOf(1), minter);
-        assertEq(offerer.ownerOf(2), minter);
+        assertEq(token.ownerOf(1), minter);
+        assertEq(token.ownerOf(2), minter);
         assertEq(context.args.creator.balance, 2 ether * 0.95);
 
         // Minting more should fail as the digest is used
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(offerer))) << 96) +
-                    consideration.getContractOffererNonce(address(offerer))
+                (uint256(uint160(address(token))) << 96) +
+                    consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -510,11 +441,12 @@ contract ERC721SeaDropTest is SeaDropTest {
         salt = 456;
         signature = getSignedMint(
             "signer-doug",
-            address(offerer),
+            address(token),
             minter,
             feeRecipient,
             mintParams,
-            salt
+            salt,
+            false
         );
         extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
@@ -528,8 +460,8 @@ contract ERC721SeaDropTest is SeaDropTest {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(offerer))) << 96) +
-                    consideration.getContractOffererNonce(address(offerer))
+                (uint256(uint160(address(token))) << 96) +
+                    consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({

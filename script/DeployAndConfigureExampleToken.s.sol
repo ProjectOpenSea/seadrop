@@ -124,9 +124,8 @@ contract DeployAndConfigureExampleToken is Script {
             endAmount: quantity
         });
 
-        CreatorPayout[] memory creatorPayouts = configurer.getCreatorPayouts(
-            address(token)
-        );
+        (, CreatorPayout[] memory creatorPayouts, , , , , ) = configurer
+            .getSeaDropSettings(address(token));
         ConsiderationItem[] memory considerationItems = new ConsiderationItem[](
             creatorPayouts.length + 1
         );

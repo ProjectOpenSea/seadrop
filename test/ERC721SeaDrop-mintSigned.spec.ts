@@ -121,12 +121,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       MintParams: [
         { name: "startPrice", type: "uint256" },
         { name: "endPrice", type: "uint256" },
-        { name: "paymentToken", type: "address" },
-        { name: "maxTotalMintableByWallet", type: "uint256" },
         { name: "startTime", type: "uint256" },
         { name: "endTime", type: "uint256" },
-        { name: "dropStageIndex", type: "uint256" },
+        { name: "paymentToken", type: "address" },
+        { name: "maxTotalMintableByWallet", type: "uint256" },
         { name: "maxTokenSupplyForStage", type: "uint256" },
+        { name: "dropStageIndex", type: "uint256" },
         { name: "feeBps", type: "uint256" },
         { name: "restrictFeeRecipients", type: "bool" },
       ],
@@ -146,12 +146,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     mintParams = {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
-      paymentToken: AddressZero,
-      maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
-      dropStageIndex: 1,
+      paymentToken: AddressZero,
+      maxTotalMintableByWallet: 10,
       maxTokenSupplyForStage: 100,
+      dropStageIndex: 1,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -242,16 +242,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        payer.address,
-        3, // mint quantity
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
-        mintParams.dropStageIndex
-      );
+      .withArgs(payer.address, mintParams.dropStageIndex);
 
     let minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(3);
@@ -300,13 +291,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        3, // mint quantity
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
         mintParams.dropStageIndex
       );
 
@@ -456,9 +441,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         signer2.address
       )
     ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0]);
-    expect(await configurer.getSigners(token.address)).to.deep.eq([
-      signer.address,
-    ]);
+    const { signers } = await configurer.getSeaDropSettings(token.address);
+    expect(signers).to.deep.eq([signer.address]);
     const signature2 = await signMint(
       token.address,
       minter, // sign mint for minter
@@ -616,13 +600,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
-        minter.address,
-        10, // mint quantity
-        mintParams.endPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
+        minter.address, // payer
         mintParams.dropStageIndex
       );
 
@@ -711,13 +689,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        3, // mint quantity
-        mintParamsZeroFee.endPrice,
-        mintParams.paymentToken,
-        mintParamsZeroFee.feeBps,
         mintParams.dropStageIndex
       );
 
@@ -1089,16 +1061,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        payer.address,
-        3,
-        mintParams.endPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
-        mintParams.dropStageIndex
-      );
+      .withArgs(payer.address, mintParams.dropStageIndex);
 
     // Remove delegation
     await delegationRegistry
@@ -1112,8 +1075,8 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       signer.address,
       {
         ...signedMintValidationParams,
-        minMintPrice: 1,
         paymentToken: `0x${"1".repeat(40)}`,
+        minMintPrice: 1,
       }
     );
 
@@ -1163,13 +1126,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
-        minter.address,
-        3, // mint quantity
-        mintParams.startPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
+        minter.address, // payer
         mintParams.dropStageIndex
       );
   });
@@ -1286,16 +1243,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        payer.address,
-        3,
-        mintParams.endPrice,
-        mintParams.paymentToken,
-        mintParams.feeBps,
-        mintParams.dropStageIndex
-      );
+      .withArgs(payer.address, mintParams.dropStageIndex);
 
     // Remove delegation
     await delegationRegistry

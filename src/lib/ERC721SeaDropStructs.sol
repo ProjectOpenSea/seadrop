@@ -12,10 +12,10 @@ import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
  * @param endPrice                 The end price per token. If this differs
  *                                 from startPrice, the current price will
  *                                 be calculated based on the current time.
- * @param paymentToken             The payment token address. Null for
- *                                 native token.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
+ * @param paymentToken             The payment token address. Null for
+ *                                 native token.
  * @param maxTotalMintableByWallet Maximum total number of mints a user is
  *                                 allowed. (The limit for this field is
  *                                 2^16 - 1)
@@ -27,9 +27,9 @@ import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 struct PublicDrop {
     uint80 startPrice; // 80/512 bits
     uint80 endPrice; // 160/512 bits
-    address paymentToken; // 320/512 bits
     uint48 startTime; // 368/512 bits
     uint48 endTime; // 416/512 bits
+    address paymentToken; // 320/512 bits
     uint16 maxTotalMintableByWallet; // 432/512 bits
     uint16 feeBps; // 448/512 bits
     bool restrictFeeRecipients; // 456/512 bits
@@ -44,20 +44,20 @@ struct PublicDrop {
  * @param endPrice                 The end price per token. If this differs
  *                                 from startPrice, the current price will
  *                                 be calculated based on the current time.
+ * @param startTime                The start time, ensure this is not zero.
+ * @param endTime                  The end time, ensure this is not zero.
  * @param paymentToken             The payment token for the mint. Null for
  *                                 native token.
  * @param maxTotalMintableByWallet Maximum total number of mints a user is
  *                                 allowed. (The limit for this field is
  *                                 2^16 - 1)
- * @param startTime                The start time, ensure this is not zero.
- * @param endTime                  The end time, ensure this is not zero.
+ * @param maxTokenSupplyForStage   The limit of token supply this stage can
+ *                                 mint within. (The limit for this field is
+ *                                 2^16 - 1)
  * @param dropStageIndex           The drop stage index to emit with the event
  *                                 for analytical purposes. This should be
  *                                 non-zero since the public mint emits
  *                                 with index zero.
- * @param maxTokenSupplyForStage   The limit of token supply this stage can
- *                                 mint within. (The limit for this field is
- *                                 2^16 - 1)
  * @param feeBps                   Fee out of 10_000 basis points to be
  *                                 collected.
  * @param restrictFeeRecipients    If false, allow any fee recipient;
@@ -66,13 +66,13 @@ struct PublicDrop {
 struct TokenGatedDropStage {
     uint80 startPrice; // 80/512 bits
     uint80 endPrice; // 160/512 bits
+    uint40 startTime; // 392/512 bits
+    uint40 endTime; // 432/512 bits
     address paymentToken; // 320/512 bits
     uint16 maxMintablePerRedeemedToken; // 336/512 bits
     uint16 maxTotalMintableByWallet; // 352/512 bits
-    uint40 startTime; // 392/512 bits
-    uint40 endTime; // 432/512 bits
-    uint8 dropStageIndex; // non-zero. 450/512 bits
     uint32 maxTokenSupplyForStage; // 482/512 bits
+    uint8 dropStageIndex; // non-zero. 450/512 bits
     uint16 feeBps; // 498/512 bits
     bool restrictFeeRecipients; // 506/512 bits
 }
@@ -90,18 +90,18 @@ struct TokenGatedDropStage {
  * @param endPrice                 The end price per token. If this differs
  *                                 from startPrice, the current price will
  *                                 be calculated based on the current time.
+ * @param startTime                The start time, ensure this is not zero.
+ * @param endTime                  The end time, ensure this is not zero.
  * @param paymentToken             The payment token for the mint. Null for
  *                                 native token.
  * @param maxTotalMintableByWallet Maximum total number of mints a user is
  *                                 allowed.
- * @param startTime                The start time, ensure this is not zero.
- * @param endTime                  The end time, ensure this is not zero.
+ * @param maxTokenSupplyForStage   The limit of token supply this stage can
+ *                                 mint within.
  * @param dropStageIndex           The drop stage index to emit with the event
  *                                 for analytical purposes. This should be
  *                                 non-zero since the public mint emits with
  *                                 index zero.
- * @param maxTokenSupplyForStage   The limit of token supply this stage can
- *                                 mint within.
  * @param feeBps                   Fee out of 10_000 basis points to be
  *                                 collected.
  * @param restrictFeeRecipients    If false, allow any fee recipient;
@@ -110,12 +110,12 @@ struct TokenGatedDropStage {
 struct MintParams {
     uint256 startPrice;
     uint256 endPrice;
-    address paymentToken;
-    uint256 maxTotalMintableByWallet;
     uint256 startTime;
     uint256 endTime;
-    uint256 dropStageIndex; // non-zero
+    address paymentToken;
+    uint256 maxTotalMintableByWallet;
     uint256 maxTokenSupplyForStage;
+    uint256 dropStageIndex; // non-zero
     uint256 feeBps;
     bool restrictFeeRecipients;
 }

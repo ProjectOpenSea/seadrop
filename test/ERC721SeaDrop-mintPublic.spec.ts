@@ -83,10 +83,10 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     publicDrop = {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
-      paymentToken: AddressZero,
-      maxTotalMintableByWallet: 10,
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
+      paymentToken: AddressZero,
+      maxTotalMintableByWallet: 10,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -120,13 +120,13 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // PayerNotAllowed
-    expect(await configurer.getPayers(token.address)).to.deep.eq([]);
+    let { payers } = await configurer.getSeaDropSettings(token.address);
+    expect(payers).to.deep.eq([]);
 
     // Allow the payer.
     await configurer.updatePayer(token.address, payer.address, true);
-    expect(await configurer.getPayers(token.address)).to.deep.eq([
-      payer.address,
-    ]);
+    ({ payers } = await configurer.getSeaDropSettings(token.address));
+    expect(payers).to.deep.eq([payer.address]);
 
     await expect(
       marketplaceContract
@@ -134,16 +134,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
         .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
     )
       .to.emit(token, "SeaDropMint")
-      .withArgs(
-        minter.address,
-        feeRecipient.address,
-        payer.address,
-        quantity,
-        publicDrop.startPrice,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
-        _PUBLIC_DROP_STAGE_INDEX
-      );
+      .withArgs(payer.address, _PUBLIC_DROP_STAGE_INDEX);
 
     let minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(quantity);
@@ -157,13 +148,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        quantity,
-        publicDrop.endPrice,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 
@@ -279,13 +264,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        quantity,
-        publicDrop.startPrice,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 
@@ -310,13 +289,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        quantity,
-        publicDrop.endPrice,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
         _PUBLIC_DROP_STAGE_INDEX
       );
 
@@ -456,13 +429,7 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         minter.address, // payer
-        quantity,
-        publicDrop.startPrice,
-        publicDrop.paymentToken,
-        0, // fee bps
         _PUBLIC_DROP_STAGE_INDEX
       );
   });
@@ -532,14 +499,8 @@ describe(`SeaDrop - Mint Public (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address,
-        feeRecipient.address,
         payer.address, // payer
-        1, // quantity
-        publicDrop.endPrice,
-        publicDrop.paymentToken,
-        publicDrop.feeBps,
-        0 // public drop stage index
+        _PUBLIC_DROP_STAGE_INDEX
       );
   });
 

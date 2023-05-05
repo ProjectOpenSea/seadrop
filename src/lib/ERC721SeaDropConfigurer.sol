@@ -53,104 +53,70 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
     }
 
     /**
-     * @notice Returns the mint public drop data.
+     * @notice Returns SeaDrop settings for a token.
      *
      * @param token The ERC721SeaDrop contract address.
      */
-    function getPublicDrop(
+    function getSeaDropSettings(
         address token
-    ) external view returns (PublicDrop memory) {
-        // Call getPublicDrop on the token contract.
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_PUBLIC_DROP_SELECTOR)
-        );
+    )
+        external
+        view
+        returns (
+            PublicDrop memory publicDrop,
+            CreatorPayout[] memory creatorPayouts,
+            bytes32 allowListMerkleRoot,
+            address[] memory allowedFeeRecipients,
+            address[] memory signers,
+            address[] memory payers,
+            address[] memory tokenGatedAllowedNftTokens
+        )
+    {
+        // Define the selectors to call.
+        bytes4[] memory selectors = new bytes4[](7);
+        selectors[0] = GET_PUBLIC_DROP_SELECTOR;
+        selectors[1] = GET_CREATOR_PAYOUTS_SELECTOR;
+        selectors[2] = GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR;
+        selectors[3] = GET_ALLOWED_FEE_RECIPIENTS_SELECTOR;
+        selectors[4] = GET_SIGNERS_SELECTOR;
+        selectors[5] = GET_PAYERS_SELECTOR;
+        selectors[6] = GET_TOKEN_GATED_ALLOWED_TOKENS_SELECTOR;
 
-        // Revert with the reason if the call failed.
-        if (!success) _revertWithReason(data);
+        // Define variables to store the staticcall results.
+        bool success;
+        bytes memory data;
 
-        // Return the public drop.
-        return abi.decode(data, (PublicDrop));
-    }
+        for (uint256 i = 0; i < selectors.length; ) {
+            // Call the selector on the token contract.
+            (success, data) = token.staticcall(
+                abi.encodeWithSelector(selectors[i])
+            );
 
-    /**
-     * @notice Returns the creator payouts for the nft contract.
-     *
-     * @param token The ERC721SeaDrop contract address.
-     */
-    function getCreatorPayouts(
-        address token
-    ) external view returns (CreatorPayout[] memory) {
-        // Call getCreatorPayouts on the token contract.
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_CREATOR_PAYOUTS_SELECTOR)
-        );
+            // Revert with the reason if the call failed.
+            if (!success) _revertWithReason(data);
 
-        // Revert with the reason if the call failed.
-        if (!success) _revertWithReason(data);
+            // Set the return data.
+            if (i == 0) {
+                publicDrop = abi.decode(data, (PublicDrop));
+            } else if (i == 1) {
+                creatorPayouts = abi.decode(data, (CreatorPayout[]));
+            } else if (i == 2) {
+                allowListMerkleRoot = abi.decode(data, (bytes32));
+            } else if (i == 3) {
+                allowedFeeRecipients = abi.decode(data, (address[]));
+            } else if (i == 4) {
+                signers = abi.decode(data, (address[]));
+            } else if (i == 5) {
+                payers = abi.decode(data, (address[]));
+            } else {
+                // i == 6
+                tokenGatedAllowedNftTokens = abi.decode(data, (address[]));
+            }
 
-        // Return the creator payouts.
-        return abi.decode(data, (CreatorPayout[]));
-    }
-
-    /**
-     * @notice Returns the allow list merkle root for the nft contract.
-     *
-     * @param token The ERC721SeaDrop contract address.
-     */
-    function getAllowListMerkleRoot(
-        address token
-    ) external view returns (bytes32) {
-        // Call getAllowListMerkleRoot on the token contract.
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR)
-        );
-
-        // Revert with the reason if the call failed.
-        if (!success) _revertWithReason(data);
-
-        // Return the allow list merkle root.
-        return abi.decode(data, (bytes32));
-    }
-
-    /**
-     * @notice Returns an enumeration of allowed fee recipients
-     *         when fee recipients are enforced.
-     *
-     * @param token The ERC721SeaDrop contract address.
-     */
-    function getAllowedFeeRecipients(
-        address token
-    ) external view returns (address[] memory) {
-        // Call getAllowedFeeRecipients on the token contract.
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_ALLOWED_FEE_RECIPIENTS_SELECTOR)
-        );
-
-        // Revert with the reason if the call failed.
-        if (!success) _revertWithReason(data);
-
-        // Return the allowed fee recipients.
-        return abi.decode(data, (address[]));
-    }
-
-    /**
-     * @notice Returns the server-side signers.
-     *
-     * @param token The ERC721SeaDrop contract address.
-     */
-    function getSigners(
-        address token
-    ) external view returns (address[] memory) {
-        // Call getSigners on the token contract.
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_SIGNERS_SELECTOR)
-        );
-
-        // Revert with the reason if the call failed.
-        if (!success) _revertWithReason(data);
-
-        // Return the signers.
-        return abi.decode(data, (address[]));
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**
@@ -176,44 +142,6 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
 
         // Return the signed mint validation params.
         return abi.decode(data, (SignedMintValidationParams));
-    }
-
-    /**
-     * @notice Returns the allowed payers.
-     *
-     * @param token The ERC721SeaDrop contract address.
-     */
-    function getPayers(address token) external view returns (address[] memory) {
-        // Call getPayers on the token contract.
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_PAYERS_SELECTOR)
-        );
-
-        // Revert with the reason if the call failed.
-        if (!success) _revertWithReason(data);
-
-        // Return the payers.
-        return abi.decode(data, (address[]));
-    }
-
-    /**
-     * @notice Returns the allowed token gated drop tokens.
-     *
-     * @param token The ERC721SeaDrop contract address.
-     */
-    function getTokenGatedAllowedTokens(
-        address token
-    ) external view returns (address[] memory) {
-        // Call getTokenGatedAllowedTokens on the token contract.
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encode(GET_TOKEN_GATED_ALLOWED_TOKENS_SELECTOR)
-        );
-
-        // Revert with the reason if the call failed.
-        if (!success) _revertWithReason(data);
-
-        // Return the allowed token addresses.
-        return abi.decode(data, (address[]));
     }
 
     /**

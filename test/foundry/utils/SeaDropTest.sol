@@ -35,13 +35,13 @@ contract SeaDropTest is
     SeaDropErrorsAndEvents,
     ZoneInteractionErrors
 {
-    /// @dev The contract offerer.
-    ERC721SeaDrop offerer;
+    /// @dev The SeaDrop token.
+    ERC721SeaDrop token;
 
     /// @dev The configurer contract.
     ERC721SeaDropConfigurer configurer;
 
-    /// @dev The allowed Seaport address to interact with the contract offerer.
+    /// @dev The allowed Seaport address to interact with the contract token.
     address internal allowedSeaport;
 
     /// @dev SeaDrop doesn't use criteria resolvers.
@@ -61,12 +61,12 @@ contract SeaDropTest is
             "MintParams("
                 "uint256 startPrice,"
                 "uint256 endPrice,"
-                "address paymentToken,"
-                "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
                 "uint256 endTime,"
-                "uint256 dropStageIndex,"
+                "address paymentToken,"
+                "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
+                "uint256 dropStageIndex,"
                 "uint256 feeBps,"
                 "bool restrictFeeRecipients"
             ")"
@@ -77,12 +77,12 @@ contract SeaDropTest is
             "MintParams("
                 "uint256 startPrice,"
                 "uint256 endPrice,"
-                "address paymentToken,"
-                "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
                 "uint256 endTime,"
-                "uint256 dropStageIndex,"
+                "address paymentToken,"
+                "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
+                "uint256 dropStageIndex,"
                 "uint256 feeBps,"
                 "bool restrictFeeRecipients"
             ")"
@@ -125,7 +125,7 @@ contract SeaDropTest is
             payoutAddress: creator,
             basisPoints: 10_000
         });
-        configurer.updateCreatorPayouts(address(offerer), creatorPayouts);
+        configurer.updateCreatorPayouts(address(token), creatorPayouts);
     }
 
     function setAllowListMerkleRootAndReturnProof(
@@ -143,7 +143,7 @@ contract SeaDropTest is
             publicKeyURIs: new string[](0),
             allowListURI: ""
         });
-        configurer.updateAllowList(address(offerer), allowListData);
+        configurer.updateAllowList(address(token), allowListData);
         return proof;
     }
 
@@ -184,7 +184,8 @@ contract SeaDropTest is
         address minter,
         address feeRecipient,
         MintParams memory mintParams,
-        uint256 salt
+        uint256 salt,
+        bool compact2098
     ) internal returns (bytes memory signature) {
         bytes32 digest = _getDigest(
             seadrop,
@@ -195,7 +196,11 @@ contract SeaDropTest is
         );
         (, uint256 pk) = makeAddrAndKey(signerName);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
-        signature = abi.encodePacked(r, s, v);
+        if (compact2098) {
+            signature = _encodeSignature2098(r, s, v);
+        } else {
+            signature = abi.encodePacked(r, s, v);
+        }
     }
 
     function _getDigest(
@@ -210,12 +215,12 @@ contract SeaDropTest is
                 _MINT_PARAMS_TYPEHASH,
                 mintParams.startPrice,
                 mintParams.endPrice,
-                mintParams.paymentToken,
-                mintParams.maxTotalMintableByWallet,
                 mintParams.startTime,
                 mintParams.endTime,
-                mintParams.dropStageIndex,
+                mintParams.paymentToken,
+                mintParams.maxTotalMintableByWallet,
                 mintParams.maxTokenSupplyForStage,
+                mintParams.dropStageIndex,
                 mintParams.feeBps,
                 mintParams.restrictFeeRecipients
             )
@@ -241,7 +246,7 @@ contract SeaDropTest is
      * Order helpers
      */
     function addSeaDropOfferItem(uint256 quantity) internal {
-        addOfferItem(ItemType.ERC1155, address(offerer), 0, quantity, quantity);
+        addOfferItem(ItemType.ERC1155, address(token), 0, quantity, quantity);
     }
 
     function addSeaDropConsiderationItems(
@@ -262,9 +267,8 @@ contract SeaDropTest is
         );
 
         // Add consideration items for creator payouts.
-        CreatorPayout[] memory creatorPayouts = configurer.getCreatorPayouts(
-            address(offerer)
-        );
+        (, CreatorPayout[] memory creatorPayouts, , , , , ) = configurer
+            .getSeaDropSettings(address(token));
         for (uint256 i = 0; i < creatorPayouts.length; i++) {
             uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /
                 10_000;
@@ -281,7 +285,7 @@ contract SeaDropTest is
 
     function configureSeaDropOrderParameters() internal {
         _configureOrderParameters({
-            offerer: address(offerer),
+            offerer: address(token),
             zone: address(0),
             zoneHash: bytes32(0),
             salt: 0,
@@ -304,5 +308,20 @@ contract SeaDropTest is
                 seadrop
             )
         );
+    }
+
+    function _encodeSignature2098(
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) internal pure returns (bytes memory) {
+        uint256 yParity;
+        if (v == 27) {
+            yParity = 0;
+        } else {
+            yParity = 1;
+        }
+        uint256 yParityAndS = (yParity << 255) | uint256(s);
+        return abi.encodePacked(r, yParityAndS);
     }
 }

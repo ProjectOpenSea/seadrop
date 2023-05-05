@@ -58,15 +58,17 @@ export const mintTokens = async ({
   minter: Wallet;
   quantity: number;
 }) => {
-  const prevPublicDrop = await configurer.getPublicDrop(token.address);
+  const { publicDrop: prevPublicDrop } = await configurer.getSeaDropSettings(
+    token.address
+  );
 
   const temporaryPublicDrop = {
     startPrice: 0,
     endPrice: 0,
-    paymentToken: AddressZero,
-    maxTotalMintableByWallet: 1000,
     startTime: Math.round(Date.now() / 1000) - 1000,
     endTime: Math.round(Date.now() / 1000) + 5000,
+    paymentToken: AddressZero,
+    maxTotalMintableByWallet: 1000,
     feeBps: 0,
     restrictFeeRecipients: false,
   };

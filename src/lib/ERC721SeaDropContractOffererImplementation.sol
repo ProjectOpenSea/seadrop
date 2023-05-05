@@ -72,12 +72,12 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             "MintParams("
                 "uint256 startPrice,"
                 "uint256 endPrice,"
-                "address paymentToken,"
-                "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
                 "uint256 endTime,"
-                "uint256 dropStageIndex,"
+                "address paymentToken,"
+                "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
+                "uint256 dropStageIndex,"
                 "uint256 feeBps,"
                 "bool restrictFeeRecipients"
             ")"
@@ -88,12 +88,12 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             "MintParams("
                 "uint256 startPrice,"
                 "uint256 endPrice,"
-                "address paymentToken,"
-                "uint256 maxTotalMintableByWallet,"
                 "uint256 startTime,"
                 "uint256 endTime,"
-                "uint256 dropStageIndex,"
+                "address paymentToken,"
+                "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
+                "uint256 dropStageIndex,"
                 "uint256 feeBps,"
                 "bool restrictFeeRecipients"
             ")"
@@ -410,7 +410,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      *                               receive. To specify a range of ERC-721
      *                               tokens, use a null address ERC-1155 with
      *                               the amount as the quantity.
-     * @param maximumSpent           Maximum items the caller is willing to
+     * @custom:param maximumSpent    Maximum items the caller is willing to
      *                               spend. Must meet or exceed the requirement.
      * @param context                Context of the order according to SIP-12,
      *                               containing the mint parameters.
@@ -421,7 +421,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     function generateOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
+        SpentItem[] calldata /* maximumSpent */,
         bytes calldata context // encoded based on the schemaID
     )
         external
@@ -440,37 +440,9 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         (offer, consideration) = _createOrder(
             fulfiller,
             minimumReceived,
-            maximumSpent,
             context,
             true
         );
-    }
-
-    /**
-     * @dev Ratifies a mint order. Nothing additional needs to happen here.
-     *
-     * @custom:param offer         The offer items.
-     * @custom:param consideration The consideration items.
-     * @custom:param context       Additional context of the order.
-     * @custom:param orderHashes   The hashes to ratify.
-     * @custom:param contractNonce The nonce of the contract.
-     *
-     * @return The magic value required by Seaport.
-     */
-    function ratifyOrder(
-        SpentItem[] calldata /* offer */,
-        ReceivedItem[] calldata /* consideration */,
-        bytes calldata /* context */, // encoded based on the schemaID
-        bytes32[] calldata /* orderHashes */,
-        uint256 /* contractNonce */
-    ) external pure returns (bytes4) {
-        // This function is a no-op, nothing additional needs to happen here.
-
-        // Utilize assembly to efficiently return the ratifyOrder magic value.
-        assembly {
-            mstore(0, 0xf4dd92ce)
-            return(0x1c, 0x04)
-        }
     }
 
     /**
@@ -480,7 +452,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param fulfiller           The address of the fulfiller.
      * @param minimumReceived     The minimum items that the caller must
      *                            receive.
-     * @param maximumSpent        Maximum items the caller is willing to spend.
+     * @custom:param maximumSpent Maximum items the caller is willing to spend.
      *                            Must meet or exceed the requirement.
      * @param context             Context of the order according to SIP-12,
      *                            containing the mint parameters.
@@ -492,7 +464,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         address /* caller */,
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
+        SpentItem[] calldata /* maximumSpent */,
         bytes calldata context
     )
         external
@@ -503,20 +475,11 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // function here (_createOrder), we will cast it as a view and use it.
         // This is okay because we are not modifying any state when passing
         // withEffects=false.
-        function(
-            address,
-            SpentItem[] calldata,
-            SpentItem[] calldata,
-            bytes calldata,
-            bool
-        ) internal view returns (SpentItem[] memory, ReceivedItem[] memory) fn;
-        function(
-            address,
-            SpentItem[] calldata,
-            SpentItem[] calldata,
-            bytes calldata,
-            bool
-        )
+        function(address, SpentItem[] calldata, bytes calldata, bool)
+            internal
+            view
+            returns (SpentItem[] memory, ReceivedItem[] memory) fn;
+        function(address, SpentItem[] calldata, bytes calldata, bool)
             internal
             returns (
                 SpentItem[] memory,
@@ -527,13 +490,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         }
 
         // Derive the offer and consideration without effects.
-        (offer, consideration) = fn(
-            fulfiller,
-            minimumReceived,
-            maximumSpent,
-            context,
-            false
-        );
+        (offer, consideration) = fn(fulfiller, minimumReceived, context, false);
     }
 
     /**
@@ -595,8 +552,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param fulfiller           The fulfiller of the order.
      * @param minimumReceived     The minimum items that the caller must
      *                            receive.
-     * @param maximumSpent        The maximum items that the caller is
-     *                            willing to spend.
      * @param context             Context of the order according to SIP-12,
      *                            containing the mint parameters.
      * @param withEffects         Whether to apply state changes of the mint.
@@ -607,7 +562,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     function _createOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata maximumSpent,
         bytes calldata context,
         bool withEffects
     )
@@ -1149,16 +1103,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // Apply the state changes of the mint.
         if (withEffects) {
             // Emit an event for the mint, for analytics.
-            emit SeaDropMint(
-                minter,
-                feeRecipient,
-                payer,
-                quantity,
-                currentPrice,
-                paymentToken,
-                feeBps,
-                dropStageIndex
-            );
+            emit SeaDropMint(payer, dropStageIndex);
         }
     }
 
@@ -1846,12 +1791,12 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 _MINT_PARAMS_TYPEHASH,
                 mintParams.startPrice,
                 mintParams.endPrice,
-                mintParams.paymentToken,
-                mintParams.maxTotalMintableByWallet,
                 mintParams.startTime,
                 mintParams.endTime,
-                mintParams.dropStageIndex,
+                mintParams.paymentToken,
+                mintParams.maxTotalMintableByWallet,
                 mintParams.maxTokenSupplyForStage,
+                mintParams.dropStageIndex,
                 mintParams.feeBps,
                 mintParams.restrictFeeRecipients
             )

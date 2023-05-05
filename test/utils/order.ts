@@ -4,6 +4,7 @@ import { toBN } from "../seaport-utils/encoding";
 
 import { toPaddedBuffer } from "./encoding";
 
+import type { AwaitedObject } from "./helpers";
 import type {
   ERC721SeaDrop,
   ERC721SeaDropConfigurer,
@@ -15,7 +16,6 @@ import type {
 } from "../../typechain-types/src/shim/Shim";
 import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
 import type { BigNumberish, Wallet } from "ethers";
-import { AwaitedObject } from "./helpers";
 
 const { AddressZero, HashZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
@@ -130,7 +130,7 @@ export const createMintOrder = async ({
     consideration.push(considerationItemFeeRecipient);
   }
 
-  const creatorPayouts = await configurer.getCreatorPayouts(token.address);
+  const { creatorPayouts } = await configurer.getSeaDropSettings(token.address);
   for (const creatorPayout of creatorPayouts) {
     const amount = creatorAmount.mul(creatorPayout.basisPoints).div(10_000);
     const considerationItem = {
@@ -219,12 +219,12 @@ export const mintParamsBuffer = (mintParams: MintParamsStruct) =>
     [
       mintParams.startPrice,
       mintParams.endPrice,
-      mintParams.paymentToken,
-      mintParams.maxTotalMintableByWallet,
       mintParams.startTime,
       mintParams.endTime,
-      mintParams.dropStageIndex,
+      mintParams.paymentToken,
+      mintParams.maxTotalMintableByWallet,
       mintParams.maxTokenSupplyForStage,
+      mintParams.dropStageIndex,
       mintParams.feeBps,
       mintParams.restrictFeeRecipients ? 1 : 0,
     ].map(toPaddedBuffer)
