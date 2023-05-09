@@ -7,7 +7,7 @@ import { toPaddedBuffer } from "./encoding";
 import type { AwaitedObject } from "./helpers";
 import type {
   ERC721SeaDrop,
-  ERC721SeaDropConfigurer,
+  IERC721SeaDrop,
   TestERC20,
 } from "../../typechain-types";
 import type {
@@ -52,7 +52,7 @@ export enum MintType {
 
 export const createMintOrder = async ({
   token,
-  configurer,
+  tokenSeaDropInterface,
   quantity,
   feeRecipient,
   feeBps,
@@ -72,7 +72,7 @@ export const createMintOrder = async ({
   signature,
 }: {
   token: ERC721SeaDrop;
-  configurer: ERC721SeaDropConfigurer;
+  tokenSeaDropInterface: IERC721SeaDrop;
   quantity?: BigNumberish;
   feeRecipient: Wallet;
   feeBps: BigNumberish;
@@ -130,7 +130,7 @@ export const createMintOrder = async ({
     consideration.push(considerationItemFeeRecipient);
   }
 
-  const { creatorPayouts } = await configurer.getSeaDropSettings(token.address);
+  const creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
   for (const creatorPayout of creatorPayouts) {
     const amount = creatorAmount.mul(creatorPayout.basisPoints).div(10_000);
     const considerationItem = {

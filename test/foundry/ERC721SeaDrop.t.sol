@@ -5,6 +5,8 @@ import { SeaDropTest } from "./utils/SeaDropTest.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
+import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+
 import {
     MintParams,
     PublicDrop,
@@ -66,8 +68,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        configurer.updateAllowedFeeRecipient(
-            address(token),
+        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
@@ -84,7 +85,7 @@ contract ERC721SeaDropTest is SeaDropTest {
             feeBps: uint16(feeBps),
             restrictFeeRecipients: true
         });
-        configurer.updatePublicDrop(address(token), publicDrop);
+        IERC721SeaDrop(address(token)).updatePublicDrop(publicDrop);
 
         addSeaDropOfferItem(3); // 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -143,8 +144,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        configurer.updateAllowedFeeRecipient(
-            address(token),
+        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
@@ -232,8 +232,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        configurer.updateAllowedFeeRecipient(
-            address(token),
+        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
@@ -254,8 +253,7 @@ contract ERC721SeaDropTest is SeaDropTest {
             feeBps: uint16(feeBps),
             restrictFeeRecipients: false
         });
-        configurer.updateTokenGatedDrop(
-            address(token),
+        IERC721SeaDrop(address(token)).updateTokenGatedDrop(
             address(test721_1),
             dropStage
         );
@@ -332,8 +330,7 @@ contract ERC721SeaDropTest is SeaDropTest {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        configurer.updateAllowedFeeRecipient(
-            address(token),
+        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
@@ -352,8 +349,7 @@ contract ERC721SeaDropTest is SeaDropTest {
                 maxFeeBps: 1000
             });
         address signer = makeAddr("signer-doug");
-        configurer.updateSignedMintValidationParams(
-            address(token),
+        IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
             signer,
             validationParams
         );

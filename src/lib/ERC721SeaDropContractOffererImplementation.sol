@@ -1523,11 +1523,16 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             .layout()
             ._enumeratedTokenGatedTokens;
 
-        // Stage struct packs to a single slot, so load it
+        // Stage struct packs to two slots, so load it
         // as a uint256; if it is 0, it is empty.
         bool dropStageDoesNotExist;
         assembly {
-            dropStageDoesNotExist := iszero(sload(existingDropStageData.slot))
+            dropStageDoesNotExist := iszero(
+                add(
+                    sload(existingDropStageData.slot),
+                    sload(add(existingDropStageData.slot, 1))
+                )
+            )
         }
 
         if (addOrUpdateDropStage) {
@@ -1694,10 +1699,15 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 signer
             ];
 
-        bool signedMintValidationParamsDoNotExist;
+        // Validation params struct packs to two slots, so load it
+        // as a uint256; if it is 0, it is empty.
+        bool signedMintValidationParamsDoesNotExist;
         assembly {
-            signedMintValidationParamsDoNotExist := iszero(
-                sload(existingSignedMintValidationParams.slot)
+            signedMintValidationParamsDoesNotExist := iszero(
+                add(
+                    sload(existingSignedMintValidationParams.slot),
+                    sload(add(existingSignedMintValidationParams.slot, 1))
+                )
             )
         }
         // Use maxMaxTotalMintableByWallet as sentry for add/update or delete.
@@ -1706,7 +1716,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         if (addOrUpdate) {
             signedMintValidationParamsMap[signer] = signedMintValidationParams;
-            if (signedMintValidationParamsDoNotExist) {
+            if (signedMintValidationParamsDoesNotExist) {
                 enumeratedStorage.push(signer);
             }
         } else {

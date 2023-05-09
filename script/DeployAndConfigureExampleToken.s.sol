@@ -9,6 +9,8 @@ import {
     ERC721SeaDropConfigurer
 } from "../src/lib/ERC721SeaDropConfigurer.sol";
 
+import { IERC721SeaDrop } from "../src/interfaces/IERC721SeaDrop.sol";
+
 import { CreatorPayout } from "../src/lib/SeaDropStructs.sol";
 
 import { PublicDrop } from "../src/lib/ERC721SeaDropStructs.sol";
@@ -64,20 +66,18 @@ contract DeployAndConfigureExampleToken is Script {
         token.setMaxSupply(maxSupply);
 
         // Configure the drop parameters.
-        setSingleCreatorPayout(configurer, token);
-        configurer.updateAllowedFeeRecipient(
-            address(token),
+        setSingleCreatorPayout(token);
+        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
-        configurer.updatePublicDrop(
-            address(token),
+        IERC721SeaDrop(address(token)).updatePublicDrop(
             PublicDrop({
                 startPrice: mintPrice,
                 endPrice: mintPrice,
-                paymentToken: address(0),
                 startTime: uint48(block.timestamp),
-                endTime: uint48(block.timestamp) + 10_000_000,
+                endTime: uint48(block.timestamp) + 1_000_000,
+                paymentToken: address(0),
                 maxTotalMintableByWallet: maxTotalMintableByWallet,
                 feeBps: feeBps,
                 restrictFeeRecipients: true
@@ -88,27 +88,23 @@ contract DeployAndConfigureExampleToken is Script {
         ConsiderationInterface(seaport).fulfillAdvancedOrder{
             value: mintPrice * 3
         }({
-            advancedOrder: deriveOrder(configurer, address(token), 3),
+            advancedOrder: deriveOrder(address(token), 3),
             criteriaResolvers: new CriteriaResolver[](0),
             fulfillerConduitKey: bytes32(0),
             recipient: address(0)
         });
     }
 
-    function setSingleCreatorPayout(
-        ERC721SeaDropConfigurer configurer,
-        ERC721SeaDrop token
-    ) internal {
+    function setSingleCreatorPayout(ERC721SeaDrop token) internal {
         CreatorPayout[] memory creatorPayouts = new CreatorPayout[](1);
         creatorPayouts[0] = CreatorPayout({
             payoutAddress: creator,
             basisPoints: 10_000
         });
-        configurer.updateCreatorPayouts(address(token), creatorPayouts);
+        IERC721SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
     }
 
     function deriveOrder(
-        ERC721SeaDropConfigurer configurer,
         address token,
         uint256 quantity
     ) internal view returns (AdvancedOrder memory order) {
@@ -124,8 +120,8 @@ contract DeployAndConfigureExampleToken is Script {
             endAmount: quantity
         });
 
-        (, CreatorPayout[] memory creatorPayouts, , , , , ) = configurer
-            .getSeaDropSettings(address(token));
+        CreatorPayout[] memory creatorPayouts = IERC721SeaDrop(token)
+            .getCreatorPayouts();
         ConsiderationItem[] memory considerationItems = new ConsiderationItem[](
             creatorPayouts.length + 1
         );

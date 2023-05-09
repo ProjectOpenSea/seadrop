@@ -1,12 +1,14 @@
 import { setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 
+import { IERC721SeaDrop__factory } from "../../typechain-types";
+
 import { MintType, createMintOrder } from "./order";
 
 import type {
   ConsiderationInterface,
   ERC721SeaDrop,
-  ERC721SeaDropConfigurer,
+  IERC721SeaDrop,
 } from "../../typechain-types";
 import type { Wallet } from "ethers";
 
@@ -42,25 +44,28 @@ export const deployERC721SeaDrop = async (
     marketplaceContract
   );
 
-  return { configurer, token };
+  const tokenSeaDropInterface = IERC721SeaDrop__factory.connect(
+    token.address,
+    owner
+  );
+
+  return { configurer, token, tokenSeaDropInterface };
 };
 
 export const mintTokens = async ({
   marketplaceContract,
   token,
-  configurer,
+  tokenSeaDropInterface,
   minter,
   quantity,
 }: {
   marketplaceContract: ConsiderationInterface;
   token: ERC721SeaDrop;
-  configurer: ERC721SeaDropConfigurer;
+  tokenSeaDropInterface: IERC721SeaDrop;
   minter: Wallet;
   quantity: number;
 }) => {
-  const { publicDrop: prevPublicDrop } = await configurer.getSeaDropSettings(
-    token.address
-  );
+  const prevPublicDrop = await tokenSeaDropInterface.getPublicDrop();
 
   const temporaryPublicDrop = {
     startPrice: 0,
@@ -72,11 +77,11 @@ export const mintTokens = async ({
     feeBps: 0,
     restrictFeeRecipients: false,
   };
-  await configurer.updatePublicDrop(token.address, temporaryPublicDrop);
+  await tokenSeaDropInterface.updatePublicDrop(temporaryPublicDrop);
 
   const { order, value } = await createMintOrder({
     token,
-    configurer,
+    tokenSeaDropInterface,
     quantity,
     feeRecipient: { address: `0x${"1".repeat(40)}` } as any,
     feeBps: 0,
@@ -90,7 +95,7 @@ export const mintTokens = async ({
     .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value });
 
   // Reset the public drop.
-  await configurer.updatePublicDrop(token.address, prevPublicDrop);
+  await tokenSeaDropInterface.updatePublicDrop(prevPublicDrop);
 };
 
 export const deployDelegationRegistryToCanonicalAddress = async () => {

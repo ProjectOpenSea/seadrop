@@ -19,10 +19,10 @@ bytes4 constant UPDATE_ALLOWED_SEAPORT_SELECTOR = 0x6aba5018;
 bytes4 constant UPDATE_DROP_URI_SELECTOR = 0xb957d0cb;
 bytes4 constant UPDATE_CREATOR_PAYOUTS_SELECTOR = 0x1ecdfb8c;
 bytes4 constant UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR = 0x8e7d1e43;
-bytes4 constant UPDATE_PUBLIC_DROP_SELECTOR = 0x176d67e7;
+bytes4 constant UPDATE_PUBLIC_DROP_SELECTOR = 0xaa11949e;
 bytes4 constant UPDATE_ALLOW_LIST_SELECTOR = 0xebb4a55f;
-bytes4 constant UPDATE_TOKEN_GATED_DROP_SELECTOR = 0x978960fc;
-bytes4 constant UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR = 0xe179b554;
+bytes4 constant UPDATE_TOKEN_GATED_DROP_SELECTOR = 0x16c24140;
+bytes4 constant UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR = 0x14250176;
 bytes4 constant UPDATE_PAYER_SELECTOR = 0x7f2a5cca;
 
 /// @dev Selectors for Seaport contract offerer methods used in the fallback function.

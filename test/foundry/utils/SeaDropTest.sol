@@ -9,6 +9,8 @@ import {
     ERC721SeaDropConfigurer
 } from "seadrop/lib/ERC721SeaDropConfigurer.sol";
 
+import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+
 import { MintParams } from "seadrop/lib/ERC721SeaDropStructs.sol";
 
 import { AllowListData, CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
@@ -125,7 +127,7 @@ contract SeaDropTest is
             payoutAddress: creator,
             basisPoints: 10_000
         });
-        configurer.updateCreatorPayouts(address(token), creatorPayouts);
+        IERC721SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
     }
 
     function setAllowListMerkleRootAndReturnProof(
@@ -143,7 +145,7 @@ contract SeaDropTest is
             publicKeyURIs: new string[](0),
             allowListURI: ""
         });
-        configurer.updateAllowList(address(token), allowListData);
+        IERC721SeaDrop(address(token)).updateAllowList(allowListData);
         return proof;
     }
 
@@ -267,8 +269,8 @@ contract SeaDropTest is
         );
 
         // Add consideration items for creator payouts.
-        (, CreatorPayout[] memory creatorPayouts, , , , , ) = configurer
-            .getSeaDropSettings(address(token));
+        CreatorPayout[] memory creatorPayouts = IERC721SeaDrop(address(token))
+            .getCreatorPayouts();
         for (uint256 i = 0; i < creatorPayouts.length; i++) {
             uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /
                 10_000;

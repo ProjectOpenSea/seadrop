@@ -10,7 +10,7 @@ import type {
   ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
-  ERC721SeaDropConfigurer,
+  IERC721SeaDrop,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
@@ -26,7 +26,9 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
-  let configurer: ERC721SeaDropConfigurer;
+  let tokenSeaDropInterface: IERC721SeaDrop;
+
+  // Wallets
   let owner: Wallet;
   let bob: Wallet;
 
@@ -51,7 +53,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, configurer } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -77,7 +79,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter: owner,
       quantity: 1,
     });
@@ -173,7 +175,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter: owner,
       quantity: 2,
     });
@@ -197,7 +199,6 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token,
       "BatchMetadataUpdate"
     );
-    console.log("12345");
 
     expect(await token.baseURI()).to.equal("http://example.com/");
     expect(await token.tokenURI(1)).to.equal("http://example.com/1");
@@ -236,7 +237,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter: owner,
       quantity: 1,
     });

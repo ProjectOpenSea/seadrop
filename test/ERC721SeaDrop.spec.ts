@@ -11,7 +11,7 @@ import type {
   ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
-  ERC721SeaDropConfigurer,
+  IERC721SeaDrop,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
@@ -24,7 +24,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
-  let configurer: ERC721SeaDropConfigurer;
+  let tokenSeaDropInterface: IERC721SeaDrop;
+
+  // Wallets
   let owner: Wallet;
   let creator: Wallet;
   let minter: Wallet;
@@ -51,7 +53,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, configurer } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -63,7 +65,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter,
       quantity: 5,
     });
@@ -98,7 +100,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter,
       quantity: 3,
     });
@@ -184,7 +186,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter,
       quantity: 1,
     });

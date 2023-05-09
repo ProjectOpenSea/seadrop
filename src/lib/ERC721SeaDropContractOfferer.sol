@@ -19,10 +19,6 @@ import { AllowListData, SpentItem } from "./SeaDropStructs.sol";
 import "./ERC721SeaDropConstants.sol";
 
 import {
-    INonFungibleSeaDropToken
-} from "../interfaces/INonFungibleSeaDropToken.sol";
-
-import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
@@ -37,8 +33,7 @@ import {
  */
 contract ERC721SeaDropContractOfferer is
     ERC721ContractMetadata,
-    SeaDropErrorsAndEvents,
-    INonFungibleSeaDropToken
+    SeaDropErrorsAndEvents
 {
     using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
 
@@ -264,13 +259,7 @@ contract ERC721SeaDropContractOfferer is
      */
     function supportsInterface(
         bytes4 interfaceId
-    )
-        public
-        view
-        virtual
-        override(IERC165, ERC721ContractMetadata)
-        returns (bool)
-    {
+    ) public view virtual override(ERC721ContractMetadata) returns (bool) {
         return
             // interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
             interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)

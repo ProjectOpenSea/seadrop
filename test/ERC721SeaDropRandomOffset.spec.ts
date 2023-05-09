@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
+import { IERC721SeaDrop__factory } from "../typechain-types";
+
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
@@ -9,8 +11,8 @@ import { VERSION, mintTokens } from "./utils/helpers";
 import type {
   ConduitInterface,
   ConsiderationInterface,
-  ERC721SeaDropConfigurer,
   ERC721SeaDropRandomOffset,
+  IERC721SeaDrop,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
@@ -23,7 +25,9 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDropRandomOffset;
-  let configurer: ERC721SeaDropConfigurer;
+  let tokenSeaDropInterface: IERC721SeaDrop;
+
+  // Wallets
   let owner: Wallet;
   let creator: Wallet;
   let minter: Wallet;
@@ -54,7 +58,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
       "ERC721SeaDropConfigurer",
       owner
     );
-    configurer = await ERC721SeaDropConfigurer.deploy();
+    const configurer = await ERC721SeaDropConfigurer.deploy();
 
     // Deploy token
     const ERC721SeaDropRandomOffset = await ethers.getContractFactory(
@@ -67,6 +71,11 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
       configurer.address,
       marketplaceContract.address,
       conduitOne.address
+    );
+
+    tokenSeaDropInterface = IERC721SeaDrop__factory.connect(
+      token.address,
+      owner
     );
   });
 
@@ -86,7 +95,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter,
       quantity: 100,
     });
@@ -115,7 +124,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     await mintTokens({
       marketplaceContract,
       token,
-      configurer,
+      tokenSeaDropInterface,
       minter,
       quantity: 100,
     });

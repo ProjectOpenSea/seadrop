@@ -20,7 +20,7 @@ import type {
   ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
-  ERC721SeaDropConfigurer,
+  IERC721SeaDrop,
 } from "../typechain-types";
 import type { MintParamsStruct } from "../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
@@ -37,13 +37,15 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
-  let configurer: ERC721SeaDropConfigurer;
+  let tokenSeaDropInterface: IERC721SeaDrop;
+  let feeBps: number;
+  let mintParams: AwaitedObject<MintParamsStruct>;
+
+  // Wallets
   let creator: Wallet;
   let owner: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
-  let feeBps: number;
-  let mintParams: AwaitedObject<MintParamsStruct>;
 
   after(async () => {
     await network.provider.request({
@@ -68,7 +70,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, configurer } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -79,12 +81,11 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     // Update the fee recipient and creator payout address for the token.
     await token.setMaxSupply(1000);
-    await configurer.updateAllowedFeeRecipient(
-      token.address,
+    await tokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
     );
-    await configurer.updateCreatorPayouts(token.address, [
+    await tokenSeaDropInterface.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
 
@@ -116,7 +117,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -126,7 +127,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // the expected event was emitted.
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -164,20 +165,17 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParamsFreeMint
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
     });
 
-    const { allowListMerkleRoot } = await configurer.getSeaDropSettings(
-      token.address
-    );
-    expect(allowListMerkleRoot).to.eq(root);
+    expect(await tokenSeaDropInterface.getAllowListMerkleRoot()).to.eq(root);
 
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -212,7 +210,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -220,7 +218,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -242,7 +240,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ); // PayerNotAllowed
 
     // Allow the payer.
-    await configurer.updatePayer(token.address, owner.address, true);
+    await tokenSeaDropInterface.updatePayer(owner.address, true);
 
     // Mint an allow list stage with a different payer than minter.
     await expect(
@@ -269,7 +267,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -277,7 +275,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -302,7 +300,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     ({ order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -335,7 +333,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -345,7 +343,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient: invalidFeeRecipient,
       feeBps: mintParams.feeBps,
@@ -378,34 +376,35 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
     });
 
     // Deploy a new ERC721SeaDrop.
-    const { token: differentToken, configurer: differentConfigurer } =
-      await deployERC721SeaDrop(
-        owner,
-        marketplaceContract.address,
-        conduitOne.address
-      );
+    const {
+      token: differentToken,
+      tokenSeaDropInterface: differentTokenSeaDropInterface,
+    } = await deployERC721SeaDrop(
+      owner,
+      marketplaceContract.address,
+      conduitOne.address
+    );
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
-    await differentConfigurer.updateAllowedFeeRecipient(
-      differentToken.address,
+    await differentTokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
     );
-    await differentConfigurer.updateCreatorPayouts(differentToken.address, [
+    await differentTokenSeaDropInterface.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
 
     const { order, value } = await createMintOrder({
       token: differentToken,
-      configurer: differentConfigurer,
+      tokenSeaDropInterface: differentTokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -438,7 +437,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -452,7 +451,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -486,7 +485,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -494,7 +493,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -521,7 +520,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Attempt to mint maxTotalMintableByWallet to the minter.
     ({ order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -563,7 +562,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -571,7 +570,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -597,7 +596,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     ({ order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: mintParams.maxTotalMintableByWallet,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -644,7 +643,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -652,7 +651,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     let { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 10,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -675,7 +674,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     ({ order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -709,14 +708,13 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { proof } = await createAllowListAndGetProof([minter], mintParams);
 
     // We are skipping updating the allow list, the root should be zero.
-    const { allowListMerkleRoot } = await configurer.getSeaDropSettings(
-      token.address
+    expect(await tokenSeaDropInterface.getAllowListMerkleRoot()).to.eq(
+      HashZero
     );
-    expect(allowListMerkleRoot).to.eq(HashZero);
 
     let { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -740,7 +738,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Try with proof of zero.
     ({ order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -777,7 +775,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -785,7 +783,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -815,7 +813,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const payer = new ethers.Wallet(randomHex(32), provider);
     await faucet(payer.address, provider);
 
-    await configurer.updateCreatorPayouts(token.address, [
+    await tokenSeaDropInterface.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 5_000 },
       { payoutAddress: owner.address, basisPoints: 5_000 },
     ]);
@@ -826,7 +824,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -834,7 +832,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -880,7 +878,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       mintParams
     );
 
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -888,7 +886,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     const { order } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -944,7 +942,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     );
 
     // Update the allow list of the token.
-    await configurer.updateAllowList(token.address, {
+    await tokenSeaDropInterface.updateAllowList({
       merkleRoot: root,
       publicKeyURIs: [],
       allowListURI: "",
@@ -954,7 +952,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // the expected event was emitted.
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,

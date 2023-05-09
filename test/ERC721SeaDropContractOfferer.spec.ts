@@ -26,6 +26,7 @@ import type {
   ConsiderationInterface,
   ERC721SeaDrop,
   ERC721SeaDropConfigurer,
+  IERC721SeaDrop,
 } from "../typechain-types";
 import type {
   PublicDropStruct,
@@ -50,15 +51,18 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   // SeaDrop
   let token: ERC721SeaDrop;
+  let tokenSeaDropInterface: IERC721SeaDrop;
   let configurer: ERC721SeaDropConfigurer;
-  let owner: Wallet;
-  let creator: Wallet;
-  let minter: Wallet;
-  let feeRecipient: Wallet;
   let publicDrop: AwaitedObject<PublicDropStruct>;
   let tokenGatedDropStage: AwaitedObject<TokenGatedDropStageStruct>;
   let signedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
   let allowListData: AwaitedObject<AllowListDataStruct>;
+
+  // Wallets
+  let owner: Wallet;
+  let creator: Wallet;
+  let minter: Wallet;
+  let feeRecipient: Wallet;
 
   const _PUBLIC_DROP_STAGE_INDEX = 0;
 
@@ -86,7 +90,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, configurer } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface, configurer } = await deployERC721SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -135,13 +139,12 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     };
 
     await token.setMaxSupply(5);
-    await configurer.updatePublicDrop(token.address, publicDrop);
-    await configurer.updateAllowedFeeRecipient(
-      token.address,
+    await tokenSeaDropInterface.updatePublicDrop(publicDrop);
+    await tokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
     );
-    await configurer.updateCreatorPayouts(token.address, [
+    await tokenSeaDropInterface.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
   });
@@ -166,7 +169,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   });
 
   it("Should not be able to mint until the creator payout is set", async () => {
-    const { token: token2, configurer: configurer2 } =
+    const { token: token2, tokenSeaDropInterface: tokenSeaDropInterface2 } =
       await deployERC721SeaDrop(
         owner,
         marketplaceContract.address,
@@ -174,24 +177,20 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       );
 
     await token2.setMaxSupply(5);
-    await configurer2.updatePublicDrop(token2.address, publicDrop);
-    await configurer2.updateAllowedFeeRecipient(
-      token2.address,
+    await tokenSeaDropInterface2.updatePublicDrop(publicDrop);
+    await tokenSeaDropInterface2.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
     );
 
-    const { creatorPayouts } = await configurer2.getSeaDropSettings(
-      token2.address
-    );
-    expect(creatorPayouts).to.deep.equal([]);
+    expect(await tokenSeaDropInterface2.getCreatorPayouts()).to.deep.equal([]);
     await expect(
-      configurer2.updateCreatorPayouts(token2.address, [])
+      tokenSeaDropInterface2.updateCreatorPayouts([], { gasLimit: 100_000 })
     ).to.be.revertedWithCustomError(token2, "CreatorPayoutsNotSet");
 
     let { order, value } = await createMintOrder({
       token: token2,
-      configurer: configurer2,
+      tokenSeaDropInterface: tokenSeaDropInterface2,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -209,14 +208,14 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // CreatorPayoutsNotSet
 
-    await configurer2.updateCreatorPayouts(token2.address, [
+    await tokenSeaDropInterface2.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 1_000 },
       { payoutAddress: owner.address, basisPoints: 9_000 },
     ]);
 
     ({ order, value } = await createMintOrder({
       token: token2,
-      configurer: configurer2,
+      tokenSeaDropInterface: tokenSeaDropInterface2,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -239,34 +238,33 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   it("Should only let the token owner update the drop URI", async () => {
     await expect(
-      configurer
+      tokenSeaDropInterface
         .connect(creator)
-        .updateDropURI(token.address, "http://test.com")
+        .updateDropURI("http://test.com", { gasLimit: 100_000 })
     ).to.revertedWithCustomError(token, "OnlyOwner");
 
-    await expect(configurer.updateDropURI(token.address, "http://test.com"))
+    await expect(tokenSeaDropInterface.updateDropURI("http://test.com"))
       .to.emit(token, "DropURIUpdated")
       .withArgs("http://test.com");
   });
 
   it("Should only let the owner update the allowed fee recipients", async () => {
-    await configurer.updateAllowedFeeRecipient(
-      token.address,
+    await tokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       false
     );
-    let { allowedFeeRecipients } = await configurer.getSeaDropSettings(
-      token.address
-    );
+    let allowedFeeRecipients =
+      await tokenSeaDropInterface.getAllowedFeeRecipients();
     expect(allowedFeeRecipients).to.deep.eq([]);
 
     await expect(
-      configurer.updateAllowedFeeRecipient(token.address, AddressZero, true)
+      tokenSeaDropInterface.updateAllowedFeeRecipient(AddressZero, true, {
+        gasLimit: 100_000,
+      })
     ).to.be.revertedWithCustomError(token, "FeeRecipientCannotBeZeroAddress");
 
     await expect(
-      configurer.updateAllowedFeeRecipient(
-        token.address,
+      tokenSeaDropInterface.updateAllowedFeeRecipient(
         feeRecipient.address,
         true
       )
@@ -275,22 +273,20 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .withArgs(feeRecipient.address, true);
 
     await expect(
-      configurer.updateAllowedFeeRecipient(
-        token.address,
+      tokenSeaDropInterface.updateAllowedFeeRecipient(
         feeRecipient.address,
-        true
+        true,
+        { gasLimit: 100_000 }
       )
     ).to.be.revertedWithCustomError(token, "DuplicateFeeRecipient");
 
-    ({ allowedFeeRecipients } = await configurer.getSeaDropSettings(
-      token.address
-    ));
+    allowedFeeRecipients =
+      await tokenSeaDropInterface.getAllowedFeeRecipients();
     expect(allowedFeeRecipients).to.deep.eq([feeRecipient.address]);
 
     // Now let's disallow the feeRecipient
     await expect(
-      configurer.updateAllowedFeeRecipient(
-        token.address,
+      tokenSeaDropInterface.updateAllowedFeeRecipient(
         feeRecipient.address,
         false
       )
@@ -298,16 +294,15 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "AllowedFeeRecipientUpdated")
       .withArgs(feeRecipient.address, false);
 
-    ({ allowedFeeRecipients } = await configurer.getSeaDropSettings(
-      token.address
-    ));
+    allowedFeeRecipients =
+      await tokenSeaDropInterface.getAllowedFeeRecipients();
     expect(allowedFeeRecipients).to.deep.eq([]);
 
     await expect(
-      configurer.updateAllowedFeeRecipient(
-        token.address,
+      tokenSeaDropInterface.updateAllowedFeeRecipient(
         feeRecipient.address,
-        false
+        false,
+        { gasLimit: 100_000 }
       )
     ).to.be.revertedWithCustomError(token, "FeeRecipientNotPresent");
   });
@@ -318,11 +313,11 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       startPrice: parseEther("1"),
       endPrice: parseEther(".1"),
     };
-    await configurer.updatePublicDrop(token.address, publicDropDescMintPrice);
+    await tokenSeaDropInterface.updatePublicDrop(publicDropDescMintPrice);
 
     let { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -369,10 +364,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       startPrice: parseEther(".1"),
       endPrice: parseEther("1"),
     };
-    await configurer.updatePublicDrop(token.address, publicDropAscMintPrice);
+    await tokenSeaDropInterface.updatePublicDrop(publicDropAscMintPrice);
     ({ order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -536,21 +531,23 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   it("Should only let the token owner update the allowed Seaport addresses", async () => {
     await expect(
-      configurer
+      tokenSeaDropInterface
         .connect(creator)
-        .updateAllowedSeaport(token.address, [marketplaceContract.address])
+        .updateAllowedSeaport([marketplaceContract.address], {
+          gasLimit: 100_000,
+        })
     ).to.revertedWithCustomError(token, "OnlyOwner");
 
     await expect(
-      configurer
+      tokenSeaDropInterface
         .connect(minter)
-        .updateAllowedSeaport(token.address, [marketplaceContract.address])
+        .updateAllowedSeaport([marketplaceContract.address], {
+          gasLimit: 100_000,
+        })
     ).to.revertedWithCustomError(token, "OnlyOwner");
 
     await expect(
-      configurer.updateAllowedSeaport(token.address, [
-        marketplaceContract.address,
-      ])
+      tokenSeaDropInterface.updateAllowedSeaport([marketplaceContract.address])
     )
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([marketplaceContract.address]);
@@ -560,7 +557,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     const address3 = `0x${"3".repeat(40)}`;
 
     await expect(
-      configurer.updateAllowedSeaport(token.address, [
+      tokenSeaDropInterface.updateAllowedSeaport([
         marketplaceContract.address,
         address1,
       ])
@@ -568,12 +565,12 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([marketplaceContract.address, address1]);
 
-    await expect(configurer.updateAllowedSeaport(token.address, [address2]))
+    await expect(tokenSeaDropInterface.updateAllowedSeaport([address2]))
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([address2]);
 
     await expect(
-      configurer.updateAllowedSeaport(token.address, [
+      tokenSeaDropInterface.updateAllowedSeaport([
         address3,
         marketplaceContract.address,
         address2,
@@ -584,9 +581,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .withArgs([address3, marketplaceContract.address, address2, address1]);
 
     await expect(
-      configurer.updateAllowedSeaport(token.address, [
-        marketplaceContract.address,
-      ])
+      tokenSeaDropInterface.updateAllowedSeaport([marketplaceContract.address])
     )
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([marketplaceContract.address]);
@@ -599,57 +594,55 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await configurer.updateAllowList(token.address, allowListData);
+    await tokenSeaDropInterface.updateAllowList(allowListData);
 
     await expect(
-      configurer.connect(creator).updateAllowList(token.address, allowListData)
+      tokenSeaDropInterface
+        .connect(creator)
+        .updateAllowList(allowListData, { gasLimit: 100_000 })
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
     // Test `updateTokenGatedDrop` for coverage.
 
-    await configurer.updateTokenGatedDrop(
-      token.address,
+    await tokenSeaDropInterface.updateTokenGatedDrop(
       `0x${"4".repeat(40)}`,
       tokenGatedDropStage
     );
 
     await expect(
-      configurer
+      tokenSeaDropInterface
         .connect(creator)
-        .updateTokenGatedDrop(
-          token.address,
-          `0x${"4".repeat(40)}`,
-          tokenGatedDropStage
-        )
+        .updateTokenGatedDrop(`0x${"4".repeat(40)}`, tokenGatedDropStage, {
+          gasLimit: 100_000,
+        })
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
     // Test `updateSigner` for coverage.
-    await configurer.updateSignedMintValidationParams(
-      token.address,
+    await tokenSeaDropInterface.updateSignedMintValidationParams(
       `0x${"5".repeat(40)}`,
       signedMintValidationParams
     );
 
     await expect(
-      configurer
+      tokenSeaDropInterface
         .connect(creator)
         .updateSignedMintValidationParams(
-          token.address,
           `0x${"5".repeat(40)}`,
-          signedMintValidationParams
+          signedMintValidationParams,
+          { gasLimit: 100_000 }
         )
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
     // Test `updatePayer` for coverage.
-    await configurer.updatePayer(token.address, `0x${"6".repeat(40)}`, true);
+    await tokenSeaDropInterface.updatePayer(`0x${"6".repeat(40)}`, true);
 
     await expect(
-      configurer
+      tokenSeaDropInterface
         .connect(creator)
         .updateSignedMintValidationParams(
-          token.address,
           `0x${"6".repeat(40)}`,
-          signedMintValidationParams
+          signedMintValidationParams,
+          { gasLimit: 100_000 }
         )
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
   });
@@ -661,31 +654,37 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     await faucet(payer2.address, provider);
 
     await expect(
-      configurer.updatePayer(token.address, payer.address, false)
+      tokenSeaDropInterface.updatePayer(payer.address, false, {
+        gasLimit: 100_000,
+      })
     ).to.be.revertedWithCustomError(token, "PayerNotPresent");
 
-    await configurer.updatePayer(token.address, payer.address, true);
+    await tokenSeaDropInterface.updatePayer(payer.address, true);
 
     // Ensure that the same payer cannot be added twice.
     await expect(
-      configurer.updatePayer(token.address, payer.address, true)
+      tokenSeaDropInterface.updatePayer(payer.address, true, {
+        gasLimit: 100_000,
+      })
     ).to.be.revertedWithCustomError(token, "DuplicatePayer");
 
     // Ensure that the zero address cannot be added as a payer.
     await expect(
-      configurer.updatePayer(token.address, AddressZero, true)
+      tokenSeaDropInterface.updatePayer(AddressZero, true, {
+        gasLimit: 100_000,
+      })
     ).to.be.revertedWithCustomError(token, "PayerCannotBeZeroAddress");
 
     // Remove the original payer for branch coverage.
-    await configurer.updatePayer(token.address, payer.address, false);
-    let { payers } = await configurer.getSeaDropSettings(token.address);
+    await tokenSeaDropInterface.updatePayer(payer.address, false);
+    let payers = await tokenSeaDropInterface.getPayers();
     expect(payers).to.deep.eq([]);
 
     // Add two signers and remove the second for branch coverage.
-    await configurer.updatePayer(token.address, payer.address, true);
-    await configurer.updatePayer(token.address, payer2.address, true);
-    await configurer.updatePayer(token.address, payer2.address, false);
-    ({ payers } = await configurer.getSeaDropSettings(token.address));
+    await tokenSeaDropInterface.updatePayer(payer.address, true);
+    await tokenSeaDropInterface.updatePayer(payer2.address, true);
+    await tokenSeaDropInterface.updatePayer(payer2.address, false);
+    payers = await tokenSeaDropInterface.getPayers();
     expect(payers).to.deep.eq([payer.address]);
   });
 
@@ -720,21 +719,22 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     };
 
     for (const method of onlyOwnerMethods) {
-      await (configurer as any)
+      await (tokenSeaDropInterface as any)
         .connect(owner)
-        [method](token.address, ...methodParams[method]);
+        [method](...methodParams[method]);
 
       await expect(
-        (configurer as any)
+        (tokenSeaDropInterface as any)
           .connect(creator)
-          [method](token.address, ...methodParams[method])
+          [method](...methodParams[method], {
+            gasLimit: 100_000,
+          })
       ).to.be.revertedWithCustomError(token, "OnlyOwner");
     }
   });
 
   it("Should be able to use the multiConfigure method", async () => {
-    await configurer.updateAllowedFeeRecipient(
-      token.address,
+    await tokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       false
     );
@@ -806,15 +806,16 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       expect(await token.contractURI()).to.eq("https://example2.com");
       expect(await token.provenanceHash()).to.eq(`0x${"3".repeat(64)}`);
 
-      const {
-        publicDrop,
-        creatorPayouts,
-        allowListMerkleRoot,
-        allowedFeeRecipients,
-        signers,
-        payers,
-        tokenGatedAllowedNftTokens,
-      } = await configurer.getSeaDropSettings(token.address);
+      const publicDrop = await tokenSeaDropInterface.getPublicDrop();
+      const creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
+      const allowListMerkleRoot =
+        await tokenSeaDropInterface.getAllowListMerkleRoot();
+      const allowedFeeRecipients =
+        await tokenSeaDropInterface.getAllowedFeeRecipients();
+      const signers = await tokenSeaDropInterface.getSigners();
+      const payers = await tokenSeaDropInterface.getPayers();
+      const tokenGatedAllowedNftTokens =
+        await tokenSeaDropInterface.getTokenGatedAllowedTokens();
 
       expect(publicDrop).to.deep.eq([
         publicDrop.startPrice,
@@ -836,7 +837,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       );
       for (const [i, allowed] of config.tokenGatedAllowedNftTokens.entries()) {
         expect(
-          await configurer.getTokenGatedDrop(token.address, allowed)
+          await tokenSeaDropInterface.getTokenGatedDrop(allowed)
         ).to.deep.eq([
           BigNumber.from(config.tokenGatedDropStages[i].startPrice),
           BigNumber.from(config.tokenGatedDropStages[i].endPrice),
@@ -854,7 +855,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
       for (const [i, signer] of config.signers.entries()) {
         expect(
-          await configurer.getSignedMintValidationParams(token.address, signer)
+          await tokenSeaDropInterface.getSignedMintValidationParams(signer)
         ).to.deep.eq([
           config.signedMintValidationParams[i].minMintPrice,
           config.signedMintValidationParams[i].paymentToken,
@@ -968,7 +969,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // Set a public drop with maxTotalMintableByWallet: 1
     // and restrictFeeRecipient: false
     const oneEther = parseEther("1");
-    await configurer.updatePublicDrop(token.address, {
+    await tokenSeaDropInterface.updatePublicDrop({
       ...publicDrop,
       startPrice: oneEther,
       endPrice: oneEther,
@@ -983,9 +984,9 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     const maliciousRecipient = await MaliciousRecipientFactory.deploy();
 
     // Set the creator address to MaliciousRecipient.
-    await configurer
+    await tokenSeaDropInterface
       .connect(owner)
-      .updateCreatorPayouts(token.address, [
+      .updateCreatorPayouts([
         { payoutAddress: maliciousRecipient.address, basisPoints: 10_000 },
       ]);
 
@@ -1000,16 +1001,16 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   it("Should allow multiple creator payout addresses", async () => {
     // Valid cases
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
+      tokenSeaDropInterface.updateCreatorPayouts([
         { payoutAddress: creator.address, basisPoints: 10_000 },
       ])
     ).to.emit(token, "CreatorPayoutsUpdated");
     // .withArgs([[creator.address, 10_000]]);
-    let { creatorPayouts } = await configurer.getSeaDropSettings(token.address);
+    let creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
     expect(creatorPayouts).to.deep.eq([[creator.address, 10_000]]);
 
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
+      tokenSeaDropInterface.updateCreatorPayouts([
         { payoutAddress: creator.address, basisPoints: 5_000 },
         { payoutAddress: owner.address, basisPoints: 5_000 },
       ])
@@ -1020,14 +1021,14 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [creator.address, 5_000],
     //   [owner.address, 5_000],
     // ]);
-    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
     expect(creatorPayouts).to.deep.eq([
       [creator.address, 5_000],
       [owner.address, 5_000],
     ]);
 
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
+      tokenSeaDropInterface.updateCreatorPayouts([
         { payoutAddress: creator.address, basisPoints: 9_000 },
         { payoutAddress: owner.address, basisPoints: 500 },
         { payoutAddress: minter.address, basisPoints: 500 },
@@ -1038,7 +1039,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [owner.address, 500],
     //   [minter.address, 500],
     // ]);
-    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
     expect(creatorPayouts).to.deep.eq([
       [creator.address, 9_000],
       [owner.address, 500],
@@ -1046,7 +1047,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     ]);
 
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
+      tokenSeaDropInterface.updateCreatorPayouts([
         { payoutAddress: creator.address, basisPoints: 100 },
         { payoutAddress: owner.address, basisPoints: 100 },
         { payoutAddress: minter.address, basisPoints: 9_800 },
@@ -1057,7 +1058,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [owner.address, 100],
     //   [minter.address, 9_800],
     // ]);
-    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
     expect(creatorPayouts).to.deep.eq([
       [creator.address, 100],
       [owner.address, 100],
@@ -1065,7 +1066,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     ]);
 
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
+      tokenSeaDropInterface.updateCreatorPayouts([
         { payoutAddress: creator.address, basisPoints: 1_000 },
         { payoutAddress: owner.address, basisPoints: 1_000 },
         { payoutAddress: minter.address, basisPoints: 1_000 },
@@ -1082,7 +1083,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     //   [owner.address, 1_000],
     //   [minter.address, 5_000],
     // ]);
-    ({ creatorPayouts } = await configurer.getSeaDropSettings(token.address));
+    creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
     expect(creatorPayouts).to.deep.eq([
       [creator.address, 1_000],
       [owner.address, 1_000],
@@ -1094,51 +1095,64 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Invalid cases
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
-        { payoutAddress: creator.address, basisPoints: 100 },
-        { payoutAddress: owner.address, basisPoints: 100 },
-        { payoutAddress: minter.address, basisPoints: 9_700 },
-        { payoutAddress: AddressZero, basisPoints: 100 },
-      ])
+      tokenSeaDropInterface.updateCreatorPayouts(
+        [
+          { payoutAddress: creator.address, basisPoints: 100 },
+          { payoutAddress: owner.address, basisPoints: 100 },
+          { payoutAddress: minter.address, basisPoints: 9_700 },
+          { payoutAddress: AddressZero, basisPoints: 100 },
+        ],
+        { gasLimit: 100_000 }
+      )
     ).to.be.revertedWithCustomError(
       token,
       "CreatorPayoutAddressCannotBeZeroAddress"
     );
 
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
-        { payoutAddress: creator.address, basisPoints: 100 },
-        { payoutAddress: owner.address, basisPoints: 0 },
-        { payoutAddress: minter.address, basisPoints: 9_900 },
-      ])
+      tokenSeaDropInterface.updateCreatorPayouts(
+        [
+          { payoutAddress: creator.address, basisPoints: 100 },
+          { payoutAddress: owner.address, basisPoints: 0 },
+          { payoutAddress: minter.address, basisPoints: 9_900 },
+        ],
+        { gasLimit: 100_000 }
+      )
     ).to.be.revertedWithCustomError(
       token,
       "CreatorPayoutBasisPointsCannotBeZero"
     );
 
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
-        { payoutAddress: creator.address, basisPoints: 100 },
-        { payoutAddress: owner.address, basisPoints: 10 },
-        { payoutAddress: minter.address, basisPoints: 1 },
-      ])
+      tokenSeaDropInterface.updateCreatorPayouts(
+        [
+          { payoutAddress: creator.address, basisPoints: 100 },
+          { payoutAddress: owner.address, basisPoints: 10 },
+          { payoutAddress: minter.address, basisPoints: 1 },
+        ],
+        { gasLimit: 100_000 }
+      )
     ).to.be.revertedWithCustomError(
       token,
       "InvalidCreatorPayoutTotalBasisPoints"
     );
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
-        { payoutAddress: creator.address, basisPoints: 10_001 },
-      ])
+      tokenSeaDropInterface.updateCreatorPayouts(
+        [{ payoutAddress: creator.address, basisPoints: 10_001 }],
+        { gasLimit: 100_000 }
+      )
     ).to.be.revertedWithCustomError(
       token,
       "InvalidCreatorPayoutTotalBasisPoints"
     );
     await expect(
-      configurer.updateCreatorPayouts(token.address, [
-        { payoutAddress: creator.address, basisPoints: 9_998 },
-        { payoutAddress: owner.address, basisPoints: 1 },
-      ])
+      tokenSeaDropInterface.updateCreatorPayouts(
+        [
+          { payoutAddress: creator.address, basisPoints: 9_998 },
+          { payoutAddress: owner.address, basisPoints: 1 },
+        ],
+        { gasLimit: 100_000 }
+      )
     ).to.be.revertedWithCustomError(
       token,
       "InvalidCreatorPayoutTotalBasisPoints"
@@ -1154,14 +1168,11 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       ...publicDrop,
       paymentToken: paymentToken.address,
     };
-    await configurer.updatePublicDrop(
-      token.address,
-      publicDropERC20PaymentToken
-    );
+    await tokenSeaDropInterface.updatePublicDrop(publicDropERC20PaymentToken);
 
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -1280,7 +1291,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   it("Should return errors for invalid encodings", async () => {
     const { order, value } = await createMintOrder({
       token,
-      configurer,
+      tokenSeaDropInterface,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
