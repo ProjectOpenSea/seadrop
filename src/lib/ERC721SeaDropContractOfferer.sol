@@ -224,11 +224,11 @@ contract ERC721SeaDropContractOfferer is
      *
      *      Only allowed Seaport or conduit can use this function.
      *
-     * @param from        The address to transfer from. Must be this contract.
-     * @custom:param to   Unused parameter
-     * @custom:param id   Unused parameter
-     * @custom:param value       The quantity of tokens to mint.
-     * @custom:param data Unused parameter
+     * @param from         The address to transfer from. Must be this contract.
+     * @custom:param to    Unused parameter
+     * @custom:param id    Unused parameter
+     * @custom:param value Unused parameter
+     * @custom:param data  Unused parameter
      */
     function _safeTransferFrom(
         address from,

@@ -110,13 +110,11 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         );
     bytes32 internal constant _NAME_HASH = keccak256("ERC721SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("2.0");
-    uint256 internal immutable _CHAIN_ID = block.chainid;
-    bytes32 internal immutable _DOMAIN_SEPARATOR;
 
     /**
      * @notice Constant for an unlimited `maxTokenSupplyForStage`.
-     *        Used in `mintPublic` where no `maxTokenSupplyForStage`
-     *        is stored in the `PublicDrop` struct.
+     *         Used in `mintPublic` where no `maxTokenSupplyForStage`
+     *         is stored in the `PublicDrop` struct.
      */
     uint256 internal constant _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE =
         type(uint256).max;
@@ -131,10 +129,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @dev Constructor for contract deployment.
      */
-    constructor() {
-        // Set the domain separator.
-        _DOMAIN_SEPARATOR = _deriveDomainSeparator();
-    }
+    constructor() {}
 
     /**
      * @notice The fallback function is used as a dispatcher for SeaDrop
@@ -147,77 +142,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // Get the rest of the msg data after the selector.
         bytes calldata data = msg.data[4:];
 
-        if (selector == UPDATE_ALLOWED_SEAPORT_SELECTOR) {
-            // Get the allowed Seaport.
-            address[] memory allowedSeaport = abi.decode(data, (address[]));
-
-            // Update the allowed Seaport.
-            _updateAllowedSeaport(allowedSeaport);
-        } else if (selector == UPDATE_DROP_URI_SELECTOR) {
-            // Get the drop URI.
-            string memory dropURI = abi.decode(data, (string));
-
-            // Update the drop URI.
-            _updateDropURI(dropURI);
-        } else if (selector == UPDATE_PUBLIC_DROP_SELECTOR) {
-            // Get the public drop struct.
-            PublicDrop memory publicDrop = abi.decode(data, (PublicDrop));
-
-            // Update the public drop.
-            _updatePublicDrop(publicDrop);
-        } else if (selector == UPDATE_ALLOW_LIST_SELECTOR) {
-            // Get the allow list data.
-            AllowListData memory allowListData = abi.decode(
-                data,
-                (AllowListData)
-            );
-
-            // Update the alow list.
-            _updateAllowList(allowListData);
-        } else if (selector == UPDATE_TOKEN_GATED_DROP_SELECTOR) {
-            // Get the allowedNfToken and dropStage.
-            (
-                address allowedNftToken,
-                TokenGatedDropStage memory dropStage
-            ) = abi.decode(data, (address, TokenGatedDropStage));
-
-            // Update the token gated drop.
-            _updateTokenGatedDrop(allowedNftToken, dropStage);
-        } else if (selector == UPDATE_CREATOR_PAYOUTS_SELECTOR) {
-            // Get the creator payouts.
-            CreatorPayout[] memory creatorPayouts = abi.decode(
-                data,
-                (CreatorPayout[])
-            );
-
-            // Update the creator payouts.
-            _updateCreatorPayouts(creatorPayouts);
-        } else if (selector == UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR) {
-            // Get the allowed fee recipient parameters.
-            address feeRecipient = address(bytes20(data[12:32]));
-            bool allowed = bytes1(data[63:64]) == 0x01;
-
-            // Update the allowed fee recipient.
-            _updateAllowedFeeRecipient(feeRecipient, allowed);
-        } else if (selector == UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR) {
-            (
-                address signer,
-                SignedMintValidationParams memory signedMintValidationParams
-            ) = abi.decode(data, (address, SignedMintValidationParams));
-
-            // Update the signed mint validation params.
-            _updateSignedMintValidationParams(
-                signer,
-                signedMintValidationParams
-            );
-        } else if (selector == UPDATE_PAYER_SELECTOR) {
-            // Get the payer params.
-            address payer = address(bytes20(data[12:32]));
-            bool allowed = bytes1(data[63:64]) == 0x01;
-
-            // Update the payer.
-            _updatePayer(payer, allowed);
-        } else if (selector == GET_PUBLIC_DROP_SELECTOR) {
+        if (selector == GET_PUBLIC_DROP_SELECTOR) {
             // Return the public drop.
             return
                 abi.encode(
@@ -291,30 +216,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                         .layout()
                         ._tokenGatedDrops[allowedNftToken]
                 );
-        } else if (
-            selector == GET_ALLOWED_NFT_TOKEN_ID_REDEEMED_COUNT_SELECTOR
-        ) {
-            // Get the allowed nft token.
-            address allowedNftToken = address(bytes20(data[12:32]));
-            // Get the allowed nft token id.
-            uint256 allowedNftTokenId = uint256(bytes32(data[33:64]));
-
-            // Return the token gated drop.
-            return
-                abi.encode(
-                    ERC721SeaDropContractOffererStorage
-                        .layout()
-                        ._tokenGatedRedeemed[allowedNftToken][allowedNftTokenId]
-                );
-        } else if (selector == GET_SEAPORT_METADATA_SELECTOR) {
-            // Get the Seaport metadata.
-            (
-                string memory name,
-                Schema[] memory schemas
-            ) = _getSeaportMetadata();
-
-            // Encode the return data.
-            return abi.encode(name, schemas);
         } else {
             // Revert if the function selector is not supported.
             revert UnsupportedFunctionSelector(selector);
@@ -322,13 +223,31 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     }
 
     /**
-     * @dev Gets the metadata for this contract offerer.
+     * @notice Implementation function to return the token gated redeemed
+     *         count for a token id.
+     *
+     *         Do not use this method directly.
+     *
+     * @param allowedNftToken   The allowed nft token.
+     * @param allowedNftTokenId The allowed nft token id.
+     */
+    function getAllowedNftTokenIdRedeemedCount(
+        address allowedNftToken,
+        uint256 allowedNftTokenId
+    ) external view returns (uint256) {
+        ERC721SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
+            allowedNftToken
+        ][allowedNftTokenId];
+    }
+
+    /**
+     * @notice Returns the metadata for this contract offerer.
      *
      * @return name    The name of the contract offerer.
      * @return schemas The schemas supported by the contract offerer.
      */
-    function _getSeaportMetadata()
-        internal
+    function getSeaportMetadata()
+        external
         pure
         returns (
             string memory name,
@@ -349,21 +268,27 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     }
 
     /**
-     * @notice Emits an event to notify update of the drop URI.
+     * @notice Implementation function to emit an event to notify update of
+     *         the drop URI.
+     *
+     *         Do not use this method directly.
      *
      * @param dropURI The new drop URI.
      */
-    function _updateDropURI(string memory dropURI) internal {
+    function updateDropURI(string calldata dropURI) external {
         // Emit an event with the update.
         emit DropURIUpdated(dropURI);
     }
 
     /**
-     * @notice Updates the public drop data and emits an event.
+     * @notice Implementation function to update the public drop data and
+     *         emit an event.
+     *
+     *         Do not use this method directly.
      *
      * @param publicDrop The public drop data.
      */
-    function _updatePublicDrop(PublicDrop memory publicDrop) internal {
+    function updatePublicDrop(PublicDrop calldata publicDrop) external {
         // Revert if the fee basis points is greater than 10_000.
         if (publicDrop.feeBps > 10_000) {
             revert InvalidFeeBps(publicDrop.feeBps);
@@ -377,12 +302,14 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     }
 
     /**
-     * @notice Updates the allow list merkle root for the nft contract
-     *         and emits an event.
+     * @notice Implementation function to update the allow list merkle root
+     *         for the nft contract and emit an event.
+     *
+     *         Do not use this method directly.
      *
      * @param allowListData The allow list data.
      */
-    function _updateAllowList(AllowListData memory allowListData) internal {
+    function updateAllowList(AllowListData calldata allowListData) external {
         // Put the previous root on the stack to use for the event.
         bytes32 prevRoot = ERC721SeaDropContractOffererStorage
             .layout()
@@ -403,7 +330,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     }
 
     /**
-     * @dev Generates a mint order with the required consideration items.
+     * @dev Implementation function to generate a mint order with the required
+     *      consideration items.
+     *
+     *      Do not use this method directly.
      *
      * @param fulfiller              The address of the fulfiller.
      * @param minimumReceived        The minimum items that the caller must
@@ -446,7 +376,9 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     }
 
     /**
-     * @dev View function to preview a mint order.
+     * @dev Implementation view function to preview a mint order.
+     *
+     *      Do not use this method directly.
      *
      * @custom:param caller       The address of the caller (e.g. Seaport).
      * @param fulfiller           The address of the fulfiller.
@@ -495,6 +427,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
     /**
      * @dev Decodes an order and returns the offer and substandard version.
+     *
+     * @param minimumReceived The minimum items that the caller must
+     *                        receive.
+     * @param context         Context of the order according to SIP-12.
      */
     function _decodeOrder(
         SpentItem[] calldata minimumReceived,
@@ -1398,23 +1334,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     }
 
     /**
-     * @dev Internal view function to get the EIP-712 domain separator. If the
-     *      chainId matches the chainId set on deployment, the cached domain
-     *      separator will be returned; otherwise, it will be derived from
-     *      scratch.
-     *
-     * @return The domain separator.
-     */
-    function _domainSeparator() internal view returns (bytes32) {
-        // TODO can we cache at all, or remove the immutable logic?
-        return _deriveDomainSeparator();
-        // prettier-ignore
-        // return block.chainid == _CHAIN_ID
-        //     ? _DOMAIN_SEPARATOR
-        //     : _deriveDomainSeparator();
-    }
-
-    /**
      * @dev Internal view function to derive the EIP-712 domain separator.
      *
      * @return The derived domain separator.
@@ -1439,7 +1358,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      *
      * @param allowedSeaport The allowed Seaport addresses.
      */
-    function _updateAllowedSeaport(address[] memory allowedSeaport) internal {
+    function updateAllowedSeaport(address[] calldata allowedSeaport) external {
         // Put the lengths on the stack for more efficient access.
         uint256 allowedSeaportLength = allowedSeaport.length;
         uint256 enumeratedAllowedSeaportLength = ERC721SeaDropContractOffererStorage
@@ -1491,10 +1410,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param allowedNftToken The token gated nft token.
      * @param dropStage       The token gated drop stage data.
      */
-    function _updateTokenGatedDrop(
+    function updateTokenGatedDrop(
         address allowedNftToken,
-        TokenGatedDropStage memory dropStage
-    ) internal {
+        TokenGatedDropStage calldata dropStage
+    ) external {
         // Ensure the allowedNftToken is not the zero address.
         if (allowedNftToken == address(0)) {
             revert TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
@@ -1565,9 +1484,9 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      *
      * @param creatorPayouts The creator payout address and basis points.
      */
-    function _updateCreatorPayouts(
-        CreatorPayout[] memory creatorPayouts
-    ) internal {
+    function updateCreatorPayouts(
+        CreatorPayout[] calldata creatorPayouts
+    ) external {
         // Reset the creator payout array.
         delete ERC721SeaDropContractOffererStorage.layout()._creatorPayouts;
 
@@ -1624,10 +1543,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param feeRecipient The fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
-    function _updateAllowedFeeRecipient(
+    function updateAllowedFeeRecipient(
         address feeRecipient,
         bool allowed
-    ) internal {
+    ) external {
         if (feeRecipient == address(0)) {
             revert FeeRecipientCannotBeZeroAddress();
         }
@@ -1669,10 +1588,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param signedMintValidationParams Minimum and maximum parameters
      *                                   to enforce for signed mints.
      */
-    function _updateSignedMintValidationParams(
+    function updateSignedMintValidationParams(
         address signer,
-        SignedMintValidationParams memory signedMintValidationParams
-    ) internal {
+        SignedMintValidationParams calldata signedMintValidationParams
+    ) external {
         if (signer == address(0)) {
             revert SignerCannotBeZeroAddress();
         }
@@ -1745,7 +1664,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param payer   The payer to add or remove.
      * @param allowed Whether to add or remove the payer.
      */
-    function _updatePayer(address payer, bool allowed) internal {
+    function updatePayer(address payer, bool allowed) external {
         if (payer == address(0)) {
             revert PayerCannotBeZeroAddress();
         }
@@ -1814,7 +1733,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         digest = keccak256(
             bytes.concat(
                 bytes2(0x1901),
-                _domainSeparator(),
+                _deriveDomainSeparator(),
                 keccak256(
                     abi.encode(
                         _SIGNED_MINT_TYPEHASH,
