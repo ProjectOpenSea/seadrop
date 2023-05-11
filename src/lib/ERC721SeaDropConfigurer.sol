@@ -17,8 +17,8 @@ import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 import "./ERC721SeaDropConstants.sol";
 
 import {
-    ISeaDropTokenContractMetadata
-} from "../interfaces/ISeaDropTokenContractMetadata.sol";
+    IERC721ContractMetadata
+} from "../interfaces/IERC721ContractMetadata.sol";
 
 import { IERC721SeaDrop } from "../interfaces/IERC721SeaDrop.sol";
 
@@ -74,18 +74,16 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         _onlyOwner(token);
 
         if (config.maxSupply != 0) {
-            ISeaDropTokenContractMetadata(token).setMaxSupply(config.maxSupply);
+            IERC721ContractMetadata(token).setMaxSupply(config.maxSupply);
         }
         if (bytes(config.baseURI).length != 0) {
-            ISeaDropTokenContractMetadata(token).setBaseURI(config.baseURI);
+            IERC721ContractMetadata(token).setBaseURI(config.baseURI);
         }
         if (bytes(config.contractURI).length != 0) {
-            ISeaDropTokenContractMetadata(token).setContractURI(
-                config.contractURI
-            );
+            IERC721ContractMetadata(token).setContractURI(config.contractURI);
         }
         if (config.provenanceHash != bytes32(0)) {
-            ISeaDropTokenContractMetadata(token).setProvenanceHash(
+            IERC721ContractMetadata(token).setProvenanceHash(
                 config.provenanceHash
             );
         }

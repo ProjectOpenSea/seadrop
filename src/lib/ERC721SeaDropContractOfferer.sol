@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import { IERC721SeaDrop } from "../interfaces/IERC721SeaDrop.sol";
+
 import {
     ERC721ContractMetadata,
-    ISeaDropTokenContractMetadata
 } from "./ERC721ContractMetadata.sol";
 
 import {
@@ -261,7 +262,7 @@ contract ERC721SeaDropContractOfferer is
         bytes4 interfaceId
     ) public view virtual override(ERC721ContractMetadata) returns (bool) {
         return
-            // interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
+            interfaceId == type(IERC721SeaDrop).interfaceId ||
             interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
             // ERC721ContractMetadata returns supportsInterface true for
             //     ISeaDropTokenContractMetadata, ERC-4906, ERC-2981

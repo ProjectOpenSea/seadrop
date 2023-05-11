@@ -5,12 +5,6 @@ import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 interface ISeaDropTokenContractMetadata is IERC2981 {
     /**
-     * @notice Throw if the max supply exceeds uint64, a limit
-     *         due to the storage of bit-packed variables in ERC721A.
-     */
-    error CannotExceedMaxSupplyOfUint64(uint256 got);
-
-    /**
      * @dev Revert with an error when attempting to set the provenance
      *      hash after the mint has started.
      */
@@ -42,11 +36,6 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     event ContractURIUpdated(string newContractURI);
 
     /**
-     * @dev Emit an event when the max token supply is updated.
-     */
-    event MaxSupplyUpdated(uint256 newMaxSupply);
-
-    /**
      * @dev Emit an event with the previous and new provenance hash after
      *      being updated.
      */
@@ -72,13 +61,6 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     function setContractURI(string calldata newContractURI) external;
 
     /**
-     * @notice Sets the max supply and emits an event.
-     *
-     * @param newMaxSupply The new max supply to set.
-     */
-    function setMaxSupply(uint256 newMaxSupply) external;
-
-    /**
      * @notice Sets the provenance hash and emits an event.
      *
      *         The provenance hash is used for random reveals, which
@@ -100,11 +82,6 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      * @notice Returns the contract URI.
      */
     function contractURI() external view returns (string memory);
-
-    /**
-     * @notice Returns the max token supply.
-     */
-    function maxSupply() external view returns (uint256);
 
     /**
      * @notice Returns the provenance hash.

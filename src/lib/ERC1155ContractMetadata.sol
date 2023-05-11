@@ -1,40 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    IERC721ContractMetadata
-} from "../interfaces/IERC721ContractMetadata.sol";
+import { IERC1155ContractMetadata } from "./IERC1155ContractMetadata.sol";
 
-import { ERC721A } from "ERC721A/ERC721A.sol";
-
-import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
-
-import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-
-import {
-    IERC165
-} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ERC1155 } from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 
 /**
- * @title  ERC721ContractMetadata
+ * @title  ERC1155ContractMetadata
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice ERC721ContractMetadata is a token contract that extends ERC-721
+ * @notice ERC1155ContractMetadata is a token contract that extends ERC-1155
  *         with additional metadata and ownership capabilities.
  */
-contract ERC721ContractMetadata is
-    ERC721A,
-    ERC2981,
-    TwoStepOwnable,
-    IERC721ContractMetadata
-{
-    /// @notice The max supply.
-    uint256 internal _maxSupply;
+contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
+    /// @notice The total token supply per token id.
+    ///         Subtracted when an item is burned.
+    mapping(uint256 => uint256) _totalSupply;
+
+    /// @notice The total number of tokens minted per token id.
+    mapping(uint256 => uint256) _totalMinted;
+
+    /// @notice The total number of tokens minted per token id by address.
+    mapping(uint256 => mapping(address => uint256)) _totalMintedByUser;
+
+    /// @notice The max token supply per token id.
+    mapping(uint256 => uint256) _maxSupply;
 
     /// @notice The base URI for token metadata.
-    string internal _tokenBaseURI;
+    string private _baseURI;
 
     /// @notice The contract URI for contract metadata.
     string internal _contractURI;
@@ -62,16 +57,10 @@ contract ERC721ContractMetadata is
     /**
      * @notice Deploy the token contract.
      *
-     * @param name              The name of the token.
-     * @param symbol            The symbol of the token.
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters.
      */
-    constructor(
-        string memory name,
-        string memory symbol,
-        address allowedConfigurer
-    ) ERC721A(name, symbol) {
+    constructor(address allowedConfigurer) {
         // Set the allowed configurer contract to interact with this contract.
         _CONFIGURER = allowedConfigurer;
     }
@@ -89,9 +78,7 @@ contract ERC721ContractMetadata is
         _tokenBaseURI = newBaseURI;
 
         // Emit an event with the update.
-        if (totalSupply() != 0) {
-            emit BatchMetadataUpdate(1, _nextTokenId() - 1);
-        }
+        emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
     /**
@@ -125,29 +112,30 @@ contract ERC721ContractMetadata is
         _onlyOwnerOrConfigurer();
 
         // Emit an event with the update.
-        emit BatchMetadataUpdate(fromTokenId, toTokenId);
+        if (fromTokenId == toTokenId) {
+            // If only one token is being updated, use the event
+            // in the 1155 spec.
+            emit URI(uri(fromTokenId), fromTokenId);
+        } else {
+            emit BatchMetadataUpdate(fromTokenId, toTokenId);
+        }
     }
 
     /**
      * @notice Sets the max token supply and emits an event.
      *
+     * @param tokenId      The token id to set the max supply for.
      * @param newMaxSupply The new max supply to set.
      */
-    function setMaxSupply(uint256 newMaxSupply) external {
+    function setMaxSupply(uint256 tokenId, uint256 newMaxSupply) external {
         // Ensure the sender is only the owner or configurer contract.
         _onlyOwnerOrConfigurer();
 
-        // Ensure the max supply does not exceed the maximum value of uint64,
-        // a limit due to the storage of bit-packed variables in ERC721A.
-        if (newMaxSupply > 2 ** 64 - 1) {
-            revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
-        }
-
         // Set the new max supply.
-        _maxSupply = newMaxSupply;
+        _maxSupply[tokenId] = newMaxSupply;
 
         // Emit an event with the update.
-        emit MaxSupplyUpdated(newMaxSupply);
+        emit MaxSupplyUpdated(tokenId, newMaxSupply);
     }
 
     /**
@@ -217,14 +205,6 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Returns the base URI for the contract, which ERC721A uses
-     *         to return tokenURI.
-     */
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _tokenBaseURI;
-    }
-
-    /**
      * @notice Returns the contract URI for contract metadata.
      */
     function contractURI() external view override returns (string memory) {
@@ -232,11 +212,25 @@ contract ERC721ContractMetadata is
     }
 
     /**
-     * @notice Returns the max token supply.
+     * @notice Returns the max token supply for a token id.
      */
-    function maxSupply() public view returns (uint256) {
-        return _maxSupply;
-    }
+    function maxSupply(uint256 tokenId) external view returns (uint256) {
+        return _maxSupply[tokenId];
+    };
+
+    /**
+     * @notice Returns the total supply for a token id.
+     */
+    function totalSupply(uint256 tokenId) external view returns (uint256) {
+        return _totalSupply[tokenId];
+    }};
+
+    /**
+     * @notice Returns the total minted for a token id.
+     */
+    function totalMinted(uint256 tokenId) external view returns (uint256) {
+        return _totalMinted[tokenId];
+    }};
 
     /**
      * @notice Returns the provenance hash.
@@ -253,7 +247,7 @@ contract ERC721ContractMetadata is
      *
      * @param tokenId The token id to get the token URI for.
      */
-    function tokenURI(
+    function uri(
         uint256 tokenId
     ) public view virtual override returns (string memory) {
         // Revert if the tokenId doesn't exist.
@@ -285,14 +279,14 @@ contract ERC721ContractMetadata is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC721A, ERC2981) returns (bool) {
+    ) public view virtual override(IERC165, ERC1155, ERC2981) returns (bool) {
         return
-            interfaceId == type(IERC721ContractMetadata).interfaceId ||
+            interfaceId == type(IERC1155ContractMetadata).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
             ERC2981.supportsInterface(interfaceId) ||
-            // ERC721A returns supportsInterface true for
-            //     ERC165, ERC721, ERC721Metadata
-            ERC721A.supportsInterface(interfaceId);
+            // ERC1155 returns supportsInterface true for
+            //     ERC165, ERC1155, ERC1155MetadataURI
+            ERC1155.supportsInterface(interfaceId);
     }
 
     /**
@@ -305,6 +299,60 @@ contract ERC721ContractMetadata is
     function _cast(bool b) internal pure returns (uint256 u) {
         assembly {
             u := b
+        }
+    }
+
+
+    /**
+     * @dev Returns whether `tokenId` exists.
+     *
+     * Tokens start existing when they are minted.
+     */
+    function _exists(uint256 tokenId) internal view virtual returns (bool) {
+        return _totalMinted[tokenId] != 0;
+    }
+
+    /**
+     * @dev Converts a uint256 to its ASCII string decimal representation.
+     */
+    function _toString(
+        uint256 value
+    ) internal pure virtual returns (string memory str) {
+        assembly {
+            // The maximum value of a uint256 contains 78 digits (1 byte per digit), but
+            // we allocate 0xa0 bytes to keep the free memory pointer 32-byte word aligned.
+            // We will need 1 word for the trailing zeros padding, 1 word for the length,
+            // and 3 words for a maximum of 78 digits. Total: 5 * 0x20 = 0xa0.
+            let m := add(mload(0x40), 0xa0)
+            // Update the free memory pointer to allocate.
+            mstore(0x40, m)
+            // Assign the `str` to the end.
+            str := sub(m, 0x20)
+            // Zeroize the slot after the string.
+            mstore(str, 0)
+
+            // Cache the end of the memory to calculate the length later.
+            let end := str
+
+            // We write the string from rightmost digit to leftmost digit.
+            // The following is essentially a do-while loop that also handles the zero case.
+            // prettier-ignore
+            for { let temp := value } 1 {} {
+                str := sub(str, 1)
+                // Write the character to the pointer.
+                // The ASCII index of the '0' character is 48.
+                mstore8(str, add(48, mod(temp, 10)))
+                // Keep dividing `temp` until zero.
+                temp := div(temp, 10)
+                // prettier-ignore
+                if iszero(temp) { break }
+            }
+
+            let length := sub(end, str)
+            // Move the pointer 32 bytes leftwards to make room for the length.
+            str := sub(str, 0x20)
+            // Store the length.
+            mstore(str, length)
         }
     }
 }
