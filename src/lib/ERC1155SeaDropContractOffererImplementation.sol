@@ -2,15 +2,15 @@
 pragma solidity ^0.8.19;
 
 import {
-    ERC721SeaDropContractOffererStorage
-} from "./ERC721SeaDropContractOffererStorage.sol";
+    ERC1155SeaDropContractOffererStorage
+} from "./ERC1155SeaDropContractOffererStorage.sol";
 
 import {
     MintParams,
     PublicDrop,
     SignedMintValidationParams,
     TokenGatedDropStage
-} from "./ERC721SeaDropStructs.sol";
+} from "./ERC1155SeaDropStructs.sol";
 
 import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
 
@@ -20,7 +20,7 @@ import {
     TokenGatedMintParams
 } from "./SeaDropStructs.sol";
 
-import "./ERC721SeaDropConstants.sol";
+import "./ERC1155SeaDropConstants.sol";
 
 import { IDelegationRegistry } from "../interfaces/IDelegationRegistry.sol";
 
@@ -41,17 +41,17 @@ import {
 } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
- * @title  ERC721SeaDropContractOffererImplementation
+ * @title  ERC1155SeaDropContractOffererImplementation
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
  * @notice A helper contract that contains the implementation logic for
- *         ERC721SeaDropContractOfferer, to help reduce contract size
+ *         ERC1155SeaDropContractOfferer, to help reduce contract size
  *         on the token contract itself.
  */
-contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
-    using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
+contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
+    using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage.Layout;
     using ECDSA for bytes32;
 
     /// @notice The delegation registry.
@@ -108,7 +108,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 "address verifyingContract"
             ")"
         );
-    bytes32 internal constant _NAME_HASH = keccak256("ERC721SeaDrop");
+    bytes32 internal constant _NAME_HASH = keccak256("ERC1155SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("2.0");
 
     /**
@@ -143,22 +143,37 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         bytes calldata data = msg.data[4:];
 
         if (selector == GET_PUBLIC_DROP_SELECTOR) {
+            // Get the public drop index.
+            uint8 publicDropIndex = uint8(bytes1(data[32:32]));
+
             // Return the public drop.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage.layout()._publicDrop
+                    ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
+                        publicDropIndex
+                    ]
+                );
+        } else if (selector == GET_PUBLIC_DROP_INDEXES_SELECTOR) {
+            // Return the public drop indexes.
+            return
+                abi.encode(
+                    ERC1155SeaDropContractOffererStorage
+                        .layout()
+                        ._enumeratedPublicDropIndexes
                 );
         } else if (selector == GET_CREATOR_PAYOUTS_SELECTOR) {
             // Return the creator payouts.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage.layout()._creatorPayouts
+                    ERC1155SeaDropContractOffererStorage
+                        .layout()
+                        ._creatorPayouts
                 );
         } else if (selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR) {
             // Return the creator payouts.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._allowListMerkleRoot
                 );
@@ -166,7 +181,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             // Return the allowed fee recipients.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._enumeratedFeeRecipients
                 );
@@ -174,7 +189,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             // Return the allowed signers.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._enumeratedSigners
                 );
@@ -185,7 +200,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             // Return the signed mint validation params for the signer.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._signedMintValidationParams[signer]
                 );
@@ -193,7 +208,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             // Return the allowed signers.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._enumeratedPayers
                 );
@@ -201,7 +216,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             // Return the allowed token gated tokens.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._enumeratedTokenGatedTokens
                 );
@@ -212,7 +227,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             // Return the token gated drop.
             return
                 abi.encode(
-                    ERC721SeaDropContractOffererStorage
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._tokenGatedDrops[allowedNftToken]
                 );
@@ -235,7 +250,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         address allowedNftToken,
         uint256 allowedNftTokenId
     ) external view returns (uint256) {
-        ERC721SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
+        ERC1155SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
             allowedNftToken
         ][allowedNftTokenId];
     }
@@ -254,7 +269,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             Schema[] memory schemas // map to Seaport Improvement Proposal IDs
         )
     {
-        name = "ERC721SeaDrop";
+        name = "ERC1155SeaDrop";
         schemas = new Schema[](1);
         schemas[0].id = 12;
 
@@ -287,18 +302,65 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      *         Do not use this method directly.
      *
      * @param publicDrop The public drop data.
+     * @param index      The index of the public drop.
      */
-    function updatePublicDrop(PublicDrop calldata publicDrop) external {
+    function updatePublicDrop(
+        PublicDrop calldata publicDrop,
+        uint256 index
+    ) external {
         // Revert if the fee basis points is greater than 10_000.
         if (publicDrop.feeBps > 10_000) {
             revert InvalidFeeBps(publicDrop.feeBps);
         }
 
-        // Set the public drop data.
-        ERC721SeaDropContractOffererStorage.layout()._publicDrop = publicDrop;
+        // Use maxTotalMintableByWallet != 0 as a signal that this update should
+        // add or update the drop stage, otherwise we will be removing.
+        bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
+
+        // Get pointers to the token gated drop data and enumerated addresses.
+        PublicDrop
+            storage existingDropStageData = ERC1155SeaDropContractOffererStorage
+                .layout()
+                ._publicDrops[index];
+        address[]
+            storage enumeratedIndexes = ERC1155SeaDropContractOffererStorage
+                .layout()
+                ._enumeratedPublicDropIndexes;
+
+        // Stage struct packs to two slots, so load it
+        // as a uint256; if it is 0, it is empty.
+        bool dropStageDoesNotExist;
+        assembly {
+            dropStageDoesNotExist := iszero(
+                add(
+                    sload(existingDropStageData.slot),
+                    sload(add(existingDropStageData.slot, 1))
+                )
+            )
+        }
+
+        if (addOrUpdateDropStage) {
+            ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
+                    index
+                ] = dropStage;
+            // Add to enumeration if it does not exist already.
+            if (dropStageDoesNotExist) {
+                enumeratedIndexes.push(index);
+            }
+        } else {
+            // Check we are not deleting a drop stage that does not exist.
+            if (dropStageDoesNotExist) {
+                revert PublicDropStageNotPresent();
+            }
+            // Clear storage slot and remove from enumeration.
+            delete ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
+                index
+            ];
+            _removeFromEnumeration(index, enumeratedIndexes);
+        }
 
         // Emit an event with the update.
-        emit PublicDropUpdated(publicDrop);
+        emit PublicDropUpdated(publicDrop, index);
     }
 
     /**
@@ -311,12 +373,12 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      */
     function updateAllowList(AllowListData calldata allowListData) external {
         // Put the previous root on the stack to use for the event.
-        bytes32 prevRoot = ERC721SeaDropContractOffererStorage
+        bytes32 prevRoot = ERC1155SeaDropContractOffererStorage
             .layout()
             ._allowListMerkleRoot;
 
         // Update the merkle root.
-        ERC721SeaDropContractOffererStorage
+        ERC1155SeaDropContractOffererStorage
             .layout()
             ._allowListMerkleRoot = allowListData.merkleRoot;
 
@@ -337,7 +399,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      *
      * @param fulfiller              The address of the fulfiller.
      * @param minimumReceived        The minimum items that the caller must
-     *                               receive. To specify a range of ERC-721
+     *                               receive. To specify a range of ERC-1155
      *                               tokens, use a null address ERC-1155 with
      *                               the amount as the quantity.
      * @custom:param maximumSpent    Maximum items the caller is willing to
@@ -359,7 +421,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     {
         // Only an allowed Seaport can call this function.
         if (
-            !ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
+            !ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
                 msg.sender
             ]
         ) {
@@ -509,9 +571,6 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         (offer, substandard) = _decodeOrder(minimumReceived, context);
 
-        // Quantity is the amount of the ERC-1155 min received item.
-        uint256 quantity = minimumReceived[0].amount;
-
         // All substandards have feeRecipient and minter as first two params.
         address feeRecipient = address(bytes20(context[2:22]));
         address minter = address(bytes20(context[22:42]));
@@ -527,11 +586,13 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         if (substandard == 0) {
             // 0: Public mint
+            uin256 indexes = abi.decode(context[42:74], (uint256[]));
             consideration = _mintPublic(
+                minimumReceived,
+                indexes,
                 feeRecipient,
                 fulfiller_,
                 minter,
-                quantity,
                 withEffects_
             );
         } else if (substandard == 1) {
@@ -589,6 +650,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @notice Mint a public drop stage.
      *
+     * @param minimumReceived The minimum items that the caller must
+     *                       receive, should match indexes.
+     * @param indexes      The public drop indexes to mint, should match
+     *                     minimumReceived items.
      * @param feeRecipient The fee recipient.
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
@@ -596,16 +661,24 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintPublic(
+        SpentItem[] minimumReceived,
+        uint256[] indexes,
         address feeRecipient,
         address payer,
         address minter,
-        uint256 quantity,
         bool withEffects
     ) internal returns (ReceivedItem[] memory consideration) {
+        // Revert if the indexes length does not match minimumReceived.
+        if (indexes.length != minimumReceived.length) {
+            revert InvalidPublicDropIndexesLength();
+        }
+
+        seenIn
+
         // Put items back on the stack to avoid stack too deep.
-        PublicDrop memory publicDrop = ERC721SeaDropContractOffererStorage
+        PublicDrop memory publicDrop = ERC1155SeaDropContractOffererStorage
             .layout()
-            ._publicDrop;
+            ._publicDrops[index];
         bool withEffects_ = withEffects;
 
         // Check that the stage is active and calculate the current price.
@@ -659,7 +732,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         if (
             !MerkleProof.verify(
                 proof,
-                ERC721SeaDropContractOffererStorage
+                ERC1155SeaDropContractOffererStorage
                     .layout()
                     ._allowListMerkleRoot,
                 keccak256(abi.encode(minter, mintParams))
@@ -727,11 +800,13 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         digest = _getDigest(minter, feeRecipient, mintParams, salt);
 
         // Ensure the digest has not already been used.
-        if (ERC721SeaDropContractOffererStorage.layout()._usedDigests[digest]) {
+        if (
+            ERC1155SeaDropContractOffererStorage.layout()._usedDigests[digest]
+        ) {
             revert SignatureAlreadyUsed();
         } else if (withEffects) {
             // Mark the digest as used.
-            ERC721SeaDropContractOffererStorage.layout()._usedDigests[
+            ERC1155SeaDropContractOffererStorage.layout()._usedDigests[
                 digest
             ] = true;
         }
@@ -788,7 +863,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         uint256 currentPrice
     ) internal view {
         SignedMintValidationParams
-            memory signedMintValidationParams = ERC721SeaDropContractOffererStorage
+            memory signedMintValidationParams = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._signedMintValidationParams[signer];
 
@@ -882,7 +957,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Put the drop stage on the stack.
         TokenGatedDropStage
-            memory dropStage = ERC721SeaDropContractOffererStorage
+            memory dropStage = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._tokenGatedDrops[allowedNftToken];
 
@@ -913,7 +988,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
             // Cache the storage pointer for cheaper access.
             mapping(uint256 => uint256)
-                storage redeemedTokenIds = ERC721SeaDropContractOffererStorage
+                storage redeemedTokenIds = ERC1155SeaDropContractOffererStorage
                     .layout()
                     ._tokenGatedRedeemed[allowedNftToken];
 
@@ -1128,7 +1203,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // Revert if the fee recipient is restricted and not allowed.
         if (restrictFeeRecipients)
             if (
-                !ERC721SeaDropContractOffererStorage
+                !ERC1155SeaDropContractOffererStorage
                     .layout()
                     ._allowedFeeRecipients[feeRecipient]
             ) {
@@ -1146,7 +1221,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         if (
             _cast(
                 payer != minter &&
-                    !ERC721SeaDropContractOffererStorage
+                    !ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._allowedPayers[payer] &&
                     !DELEGATION_REGISTRY.checkDelegateForAll(payer, minter)
@@ -1259,7 +1334,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Put the creator payouts on the stack.
         CreatorPayout[]
-            storage creatorPayouts = ERC721SeaDropContractOffererStorage
+            storage creatorPayouts = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._creatorPayouts;
 
@@ -1342,15 +1417,15 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     function updateAllowedSeaport(address[] calldata allowedSeaport) external {
         // Put the lengths on the stack for more efficient access.
         uint256 allowedSeaportLength = allowedSeaport.length;
-        uint256 enumeratedAllowedSeaportLength = ERC721SeaDropContractOffererStorage
+        uint256 enumeratedAllowedSeaportLength = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._enumeratedAllowedSeaport
                 .length;
 
         // Reset the old mapping.
         for (uint256 i = 0; i < enumeratedAllowedSeaportLength; ) {
-            ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
-                    ERC721SeaDropContractOffererStorage
+            ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
+                    ERC1155SeaDropContractOffererStorage
                         .layout()
                         ._enumeratedAllowedSeaport[i]
                 ] = false;
@@ -1361,7 +1436,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Set the new mapping for allowed SeaDrop contracts.
         for (uint256 i = 0; i < allowedSeaportLength; ) {
-            ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
+            ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
                     allowedSeaport[i]
                 ] = true;
             unchecked {
@@ -1370,7 +1445,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         }
 
         // Set the enumeration.
-        ERC721SeaDropContractOffererStorage
+        ERC1155SeaDropContractOffererStorage
             .layout()
             ._enumeratedAllowedSeaport = allowedSeaport;
 
@@ -1416,12 +1491,13 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Get pointers to the token gated drop data and enumerated addresses.
         TokenGatedDropStage
-            storage existingDropStageData = ERC721SeaDropContractOffererStorage
+            storage existingDropStageData = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._tokenGatedDrops[allowedNftToken];
-        address[] storage enumeratedTokens = ERC721SeaDropContractOffererStorage
-            .layout()
-            ._enumeratedTokenGatedTokens;
+        address[]
+            storage enumeratedTokens = ERC1155SeaDropContractOffererStorage
+                .layout()
+                ._enumeratedTokenGatedTokens;
 
         // Stage struct packs to two slots, so load it
         // as a uint256; if it is 0, it is empty.
@@ -1436,7 +1512,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         }
 
         if (addOrUpdateDropStage) {
-            ERC721SeaDropContractOffererStorage.layout()._tokenGatedDrops[
+            ERC1155SeaDropContractOffererStorage.layout()._tokenGatedDrops[
                     allowedNftToken
                 ] = dropStage;
             // Add to enumeration if it does not exist already.
@@ -1449,7 +1525,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 revert TokenGatedDropStageNotPresent();
             }
             // Clear storage slot and remove from enumeration.
-            delete ERC721SeaDropContractOffererStorage
+            delete ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._tokenGatedDrops[allowedNftToken];
             _removeFromEnumeration(allowedNftToken, enumeratedTokens);
@@ -1469,7 +1545,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         CreatorPayout[] calldata creatorPayouts
     ) external {
         // Reset the creator payout array.
-        delete ERC721SeaDropContractOffererStorage.layout()._creatorPayouts;
+        delete ERC1155SeaDropContractOffererStorage.layout()._creatorPayouts;
 
         // Track the total basis points.
         uint256 totalBasisPoints;
@@ -1500,7 +1576,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             totalBasisPoints += creatorPayout.basisPoints;
 
             // Push to storage.
-            ERC721SeaDropContractOffererStorage.layout()._creatorPayouts.push(
+            ERC1155SeaDropContractOffererStorage.layout()._creatorPayouts.push(
                 creatorPayout
             );
 
@@ -1534,11 +1610,11 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Track the enumerated storage.
         address[]
-            storage enumeratedStorage = ERC721SeaDropContractOffererStorage
+            storage enumeratedStorage = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._enumeratedFeeRecipients;
         mapping(address => bool)
-            storage feeRecipientsMap = ERC721SeaDropContractOffererStorage
+            storage feeRecipientsMap = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._allowedFeeRecipients;
 
@@ -1552,7 +1628,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             if (!feeRecipientsMap[feeRecipient]) {
                 revert FeeRecipientNotPresent();
             }
-            delete ERC721SeaDropContractOffererStorage
+            delete ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._allowedFeeRecipients[feeRecipient];
             _removeFromEnumeration(feeRecipient, enumeratedStorage);
@@ -1587,11 +1663,11 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Track the enumerated storage.
         address[]
-            storage enumeratedStorage = ERC721SeaDropContractOffererStorage
+            storage enumeratedStorage = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._enumeratedSigners;
         mapping(address => SignedMintValidationParams)
-            storage signedMintValidationParamsMap = ERC721SeaDropContractOffererStorage
+            storage signedMintValidationParamsMap = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._signedMintValidationParams;
         SignedMintValidationParams
@@ -1626,7 +1702,7 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             ) {
                 revert SignerNotPresent();
             }
-            delete ERC721SeaDropContractOffererStorage
+            delete ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._signedMintValidationParams[signer];
             _removeFromEnumeration(signer, enumeratedStorage);
@@ -1652,11 +1728,11 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Track the enumerated storage.
         address[]
-            storage enumeratedStorage = ERC721SeaDropContractOffererStorage
+            storage enumeratedStorage = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._enumeratedPayers;
         mapping(address => bool)
-            storage payersMap = ERC721SeaDropContractOffererStorage
+            storage payersMap = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._allowedPayers;
 
@@ -1670,9 +1746,9 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             if (!payersMap[payer]) {
                 revert PayerNotPresent();
             }
-            delete ERC721SeaDropContractOffererStorage.layout()._allowedPayers[
-                payer
-            ];
+            delete ERC1155SeaDropContractOffererStorage.layout()._allowedPayers[
+                    payer
+                ];
             _removeFromEnumeration(payer, enumeratedStorage);
         }
 
@@ -1726,6 +1802,35 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 )
             )
         );
+    }
+
+    /**
+     * @notice Internal utility function to remove a uint256 from a supplied
+     *         enumeration.
+     *
+     * @param toRemove    The uint256 to remove.
+     * @param enumeration The enumerated uint256s to parse.
+     */
+    function _removeFromEnumeration(
+        uint256 toRemove,
+        uint256[] storage enumeration
+    ) internal {
+        // Cache the length.
+        uint256 enumerationLength = enumeration.length;
+        for (uint256 i = 0; i < enumerationLength; ) {
+            // Check if the enumerated element is the one we are deleting.
+            if (enumeration[i] == toRemove) {
+                // Swap with the last element.
+                enumeration[i] = enumeration[enumerationLength - 1];
+                // Delete the (now duplicated) last element.
+                enumeration.pop();
+                // Exit the loop.
+                break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**

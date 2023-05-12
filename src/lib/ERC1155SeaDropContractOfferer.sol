@@ -1,40 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { IERC721SeaDrop } from "../interfaces/IERC721SeaDrop.sol";
+import { IERC1155SeaDrop } from "../interfaces/IERC1155SeaDrop.sol";
 
-import { ERC721ContractMetadata } from "./ERC721ContractMetadata.sol";
+import { ERC1155ContractMetadata } from "./ERC1155ContractMetadata.sol";
 
 import {
-    ERC721SeaDropContractOffererStorage
-} from "./ERC721SeaDropContractOffererStorage.sol";
+    ERC1155SeaDropContractOffererStorage
+} from "./ERC1155SeaDropContractOffererStorage.sol";
 
 import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
 
-import { PublicDrop } from "./ERC721SeaDropStructs.sol";
+import { PublicDrop } from "./ERC1155SeaDropStructs.sol";
 
 import { AllowListData, SpentItem } from "./SeaDropStructs.sol";
 
-import "./ERC721SeaDropConstants.sol";
+import "./ERC1155SeaDropConstants.sol";
 
 import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
- * @title  ERC721SeaDropContractOfferer
+ * @title  ERC1155SeaDropContractOfferer
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice An ERC721 token contract based on ERC721A that can mint as a
+ * @notice An ERC1155 token contract that can mint as a
  *         Seaport contract offerer.
  */
-contract ERC721SeaDropContractOfferer is
-    ERC721ContractMetadata,
+contract ERC1155SeaDropContractOfferer is
+    ERC1155ContractMetadata,
     SeaDropErrorsAndEvents
 {
-    using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
+    using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage.Layout;
 
     /// @notice The allowed conduit address that can mint.
     address immutable _CONDUIT;
@@ -42,8 +42,6 @@ contract ERC721SeaDropContractOfferer is
     /**
      * @notice Deploy the token contract.
      *
-     * @param name              The name of the token.
-     * @param symbol            The symbol of the token.
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters.
      * @param allowedConduit    The address of the conduit contract allowed to
@@ -52,29 +50,27 @@ contract ERC721SeaDropContractOfferer is
      *                          interact.
      */
     constructor(
-        string memory name,
-        string memory symbol,
         address allowedConfigurer,
         address allowedConduit,
         address allowedSeaport
-    ) ERC721ContractMetadata(name, symbol, allowedConfigurer) {
+    ) ERC1155ContractMetadata(allowedConfigurer) {
         // Set the allowed conduit to interact with this contract.
         _CONDUIT = allowedConduit;
 
         // Set the allowed Seaport to interact with this contract.
-        ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
+        ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
             allowedSeaport
         ] = true;
 
         // Set the allowed Seaport enumeration.
         address[] memory enumeratedAllowedSeaport = new address[](1);
         enumeratedAllowedSeaport[0] = allowedSeaport;
-        ERC721SeaDropContractOffererStorage
+        ERC1155SeaDropContractOffererStorage
             .layout()
             ._enumeratedAllowedSeaport = enumeratedAllowedSeaport;
 
         // Emit an event noting the contract deployment.
-        emit SeaDropTokenDeployed(SEADROP_TOKEN_TYPE.ERC721_STANDARD);
+        emit SeaDropTokenDeployed(SEADROP_TOKEN_TYPE.ERC1155_STANDARD);
     }
 
     /**
@@ -103,6 +99,7 @@ contract ERC721SeaDropContractOfferer is
                     selector == GENERATE_ORDER_SELECTOR ||
                     selector == GET_SEAPORT_METADATA_SELECTOR ||
                     selector == GET_PUBLIC_DROP_SELECTOR ||
+                    selector == GET_PUBLIC_DROP_INDEXES_SELECTOR || 
                     selector == GET_CREATOR_PAYOUTS_SELECTOR ||
                     selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR ||
                     selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR ||
@@ -153,31 +150,20 @@ contract ERC721SeaDropContractOfferer is
 
             // Return the data from the delegate call.
             return returnedData;
-        } else if (selector == SAFE_TRANSFER_FROM_1155_SELECTOR) {
-            // Get the parameters.
-            (
-                address from,
-                address to,
-                uint256 id,
-                uint256 amount,
-                bytes memory transferData
-            ) = abi.decode(data, (address, address, uint256, uint256, bytes));
-
-            // Call safeTransferFrom.
-            _safeTransferFrom(from, to, id, amount, transferData);
         } else if (selector == GET_MINT_STATS_SELECTOR) {
-            // Get the minter.
-            address minter = abi.decode(data, (address));
+            // Get the minter and token id.
+            (address minter, uint256 tokenId) = abi.decode(data, (address, uint256));
 
             // Get the mint stats.
             (
                 uint256 minterNumMinted,
+                uint256 minterNumMintedForTokenId,
                 uint256 currentTotalSupply,
                 uint256 maxSupply
             ) = _getMintStats(minter);
 
             // Encode the return data.
-            return abi.encode(minterNumMinted, currentTotalSupply, maxSupply);
+            return abi.encode(minterNumMinted, mintedNumMintedForTokenId, currentTotalSupply, maxSupply);
         } else if (selector == RATIFY_ORDER_SELECTOR) {
             // This function is a no-op, nothing additional needs to happen here.
             // Utilize assembly to efficiently return the ratifyOrder magic value.
@@ -198,57 +184,68 @@ contract ERC721SeaDropContractOfferer is
      *
      * @dev    NOTE: Implementing contracts should always update these numbers
      *         before transferring any tokens with _safeMint() to mitigate
-     *         consequences of malicious onERC721Received() hooks.
+     *         consequences of malicious onERC1155Received() hooks.
      *
-     * @param minter The minter address.
+     * @param minter  The minter address.
+     * @param tokenId The token id to return the stats for.
      */
     function _getMintStats(
-        address minter
+        address minter,
+        uint256 tokenId
     )
         internal
         view
         returns (
             uint256 minterNumMinted,
+            uint256 minterNumMintedForTokenId,
             uint256 currentTotalSupply,
             uint256 maxSupply
         )
     {
-        minterNumMinted = _numberMinted(minter);
-        currentTotalSupply = _totalMinted();
-        maxSupply = _maxSupply;
+        // Put the token supply on the stack.
+        TokenSupply storage tokenSupply = _tokenSupply[tokenId];
+
+        // Assign the return values.
+        currentTotalSupply = tokenSupply.totalSupply;
+        maxSupply = tokenSupply.maxSupply;
+        minterNumMinted = _totalMintedByUser[minter];
+        minterNumMintedForTokenId = _totalMintedByUserPerToken[minter][tokenId];
     }
 
     /**
-     * @dev Handle ERC-1155 safeTransferFrom. Nothing additional needs to happen here.
+     * @dev Handle ERC-1155 safeTransferFrom. If "from" is this contract,
+     *      the sender can only be Seaport or the conduit.
      *
-     *      Only allowed Seaport or conduit can use this function.
-     *
-     * @param from          The address to transfer from. Must be this contract.
-     * @custom:param to     Unused parameter
-     * @custom:param id     Unused parameter
-     * @custom:param amount Unused parameter
-     * @custom:param data   Unused parameter
+     * @param from   The address to transfer from.
+     * @param to     The address to transfer to.
+     * @param id     The token id to transfer.
+     * @param amount The amount of tokens to transfer.
+     * @param data   The data to pass to the onERC1155Received hook.
      */
-    function _safeTransferFrom(
+    function safeTransferFrom(
         address from,
-        address /* to */,
-        uint256 /* id */,
-        uint256 /* amount */,
-        bytes memory /* data */
-    ) internal view {
-        // Only Seaport or the conduit can use this function.
-        if (
-            _cast(
-                (msg.sender != _CONDUIT &&
-                    !ERC721SeaDropContractOffererStorage
-                        .layout()
-                        ._allowedSeaport[msg.sender]) || from != address(this)
-            ) == 1
-        ) {
-            revert InvalidCallerOnlyAllowedSeaport(msg.sender);
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes calldata data
+    ) public virtual override {
+        if (from == address(this)) {
+            // Only Seaport or the conduit can use this function
+            // when "from" is this contract.
+            if (
+                _cast(
+                    msg.sender != _CONDUIT &&
+                        !ERC1155SeaDropContractOffererStorage
+                            .layout()
+                            ._allowedSeaport[msg.sender]
+                ) == 1
+            ) {
+                revert InvalidCallerOnlyAllowedSeaport(msg.sender);
+            }
+            return;
         }
 
-        // This function is a no-op, nothing additional needs to happen here.
+        super.safeTransferFrom(from, to, id, amount, data);
     }
 
     /**
@@ -258,14 +255,14 @@ contract ERC721SeaDropContractOfferer is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC721ContractMetadata) returns (bool) {
+    ) public view virtual override(ERC1155ContractMetadata) returns (bool) {
         return
-            interfaceId == type(IERC721SeaDrop).interfaceId ||
+            interfaceId == type(IERC1155SeaDrop).interfaceId ||
             interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
-            // ERC721ContractMetadata returns supportsInterface true for
-            //     IERC721ContractMetadata, ERC-4906, ERC-2981
-            // ERC721A returns supportsInterface true for
-            //     ERC165, ERC721, ERC721Metadata
+            // ERC1155ContractMetadata returns supportsInterface true for
+            //     IERC1155ContractMetadata, ERC-4906, ERC-2981
+            // ERC1155A returns supportsInterface true for
+            //     ERC165, ERC1155, ERC1155Metadata
             super.supportsInterface(interfaceId);
     }
 
@@ -301,10 +298,35 @@ contract ERC721SeaDropContractOfferer is
             minter = fulfiller;
         }
 
-        // Quantity is the amount of the ERC-1155 min received item.
-        uint256 quantity = minimumReceived[0].amount;
+        // Mint the token (or tokens, if minimumReceived length > 1)
+        if (minimumReceived.length == 1) {
+            _mint(
+                minter,
+                minimumReceived[0].identifier,
+                minimumReceived[0].amount,
+                ""
+            );
+        } else {
+            // Put the ids and amounts on the stack.
+            uint256[] memory ids = new uint256[](minimumReceived.length);
+            uint256[] memory amounts = new uint256[](minimumReceived.length);
 
-        // Mint the tokens.
-        _mint(minter, quantity);
+            for (uint256 i = 0; i < minimumReceived.length; ) {
+                // Assign the id and amount.
+                ids[i] = minimumReceived[i].identifier;
+                amounts[i] = minimumReceived[i].amount;
+
+                unchecked {
+                    ++i;
+                }
+            }
+
+            _batchMint(
+                minter,
+                ids,
+                amounts
+                ""
+            );
+        }
     }
 }

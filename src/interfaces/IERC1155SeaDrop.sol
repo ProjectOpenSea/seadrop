@@ -10,7 +10,7 @@ import {
     PublicDrop,
     SignedMintValidationParams,
     TokenGatedDropStage
-} from "../lib/ERC721SeaDropStructs.sol";
+} from "../lib/ERC1155SeaDropStructs.sol";
 
 import {
     AllowListData,
@@ -19,11 +19,11 @@ import {
 } from "../lib/SeaDropStructs.sol";
 
 /**
- * @dev A helper interface to get and set parameters for ERC721SeaDrop.
+ * @dev A helper interface to get and set parameters for ERC1155SeaDrop.
  *      The token does not expose these methods as part of its external
  *      interface to reduce bloat, but does implement them.
  */
-interface IERC721SeaDrop is ISeaDropTokenContractMetadata {
+interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
     function updateAllowedSeaport(address[] calldata allowedSeaport) external;
 
     function updateAllowedFeeRecipient(
@@ -55,11 +55,13 @@ interface IERC721SeaDrop is ISeaDropTokenContractMetadata {
 
     function getMintStats(
         address minter
+        uint256 tokenId
     )
         external
         view
         returns (
             uint256 minterNumMinted,
+            uint256 minterNumMintedForTokenId,
             uint256 currentTotalSupply,
             uint256 maxSupply
         );

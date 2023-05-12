@@ -105,22 +105,23 @@ contract ERC1155SeaDrop is
 
         // Ensure the balance is sufficient.
         if (balanceOf(from, id) < amount) {
-            revert InsufficientBalance(id);
+            revert InsufficientBalance(from, id);
         }
 
-        // Subtract from the total supply for the token ID.
-        _totalSupply[id] -= amount;
+        // Subtract from the total supply for the token id.
+        _tokenSupply[id].totalSupply -= amount;
 
         // Burn the token.
         _burn(from, id, amount);
     }
 
     /**
-     * @notice Burns a batch of tokens, restricted to the owner or approved operator.
+     * @notice Burns a batch of tokens, restricted to the owner or
+     *         approved operator.
      *
      * @param from The address to burn from.
-     * @param ids  The token IDs to burn.
-     * @param amounts The amounts to burn per token ID.
+     * @param ids  The token ids to burn.
+     * @param amounts The amounts to burn per token id.
      */
     function batchBurn(
         address from,
@@ -140,11 +141,11 @@ contract ERC1155SeaDrop is
         uint256 balances = balanceOfBatch(from, ids);
         for (uint256 i = 0; i < idsLength; ) {
             if (balances[i] < amounts[i]) {
-                revert InsufficientBalance(id);
+                revert InsufficientBalance(from, id);
             }
 
-            // Subtract from the total supply for the token ID.
-            _totalSupply[ids[i]] -= amounts[i];
+            // Subtract from the total supply for the token id.
+            _tokenSupply[ids[i]].totalSupply -= amounts[i];
 
             unchecked {
                 ++i;

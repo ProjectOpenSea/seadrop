@@ -223,6 +223,18 @@ interface SeaDropErrorsAndEvents {
     error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
     /**
+     * @dev Revert with an error if an empty PublicDrop is provided
+     *      for an already-empty public drop.
+     */
+    error PublicDropStageNotPresent();
+
+    /**
+     * @dev Revert with an error if public drop indexes length does not match
+     *      the minimumReceived length.
+     */
+    error InvalidPublicDropIndexesLength();
+
+    /**
      * @dev Revert with an error if the signer payment token is not the same.
      */
     error InvalidSignedPaymentToken(address got, address want);
@@ -328,6 +340,11 @@ interface SeaDropErrorsAndEvents {
      * @dev An event with updated public drop data for an nft contract.
      */
     event PublicDropUpdated(PublicDrop publicDrop);
+
+    /**
+     * @dev An event with updated public drop data for an nft contract.
+     */
+    event PublicDropUpdated(PublicDrop publicDrop, uint256 index);
 
     /**
      * @dev An event with updated token gated drop stage data

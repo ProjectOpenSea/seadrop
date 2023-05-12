@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { IERC1155ContractMetadata } from "./IERC1155ContractMetadata.sol";
+import {
+    IERC1155ContractMetadata
+} from "../interfaces/IERC1155ContractMetadata.sol";
 
 import { ERC1155 } from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 
@@ -15,18 +17,14 @@ import { ERC1155 } from "@rari-capital/solmate/src/tokens/ERC1155.sol";
  *         with additional metadata and ownership capabilities.
  */
 contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
-    /// @notice The total token supply per token id.
-    ///         Subtracted when an item is burned.
-    mapping(uint256 => uint256) _totalSupply;
+    /// @notice A struct containing the token supply info per token id.
+    mapping(uint256 => TokenSupply) _tokenSupply;
 
-    /// @notice The total number of tokens minted per token id.
-    mapping(uint256 => uint256) _totalMinted;
+    /// @notice The total number of tokens minted by address.
+    mapping(address => uint256) _totalMintedByUser;
 
     /// @notice The total number of tokens minted per token id by address.
-    mapping(uint256 => mapping(address => uint256)) _totalMintedByUser;
-
-    /// @notice The max token supply per token id.
-    mapping(uint256 => uint256) _maxSupply;
+    mapping(uint256 => mapping(address => uint256)) _totalMintedByUserPerToken;
 
     /// @notice The base URI for token metadata.
     string private _baseURI;
@@ -131,8 +129,14 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
         // Ensure the sender is only the owner or configurer contract.
         _onlyOwnerOrConfigurer();
 
+        // Ensure the max supply does not exceed the maximum value of uint64,
+        // a limit due to the storage of bit-packed variables in TokenSupply,
+        if (newMaxSupply > 2 ** 64 - 1) {
+            revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
+        }
+
         // Set the new max supply.
-        _maxSupply[tokenId] = newMaxSupply;
+        _tokenSupply[tokenId].maxSupply = newMaxSupply;
 
         // Emit an event with the update.
         emit MaxSupplyUpdated(tokenId, newMaxSupply);
@@ -201,7 +205,7 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
      * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view override returns (string memory) {
-        return _baseURI();
+        return _baseURI;
     }
 
     /**
@@ -215,22 +219,22 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
      * @notice Returns the max token supply for a token id.
      */
     function maxSupply(uint256 tokenId) external view returns (uint256) {
-        return _maxSupply[tokenId];
-    };
+        return _tokenSupply[tokenId].maxSupply;
+    }
 
     /**
      * @notice Returns the total supply for a token id.
      */
     function totalSupply(uint256 tokenId) external view returns (uint256) {
-        return _totalSupply[tokenId];
-    }};
+        return _tokenSupply[tokenId].totalSupply;
+    }
 
     /**
      * @notice Returns the total minted for a token id.
      */
     function totalMinted(uint256 tokenId) external view returns (uint256) {
-        return _totalMinted[tokenId];
-    }};
+        return _tokenSupply[tokenId].totalMinted;
+    }
 
     /**
      * @notice Returns the provenance hash.
@@ -290,6 +294,85 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
     }
 
     /**
+     * @dev Adds to the internal counters for a mint.
+     *
+     * @param to     The address to mint to.
+     * @param id     The token id to mint.
+     * @param amount The quantity to mint.
+     * @param data   The data to pass if receiver is a contract.
+     */
+    function _mint(
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) internal virtual override {
+        // Increment mint counts.
+        _incrementMintCounts(to, id, amount);
+
+        super._mint(to, id, amount, data);
+    }
+
+    /**
+     * @dev Adds to the internal counters for a batch mint.
+     *
+     * @param to      The address to mint to.
+     * @param ids     The token ids to mint.
+     * @param amounts The quantities to mint.
+     * @param data    The data to pass if receiver is a contract.
+     */
+    function _batchMint(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal virtual override {
+        // Put ids length on the stack to save MLOADs.
+        uint256 idsLength = ids.length;
+
+        for (uint256 i = 0; i < idsLength; ) {
+            // Increment mint counts.
+            _incrementMintCounts(to, ids[i], amounts[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        super._batchMint(to, ids, amounts, data);
+    }
+
+    /**
+     * @dev Internal function to increment mint counts.
+     *
+     *      Note that this function does not check if the mint exceeds
+     *      maxSupply, which should be validated before this function is called.
+     *
+     * @param to     The address to mint to.
+     * @param id     The token id to mint.
+     * @param amount The quantity to mint.
+     */
+    function _incrementMintCounts(
+        address to,
+        uint256 id,
+        uint256 amount
+    ) internal {
+        // Get the current token supply.
+        TokenSupply storage tokenSupply = _tokenSupply[id];
+
+        // Increment supply. Can safely cast to uint64 since
+        // maxSupply cannot be set to exceed uint64.
+        tokenSupply.totalSupply += uint64(amount);
+        tokenSupply.numberMinted += uint64(amount);
+
+        // Increment total minted by user.
+        _totalMintedByUser[to] += amount;
+
+        // Increment total minted by user per token.
+        _totalMintedByUserPerToken[id][to] += amount;
+    }
+
+    /**
      * @dev Internal pure function to cast a `bool` value to a `uint256` value.
      *
      * @param b The `bool` value to cast.
@@ -301,7 +384,6 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
             u := b
         }
     }
-
 
     /**
      * @dev Returns whether `tokenId` exists.

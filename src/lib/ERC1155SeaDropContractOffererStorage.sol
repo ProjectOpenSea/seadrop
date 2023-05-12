@@ -5,18 +5,20 @@ import {
     PublicDrop,
     SignedMintValidationParams,
     TokenGatedDropStage
-} from "./ERC721SeaDropStructs.sol";
+} from "./ERC1155SeaDropStructs.sol";
 
 import { CreatorPayout } from "./SeaDropStructs.sol";
 
-library ERC721SeaDropContractOffererStorage {
+library ERC1155SeaDropContractOffererStorage {
     struct Layout {
         /// @notice The allowed Seaport addresses that can mint.
         mapping(address => bool) _allowedSeaport;
         /// @notice The enumerated allowed Seaport addresses.
         address[] _enumeratedAllowedSeaport;
         /// @notice The public drop data.
-        PublicDrop _publicDrop;
+        mapping(uint256 => PublicDrop) _publicDrops;
+        /// @notice The enumerated public drop indexes.
+        uint256[] _enumeratedPublicDropIndexes;
         /// @notice The creator payout addresses and basis points.
         CreatorPayout[] _creatorPayouts;
         /// @notice The allow list merkle root.
@@ -44,7 +46,7 @@ library ERC721SeaDropContractOffererStorage {
     }
 
     bytes32 internal constant STORAGE_SLOT =
-        keccak256("contracts.storage.ERC721SeaDropContractOfferer");
+        keccak256("contracts.storage.ERC1155SeaDropContractOfferer");
 
     function layout() internal pure returns (Layout storage l) {
         bytes32 slot = STORAGE_SLOT;

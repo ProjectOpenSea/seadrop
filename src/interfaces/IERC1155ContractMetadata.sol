@@ -7,6 +7,21 @@ import {
 
 interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     /**
+     * @dev A struct representing the supply info for a token id,
+     *      packed into one storage slot.
+     *
+     * @param maxSupply   The max supply for the token id.
+     * @param totalSupply The total token supply for the token id.
+     *                    Subtracted when an item is burned.
+     * @param totalMinted The total number of tokens minted for the token id.
+     */
+    struct TokenSupply {
+        uint64 maxSupply; // 64/256 bits
+        uint64 totalSupply; // 128/256 bits
+        uint64 totalMinted; // 192/256 bits
+    }
+
+    /**
      * @dev The token does not exist.
      */
     error URIQueryForNonexistentToken();
@@ -19,9 +34,10 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     /**
      * @dev Emit an event if the user has insufficient balance for a token id.
      *
-     * @param tokenId The token id the user has insufficient balance for.
+     * @param from    The user that has insufficient balance.
+     * @param tokenId The token id that has insufficient balance.
      */
-    event InsufficientBalance(uint256 tokenId);
+    error InsufficientBalance(address from, uint256 tokenId);
 
     /**
      * @dev Emit an event if the user is not authorized to interact with

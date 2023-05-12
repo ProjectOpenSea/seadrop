@@ -2,37 +2,39 @@
 pragma solidity ^0.8.19;
 
 import {
-    ERC721SeaDropContractOffererImplementation
-} from "./ERC721SeaDropContractOffererImplementation.sol";
+    ERC1155SeaDropContractOffererImplementation
+} from "./ERC1155SeaDropContractOffererImplementation.sol";
 
 import {
     PublicDrop,
     MultiConfigureStruct,
     SignedMintValidationParams,
     TokenGatedDropStage
-} from "./ERC721SeaDropStructs.sol";
+} from "./ERC1155SeaDropStructs.sol";
 
 import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 
-import "./ERC721SeaDropConstants.sol";
+import "./ERC1155SeaDropConstants.sol";
 
 import {
-    IERC721ContractMetadata
-} from "../interfaces/IERC721ContractMetadata.sol";
+    IERC1155ContractMetadata
+} from "../interfaces/IERC1155ContractMetadata.sol";
 
-import { IERC721SeaDrop } from "../interfaces/IERC721SeaDrop.sol";
+import { IERC1155SeaDrop } from "../interfaces/IERC1155SeaDrop.sol";
 
 import { IERC173 } from "../interfaces/IERC173.sol";
 
 /**
- * @title  ERC721SeaDropConfigurer
+ * @title  ERC1155SeaDropConfigurer
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice A helper contract to configure parameters for ERC721SeaDrop.
+ * @notice A helper contract to configure parameters for ERC1155SeaDrop.
  */
-contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
+contract ERC1155SeaDropConfigurer is
+    ERC1155SeaDropContractOffererImplementation
+{
     /**
      * @notice Revert with an error if the sender is not the owner
      *         of the token contract.
@@ -60,7 +62,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
      *         to unset or reset any properties to zero, as this method
      *         will ignore zero-value properties in the config struct.
      *
-     * @param token  The ERC721SeaDrop contract address.
+     * @param token  The ERC1155SeaDrop contract address.
      * @param config The configuration struct.
      */
     function multiConfigure(
@@ -71,16 +73,16 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         _onlyOwner(token);
 
         if (config.maxSupply != 0) {
-            IERC721ContractMetadata(token).setMaxSupply(config.maxSupply);
+            IERC1155ContractMetadata(token).setMaxSupply(config.maxSupply);
         }
         if (bytes(config.baseURI).length != 0) {
-            IERC721ContractMetadata(token).setBaseURI(config.baseURI);
+            IERC1155ContractMetadata(token).setBaseURI(config.baseURI);
         }
         if (bytes(config.contractURI).length != 0) {
-            IERC721ContractMetadata(token).setContractURI(config.contractURI);
+            IERC1155ContractMetadata(token).setContractURI(config.contractURI);
         }
         if (config.provenanceHash != bytes32(0)) {
-            IERC721ContractMetadata(token).setProvenanceHash(
+            IERC1155ContractMetadata(token).setProvenanceHash(
                 config.provenanceHash
             );
         }
@@ -101,24 +103,24 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                     config.publicDrop.endTime != 0
             ) == 1
         ) {
-            IERC721SeaDrop(address(token)).updatePublicDrop(config.publicDrop);
+            IERC1155SeaDrop(address(token)).updatePublicDrop(config.publicDrop);
         }
         if (bytes(config.dropURI).length != 0) {
-            IERC721SeaDrop(address(token)).updateDropURI(config.dropURI);
+            IERC1155SeaDrop(address(token)).updateDropURI(config.dropURI);
         }
         if (config.allowListData.merkleRoot != bytes32(0)) {
-            IERC721SeaDrop(address(token)).updateAllowList(
+            IERC1155SeaDrop(address(token)).updateAllowList(
                 config.allowListData
             );
         }
         if (config.creatorPayouts.length != 0) {
-            IERC721SeaDrop(address(token)).updateCreatorPayouts(
+            IERC1155SeaDrop(address(token)).updateCreatorPayouts(
                 config.creatorPayouts
             );
         }
         if (config.allowedFeeRecipients.length != 0) {
             for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
-                IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
+                IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
                     config.allowedFeeRecipients[i],
                     true
                 );
@@ -129,7 +131,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
         if (config.disallowedFeeRecipients.length != 0) {
             for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
-                IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
+                IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
                     config.disallowedFeeRecipients[i],
                     false
                 );
@@ -140,7 +142,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
         if (config.allowedPayers.length != 0) {
             for (uint256 i = 0; i < config.allowedPayers.length; ) {
-                IERC721SeaDrop(address(token)).updatePayer(
+                IERC1155SeaDrop(address(token)).updatePayer(
                     config.allowedPayers[i],
                     true
                 );
@@ -151,7 +153,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
         if (config.disallowedPayers.length != 0) {
             for (uint256 i = 0; i < config.disallowedPayers.length; ) {
-                IERC721SeaDrop(address(token)).updatePayer(
+                IERC1155SeaDrop(address(token)).updatePayer(
                     config.disallowedPayers[i],
                     false
                 );
@@ -168,7 +170,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 revert TokenGatedMismatch();
             }
             for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
-                IERC721SeaDrop(address(token)).updateTokenGatedDrop(
+                IERC1155SeaDrop(address(token)).updateTokenGatedDrop(
                     config.tokenGatedAllowedNftTokens[i],
                     config.tokenGatedDropStages[i]
                 );
@@ -184,7 +186,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 i < config.disallowedTokenGatedAllowedNftTokens.length;
 
             ) {
-                IERC721SeaDrop(address(token)).updateTokenGatedDrop(
+                IERC1155SeaDrop(address(token)).updateTokenGatedDrop(
                     config.disallowedTokenGatedAllowedNftTokens[i],
                     emptyStage
                 );
@@ -205,7 +207,8 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 i < config.signedMintValidationParams.length;
 
             ) {
-                IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
+                IERC1155SeaDrop(address(token))
+                    .updateSignedMintValidationParams(
                         config.signers[i],
                         config.signedMintValidationParams[i]
                     );
@@ -217,7 +220,8 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         if (config.disallowedSigners.length != 0) {
             SignedMintValidationParams memory emptyParams;
             for (uint256 i = 0; i < config.disallowedSigners.length; ) {
-                IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
+                IERC1155SeaDrop(address(token))
+                    .updateSignedMintValidationParams(
                         config.disallowedSigners[i],
                         emptyParams
                     );
