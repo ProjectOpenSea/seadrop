@@ -7,6 +7,14 @@ import {
 
 import { ERC1155 } from "@rari-capital/solmate/src/tokens/ERC1155.sol";
 
+import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
+
+import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
+
+import {
+    IERC165
+} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
 /**
  * @title  ERC1155ContractMetadata
  * @author James Wenzel (emo.eth)
@@ -16,7 +24,12 @@ import { ERC1155 } from "@rari-capital/solmate/src/tokens/ERC1155.sol";
  * @notice ERC1155ContractMetadata is a token contract that extends ERC-1155
  *         with additional metadata and ownership capabilities.
  */
-contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
+contract ERC1155ContractMetadata is
+    ERC1155,
+    ERC2981,
+    TwoStepOwnable,
+    IERC1155ContractMetadata
+{
     /// @notice A struct containing the token supply info per token id.
     mapping(uint256 => TokenSupply) _tokenSupply;
 
@@ -24,7 +37,7 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
     mapping(address => uint256) _totalMintedByUser;
 
     /// @notice The total number of tokens minted per token id by address.
-    mapping(uint256 => mapping(address => uint256)) _totalMintedByUserPerToken;
+    mapping(address => mapping(uint256 => uint256)) _totalMintedByUserPerToken;
 
     /// @notice The base URI for token metadata.
     string private _baseURI;
@@ -73,7 +86,7 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
         _onlyOwnerOrConfigurer();
 
         // Set the new base URI.
-        _tokenBaseURI = newBaseURI;
+        _baseURI = newBaseURI;
 
         // Emit an event with the update.
         emit BatchMetadataUpdate(0, type(uint256).max);
@@ -136,7 +149,7 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
         }
 
         // Set the new max supply.
-        _tokenSupply[tokenId].maxSupply = newMaxSupply;
+        _tokenSupply[tokenId].maxSupply = uint64(newMaxSupply);
 
         // Emit an event with the update.
         emit MaxSupplyUpdated(tokenId, newMaxSupply);
@@ -158,7 +171,12 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
         _onlyOwnerOrConfigurer();
 
         // Revert if any items have been minted.
-        if (_totalMinted() != 0) {
+        if (
+            _cast(
+                _tokenSupply[0].totalMinted != 0 ||
+                    _tokenSupply[1].totalMinted != 0
+            ) == 1
+        ) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
         }
 
@@ -247,9 +265,13 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
     }
 
     /**
-     * @notice Returns the token URI for token metadata.
+     * @notice Returns the URI for token metadata.
      *
-     * @param tokenId The token id to get the token URI for.
+     *         This implementation returns the same URI for *all* token types.
+     *         It relies on the token type ID substitution mechanism defined
+     *         in the EIP to replace {id} with the token id.
+     *
+     * @param tokenId The token id to get the URI for.
      */
     function uri(
         uint256 tokenId
@@ -257,23 +279,8 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
         // Revert if the tokenId doesn't exist.
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
 
-        // Put the baseURI on the stack.
-        string memory theBaseURI = _baseURI();
-
-        // Return empty if baseURI is empty.
-        if (bytes(theBaseURI).length == 0) {
-            return "";
-        }
-
-        // If the last character of the baseURI is not a slash, then return
-        // the baseURI to signal the same metadata for all tokens, such as
-        // for a prereveal state.
-        if (bytes(theBaseURI)[bytes(theBaseURI).length - 1] != bytes("/")[0]) {
-            return theBaseURI;
-        }
-
-        // Append the tokenId to the baseURI and return.
-        return string.concat(theBaseURI, _toString(tokenId));
+        // Return the base URI.
+        return _baseURI;
     }
 
     /**
@@ -333,13 +340,64 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
         for (uint256 i = 0; i < idsLength; ) {
             // Increment mint counts.
             _incrementMintCounts(to, ids[i], amounts[i]);
+        }
+
+        super._batchMint(to, ids, amounts, data);
+    }
+
+    /**
+     * @dev Subtracts from the internal counters for a burn.
+     *
+     * @param from   The address to burn from.
+     * @param id     The token id to burn.
+     * @param amount The amount to burn.
+     */
+    function _burn(
+        address from,
+        uint256 id,
+        uint256 amount
+    ) internal virtual override {
+        // Reduce the supply.
+        _reduceSupplyOnBurn(id, amount);
+
+        super._burn(from, id, amount);
+    }
+
+    /**
+     * @dev Subtracts from the internal counters for a batch burn.
+     *
+     * @param from    The address to burn from.
+     * @param ids     The token ids to burn.
+     * @param amounts The amounts to burn.
+     */
+    function _batchBurn(
+        address from,
+        uint256[] memory ids,
+        uint256[] memory amounts
+    ) internal virtual override {
+        // Put ids length on the stack to save MLOADs.
+        uint256 idsLength = ids.length;
+
+        for (uint256 i = 0; i < idsLength; ) {
+            // Reduce the supply.
+            _reduceSupplyOnBurn(ids[i], amounts[i]);
 
             unchecked {
                 ++i;
             }
         }
 
-        super._batchMint(to, ids, amounts, data);
+        super._batchBurn(from, ids, amounts);
+    }
+
+    function _reduceSupplyOnBurn(uint256 id, uint256 amount) internal {
+        // Get the current token supply.
+        TokenSupply storage tokenSupply = _tokenSupply[id];
+
+        // Reduce the totalSupply.
+        unchecked {
+            tokenSupply.totalSupply -= uint64(amount);
+        }
     }
 
     /**
@@ -360,16 +418,25 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
         // Get the current token supply.
         TokenSupply storage tokenSupply = _tokenSupply[id];
 
-        // Increment supply. Can safely cast to uint64 since
-        // maxSupply cannot be set to exceed uint64.
-        tokenSupply.totalSupply += uint64(amount);
-        tokenSupply.numberMinted += uint64(amount);
+        if (tokenSupply.totalMinted + amount > tokenSupply.maxSupply) {
+            revert MintExceedsMaxSupply(
+                tokenSupply.totalMinted + amount,
+                tokenSupply.maxSupply
+            );
+        }
 
-        // Increment total minted by user.
-        _totalMintedByUser[to] += amount;
+        // Increment supply and number minted.
+        // Can be unchecked because maxSupply cannot be set to exceed uint64.
+        unchecked {
+            tokenSupply.totalSupply += uint64(amount);
+            tokenSupply.totalMinted += uint64(amount);
 
-        // Increment total minted by user per token.
-        _totalMintedByUserPerToken[id][to] += amount;
+            // Increment total minted by user.
+            _totalMintedByUser[to] += amount;
+
+            // Increment total minted by user per token.
+            _totalMintedByUserPerToken[to][id] += amount;
+        }
     }
 
     /**
@@ -391,50 +458,6 @@ contract ERC1155ContractMetadata is ERC1155, IERC1155ContractMetadata {
      * Tokens start existing when they are minted.
      */
     function _exists(uint256 tokenId) internal view virtual returns (bool) {
-        return _totalMinted[tokenId] != 0;
-    }
-
-    /**
-     * @dev Converts a uint256 to its ASCII string decimal representation.
-     */
-    function _toString(
-        uint256 value
-    ) internal pure virtual returns (string memory str) {
-        assembly {
-            // The maximum value of a uint256 contains 78 digits (1 byte per digit), but
-            // we allocate 0xa0 bytes to keep the free memory pointer 32-byte word aligned.
-            // We will need 1 word for the trailing zeros padding, 1 word for the length,
-            // and 3 words for a maximum of 78 digits. Total: 5 * 0x20 = 0xa0.
-            let m := add(mload(0x40), 0xa0)
-            // Update the free memory pointer to allocate.
-            mstore(0x40, m)
-            // Assign the `str` to the end.
-            str := sub(m, 0x20)
-            // Zeroize the slot after the string.
-            mstore(str, 0)
-
-            // Cache the end of the memory to calculate the length later.
-            let end := str
-
-            // We write the string from rightmost digit to leftmost digit.
-            // The following is essentially a do-while loop that also handles the zero case.
-            // prettier-ignore
-            for { let temp := value } 1 {} {
-                str := sub(str, 1)
-                // Write the character to the pointer.
-                // The ASCII index of the '0' character is 48.
-                mstore8(str, add(48, mod(temp, 10)))
-                // Keep dividing `temp` until zero.
-                temp := div(temp, 10)
-                // prettier-ignore
-                if iszero(temp) { break }
-            }
-
-            let length := sub(end, str)
-            // Move the pointer 32 bytes leftwards to make room for the length.
-            str := sub(str, 0x20)
-            // Store the length.
-            mstore(str, length)
-        }
+        return _tokenSupply[tokenId].totalMinted != 0;
     }
 }

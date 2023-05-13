@@ -27,6 +27,12 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     error URIQueryForNonexistentToken();
 
     /**
+     * @dev Revert with an error if the mint quantity exceeds the max token
+     *      supply.
+     */
+    error MintExceedsMaxSupply(uint256 total, uint256 maxSupply);
+
+    /**
      * @dev Emit an event when the max token supply for a token id is updated.
      */
     event MaxSupplyUpdated(uint256 tokenId, uint256 newMaxSupply);
@@ -43,7 +49,7 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
      * @dev Emit an event if the user is not authorized to interact with
      *      an addresses' tokens.
      */
-    event NotAuthorized();
+    error NotAuthorized();
 
     /**
      * @notice Sets the max supply for a token id and emits an event.

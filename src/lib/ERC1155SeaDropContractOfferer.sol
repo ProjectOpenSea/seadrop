@@ -9,7 +9,9 @@ import {
     ERC1155SeaDropContractOffererStorage
 } from "./ERC1155SeaDropContractOffererStorage.sol";
 
-import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
+import {
+    ERC1155SeaDropErrorsAndEvents
+} from "./ERC1155SeaDropErrorsAndEvents.sol";
 
 import { PublicDrop } from "./ERC1155SeaDropStructs.sol";
 
@@ -32,7 +34,7 @@ import {
  */
 contract ERC1155SeaDropContractOfferer is
     ERC1155ContractMetadata,
-    SeaDropErrorsAndEvents
+    ERC1155SeaDropErrorsAndEvents
 {
     using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage.Layout;
 
@@ -99,7 +101,7 @@ contract ERC1155SeaDropContractOfferer is
                     selector == GENERATE_ORDER_SELECTOR ||
                     selector == GET_SEAPORT_METADATA_SELECTOR ||
                     selector == GET_PUBLIC_DROP_SELECTOR ||
-                    selector == GET_PUBLIC_DROP_INDEXES_SELECTOR || 
+                    selector == GET_PUBLIC_DROP_INDEXES_SELECTOR ||
                     selector == GET_CREATOR_PAYOUTS_SELECTOR ||
                     selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR ||
                     selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR ||
@@ -152,7 +154,10 @@ contract ERC1155SeaDropContractOfferer is
             return returnedData;
         } else if (selector == GET_MINT_STATS_SELECTOR) {
             // Get the minter and token id.
-            (address minter, uint256 tokenId) = abi.decode(data, (address, uint256));
+            (address minter, uint256 tokenId) = abi.decode(
+                data,
+                (address, uint256)
+            );
 
             // Get the mint stats.
             (
@@ -160,10 +165,16 @@ contract ERC1155SeaDropContractOfferer is
                 uint256 minterNumMintedForTokenId,
                 uint256 currentTotalSupply,
                 uint256 maxSupply
-            ) = _getMintStats(minter);
+            ) = _getMintStats(minter, tokenId);
 
             // Encode the return data.
-            return abi.encode(minterNumMinted, mintedNumMintedForTokenId, currentTotalSupply, maxSupply);
+            return
+                abi.encode(
+                    minterNumMinted,
+                    minterNumMintedForTokenId,
+                    currentTotalSupply,
+                    maxSupply
+                );
         } else if (selector == RATIFY_ORDER_SELECTOR) {
             // This function is a no-op, nothing additional needs to happen here.
             // Utilize assembly to efficiently return the ratifyOrder magic value.
@@ -298,35 +309,12 @@ contract ERC1155SeaDropContractOfferer is
             minter = fulfiller;
         }
 
-        // Mint the token (or tokens, if minimumReceived length > 1)
-        if (minimumReceived.length == 1) {
-            _mint(
-                minter,
-                minimumReceived[0].identifier,
-                minimumReceived[0].amount,
-                ""
-            );
-        } else {
-            // Put the ids and amounts on the stack.
-            uint256[] memory ids = new uint256[](minimumReceived.length);
-            uint256[] memory amounts = new uint256[](minimumReceived.length);
-
-            for (uint256 i = 0; i < minimumReceived.length; ) {
-                // Assign the id and amount.
-                ids[i] = minimumReceived[i].identifier;
-                amounts[i] = minimumReceived[i].amount;
-
-                unchecked {
-                    ++i;
-                }
-            }
-
-            _batchMint(
-                minter,
-                ids,
-                amounts
-                ""
-            );
-        }
+        // Mint the tokens.
+        _mint(
+            minter,
+            minimumReceived[0].identifier,
+            minimumReceived[0].amount,
+            ""
+        );
     }
 }

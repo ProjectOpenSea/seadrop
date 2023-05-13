@@ -89,7 +89,7 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 config.royaltyReceiver != address(0) && config.royaltyBps != 0
             ) == 1
         ) {
-            ISeaDropTokenContractMetadata(token).setDefaultRoyalty(
+            IERC721ContractMetadata(token).setDefaultRoyalty(
                 config.royaltyReceiver,
                 config.royaltyBps
             );

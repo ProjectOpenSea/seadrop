@@ -80,7 +80,7 @@ struct TokenGatedDropStage {
     uint80 startPrice; // 80/512 bits
     uint80 endPrice; // 160/512 bits
     uint40 startTime; // 392/512 bits
-    uint40 endtime; // 432/512 bits
+    uint40 endTime; // 432/512 bits
     address paymentToken; // 320/512 bits
     uint24 fromTokenId;
     uint24 toTokenId;

@@ -12,7 +12,9 @@ import {
     TokenGatedDropStage
 } from "./ERC721SeaDropStructs.sol";
 
-import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
+import {
+    ERC721SeaDropErrorsAndEvents
+} from "./ERC721SeaDropErrorsAndEvents.sol";
 
 import {
     AllowListData,
@@ -50,7 +52,9 @@ import {
  *         ERC721SeaDropContractOfferer, to help reduce contract size
  *         on the token contract itself.
  */
-contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
+contract ERC721SeaDropContractOffererImplementation is
+    ERC721SeaDropErrorsAndEvents
+{
     using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
     using ECDSA for bytes32;
 
@@ -235,9 +239,10 @@ contract ERC721SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         address allowedNftToken,
         uint256 allowedNftTokenId
     ) external view returns (uint256) {
-        ERC721SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
-            allowedNftToken
-        ][allowedNftTokenId];
+        return
+            ERC721SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
+                allowedNftToken
+            ][allowedNftTokenId];
     }
 
     /**

@@ -37,7 +37,10 @@ interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
 
     function updateDropURI(string calldata dropURI) external;
 
-    function updatePublicDrop(PublicDrop calldata publicDrop) external;
+    function updatePublicDrop(
+        uint256 index,
+        PublicDrop calldata publicDrop
+    ) external;
 
     function updateAllowList(AllowListData calldata allowListData) external;
 
@@ -54,7 +57,7 @@ interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
     function updatePayer(address payer, bool allowed) external;
 
     function getMintStats(
-        address minter
+        address minter,
         uint256 tokenId
     )
         external

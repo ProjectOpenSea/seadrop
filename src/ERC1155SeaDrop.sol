@@ -68,7 +68,7 @@ contract ERC1155SeaDrop is
         address to,
         uint256 tokenId,
         uint256 amount,
-        bytes memory data
+        bytes calldata data
     ) public override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, amount, data);
     }
@@ -82,9 +82,9 @@ contract ERC1155SeaDrop is
     function safeBatchTransferFrom(
         address from,
         address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
     ) public virtual override onlyAllowedOperator(from) {
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
@@ -94,7 +94,7 @@ contract ERC1155SeaDrop is
      *
      * @param id The token id to burn.
      */
-    function burn(address from, uint256 id, uint256 amount) internal virtual {
+    function burn(address from, uint256 id, uint256 amount) external {
         // Require that only the owner or approved operator can call.
         if (
             _cast(msg.sender != from && !isApprovedForAll[from][msg.sender]) ==
@@ -104,12 +104,9 @@ contract ERC1155SeaDrop is
         }
 
         // Ensure the balance is sufficient.
-        if (balanceOf(from, id) < amount) {
+        if (amount > balanceOf[from][id]) {
             revert InsufficientBalance(from, id);
         }
-
-        // Subtract from the total supply for the token id.
-        _tokenSupply[id].totalSupply -= amount;
 
         // Burn the token.
         _burn(from, id, amount);
@@ -125,9 +122,9 @@ contract ERC1155SeaDrop is
      */
     function batchBurn(
         address from,
-        uint256[] memory ids,
-        uint256[] memory amounts
-    ) internal virtual {
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) external {
         // Require that only the owner or approved operator can call.
         if (
             _cast(msg.sender != from && !isApprovedForAll[from][msg.sender]) ==
@@ -136,16 +133,12 @@ contract ERC1155SeaDrop is
             revert NotAuthorized();
         }
 
-        // Ensure the balances are sufficient.
         uint256 idsLength = ids.length;
-        uint256 balances = balanceOfBatch(from, ids);
         for (uint256 i = 0; i < idsLength; ) {
-            if (balances[i] < amounts[i]) {
-                revert InsufficientBalance(from, id);
+            // Ensure the balances are sufficient.
+            if (amounts[i] > balanceOf[from][ids[i]]) {
+                revert InsufficientBalance(from, ids[i]);
             }
-
-            // Subtract from the total supply for the token id.
-            _tokenSupply[ids[i]].totalSupply -= amounts[i];
 
             unchecked {
                 ++i;

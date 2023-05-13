@@ -72,8 +72,22 @@ contract ERC1155SeaDropConfigurer is
         // Ensure the sender is the owner of the token.
         _onlyOwner(token);
 
-        if (config.maxSupply != 0) {
-            IERC1155ContractMetadata(token).setMaxSupply(config.maxSupply);
+        if (config.maxSupplyTokenIds.length != 0) {
+            if (
+                config.maxSupplyTokenIds.length !=
+                config.maxSupplyAmounts.length
+            ) {
+                revert MaxSupplyMismatch();
+            }
+            for (uint256 i = 0; i < config.maxSupplyTokenIds.length; ) {
+                IERC1155ContractMetadata(token).setMaxSupply(
+                    config.maxSupplyTokenIds[i],
+                    config.maxSupplyAmounts[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
         }
         if (bytes(config.baseURI).length != 0) {
             IERC1155ContractMetadata(token).setBaseURI(config.baseURI);
@@ -91,19 +105,25 @@ contract ERC1155SeaDropConfigurer is
                 config.royaltyReceiver != address(0) && config.royaltyBps != 0
             ) == 1
         ) {
-            ISeaDropTokenContractMetadata(token).setDefaultRoyalty(
+            IERC1155ContractMetadata(token).setDefaultRoyalty(
                 config.royaltyReceiver,
                 config.royaltyBps
             );
         }
 
-        if (
-            _cast(
-                config.publicDrop.startTime != 0 &&
-                    config.publicDrop.endTime != 0
-            ) == 1
-        ) {
-            IERC1155SeaDrop(address(token)).updatePublicDrop(config.publicDrop);
+        if (config.publicDropsIndexes.length != 0) {
+            if (config.publicDropsIndexes.length != config.publicDrops.length) {
+                revert PublicDropsMismatch();
+            }
+            for (uint256 i = 0; i < config.publicDropsIndexes.length; ) {
+                IERC1155SeaDrop(address(token)).updatePublicDrop(
+                    config.publicDropsIndexes[i],
+                    config.publicDrops[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
         }
         if (bytes(config.dropURI).length != 0) {
             IERC1155SeaDrop(address(token)).updateDropURI(config.dropURI);

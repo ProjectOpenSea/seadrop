@@ -9,7 +9,9 @@ import {
     ERC721SeaDropContractOffererStorage
 } from "./ERC721SeaDropContractOffererStorage.sol";
 
-import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
+import {
+    ERC721SeaDropErrorsAndEvents
+} from "./ERC721SeaDropErrorsAndEvents.sol";
 
 import { PublicDrop } from "./ERC721SeaDropStructs.sol";
 
@@ -32,7 +34,7 @@ import {
  */
 contract ERC721SeaDropContractOfferer is
     ERC721ContractMetadata,
-    SeaDropErrorsAndEvents
+    ERC721SeaDropErrorsAndEvents
 {
     using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
 

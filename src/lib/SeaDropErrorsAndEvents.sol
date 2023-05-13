@@ -223,18 +223,6 @@ interface SeaDropErrorsAndEvents {
     error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
     /**
-     * @dev Revert with an error if an empty PublicDrop is provided
-     *      for an already-empty public drop.
-     */
-    error PublicDropStageNotPresent();
-
-    /**
-     * @dev Revert with an error if public drop indexes length does not match
-     *      the minimumReceived length.
-     */
-    error InvalidPublicDropIndexesLength();
-
-    /**
      * @dev Revert with an error if the signer payment token is not the same.
      */
     error InvalidSignedPaymentToken(address got, address want);
@@ -337,25 +325,6 @@ interface SeaDropErrorsAndEvents {
     event SeaDropMint(address payer, uint256 dropStageIndex);
 
     /**
-     * @dev An event with updated public drop data for an nft contract.
-     */
-    event PublicDropUpdated(PublicDrop publicDrop);
-
-    /**
-     * @dev An event with updated public drop data for an nft contract.
-     */
-    event PublicDropUpdated(PublicDrop publicDrop, uint256 index);
-
-    /**
-     * @dev An event with updated token gated drop stage data
-     *      for an nft contract.
-     */
-    event TokenGatedDropStageUpdated(
-        address indexed allowedNftToken,
-        TokenGatedDropStage dropStage
-    );
-
-    /**
      * @dev An event with updated allow list data for an nft contract.
      *
      * @param previousMerkleRoot The previous allow list merkle root.
@@ -390,15 +359,6 @@ interface SeaDropErrorsAndEvents {
     event AllowedFeeRecipientUpdated(
         address indexed feeRecipient,
         bool indexed allowed
-    );
-
-    /**
-     * @dev An event with the updated validation parameters for server-side
-     *      signers.
-     */
-    event SignedMintValidationParamsUpdated(
-        address indexed signer,
-        SignedMintValidationParams signedMintValidationParams
     );
 
     /**

@@ -12,7 +12,9 @@ import {
     TokenGatedDropStage
 } from "./ERC1155SeaDropStructs.sol";
 
-import { SeaDropErrorsAndEvents } from "./SeaDropErrorsAndEvents.sol";
+import {
+    ERC1155SeaDropErrorsAndEvents
+} from "./ERC1155SeaDropErrorsAndEvents.sol";
 
 import {
     AllowListData,
@@ -50,7 +52,9 @@ import {
  *         ERC1155SeaDropContractOfferer, to help reduce contract size
  *         on the token contract itself.
  */
-contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
+contract ERC1155SeaDropContractOffererImplementation is
+    ERC1155SeaDropErrorsAndEvents
+{
     using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage.Layout;
     using ECDSA for bytes32;
 
@@ -118,13 +122,6 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      */
     uint256 internal constant _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE =
         type(uint256).max;
-
-    /**
-     * @notice Constant for a public mint's `dropStageIndex`.
-     *         Used in `mintPublic` where no `dropStageIndex`
-     *         is stored in the `PublicDrop` struct.
-     */
-    uint256 internal constant _PUBLIC_DROP_STAGE_INDEX = 0;
 
     /**
      * @dev Constructor for contract deployment.
@@ -250,9 +247,10 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         address allowedNftToken,
         uint256 allowedNftTokenId
     ) external view returns (uint256) {
-        ERC1155SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
-            allowedNftToken
-        ][allowedNftTokenId];
+        return
+            ERC1155SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
+                allowedNftToken
+            ][allowedNftTokenId];
     }
 
     /**
@@ -315,14 +313,14 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         // Use maxTotalMintableByWallet != 0 as a signal that this update should
         // add or update the drop stage, otherwise we will be removing.
-        bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
+        bool addOrUpdateDropStage = publicDrop.maxTotalMintableByWallet != 0;
 
         // Get pointers to the token gated drop data and enumerated addresses.
         PublicDrop
             storage existingDropStageData = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._publicDrops[index];
-        address[]
+        uint256[]
             storage enumeratedIndexes = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._enumeratedPublicDropIndexes;
@@ -342,7 +340,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         if (addOrUpdateDropStage) {
             ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
                     index
-                ] = dropStage;
+                ] = publicDrop;
             // Add to enumeration if it does not exist already.
             if (dropStageDoesNotExist) {
                 enumeratedIndexes.push(index);
@@ -571,6 +569,10 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         (offer, substandard) = _decodeOrder(minimumReceived, context);
 
+        // Set token id and quantity.
+        uint256 tokenId = minimumReceived[0].identifier;
+        uint256 quantity = minimumReceived[0].amount;
+
         // All substandards have feeRecipient and minter as first two params.
         address feeRecipient = address(bytes20(context[2:22]));
         address minter = address(bytes20(context[22:42]));
@@ -586,13 +588,14 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
         if (substandard == 0) {
             // 0: Public mint
-            uin256 indexes = abi.decode(context[42:74], (uint256[]));
+            uint8 publicDropIndex = uint8(bytes1(context[42:43]));
             consideration = _mintPublic(
-                minimumReceived,
-                indexes,
+                tokenId,
+                publicDropIndex,
                 feeRecipient,
                 fulfiller_,
                 minter,
+                quantity,
                 withEffects_
             );
         } else if (substandard == 1) {
@@ -603,6 +606,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             );
             bytes32[] memory proof = _bytesToBytes32Array(context[362:]);
             consideration = _mintAllowList(
+                tokenId,
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -618,6 +622,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 (TokenGatedMintParams)
             );
             consideration = _mintAllowedTokenHolder(
+                tokenId,
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -635,6 +640,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             bytes memory signature = context[394:];
             bytes32 digest;
             (consideration, digest) = _mintSigned(
+                tokenId,
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -650,36 +656,32 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @notice Mint a public drop stage.
      *
-     * @param minimumReceived The minimum items that the caller must
-     *                       receive, should match indexes.
-     * @param indexes      The public drop indexes to mint, should match
-     *                     minimumReceived items.
-     * @param feeRecipient The fee recipient.
-     * @param payer        The payer of the mint.
-     * @param minter       The mint recipient.
-     * @param quantity     The number of tokens to mint.
-     * @param withEffects  Whether to apply state changes of the mint.
+     * @param tokenId         The token id to mint.
+     * @param publicDropIndex The public drop index to mint.
+     * @param feeRecipient    The fee recipient.
+     * @param payer           The payer of the mint.
+     * @param minter          The mint recipient.
+     * @param quantity        The number of tokens to mint.
+     * @param withEffects      Whether to apply state changes of the mint.
      */
     function _mintPublic(
-        SpentItem[] minimumReceived,
-        uint256[] indexes,
+        uint256 tokenId,
+        uint8 publicDropIndex,
         address feeRecipient,
         address payer,
         address minter,
+        uint256 quantity,
         bool withEffects
     ) internal returns (ReceivedItem[] memory consideration) {
-        // Revert if the indexes length does not match minimumReceived.
-        if (indexes.length != minimumReceived.length) {
-            revert InvalidPublicDropIndexesLength();
-        }
-
-        seenIn
-
         // Put items back on the stack to avoid stack too deep.
         PublicDrop memory publicDrop = ERC1155SeaDropContractOffererStorage
             .layout()
-            ._publicDrops[index];
+            ._publicDrops[publicDropIndex];
         bool withEffects_ = withEffects;
+        uint8 publicDropIndex_ = publicDropIndex;
+
+        // Check that the tokenId is within the range of the stage.
+        _checkTokenId(tokenId, publicDrop.fromTokenId, publicDrop.toTokenId);
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -702,7 +704,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             publicDrop.maxTotalMintableByWallet,
             _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE,
             publicDrop.feeBps,
-            _PUBLIC_DROP_STAGE_INDEX,
+            publicDropIndex_,
             publicDrop.restrictFeeRecipients,
             withEffects_
         );
@@ -711,6 +713,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @notice Mint an allow list drop stage.
      *
+     * @param tokenId      The token id to mint.
      * @param feeRecipient The fee recipient.
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
@@ -720,6 +723,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintAllowList(
+        uint256 tokenId,
         address feeRecipient,
         address payer,
         address minter,
@@ -744,6 +748,9 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // Put items back on the stack to avoid stack too deep.
         MintParams memory mintParams_ = mintParams;
         bool withEffects_ = withEffects;
+
+        // Check that the tokenId is within the range of the stage.
+        _checkTokenId(tokenId, mintParams_.fromTokenId, mintParams_.toTokenId);
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -776,6 +783,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @notice Mint with a server-side signature.
      *         Note that a signature can only be used once.
      *
+     * @param tokenId      The token id to mint.
      * @param feeRecipient The fee recipient.
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
@@ -787,6 +795,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintSigned(
+        uint256 tokenId,
         address feeRecipient,
         address payer,
         address minter,
@@ -814,6 +823,9 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // Put items back on the stack to avoid stack too deep.
         MintParams memory mintParams_ = mintParams;
         bool withEffects_ = withEffects;
+
+        // Check that the tokenId is within the range of the stage.
+        _checkTokenId(tokenId, mintParams_.fromTokenId, mintParams_.toTokenId);
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -939,6 +951,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
     /**
      * @notice Mint as an allowed token holder.
      *
+     * @param tokenId      The token id to mint.
      * @param feeRecipient The fee recipient.
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
@@ -946,6 +959,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
      * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintAllowedTokenHolder(
+        uint256 tokenId,
         address feeRecipient,
         address payer,
         address minter,
@@ -976,14 +990,17 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // to ensure it is not already fully redeemed.
         for (uint256 i = 0; i < allowedNftTokenIdsLength; ) {
             // Put the tokenId on the stack.
-            uint256 tokenId = mintParams.allowedNftTokenIds[i];
+            uint256 allowedNftTokenId = mintParams.allowedNftTokenIds[i];
 
             // Put the amount on the stack.
             uint256 amount = mintParams.amounts[i];
 
             // Check that the minter is the owner of the allowedNftTokenId.
-            if (IERC721(allowedNftToken).ownerOf(tokenId) != minter) {
-                revert TokenGatedNotTokenOwner(allowedNftToken, tokenId);
+            if (IERC721(allowedNftToken).ownerOf(allowedNftTokenId) != minter) {
+                revert TokenGatedNotTokenOwner(
+                    allowedNftToken,
+                    allowedNftTokenId
+                );
             }
 
             // Cache the storage pointer for cheaper access.
@@ -994,14 +1011,14 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
 
             // Check that the token id has not already been redeemed to its limit.
             if (
-                redeemedTokenIds[tokenId] + amount >
+                redeemedTokenIds[allowedNftTokenId] + amount >
                 dropStage.maxMintablePerRedeemedToken
             ) {
                 revert TokenGatedTokenIdMintExceedsQuantityRemaining(
                     allowedNftToken,
-                    tokenId,
+                    allowedNftTokenId,
                     dropStage.maxMintablePerRedeemedToken,
-                    redeemedTokenIds[tokenId],
+                    redeemedTokenIds[allowedNftTokenId],
                     amount
                 );
             }
@@ -1012,7 +1029,7 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
             // Apply the state changes of the mint.
             if (withEffects) {
                 // Increase mint count on redeemed token id.
-                redeemedTokenIds[tokenId] += amount;
+                redeemedTokenIds[allowedNftTokenId] += amount;
             }
 
             unchecked {
@@ -1023,6 +1040,9 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
         // Put items back on the stack to avoid stack too deep.
         TokenGatedDropStage memory dropStage_ = dropStage;
         bool withEffects_ = withEffects;
+
+        // Check that the tokenId is within the range of the stage.
+        _checkTokenId(tokenId, dropStage_.fromTokenId, dropStage_.toTokenId);
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -1167,6 +1187,28 @@ contract ERC1155SeaDropContractOffererImplementation is SeaDropErrorsAndEvents {
                 // cannot be zero as long as startTime < endTime.
                 add(div(sub(totalBeforeDivision, 1), duration), 1)
             )
+        }
+    }
+
+    /**
+     * @notice Check that the token id is within the stage range.
+     *
+     * @param tokenId      The token id.
+     * @param fromTokenId The drop stage start token id
+     * @param toTokenId   The drop stage end token id.
+     */
+    function _checkTokenId(
+        uint256 tokenId,
+        uint256 fromTokenId,
+        uint256 toTokenId
+    ) internal pure {
+        if (_cast(tokenId < fromTokenId || tokenId > toTokenId) == 1) {
+            // Revert if the drop stage is not active.
+            revert TokenIdNotWithinDropStageRange(
+                tokenId,
+                fromTokenId,
+                toTokenId
+            );
         }
     }
 
