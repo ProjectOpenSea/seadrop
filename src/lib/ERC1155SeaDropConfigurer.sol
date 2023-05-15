@@ -111,14 +111,14 @@ contract ERC1155SeaDropConfigurer is
             );
         }
 
-        if (config.publicDropsIndexes.length != 0) {
-            if (config.publicDropsIndexes.length != config.publicDrops.length) {
+        if (config.publicDrops.length != 0) {
+            if (config.publicDrops.length != config.publicDropsIndexes.length) {
                 revert PublicDropsMismatch();
             }
-            for (uint256 i = 0; i < config.publicDropsIndexes.length; ) {
+            for (uint256 i = 0; i < config.publicDrops.length; ) {
                 IERC1155SeaDrop(address(token)).updatePublicDrop(
-                    config.publicDropsIndexes[i],
-                    config.publicDrops[i]
+                    config.publicDrops[i],
+                    config.publicDropsIndexes[i]
                 );
                 unchecked {
                     ++i;

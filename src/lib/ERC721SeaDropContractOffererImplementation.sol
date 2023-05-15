@@ -475,7 +475,7 @@ contract ERC721SeaDropContractOffererImplementation is
             uint8 version = uint8(context[0]);
 
             if (errorBuffer << 255 != 0) {
-                revert MustSpecifyERC1155ConsiderationItemForSeaDropConsecutiveMint();
+                revert MustSpecifyERC1155ConsiderationItemForSeaDropMint();
             } else if (errorBuffer << 254 != 0) {
                 revert UnsupportedExtraDataVersion(version);
             } else if (errorBuffer << 253 != 0) {

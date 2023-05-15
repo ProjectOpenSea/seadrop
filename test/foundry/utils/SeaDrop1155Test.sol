@@ -3,15 +3,15 @@ pragma solidity ^0.8.19;
 
 import { DelegationRegistry } from "seadrop/test/DelegationRegistry.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
 import {
-    ERC721SeaDropConfigurer
-} from "seadrop/lib/ERC721SeaDropConfigurer.sol";
+    ERC1155SeaDropConfigurer
+} from "seadrop/lib/ERC1155SeaDropConfigurer.sol";
 
-import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+import { IERC1155SeaDrop } from "seadrop/interfaces/IERC1155SeaDrop.sol";
 
-import { MintParams } from "seadrop/lib/ERC721SeaDropStructs.sol";
+import { MintParams } from "seadrop/lib/ERC1155SeaDropStructs.sol";
 
 import { AllowListData, CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
 
@@ -32,16 +32,16 @@ import {
 
 import { Merkle } from "murky/Merkle.sol";
 
-contract SeaDropTest is
+contract SeaDrop1155Test is
     BaseOrderTest,
     SeaDropErrorsAndEvents,
     ZoneInteractionErrors
 {
     /// @dev The SeaDrop token.
-    ERC721SeaDrop token;
+    ERC1155SeaDrop token;
 
     /// @dev The configurer contract.
-    ERC721SeaDropConfigurer configurer;
+    ERC1155SeaDropConfigurer configurer;
 
     /// @dev The allowed Seaport address to interact with the contract token.
     address internal allowedSeaport;
@@ -66,6 +66,8 @@ contract SeaDropTest is
                 "uint256 startTime,"
                 "uint256 endTime,"
                 "address paymentToken,"
+                "uint256 fromTokenId,"
+                "uint256 toTokenId,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
                 "uint256 dropStageIndex,"
@@ -82,6 +84,8 @@ contract SeaDropTest is
                 "uint256 startTime,"
                 "uint256 endTime,"
                 "address paymentToken,"
+                "uint256 fromTokenId,"
+                "uint256 toTokenId,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
                 "uint256 dropStageIndex,"
@@ -99,7 +103,7 @@ contract SeaDropTest is
                 "address verifyingContract"
             ")"
         );
-    bytes32 internal constant _NAME_HASH = keccak256("ERC721SeaDrop");
+    bytes32 internal constant _NAME_HASH = keccak256("ERC1155SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("2.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
 
@@ -107,7 +111,7 @@ contract SeaDropTest is
         super.setUp();
 
         // Set configurer
-        configurer = new ERC721SeaDropConfigurer();
+        configurer = new ERC1155SeaDropConfigurer();
 
         // Set allowedSeaport
         allowedSeaport = address(consideration);
@@ -127,7 +131,7 @@ contract SeaDropTest is
             payoutAddress: creator,
             basisPoints: 10_000
         });
-        IERC721SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
+        IERC1155SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
     }
 
     function setAllowListMerkleRootAndReturnProof(
@@ -145,7 +149,7 @@ contract SeaDropTest is
             publicKeyURIs: new string[](0),
             allowListURI: ""
         });
-        IERC721SeaDrop(address(token)).updateAllowList(allowListData);
+        IERC1155SeaDrop(address(token)).updateAllowList(allowListData);
         return proof;
     }
 
@@ -212,19 +216,23 @@ contract SeaDropTest is
         MintParams memory mintParams,
         uint256 salt
     ) internal view returns (bytes32 digest) {
+        MintParams memory mintParams_ = mintParams;
         bytes32 mintParamsHashStruct = keccak256(
             abi.encode(
                 _MINT_PARAMS_TYPEHASH,
-                mintParams.startPrice,
-                mintParams.endPrice,
-                mintParams.startTime,
-                mintParams.endTime,
-                mintParams.paymentToken,
-                mintParams.maxTotalMintableByWallet,
-                mintParams.maxTokenSupplyForStage,
-                mintParams.dropStageIndex,
-                mintParams.feeBps,
-                mintParams.restrictFeeRecipients
+                mintParams_.startPrice,
+                mintParams_.endPrice,
+                mintParams_.startTime,
+                mintParams_.endTime,
+                mintParams_.paymentToken,
+                mintParams_.fromTokenId,
+                mintParams_.toTokenId,
+                mintParams_.maxTotalMintableByWallet,
+                mintParams_.maxTotalMintableByWalletPerToken,
+                mintParams_.maxTokenSupplyForStage,
+                mintParams_.dropStageIndex,
+                mintParams_.feeBps,
+                mintParams_.restrictFeeRecipients
             )
         );
         digest = keccak256(
@@ -247,8 +255,8 @@ contract SeaDropTest is
     /**
      * Order helpers
      */
-    function addSeaDropOfferItem(uint256 quantity) internal {
-        addOfferItem(ItemType.ERC1155, address(token), 0, quantity, quantity);
+    function addSeaDropOfferItem(uint256 identifier, uint256 amount) internal {
+        addOfferItem(ItemType.ERC1155, address(token), identifier, amount);
     }
 
     function addSeaDropConsiderationItems(
@@ -269,7 +277,7 @@ contract SeaDropTest is
         );
 
         // Add consideration items for creator payouts.
-        CreatorPayout[] memory creatorPayouts = IERC721SeaDrop(address(token))
+        CreatorPayout[] memory creatorPayouts = IERC1155SeaDrop(address(token))
             .getCreatorPayouts();
         for (uint256 i = 0; i < creatorPayouts.length; i++) {
             uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /

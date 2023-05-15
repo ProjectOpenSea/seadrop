@@ -79,6 +79,8 @@ contract ERC1155SeaDropContractOffererImplementation is
                 "uint256 startTime,"
                 "uint256 endTime,"
                 "address paymentToken,"
+                "uint256 fromTokenId,"
+                "uint256 toTokenId,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
                 "uint256 dropStageIndex,"
@@ -95,6 +97,8 @@ contract ERC1155SeaDropContractOffererImplementation is
                 "uint256 startTime,"
                 "uint256 endTime,"
                 "address paymentToken,"
+                "uint256 fromTokenId,"
+                "uint256 toTokenId,"
                 "uint256 maxTotalMintableByWallet,"
                 "uint256 maxTokenSupplyForStage,"
                 "uint256 dropStageIndex,"
@@ -496,14 +500,13 @@ contract ERC1155SeaDropContractOffererImplementation is
         SpentItem[] calldata minimumReceived,
         bytes calldata context
     ) internal view returns (SpentItem[] memory offer, uint8 substandard) {
-        // Declare an error buffer; first check that the minimumReceived has the
-        // this address and a non-zero "amount" as the quantity for the mint.
+        // Declare an error buffer; first check that the minimumReceived has
+        // this address and length of 1.
         uint256 errorBuffer = (
             _castAndInvert(
                 minimumReceived.length == 1 &&
                     minimumReceived[0].itemType == ItemType.ERC1155 &&
-                    minimumReceived[0].token == address(this) &&
-                    minimumReceived[0].amount != 0
+                    minimumReceived[0].token == address(this)
             )
         );
 
@@ -530,7 +533,7 @@ contract ERC1155SeaDropContractOffererImplementation is
             uint8 version = uint8(context[0]);
 
             if (errorBuffer << 255 != 0) {
-                revert MustSpecifyERC1155ConsiderationItemForSeaDropConsecutiveMint();
+                revert MustSpecifyERC1155ConsiderationItemForSeaDropMint();
             } else if (errorBuffer << 254 != 0) {
                 revert UnsupportedExtraDataVersion(version);
             } else if (errorBuffer << 253 != 0) {
@@ -601,10 +604,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         } else if (substandard == 1) {
             // 1: Allow list mint
             MintParams memory mintParams = abi.decode(
-                context[42:362],
+                context[42:458],
                 (MintParams)
             );
-            bytes32[] memory proof = _bytesToBytes32Array(context[362:]);
+            bytes32[] memory proof = _bytesToBytes32Array(context[458:]);
             consideration = _mintAllowList(
                 tokenId,
                 feeRecipient,
@@ -633,11 +636,11 @@ contract ERC1155SeaDropContractOffererImplementation is
             // substandard == 3
             // 3: Signed mint
             MintParams memory mintParams = abi.decode(
-                context[42:362],
+                context[42:458],
                 (MintParams)
             );
-            uint256 salt = uint256(bytes32(context[362:394]));
-            bytes memory signature = context[394:];
+            uint256 salt = uint256(bytes32(context[458:490]));
+            bytes memory signature = context[490:];
             bytes32 digest;
             (consideration, digest) = _mintSigned(
                 tokenId,
@@ -674,11 +677,11 @@ contract ERC1155SeaDropContractOffererImplementation is
         bool withEffects
     ) internal returns (ReceivedItem[] memory consideration) {
         // Put items back on the stack to avoid stack too deep.
+        uint8 publicDropIndex_ = publicDropIndex;
         PublicDrop memory publicDrop = ERC1155SeaDropContractOffererStorage
             .layout()
             ._publicDrops[publicDropIndex];
         bool withEffects_ = withEffects;
-        uint8 publicDropIndex_ = publicDropIndex;
 
         // Check that the tokenId is within the range of the stage.
         _checkTokenId(tokenId, publicDrop.fromTokenId, publicDrop.toTokenId);
@@ -695,6 +698,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         // If passed withEffects=true, sets the mint recipient
         // and emits an event for analytics.
         consideration = _validateMint(
+            tokenId,
             feeRecipient,
             payer,
             minter,
@@ -702,6 +706,7 @@ contract ERC1155SeaDropContractOffererImplementation is
             currentPrice,
             publicDrop.paymentToken,
             publicDrop.maxTotalMintableByWallet,
+            publicDrop.maxTotalMintableByWalletPerToken,
             _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE,
             publicDrop.feeBps,
             publicDropIndex_,
@@ -764,6 +769,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         // If passed withEffects=true, sets the mint recipient
         // and emits an event for analytics.
         consideration = _validateMint(
+            tokenId,
             feeRecipient,
             payer,
             minter,
@@ -771,6 +777,7 @@ contract ERC1155SeaDropContractOffererImplementation is
             currentPrice,
             mintParams_.paymentToken,
             mintParams_.maxTotalMintableByWallet,
+            mintParams_.maxTotalMintableByWalletPerToken,
             mintParams_.maxTokenSupplyForStage,
             mintParams_.feeBps,
             mintParams_.dropStageIndex,
@@ -839,6 +846,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         // If passed withEffects=true, sets the mint recipient
         // and emits an event for analytics.
         consideration = _validateMint(
+            tokenId,
             feeRecipient,
             payer,
             minter,
@@ -846,6 +854,7 @@ contract ERC1155SeaDropContractOffererImplementation is
             currentPrice,
             mintParams_.paymentToken,
             mintParams_.maxTotalMintableByWallet,
+            mintParams_.maxTotalMintableByWalletPerToken,
             mintParams_.maxTokenSupplyForStage,
             mintParams_.feeBps,
             mintParams_.dropStageIndex,
@@ -1056,6 +1065,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         // If passed withEffects=true, sets the mint recipient
         // and emits an event for analytics.
         consideration = _validateMint(
+            tokenId,
             feeRecipient,
             payer,
             minter,
@@ -1063,6 +1073,7 @@ contract ERC1155SeaDropContractOffererImplementation is
             currentPrice,
             dropStage_.paymentToken,
             dropStage_.maxTotalMintableByWallet,
+            dropStage_.maxTotalMintableByWalletPerToken,
             dropStage_.maxTokenSupplyForStage,
             dropStage_.feeBps,
             dropStage_.dropStageIndex,
@@ -1076,6 +1087,7 @@ contract ERC1155SeaDropContractOffererImplementation is
      *      If withEffects=true, sets mint recipient and emits an event.
      */
     function _validateMint(
+        uint256 tokenId,
         address feeRecipient,
         address payer,
         address minter,
@@ -1083,6 +1095,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 currentPrice,
         address paymentToken,
         uint256 maxTotalMintableByWallet,
+        uint256 maxTotalMintableByWalletPerToken,
         uint256 maxTokenSupplyForStage,
         uint256 feeBps,
         uint256 dropStageIndex,
@@ -1094,9 +1107,11 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         // Check the number of mints are available.
         _checkMintQuantity(
+            tokenId,
             minter,
             quantity,
             maxTotalMintableByWallet,
+            maxTotalMintableByWalletPerToken,
             maxTokenSupplyForStage
         );
 
@@ -1193,7 +1208,7 @@ contract ERC1155SeaDropContractOffererImplementation is
     /**
      * @notice Check that the token id is within the stage range.
      *
-     * @param tokenId      The token id.
+     * @param tokenId     The token id.
      * @param fromTokenId The drop stage start token id
      * @param toTokenId   The drop stage end token id.
      */
@@ -1276,20 +1291,24 @@ contract ERC1155SeaDropContractOffererImplementation is
     /**
      * @notice Check that the wallet is allowed to mint the desired quantity.
      *
+     * @param tokenId                  The token id.
      * @param minter                   The mint recipient.
      * @param quantity                 The number of tokens to mint.
      * @param maxTotalMintableByWallet The max allowed mints per wallet.
+     * @param maxTotalMintableByWalletPerToken The max allowed mints per wallet per token.
      * @param maxTokenSupplyForStage   The max token supply for the drop stage.
      */
     function _checkMintQuantity(
+        uint256 tokenId,
         address minter,
         uint256 quantity,
         uint256 maxTotalMintableByWallet,
+        uint256 maxTotalMintableByWalletPerToken,
         uint256 maxTokenSupplyForStage
     ) internal view {
         // Get the mint stats from the token contract.
         (bool success, bytes memory data) = address(this).staticcall(
-            abi.encodeWithSelector(GET_MINT_STATS_SELECTOR, minter)
+            abi.encodeWithSelector(GET_MINT_STATS_SELECTOR, minter, tokenId)
         );
 
         // Require that the call was successful.
@@ -1298,15 +1317,28 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Decode the returned mint stats.
         (
             uint256 minterNumMinted,
+            uint256 minterNumMintedForTokenId,
             uint256 currentTotalSupply,
             uint256 maxSupply
-        ) = abi.decode(data, (uint256, uint256, uint256));
+        ) = abi.decode(data, (uint256, uint256, uint256, uint256));
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
         if (quantity + minterNumMinted > maxTotalMintableByWallet) {
             revert MintQuantityExceedsMaxMintedPerWallet(
                 quantity + minterNumMinted,
                 maxTotalMintableByWallet
+            );
+        }
+
+        // Ensure mint quantity doesn't exceed maxTotalMintableByWalletPerToken.
+        if (
+            quantity + minterNumMintedForTokenId >
+            maxTotalMintableByWalletPerToken
+        ) {
+            revert MintQuantityExceedsMaxMintedPerWalletForTokenId(
+                tokenId,
+                quantity + minterNumMinted,
+                maxTotalMintableByWalletPerToken
             );
         }
 
@@ -1814,19 +1846,25 @@ contract ERC1155SeaDropContractOffererImplementation is
         MintParams memory mintParams,
         uint256 salt
     ) internal view returns (bytes32 digest) {
+        // Put mintParams back on the stack to avoid stack too deep.
+        MintParams memory mintParams_ = mintParams;
+
         bytes32 mintParamsHashStruct = keccak256(
             abi.encode(
                 _MINT_PARAMS_TYPEHASH,
-                mintParams.startPrice,
-                mintParams.endPrice,
-                mintParams.startTime,
-                mintParams.endTime,
-                mintParams.paymentToken,
-                mintParams.maxTotalMintableByWallet,
-                mintParams.maxTokenSupplyForStage,
-                mintParams.dropStageIndex,
-                mintParams.feeBps,
-                mintParams.restrictFeeRecipients
+                mintParams_.startPrice,
+                mintParams_.endPrice,
+                mintParams_.startTime,
+                mintParams_.endTime,
+                mintParams_.paymentToken,
+                mintParams_.fromTokenId,
+                mintParams_.toTokenId,
+                mintParams_.maxTotalMintableByWallet,
+                mintParams_.maxTotalMintableByWalletPerToken,
+                mintParams_.maxTokenSupplyForStage,
+                mintParams_.dropStageIndex,
+                mintParams_.feeBps,
+                mintParams_.restrictFeeRecipients
             )
         );
         digest = keccak256(

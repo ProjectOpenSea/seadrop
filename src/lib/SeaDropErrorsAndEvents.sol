@@ -293,7 +293,7 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert with an error if the order does not have the ERC1155 magic
      *      consideration item to signify a consecutive mint.
      */
-    error MustSpecifyERC1155ConsiderationItemForSeaDropConsecutiveMint();
+    error MustSpecifyERC1155ConsiderationItemForSeaDropMint();
 
     /**
      * @dev Revert with an error if the extra data version is not supported.

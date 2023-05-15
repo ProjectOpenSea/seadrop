@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { SeaDrop721Test } from "./utils/SeaDrop721Test.sol";
+import { SeaDrop1155Test } from "./utils/SeaDrop1155Test.sol";
 
-import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
-import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
+import { IERC1155SeaDrop } from "seadrop/interfaces/IERC1155SeaDrop.sol";
 
 import {
     MintParams,
     PublicDrop,
     SignedMintValidationParams,
     TokenGatedDropStage
-} from "seadrop/lib/ERC721SeaDropStructs.sol";
+} from "seadrop/lib/ERC1155SeaDropStructs.sol";
 
 import { TokenGatedMintParams } from "seadrop/lib/SeaDropStructs.sol";
 
 import { AdvancedOrder } from "seaport/lib/ConsiderationStructs.sol";
 
-contract ERC721SeaDropTest is SeaDrop721Test {
+contract ERC1155SeaDropTest is SeaDrop1155Test {
     FuzzArgs empty;
 
     uint256 feeBps = 500;
@@ -55,9 +55,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
 
     function setUp() public override {
         super.setUp();
-        token = new ERC721SeaDrop(
-            "",
-            "",
+        token = new ERC1155SeaDrop(
             address(configurer),
             address(0),
             allowedSeaport
@@ -68,11 +66,11 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
+        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
-        token.setMaxSupply(10);
+        token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
         PublicDrop memory publicDrop = PublicDrop({
@@ -81,13 +79,16 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp + 500),
             paymentToken: address(0),
-            maxTotalMintableByWallet: 5,
+            fromTokenId: 1,
+            toTokenId: 1,
+            maxTotalMintableByWallet: 6,
+            maxTotalMintableByWalletPerToken: 5,
             feeBps: uint16(feeBps),
             restrictFeeRecipients: true
         });
-        IERC721SeaDrop(address(token)).updatePublicDrop(publicDrop);
+        IERC1155SeaDrop(address(token)).updatePublicDrop(publicDrop, 0);
 
-        addSeaDropOfferItem(3); // 3 mints
+        addSeaDropOfferItem(1, 3); // token id 1, 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
         configureSeaDropOrderParameters();
 
@@ -96,7 +97,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             bytes1(0x00), // SIP-6 version byte
             bytes1(0x00), // substandard version byte: public mint
             bytes20(feeRecipient),
-            bytes20(minter)
+            bytes20(minter),
+            bytes1(0x00) // public drop index 0
         );
 
         AdvancedOrder memory order = AdvancedOrder({
@@ -119,12 +121,10 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             recipient: address(0)
         });
 
-        assertEq(token.ownerOf(1), minter);
-        assertEq(token.ownerOf(2), minter);
-        assertEq(token.ownerOf(3), minter);
+        assertEq(token.balanceOf(minter, 1), 3);
         assertEq(context.args.creator.balance, 3 ether * 0.95);
 
-        // Minting any more should exceed maxTotalMintableByWallet
+        // Minting any more should exceed maxTotalMintableByWalletPerToken
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
@@ -144,11 +144,11 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
+        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
-        token.setMaxSupply(10);
+        token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
         MintParams memory mintParams = MintParams({
@@ -157,7 +157,10 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp) + 500,
             paymentToken: address(0),
-            maxTotalMintableByWallet: 5,
+            fromTokenId: 1,
+            toTokenId: 1,
+            maxTotalMintableByWallet: 6,
+            maxTotalMintableByWalletPerToken: 5,
             maxTokenSupplyForStage: 1000,
             dropStageIndex: 2,
             feeBps: feeBps,
@@ -173,7 +176,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             mintParams
         );
 
-        addSeaDropOfferItem(3); // 3 mints
+        addSeaDropOfferItem(1, 3); // token id 1, 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
         configureSeaDropOrderParameters();
 
@@ -207,9 +210,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             recipient: address(0)
         });
 
-        assertEq(token.ownerOf(1), minter);
-        assertEq(token.ownerOf(2), minter);
-        assertEq(token.ownerOf(3), minter);
+        assertEq(token.balanceOf(minter, 1), 3);
         assertEq(context.args.creator.balance, 3 ether * 0.95);
 
         // Minting any more should exceed maxTotalMintableByWallet
@@ -232,11 +233,11 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
+        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
-        token.setMaxSupply(10);
+        token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
         // Configure the drop stage.
@@ -246,14 +247,17 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             startTime: uint40(block.timestamp),
             endTime: uint40(block.timestamp) + 500,
             paymentToken: address(0),
+            fromTokenId: 1,
+            toTokenId: 1,
             maxMintablePerRedeemedToken: 3,
             maxTotalMintableByWallet: 10,
+            maxTotalMintableByWalletPerToken: 10,
             dropStageIndex: 2,
             maxTokenSupplyForStage: 1000,
             feeBps: uint16(feeBps),
             restrictFeeRecipients: false
         });
-        IERC721SeaDrop(address(token)).updateTokenGatedDrop(
+        IERC1155SeaDrop(address(token)).updateTokenGatedDrop(
             address(test721_1),
             dropStage
         );
@@ -272,7 +276,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             amounts: amounts
         });
 
-        addSeaDropOfferItem(3); // 3 mints
+        addSeaDropOfferItem(1, 3); // token id 1, 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
         configureSeaDropOrderParameters();
 
@@ -305,9 +309,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             recipient: address(0)
         });
 
-        assertEq(token.ownerOf(1), minter);
-        assertEq(token.ownerOf(2), minter);
-        assertEq(token.ownerOf(3), minter);
+        assertEq(token.balanceOf(minter, 1), 3);
         assertEq(context.args.creator.balance, 3 ether * 0.95);
 
         // Minting any more should exceed maxMintablePerRedeemedToken
@@ -330,18 +332,21 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         Context memory context
     ) public fuzzConstraints(context.args) {
         address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
+        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
-        token.setMaxSupply(10);
+        token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
         SignedMintValidationParams
             memory validationParams = SignedMintValidationParams({
                 minMintPrice: 1 ether,
                 paymentToken: address(0),
+                fromTokenId: 1,
+                toTokenId: 1,
                 maxMaxTotalMintableByWallet: 10,
+                maxMaxTotalMintableByWalletPerToken: 9,
                 minStartTime: uint40(block.timestamp),
                 maxEndTime: uint40(block.timestamp + 500),
                 maxMaxTokenSupplyForStage: 1000,
@@ -349,7 +354,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
                 maxFeeBps: 1000
             });
         address signer = makeAddr("signer-doug");
-        IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
+        IERC1155SeaDrop(address(token)).updateSignedMintValidationParams(
             signer,
             validationParams
         );
@@ -360,7 +365,10 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             startTime: uint48(block.timestamp),
             endTime: uint48(block.timestamp) + 500,
             paymentToken: address(0),
+            fromTokenId: 1,
+            toTokenId: 1,
             maxTotalMintableByWallet: 4,
+            maxTotalMintableByWalletPerToken: 4,
             maxTokenSupplyForStage: 1000,
             dropStageIndex: 3,
             feeBps: feeBps,
@@ -380,7 +388,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             false
         );
 
-        addSeaDropOfferItem(2); // 2 mints
+        addSeaDropOfferItem(1, 2); // token id 1, 2 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
         configureSeaDropOrderParameters();
 
@@ -414,8 +422,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             recipient: address(0)
         });
 
-        assertEq(token.ownerOf(1), minter);
-        assertEq(token.ownerOf(2), minter);
+        assertEq(token.balanceOf(minter, 1), 2);
         assertEq(context.args.creator.balance, 2 ether * 0.95);
 
         // Minting more should fail as the digest is used

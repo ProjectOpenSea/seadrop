@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { SeaDropTest } from "./utils/SeaDropTest.sol";
+import { SeaDrop721Test } from "./utils/SeaDrop721Test.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
@@ -45,7 +45,7 @@ contract ERC721SeaDropPlusRegularMint is ERC721SeaDrop {
     }
 }
 
-contract TestSeaDropSnapshot is SeaDropTest {
+contract TestSeaDropSnapshot is SeaDrop721Test {
     address admin = makeAddr("admin");
     address creator = makeAddr("creator");
     address feeRecipient = makeAddr("feeRecipient");

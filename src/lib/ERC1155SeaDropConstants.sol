@@ -4,8 +4,8 @@ pragma solidity ^0.8.19;
 /// @dev Selectors for getters used in the fallback function.
 bytes4 constant GET_ALLOWED_FEE_RECIPIENTS_SELECTOR = 0xd59ff1fc;
 bytes4 constant GET_CREATOR_PAYOUTS_SELECTOR = 0x62337196;
-bytes4 constant GET_PUBLIC_DROP_SELECTOR = 0xca7f1f86;
-bytes4 constant GET_PUBLIC_DROP_INDEXES_SELECTOR = 0x00000000;
+bytes4 constant GET_PUBLIC_DROP_SELECTOR = 0x1dba939a;
+bytes4 constant GET_PUBLIC_DROP_INDEXES_SELECTOR = 0xa9236bc4;
 bytes4 constant GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR = 0x82daf2a1;
 bytes4 constant GET_SIGNERS_SELECTOR = 0x94cf795e;
 bytes4 constant GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR = 0xea44b0d6;
@@ -20,10 +20,10 @@ bytes4 constant UPDATE_ALLOWED_SEAPORT_SELECTOR = 0x6aba5018;
 bytes4 constant UPDATE_DROP_URI_SELECTOR = 0xb957d0cb;
 bytes4 constant UPDATE_CREATOR_PAYOUTS_SELECTOR = 0x1ecdfb8c;
 bytes4 constant UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR = 0x8e7d1e43;
-bytes4 constant UPDATE_PUBLIC_DROP_SELECTOR = 0xaa11949e;
+bytes4 constant UPDATE_PUBLIC_DROP_SELECTOR = 0x0961c031;
 bytes4 constant UPDATE_ALLOW_LIST_SELECTOR = 0xebb4a55f;
-bytes4 constant UPDATE_TOKEN_GATED_DROP_SELECTOR = 0x16c24140;
-bytes4 constant UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR = 0x14250176;
+bytes4 constant UPDATE_TOKEN_GATED_DROP_SELECTOR = 0x257d9b11;
+bytes4 constant UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR = 0xfa91891e;
 bytes4 constant UPDATE_PAYER_SELECTOR = 0x7f2a5cca;
 
 /// @dev Selectors for Seaport contract offerer methods used in the fallback function.

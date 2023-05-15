@@ -38,8 +38,8 @@ interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
     function updateDropURI(string calldata dropURI) external;
 
     function updatePublicDrop(
-        uint256 index,
-        PublicDrop calldata publicDrop
+        PublicDrop calldata publicDrop,
+        uint256 index
     ) external;
 
     function updateAllowList(AllowListData calldata allowListData) external;
@@ -69,7 +69,11 @@ interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
             uint256 maxSupply
         );
 
-    function getPublicDrop() external view returns (PublicDrop memory);
+    function getPublicDrop(
+        uint256 index
+    ) external view returns (PublicDrop memory);
+
+    function getPublicDropIndexes() external view returns (uint256[] memory);
 
     function getCreatorPayouts() external view returns (CreatorPayout[] memory);
 
