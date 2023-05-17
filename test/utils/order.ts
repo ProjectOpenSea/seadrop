@@ -6,14 +6,17 @@ import { toPaddedBuffer } from "./encoding";
 
 import type { AwaitedObject } from "./helpers";
 import type {
+  ERC1155SeaDrop,
   ERC721SeaDrop,
+  IERC1155SeaDrop,
   IERC721SeaDrop,
   TestERC20,
 } from "../../typechain-types";
 import type {
-  MintParamsStruct,
+  MintParamsStruct as MintParamsStruct721,
   TokenGatedMintParamsStruct,
 } from "../../typechain-types/src/shim/Shim";
+import type { MintParamsStruct as MintParamsStruct1155 } from "../../typechain-types/src/shim/Shim2";
 import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
 import type { BigNumberish, Wallet } from "ethers";
 
@@ -53,6 +56,7 @@ export enum MintType {
 export const createMintOrder = async ({
   token,
   tokenSeaDropInterface,
+  tokenId,
   quantity,
   feeRecipient,
   feeBps,
@@ -70,9 +74,12 @@ export const createMintOrder = async ({
   // Signed
   salt,
   signature,
+  // 1155
+  publicDropIndex,
 }: {
-  token: ERC721SeaDrop;
-  tokenSeaDropInterface: IERC721SeaDrop;
+  token: ERC721SeaDrop | ERC1155SeaDrop;
+  tokenSeaDropInterface: IERC721SeaDrop | IERC1155SeaDrop;
+  tokenId?: BigNumberish;
   quantity?: BigNumberish;
   feeRecipient: Wallet;
   feeBps: BigNumberish;
@@ -82,11 +89,12 @@ export const createMintOrder = async ({
   mintType: MintType;
   startTime?: number;
   endTime?: number;
-  mintParams?: AwaitedObject<MintParamsStruct>;
+  mintParams?: AwaitedObject<MintParamsStruct721 | MintParamsStruct1155>;
   proof?: string[];
   tokenGatedMintParams?: AwaitedObject<TokenGatedMintParamsStruct>;
   signature?: string;
   salt?: string;
+  publicDropIndex?: number;
 }) => {
   const paymentTokenAddress = paymentToken?.address ?? AddressZero;
 
@@ -105,7 +113,7 @@ export const createMintOrder = async ({
     {
       itemType: 3, // ERC1155
       token: token.address,
-      identifierOrCriteria: toBN(0),
+      identifierOrCriteria: toBN(tokenId ?? 0),
       startAmount: toBN(quantity),
       endAmount: toBN(quantity),
     },
@@ -166,6 +174,14 @@ export const createMintOrder = async ({
   ]);
 
   switch (mintType) {
+    case MintType.PUBLIC:
+      if (publicDropIndex !== undefined) {
+        extraDataBuffer = Buffer.concat([
+          extraDataBuffer,
+          Buffer.from(publicDropIndex.toString(16).padStart(2, "0"), "hex"),
+        ]);
+      }
+      break;
     case MintType.ALLOW_LIST:
       if (!mintParams)
         throw new Error("Mint params required for allow list mint");
@@ -214,20 +230,39 @@ export const createMintOrder = async ({
   return { order, value };
 };
 
-export const mintParamsBuffer = (mintParams: MintParamsStruct) =>
+export const mintParamsBuffer = (
+  mintParams: MintParamsStruct721 | MintParamsStruct1155
+) =>
   Buffer.concat(
-    [
-      mintParams.startPrice,
-      mintParams.endPrice,
-      mintParams.startTime,
-      mintParams.endTime,
-      mintParams.paymentToken,
-      mintParams.maxTotalMintableByWallet,
-      mintParams.maxTokenSupplyForStage,
-      mintParams.dropStageIndex,
-      mintParams.feeBps,
-      mintParams.restrictFeeRecipients ? 1 : 0,
-    ].map(toPaddedBuffer)
+    (Object.keys(mintParams).length === 10
+      ? [
+          mintParams.startPrice,
+          mintParams.endPrice,
+          mintParams.startTime,
+          mintParams.endTime,
+          mintParams.paymentToken,
+          mintParams.maxTotalMintableByWallet,
+          mintParams.maxTokenSupplyForStage,
+          mintParams.dropStageIndex,
+          mintParams.feeBps,
+          mintParams.restrictFeeRecipients ? 1 : 0,
+        ]
+      : [
+          mintParams.startPrice,
+          mintParams.endPrice,
+          mintParams.startTime,
+          mintParams.endTime,
+          mintParams.paymentToken,
+          (mintParams as MintParamsStruct1155).fromTokenId,
+          (mintParams as MintParamsStruct1155).toTokenId,
+          mintParams.maxTotalMintableByWallet,
+          (mintParams as MintParamsStruct1155).maxTotalMintableByWalletPerToken,
+          mintParams.maxTokenSupplyForStage,
+          mintParams.dropStageIndex,
+          mintParams.feeBps,
+          mintParams.restrictFeeRecipients ? 1 : 0,
+        ]
+    ).map(toPaddedBuffer)
   );
 
 const tokenGatedMintParamsBuffer = (mintParams: TokenGatedMintParamsStruct) =>

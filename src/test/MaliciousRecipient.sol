@@ -136,7 +136,8 @@ contract MaliciousRecipient {
             bytes1(0x00), // SIP-6 version byte
             bytes1(0x00), // substandard version byte: public mint
             bytes20(feeRecipient),
-            bytes20(minter)
+            bytes20(minter),
+            bytes1(0x00) // public drop index (for 1155)
         );
 
         order = AdvancedOrder({

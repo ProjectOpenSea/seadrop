@@ -164,8 +164,8 @@ struct MintParams {
 struct SignedMintValidationParams {
     uint80 minMintPrice; // 80/512 bits
     address paymentToken; // 240/512 bits
-    uint24 fromTokenId;
-    uint24 toTokenId;
+    uint24 maxFromTokenId;
+    uint24 maxToTokenId;
     uint24 maxMaxTotalMintableByWallet; // 264/512 bits
     uint24 maxMaxTotalMintableByWalletPerToken;
     uint40 minStartTime; // 304/512 bits

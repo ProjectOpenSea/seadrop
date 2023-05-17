@@ -82,6 +82,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                 "uint256 fromTokenId,"
                 "uint256 toTokenId,"
                 "uint256 maxTotalMintableByWallet,"
+                "uint256 maxTotalMintableByWalletPerToken,"
                 "uint256 maxTokenSupplyForStage,"
                 "uint256 dropStageIndex,"
                 "uint256 feeBps,"
@@ -100,6 +101,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                 "uint256 fromTokenId,"
                 "uint256 toTokenId,"
                 "uint256 maxTotalMintableByWallet,"
+                "uint256 maxTotalMintableByWalletPerToken,"
                 "uint256 maxTokenSupplyForStage,"
                 "uint256 dropStageIndex,"
                 "uint256 feeBps,"
@@ -145,7 +147,7 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         if (selector == GET_PUBLIC_DROP_SELECTOR) {
             // Get the public drop index.
-            uint8 publicDropIndex = uint8(bytes1(data[32:32]));
+            uint256 publicDropIndex = uint256(bytes32(data[:32]));
 
             // Return the public drop.
             return
@@ -911,12 +913,35 @@ contract ERC1155SeaDropContractOffererImplementation is
             );
         }
         if (
+            mintParams.fromTokenId > signedMintValidationParams.maxFromTokenId
+        ) {
+            revert InvalidSignedFromTokenId(
+                mintParams.fromTokenId,
+                signedMintValidationParams.maxFromTokenId
+            );
+        }
+        if (mintParams.toTokenId > signedMintValidationParams.maxToTokenId) {
+            revert InvalidSignedToTokenId(
+                mintParams.toTokenId,
+                signedMintValidationParams.maxToTokenId
+            );
+        }
+        if (
             mintParams.maxTotalMintableByWallet >
             signedMintValidationParams.maxMaxTotalMintableByWallet
         ) {
             revert InvalidSignedMaxTotalMintableByWallet(
                 mintParams.maxTotalMintableByWallet,
                 signedMintValidationParams.maxMaxTotalMintableByWallet
+            );
+        }
+        if (
+            mintParams.maxTotalMintableByWalletPerToken >
+            signedMintValidationParams.maxMaxTotalMintableByWalletPerToken
+        ) {
+            revert InvalidSignedMaxTotalMintableByWalletPerToken(
+                mintParams.maxTotalMintableByWalletPerToken,
+                signedMintValidationParams.maxMaxTotalMintableByWalletPerToken
             );
         }
         if (mintParams.startTime < signedMintValidationParams.minStartTime) {

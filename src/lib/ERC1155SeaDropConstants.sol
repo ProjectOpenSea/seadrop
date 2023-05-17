@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 /// @dev Selectors for getters used in the fallback function.
 bytes4 constant GET_ALLOWED_FEE_RECIPIENTS_SELECTOR = 0xd59ff1fc;
 bytes4 constant GET_CREATOR_PAYOUTS_SELECTOR = 0x62337196;
-bytes4 constant GET_PUBLIC_DROP_SELECTOR = 0x1dba939a;
+bytes4 constant GET_PUBLIC_DROP_SELECTOR = 0xe6fd04ff;
 bytes4 constant GET_PUBLIC_DROP_INDEXES_SELECTOR = 0xa9236bc4;
 bytes4 constant GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR = 0x82daf2a1;
 bytes4 constant GET_SIGNERS_SELECTOR = 0x94cf795e;

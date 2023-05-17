@@ -16,7 +16,6 @@ interface SeaDropErrorsAndEvents {
     enum SEADROP_TOKEN_TYPE {
         ERC721_STANDARD,
         ERC721_CLONE,
-        ERC721_LAZY,
         ERC721_UPGRADEABLE,
         ERC1155_STANDARD,
         ERC1155_CLONE,
@@ -242,6 +241,26 @@ interface SeaDropErrorsAndEvents {
      *      is greater than the maximum specified.
      */
     error InvalidSignedMaxTotalMintableByWallet(uint256 got, uint256 maximum);
+
+    /**
+     * @dev Revert with an error if supplied signed
+     *      maxTotalMintableByWalletPerToken is greater than the maximum
+     *      specified.
+     */
+    error InvalidSignedMaxTotalMintableByWalletPerToken(
+        uint256 got,
+        uint256 maximum
+    );
+
+    /**
+     * @dev Revert with an error if the fromTokenId is not within range.
+     */
+    error InvalidSignedFromTokenId(uint256 got, uint256 minimum);
+
+    /**
+     * @dev Revert with an error if the toTokenId is not within range.
+     */
+    error InvalidSignedToTokenId(uint256 got, uint256 maximum);
 
     /**
      * @dev Revert with an error if supplied signed start time is less than

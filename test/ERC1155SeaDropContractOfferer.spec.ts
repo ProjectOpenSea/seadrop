@@ -3,19 +3,18 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
 import {
+  IERC1155ContractMetadata__factory,
+  IERC1155SeaDrop__factory,
+  ERC1155__factory,
   IERC165__factory,
   IERC2981__factory,
-  IERC721ContractMetadata__factory,
-  IERC721SeaDrop__factory,
-  IERC721__factory,
 } from "../typechain-types";
 
 import { getItemETH, toBN } from "./seaport-utils/encoding";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, deployERC721SeaDrop } from "./utils/helpers";
-import { whileImpersonating } from "./utils/impersonate";
+import { VERSION, deployERC1155SeaDrop } from "./utils/helpers";
 import { MintType, createMintOrder, expectedPrice } from "./utils/order";
 
 import type { SeaportFixtures } from "./seaport-utils/fixtures";
@@ -23,15 +22,15 @@ import type { AwaitedObject } from "./utils/helpers";
 import type {
   ConduitInterface,
   ConsiderationInterface,
-  ERC721SeaDrop,
-  ERC721SeaDropConfigurer,
-  IERC721SeaDrop,
+  ERC1155SeaDrop,
+  ERC1155SeaDropConfigurer,
+  IERC1155SeaDrop,
 } from "../typechain-types";
 import type {
   PublicDropStruct,
   SignedMintValidationParamsStruct,
   TokenGatedDropStageStruct,
-} from "../typechain-types/src/ERC721SeaDrop";
+} from "../typechain-types/src/ERC1155SeaDrop";
 import type { AllowListDataStruct } from "../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
 
@@ -39,7 +38,7 @@ const { BigNumber } = ethers;
 const { AddressZero, HashZero } = ethers.constants;
 const { defaultAbiCoder, parseEther } = ethers.utils;
 
-describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
+describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
   const { provider } = ethers;
 
   // Seaport
@@ -49,9 +48,9 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   let createOrder: SeaportFixtures["createOrder"];
 
   // SeaDrop
-  let token: ERC721SeaDrop;
-  let tokenSeaDropInterface: IERC721SeaDrop;
-  let configurer: ERC721SeaDropConfigurer;
+  let token: ERC1155SeaDrop;
+  let tokenSeaDropInterface: IERC1155SeaDrop;
+  let configurer: ERC1155SeaDropConfigurer;
   let publicDrop: AwaitedObject<PublicDropStruct>;
   let tokenGatedDropStage: AwaitedObject<TokenGatedDropStageStruct>;
   let signedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
@@ -62,8 +61,6 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   let creator: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
-
-  const _PUBLIC_DROP_STAGE_INDEX = 0;
 
   after(async () => {
     await network.provider.request({
@@ -89,7 +86,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, tokenSeaDropInterface, configurer } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface, configurer } = await deployERC1155SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -100,8 +97,11 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       endPrice: parseEther("0.1"),
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
+      fromTokenId: 0,
+      toTokenId: 10,
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
+      maxTotalMintableByWalletPerToken: 9,
       feeBps: 1000,
       restrictFeeRecipients: true,
     };
@@ -112,8 +112,11 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
       paymentToken: AddressZero,
+      fromTokenId: 0,
+      toTokenId: 10,
       maxMintablePerRedeemedToken: 3,
       maxTotalMintableByWallet: 10,
+      maxTotalMintableByWalletPerToken: 9,
       maxTokenSupplyForStage: 100,
       dropStageIndex: 1,
       feeBps: 100,
@@ -123,7 +126,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     signedMintValidationParams = {
       minMintPrice: 10,
       paymentToken: AddressZero,
+      maxFromTokenId: 0,
+      maxToTokenId: 10,
       maxMaxTotalMintableByWallet: 5,
+      maxMaxTotalMintableByWalletPerToken: 4,
       minStartTime: 50,
       maxEndTime: 100,
       maxMaxTokenSupplyForStage: 100,
@@ -137,8 +143,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       allowListURI: "",
     };
 
-    await token.setMaxSupply(5);
-    await tokenSeaDropInterface.updatePublicDrop(publicDrop);
+    await token.setMaxSupply(0, 5);
+    await tokenSeaDropInterface.updatePublicDrop(publicDrop, 0);
     await tokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
@@ -149,13 +155,11 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
   });
 
   it("Should emit an event when the contract is deployed", async () => {
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC1155SeaDrop = await ethers.getContractFactory(
+      "ERC1155SeaDrop",
       owner
     );
-    const tx = await ERC721SeaDrop.deploy(
-      "",
-      "",
+    const tx = await ERC1155SeaDrop.deploy(
       AddressZero,
       marketplaceContract.address,
       conduitOne.address
@@ -169,14 +173,14 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   it("Should not be able to mint until the creator payout is set", async () => {
     const { token: token2, tokenSeaDropInterface: tokenSeaDropInterface2 } =
-      await deployERC721SeaDrop(
+      await deployERC1155SeaDrop(
         owner,
         marketplaceContract.address,
         conduitOne.address
       );
 
-    await token2.setMaxSupply(5);
-    await tokenSeaDropInterface2.updatePublicDrop(publicDrop);
+    await token2.setMaxSupply(0, 5);
+    await tokenSeaDropInterface2.updatePublicDrop(publicDrop, 0);
     await tokenSeaDropInterface2.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
@@ -190,6 +194,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token: token2,
       tokenSeaDropInterface: tokenSeaDropInterface2,
+      tokenId: 0,
+      publicDropIndex: 0,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -215,6 +221,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token: token2,
       tokenSeaDropInterface: tokenSeaDropInterface2,
+      tokenId: 0,
+      publicDropIndex: 0,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -231,7 +239,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token2, "SeaDropMint")
       .withArgs(
         minter.address, // payer
-        _PUBLIC_DROP_STAGE_INDEX
+        0
       );
   });
 
@@ -312,11 +320,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       startPrice: parseEther("1"),
       endPrice: parseEther(".1"),
     };
-    await tokenSeaDropInterface.updatePublicDrop(publicDropDescMintPrice);
+    await tokenSeaDropInterface.updatePublicDrop(publicDropDescMintPrice, 0);
 
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 0,
+      publicDropIndex: 0,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -348,7 +358,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "SeaDropMint")
       .withArgs(
         minter.address, // payer
-        _PUBLIC_DROP_STAGE_INDEX
+        0
       );
 
     let receipt = await (await tx).wait();
@@ -363,10 +373,12 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       startPrice: parseEther(".1"),
       endPrice: parseEther("1"),
     };
-    await tokenSeaDropInterface.updatePublicDrop(publicDropAscMintPrice);
+    await tokenSeaDropInterface.updatePublicDrop(publicDropAscMintPrice, 0);
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 0,
+      publicDropIndex: 0,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -394,7 +406,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "SeaDropMint")
       .withArgs(
         minter.address, // payer
-        _PUBLIC_DROP_STAGE_INDEX
+        0
       );
 
     receipt = await (await tx).wait();
@@ -404,19 +416,15 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     expect(balanceAfter).to.eq(balanceBefore.sub(expected).sub(txCost));
 
     // Should allow newly minted tokens to be transferred in Seaport secondary sales.
-    expect(await token.ownerOf(1)).to.eq(minter.address);
-    expect(await token.ownerOf(2)).to.eq(minter.address);
+    expect(await token.balanceOf(minter.address, 0)).to.eq(2);
     const offerItem = {
-      itemType: 2, // ERC721
+      itemType: 3, // ERC1155
       token: token.address,
-      identifierOrCriteria: toBN(1),
-      startAmount: toBN(1),
-      endAmount: toBN(1),
+      identifierOrCriteria: toBN(0),
+      startAmount: toBN(2),
+      endAmount: toBN(2),
     };
-    const offer = [
-      { ...offerItem, identifierOrCriteria: toBN(1) },
-      { ...offerItem, identifierOrCriteria: toBN(2) },
-    ];
+    const offer = [offerItem];
     const consideration = [
       getItemETH(parseEther("10"), parseEther(".1"), minter.address),
       getItemETH(parseEther("1"), parseEther(".01"), owner.address),
@@ -434,64 +442,28 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     await marketplaceContract
       .connect(owner)
       .fulfillOrder(order, HashZero, { value });
-    expect(await token.ownerOf(1)).to.eq(owner.address);
-    expect(await token.ownerOf(2)).to.eq(owner.address);
-  });
-
-  it("Should only let allowed seaport or conduit call the ERC1155 safeTransferFrom", async () => {
-    await token.setMaxSupply(3);
-
-    const safeTransferFrom1155Selector = "0xf242432a";
-    const encodedParams = defaultAbiCoder.encode(
-      ["address", "address", "uint256", "uint256", "bytes"],
-      [token.address, AddressZero, 0, 1, []]
-    );
-    const data = safeTransferFrom1155Selector + encodedParams.slice(2);
-
-    // Impersonate as Seaport
-    await whileImpersonating(
-      marketplaceContract.address,
-      provider,
-      async (impersonatedSigner) => {
-        await impersonatedSigner.sendTransaction({ to: token.address, data });
-      }
-    );
-
-    // Impersonate as conduit
-    await whileImpersonating(
-      conduitOne.address,
-      provider,
-      async (impersonatedSigner) => {
-        await impersonatedSigner.sendTransaction({ to: token.address, data });
-      }
-    );
-
-    // Impersonate as owner
-    await expect(
-      owner.sendTransaction({ to: token.address, data, gasLimit: 100_000 })
-    )
-      .to.be.revertedWithCustomError(token, "InvalidCallerOnlyAllowedSeaport")
-      .withArgs(owner.address);
+    expect(await token.balanceOf(owner.address, 0)).to.eq(2);
+    expect(await token.balanceOf(minter.address, 0)).to.eq(0);
   });
 
   it("Should return supportsInterface true for supported interfaces", async () => {
-    const supportedInterfacesERC721SeaDrop = [
-      [IERC721SeaDrop__factory],
+    const supportedInterfacesERC1155SeaDrop = [
+      [IERC1155SeaDrop__factory],
       [IERC165__factory],
     ];
-    const supportedInterfacesERC721ContractMetadata = [
-      [IERC721ContractMetadata__factory, IERC2981__factory],
+    const supportedInterfacesERC1155ContractMetadata = [
+      [IERC1155ContractMetadata__factory, IERC2981__factory],
       [IERC2981__factory, IERC165__factory],
     ];
-    const supportedInterfacesERC721A = [
-      [IERC721__factory, IERC165__factory],
+    const supportedInterfacesERC1155 = [
+      [ERC1155__factory, IERC165__factory],
       [IERC165__factory],
     ];
 
     for (const factories of [
-      ...supportedInterfacesERC721SeaDrop,
-      ...supportedInterfacesERC721ContractMetadata,
-      ...supportedInterfacesERC721A,
+      ...supportedInterfacesERC1155SeaDrop,
+      ...supportedInterfacesERC1155ContractMetadata,
+      ...supportedInterfacesERC1155,
     ]) {
       const interfaceId = factories
         .map((factory) => getInterfaceID(factory.createInterface()))
@@ -504,10 +476,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // expect(await token.supportsInterface("0x1890fe8e")).to.be.true;
     // TODO uncomment above once interface id is derived
 
-    // Ensure the supported interfaces from ERC721A return true.
-    // 0x80ac58cd: ERC721
+    // Ensure the supported interfaces from ERC1155 return true.
+    // 0xd9b67a26: ERC1155
     expect(await token.supportsInterface("0x80ac58cd")).to.be.true;
-    // 0x5b5e139f: ERC721Metadata
+    // 0x0e89341c: ERC1155MetadataURI
     expect(await token.supportsInterface("0x5b5e139f")).to.be.true;
     // 0x01ffc9a7: ERC165
     expect(await token.supportsInterface("0x01ffc9a7")).to.be.true;
@@ -699,7 +671,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     const methodParams: any = {
       updateAllowedSeaport: [[token.address]],
-      updatePublicDrop: [publicDrop],
+      updatePublicDrop: [publicDrop, 0],
       updateAllowList: [allowListData],
       updateTokenGatedDrop: [`0x${"4".repeat(40)}`, tokenGatedDropStage],
       updateDropURI: ["http://test.com"],
@@ -736,11 +708,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     );
 
     const config = {
-      maxSupply: 100,
+      maxSupplyTokenIds: [0, 1],
+      maxSupplyAmounts: [100, 101],
       baseURI: "https://example1.com",
       contractURI: "https://example2.com",
       seaDropImpl: token.address,
-      publicDrop,
+      publicDrops: [publicDrop],
+      publicDropsIndexes: [0],
       dropURI: "https://example3.com",
       allowListData,
       creatorPayouts: [{ payoutAddress: creator.address, basisPoints: 10_000 }],
@@ -792,17 +766,34 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       })
     ).to.be.revertedWithCustomError(token, "SignersMismatch");
 
+    // Should revert if maxSupplyTokenIds.length != maxSupplyAmounts.length
+    await expect(
+      configurer.multiConfigure(token.address, {
+        ...config,
+        maxSupplyAmounts: config.maxSupplyAmounts.slice(1),
+      })
+    ).to.be.revertedWithCustomError(token, "MaxSupplyMismatch");
+
+    // Should revert if publicDrops.length != publicDropsIndexes.length
+    await expect(
+      configurer.multiConfigure(token.address, {
+        ...config,
+        publicDropsIndexes: config.publicDropsIndexes.slice(1),
+      })
+    ).to.be.revertedWithCustomError(token, "PublicDropsMismatch");
+
     await expect(configurer.multiConfigure(token.address, config))
       .to.emit(token, "DropURIUpdated")
       .withArgs("https://example3.com");
 
     const checkResults = async () => {
-      expect(await token.maxSupply()).to.eq(100);
+      expect(await token.maxSupply(0)).to.eq(100);
+      expect(await token.maxSupply(1)).to.eq(101);
       expect(await token.baseURI()).to.eq("https://example1.com");
       expect(await token.contractURI()).to.eq("https://example2.com");
       expect(await token.provenanceHash()).to.eq(`0x${"3".repeat(64)}`);
 
-      const publicDrop = await tokenSeaDropInterface.getPublicDrop();
+      const publicDrop = await tokenSeaDropInterface.getPublicDrop(0);
       const creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
       const allowListMerkleRoot =
         await tokenSeaDropInterface.getAllowListMerkleRoot();
@@ -819,7 +810,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         publicDrop.startTime,
         publicDrop.endTime,
         publicDrop.paymentToken,
+        publicDrop.fromTokenId,
+        publicDrop.toTokenId,
         publicDrop.maxTotalMintableByWallet,
+        publicDrop.maxTotalMintableByWalletPerToken,
         publicDrop.feeBps,
         publicDrop.restrictFeeRecipients,
       ]);
@@ -840,8 +834,11 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
           config.tokenGatedDropStages[i].startTime,
           config.tokenGatedDropStages[i].endTime,
           config.tokenGatedDropStages[i].paymentToken,
+          config.tokenGatedDropStages[i].fromTokenId,
+          config.tokenGatedDropStages[i].toTokenId,
           config.tokenGatedDropStages[i].maxMintablePerRedeemedToken,
           config.tokenGatedDropStages[i].maxTotalMintableByWallet,
+          config.tokenGatedDropStages[i].maxTotalMintableByWalletPerToken,
           config.tokenGatedDropStages[i].maxTokenSupplyForStage,
           config.tokenGatedDropStages[i].dropStageIndex,
           config.tokenGatedDropStages[i].feeBps,
@@ -855,7 +852,11 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         ).to.deep.eq([
           config.signedMintValidationParams[i].minMintPrice,
           config.signedMintValidationParams[i].paymentToken,
+          config.signedMintValidationParams[i].maxFromTokenId,
+          config.signedMintValidationParams[i].maxToTokenId,
           config.signedMintValidationParams[i].maxMaxTotalMintableByWallet,
+          config.signedMintValidationParams[i]
+            .maxMaxTotalMintableByWalletPerToken,
           config.signedMintValidationParams[i].minStartTime,
           config.signedMintValidationParams[i].maxEndTime,
           config.signedMintValidationParams[i].maxMaxTokenSupplyForStage,
@@ -872,20 +873,13 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Should not do anything if all fields are zeroed out
     const zeroedConfig = {
-      maxSupply: 0,
+      maxSupplyTokenIds: [],
+      maxSupplyAmounts: [],
       baseURI: "",
       contractURI: "",
       seaDropImpl: token.address,
-      publicDrop: {
-        startPrice: 0,
-        endPrice: 0,
-        startTime: 0,
-        endTime: 0,
-        paymentToken: AddressZero,
-        maxTotalMintableByWallet: 0,
-        feeBps: 0,
-        restrictFeeRecipients: true,
-      },
+      publicDrops: [],
+      publicDropsIndexes: [],
       dropURI: "",
       allowListData: {
         merkleRoot: HashZero,
@@ -949,6 +943,9 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         0,
         0,
         0,
+        0,
+        0,
+        0,
         false,
       ]);
     await expect(
@@ -965,13 +962,16 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // Set a public drop with maxTotalMintableByWallet: 1
     // and restrictFeeRecipient: false
     const oneEther = parseEther("1");
-    await tokenSeaDropInterface.updatePublicDrop({
-      ...publicDrop,
-      startPrice: oneEther,
-      endPrice: oneEther,
-      maxTotalMintableByWallet: 1,
-      restrictFeeRecipients: false,
-    });
+    await tokenSeaDropInterface.updatePublicDrop(
+      {
+        ...publicDrop,
+        startPrice: oneEther,
+        endPrice: oneEther,
+        maxTotalMintableByWallet: 1,
+        restrictFeeRecipients: false,
+      },
+      0
+    );
 
     const MaliciousRecipientFactory = await ethers.getContractFactory(
       "MaliciousRecipient",
@@ -991,7 +991,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       maliciousRecipient.attack(marketplaceContract.address, token.address)
     ).to.be.revertedWithCustomError(marketplaceContract, "NoReentrantCalls");
-    expect(await token.totalSupply()).to.eq(0);
+    expect(await token.totalSupply(0)).to.eq(0);
   });
 
   it("Should allow multiple creator payout addresses", async () => {
@@ -1164,11 +1164,16 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       ...publicDrop,
       paymentToken: paymentToken.address,
     };
-    await tokenSeaDropInterface.updatePublicDrop(publicDropERC20PaymentToken);
+    await tokenSeaDropInterface.updatePublicDrop(
+      publicDropERC20PaymentToken,
+      0
+    );
 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 0,
+      publicDropIndex: 0,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
@@ -1200,7 +1205,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "SeaDropMint")
       .withArgs(
         minter.address, // PAYER
-        _PUBLIC_DROP_STAGE_INDEX
+        0
       );
 
     // Confirm the payment token was transferred and user has no balance left.
@@ -1243,7 +1248,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "SeaDropMint")
       .withArgs(
         minter.address, // payer
-        _PUBLIC_DROP_STAGE_INDEX
+        0
       );
 
     // Confirm the payment token was transferred and user has no balance left.
@@ -1279,7 +1284,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       name,
       schemas,
     }).to.deep.eq({
-      name: "ERC721SeaDrop",
+      name: "ERC1155SeaDrop",
       schemas: [[BigNumber.from(12), metadata]],
     });
   });
@@ -1288,6 +1293,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 0,
+      publicDropIndex: 0,
       quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,

@@ -273,7 +273,7 @@ contract ERC1155SeaDropContractOfferer is
             // ERC1155ContractMetadata returns supportsInterface true for
             //     IERC1155ContractMetadata, ERC-4906, ERC-2981
             // ERC1155A returns supportsInterface true for
-            //     ERC165, ERC1155, ERC1155Metadata
+            //     ERC165, ERC1155, ERC1155MetadataURI
             super.supportsInterface(interfaceId);
     }
 

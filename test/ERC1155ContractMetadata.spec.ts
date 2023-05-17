@@ -4,20 +4,20 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, deployERC721SeaDrop, mintTokens } from "./utils/helpers";
+import { VERSION, deployERC1155SeaDrop, mintTokens } from "./utils/helpers";
 
 import type {
   ConduitInterface,
   ConsiderationInterface,
-  ERC721SeaDrop,
-  IERC721SeaDrop,
+  ERC1155SeaDrop,
+  IERC1155SeaDrop,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 const { BigNumber } = ethers;
 const { AddressZero, HashZero } = ethers.constants;
 
-describe(`ERC721ContractMetadata (v${VERSION})`, function () {
+describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
 
   // Seaport
@@ -25,8 +25,8 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   let conduitOne: ConduitInterface;
 
   // SeaDrop
-  let token: ERC721SeaDrop;
-  let tokenSeaDropInterface: IERC721SeaDrop;
+  let token: ERC1155SeaDrop;
+  let tokenSeaDropInterface: IERC1155SeaDrop;
 
   // Wallets
   let owner: Wallet;
@@ -53,7 +53,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface } = await deployERC1155SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -68,24 +68,19 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
     expect(await token.baseURI()).to.equal("");
 
-    // it should not emit BatchMetadataUpdate when totalSupply is 0
-    await expect(token.setBaseURI("http://example.com")).to.not.emit(
-      token,
-      "BatchMetadataUpdate"
-    );
-
-    // it should emit BatchMetadataUpdate when totalSupply is greater than 0
-    await token.setMaxSupply(1);
+    // it should emit BatchMetadataUpdate
+    await token.setMaxSupply(1, 1);
     await mintTokens({
       marketplaceContract,
       token,
       tokenSeaDropInterface,
       minter: owner,
+      tokenId: 1,
       quantity: 1,
     });
     await expect(token.setBaseURI("http://example.com"))
       .to.emit(token, "BatchMetadataUpdate")
-      .withArgs(1, await token.totalSupply());
+      .withArgs(0, BigNumber.from(2).pow(256).sub(1));
     expect(await token.baseURI()).to.equal("http://example.com");
   });
 
@@ -104,21 +99,23 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   });
 
   it("Should only let the owner set and get the max supply", async () => {
-    expect(await token.maxSupply()).to.equal(0);
+    for (const tokenId of [0, 1, 2]) {
+      expect(await token.maxSupply(tokenId)).to.equal(0);
 
-    await expect(
-      token.connect(bob).setMaxSupply(10)
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
-    expect(await token.maxSupply()).to.equal(0);
+      await expect(
+        token.connect(bob).setMaxSupply(0, 10)
+      ).to.be.revertedWithCustomError(token, "OnlyOwner");
+      expect(await token.maxSupply(tokenId)).to.equal(0);
 
-    await expect(token.setMaxSupply(25))
-      .to.emit(token, "MaxSupplyUpdated")
-      .withArgs(25);
-    expect(await token.maxSupply()).to.equal(25);
+      await expect(token.setMaxSupply(tokenId, 25))
+        .to.emit(token, "MaxSupplyUpdated")
+        .withArgs(tokenId, 25);
+      expect(await token.maxSupply(tokenId)).to.equal(25);
+    }
   });
 
   it("Should not let the owner set the max supply over 2**64", async () => {
-    await expect(token.setMaxSupply(BigNumber.from(2).pow(70)))
+    await expect(token.setMaxSupply(0, BigNumber.from(2).pow(70)))
       .to.be.revertedWithCustomError(token, "CannotExceedMaxSupplyOfUint64")
       .withArgs(BigNumber.from(2).pow(70));
   });
@@ -131,6 +128,14 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     await expect(token.emitBatchMetadataUpdate(5, 10))
       .to.emit(token, "BatchMetadataUpdate")
       .withArgs(5, 10);
+
+    // Should emit URI() event from 1155 spec if only one token id
+    await expect(token.emitBatchMetadataUpdate(0, 0))
+      .to.emit(token, "URI")
+      .withArgs("", 0);
+    await expect(token.emitBatchMetadataUpdate(7, 7))
+      .to.emit(token, "URI")
+      .withArgs("", 7);
   });
 
   it("Should only let the owner update the royalties address and basis points", async () => {
@@ -170,51 +175,6 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.supportsInterface("0x2a55205a")).to.equal(true);
   });
 
-  it("Should return the correct tokenURI based on baseURI's last character", async () => {
-    await token.setMaxSupply(2);
-    await mintTokens({
-      marketplaceContract,
-      token,
-      tokenSeaDropInterface,
-      minter: owner,
-      quantity: 2,
-    });
-
-    // Revert on nonexistent token
-    await expect(token.tokenURI(99)).to.be.revertedWithCustomError(
-      token,
-      "URIQueryForNonexistentToken"
-    );
-
-    // If the baseURI is empty then the tokenURI should be empty
-    await expect(token.setBaseURI("")).to.emit(token, "BatchMetadataUpdate");
-    expect(await token.baseURI()).to.equal("");
-    await expect(token.tokenURI(15)).to.be.revertedWithCustomError(
-      token,
-      "URIQueryForNonexistentToken"
-    );
-
-    // If the baseURI ends with "/" then the tokenURI should be baseURI + tokenId
-    await expect(token.setBaseURI("http://example.com/")).to.emit(
-      token,
-      "BatchMetadataUpdate"
-    );
-
-    expect(await token.baseURI()).to.equal("http://example.com/");
-    expect(await token.tokenURI(1)).to.equal("http://example.com/1");
-    expect(await token.tokenURI(2)).to.equal("http://example.com/2");
-
-    // If the baseURI does not end with "/" then the tokenURI should just be baseURI
-    await expect(token.setBaseURI("http://example.com")).to.emit(
-      token,
-      "BatchMetadataUpdate"
-    );
-
-    expect(await token.baseURI()).to.equal("http://example.com");
-    expect(await token.tokenURI(1)).to.equal("http://example.com");
-    expect(await token.tokenURI(2)).to.equal("http://example.com");
-  });
-
   it("Should only let the owner set the provenance hash", async () => {
     expect(await token.provenanceHash()).to.equal(HashZero);
 
@@ -232,12 +192,13 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     // Provenance hash should not be updatable after the first token has minted.
     // Mint a token.
-    await token.setMaxSupply(1);
+    await token.setMaxSupply(0, 1);
     await mintTokens({
       marketplaceContract,
       token,
       tokenSeaDropInterface,
       minter: owner,
+      tokenId: 0,
       quantity: 1,
     });
 

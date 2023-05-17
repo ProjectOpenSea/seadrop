@@ -7,6 +7,7 @@ pragma solidity ^0.8.19;
  * feedback than running an extra yarn build.
  */
 import { MaliciousRecipient } from "../test/MaliciousRecipient.sol";
+import { Shim2 } from "./Shim2.sol";
 
 /**
  * @dev Use structs in an external function so typechain compiles them to use

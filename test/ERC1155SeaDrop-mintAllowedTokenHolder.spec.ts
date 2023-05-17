@@ -7,7 +7,7 @@ import { faucet } from "./utils/faucet";
 import {
   VERSION,
   deployDelegationRegistryToCanonicalAddress,
-  deployERC721SeaDrop,
+  deployERC1155SeaDrop,
   returnDataToOfferAndConsideration,
   txDataForPreviewOrder,
 } from "./utils/helpers";
@@ -17,18 +17,18 @@ import type { AwaitedObject } from "./utils/helpers";
 import type {
   ConduitInterface,
   ConsiderationInterface,
-  ERC721SeaDrop,
-  IERC721SeaDrop,
+  ERC1155SeaDrop,
+  IERC1155SeaDrop,
   TestERC721,
 } from "../typechain-types";
-import type { TokenGatedDropStageStruct } from "../typechain-types/src/ERC721SeaDrop";
+import type { TokenGatedDropStageStruct } from "../typechain-types/src/ERC1155SeaDrop";
 import type { Wallet } from "ethers";
 
 const { BigNumber } = ethers;
 const { AddressZero, HashZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 
-describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
+describe(`ERC1155SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
   const { provider } = ethers;
 
   // Seaport
@@ -36,8 +36,8 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
   let conduitOne: ConduitInterface;
 
   // SeaDrop
-  let token: ERC721SeaDrop;
-  let tokenSeaDropInterface: IERC721SeaDrop;
+  let token: ERC1155SeaDrop;
+  let tokenSeaDropInterface: IERC1155SeaDrop;
   let allowedNftToken: TestERC721;
   let dropStage: AwaitedObject<TokenGatedDropStageStruct>;
 
@@ -70,7 +70,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface } = await deployERC1155SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -81,7 +81,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     allowedNftToken = await TestERC721.deploy();
 
     // Configure token.
-    await token.setMaxSupply(100);
+    await token.setMaxSupply(2, 100);
     await tokenSeaDropInterface.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
@@ -97,8 +97,11 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
       paymentToken: AddressZero,
+      fromTokenId: 2,
+      toTokenId: 2,
       maxMintablePerRedeemedToken: 2,
-      maxTotalMintableByWallet: 10,
+      maxTotalMintableByWallet: 11,
+      maxTotalMintableByWalletPerToken: 10,
       maxTokenSupplyForStage: 100,
       dropStageIndex: 1,
       feeBps: 100,
@@ -135,6 +138,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -157,6 +161,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -180,6 +185,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -265,6 +271,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -297,7 +304,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
         dropStage.dropStageIndex
       );
 
-    const minterBalance = await token.balanceOf(minter.address);
+    const minterBalance = await token.balanceOf(minter.address, 2);
     expect(minterBalance).to.eq(1);
   });
 
@@ -323,6 +330,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -342,7 +350,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
         dropStage.dropStageIndex
       );
 
-    const minterBalance = await token.balanceOf(minter.address);
+    const minterBalance = await token.balanceOf(minter.address, 2);
     expect(minterBalance).to.eq(1);
   });
 
@@ -359,6 +367,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -402,6 +411,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -454,6 +464,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -488,6 +499,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient: minter,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -520,18 +532,18 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     // Mint an allowedNftToken to the minter.
     await allowedNftToken.mint(minter.address, 0);
 
-    // Deploy a new ERC721PartnerSeaDrop.
+    // Deploy a new ERC1155PartnerSeaDrop.
     const {
       token: differentToken,
       tokenSeaDropInterface: differentTokenSeaDropInterface,
-    } = await deployERC721SeaDrop(
+    } = await deployERC1155SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
     );
 
     // Update the fee recipient and creator payout address for the new token.
-    await differentToken.setMaxSupply(1000);
+    await differentToken.setMaxSupply(2, 1000);
     await differentTokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
@@ -596,6 +608,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -636,6 +649,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -690,6 +704,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -743,6 +758,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -835,6 +851,9 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
       0,
       0,
       0,
+      0,
+      0,
+      0,
       false,
     ]);
   });
@@ -862,6 +881,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,
@@ -906,6 +926,7 @@ describe(`ERC721SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () 
     const { order } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 2,
       feeRecipient,
       feeBps: dropStage.feeBps,
       price: dropStage.startPrice,

@@ -271,14 +271,11 @@ contract ERC1155ContractMetadata is
      *         It relies on the token type ID substitution mechanism defined
      *         in the EIP to replace {id} with the token id.
      *
-     * @param tokenId The token id to get the URI for.
+     * @custom:param tokenId The token id to get the URI for.
      */
     function uri(
-        uint256 tokenId
+        uint256 /* tokenId */
     ) public view virtual override returns (string memory) {
-        // Revert if the tokenId doesn't exist.
-        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
-
         // Return the base URI.
         return _baseURI;
     }
@@ -450,14 +447,5 @@ contract ERC1155ContractMetadata is
         assembly {
             u := b
         }
-    }
-
-    /**
-     * @dev Returns whether `tokenId` exists.
-     *
-     * Tokens start existing when they are minted.
-     */
-    function _exists(uint256 tokenId) internal view virtual returns (bool) {
-        return _tokenSupply[tokenId].totalMinted != 0;
     }
 }

@@ -9,7 +9,7 @@ import { faucet } from "./utils/faucet";
 import {
   VERSION,
   deployDelegationRegistryToCanonicalAddress,
-  deployERC721SeaDrop,
+  deployERC1155SeaDrop,
   returnDataToOfferAndConsideration,
   txDataForPreviewOrder,
 } from "./utils/helpers";
@@ -19,16 +19,16 @@ import type { AwaitedObject } from "./utils/helpers";
 import type {
   ConduitInterface,
   ConsiderationInterface,
-  ERC721SeaDrop,
-  IERC721SeaDrop,
+  ERC1155SeaDrop,
+  IERC1155SeaDrop,
 } from "../typechain-types";
-import type { MintParamsStruct } from "../typechain-types/src/shim/Shim";
+import type { MintParamsStruct } from "../typechain-types/src/shim/Shim2";
 import type { Wallet } from "ethers";
 
 const { AddressZero, HashZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 
-describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
+describe(`ERC1155SeaDrop - Mint Allow List (v${VERSION})`, function () {
   const { provider } = ethers;
 
   // Seaport
@@ -36,8 +36,8 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
   let conduitOne: ConduitInterface;
 
   // SeaDrop
-  let token: ERC721SeaDrop;
-  let tokenSeaDropInterface: IERC721SeaDrop;
+  let token: ERC1155SeaDrop;
+  let tokenSeaDropInterface: IERC1155SeaDrop;
   let feeBps: number;
   let mintParams: AwaitedObject<MintParamsStruct>;
 
@@ -70,7 +70,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface } = await deployERC1155SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -80,7 +80,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     feeBps = randomInt(1, 10_000);
 
     // Update the fee recipient and creator payout address for the token.
-    await token.setMaxSupply(1000);
+    await token.setMaxSupply(10, 1000);
     await tokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
@@ -96,7 +96,10 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
       paymentToken: AddressZero,
+      fromTokenId: 10,
+      toTokenId: 10,
       maxTotalMintableByWallet: 10,
+      maxTotalMintableByWalletPerToken: 9,
       maxTokenSupplyForStage: 11,
       dropStageIndex: 1,
       feeBps,
@@ -108,7 +111,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -128,6 +131,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -157,7 +161,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -176,6 +180,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -202,7 +207,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -219,6 +224,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -259,7 +265,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -276,6 +282,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -301,6 +308,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -325,7 +333,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -344,6 +352,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient: invalidFeeRecipient,
       feeBps: mintParams.feeBps,
@@ -368,7 +377,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -382,18 +391,18 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       allowListURI: "",
     });
 
-    // Deploy a new ERC721SeaDrop.
+    // Deploy a new ERC1155SeaDrop.
     const {
       token: differentToken,
       tokenSeaDropInterface: differentTokenSeaDropInterface,
-    } = await deployERC721SeaDrop(
+    } = await deployERC1155SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
     );
 
     // Update the fee recipient and creator payout address for the new token.
-    await differentToken.setMaxSupply(1000);
+    await differentToken.setMaxSupply(10, 1000);
     await differentTokenSeaDropInterface.updateAllowedFeeRecipient(
       feeRecipient.address,
       true
@@ -429,7 +438,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -452,6 +461,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -476,7 +486,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity between 1 and maxTotalMintableByWallet - 1.
     const quantity = randomInt(
       1,
-      (mintParams.maxTotalMintableByWallet as number) - 1
+      (mintParams.maxTotalMintableByWalletPerToken as number) - 1
     );
 
     const { root, proof } = await createAllowListAndGetProof(
@@ -494,6 +504,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -521,7 +532,8 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: mintParams.maxTotalMintableByWallet,
+      tokenId: 10,
+      quantity: mintParams.maxTotalMintableByWalletPerToken,
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -538,8 +550,8 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
-    ); // MintQuantityExceedsMaxMintedPerWallet
-    // withArgs((mintParams.maxTotalMintableByWallet as number) + quantity, mintParams.maxTotalMintableByWallet)
+    ); // MintQuantityExceedsMaxMintedPerWalletForTokenId
+    // withArgs(10, (mintParams.maxTotalMintableByWalletPerToken as number) + quantity, mintParams.maxTotalMintableByWallet)
   });
 
   it("Should not mint an allow list stage after exceeding max token supply for stage", async () => {
@@ -571,7 +583,8 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: mintParams.maxTotalMintableByWallet,
+      tokenId: 10,
+      quantity: mintParams.maxTotalMintableByWalletPerToken,
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -581,7 +594,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       proof,
     });
 
-    // Mint the maxTotalMintableByWallet to the minter and verify
+    // Mint the maxTotalMintableByWalletPerToken to the minter and verify
     // the expected event was emitted.
     await expect(
       marketplaceContract
@@ -597,7 +610,8 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: mintParams.maxTotalMintableByWallet,
+      tokenId: 10,
+      quantity: mintParams.maxTotalMintableByWalletPerToken,
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -607,7 +621,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       proof: proofSecondMinter,
     }));
 
-    // Attempt to mint the maxTotalMintableByWallet to the second minter, exceeding
+    // Attempt to mint the maxTotalMintableByWalletPerToken to the second minter, exceeding
     // the drop stage supply.
     await expect(
       marketplaceContract
@@ -617,12 +631,12 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // QuantityExceedsMaxTokenSupplyForStage
-    // withArgs(2 * (mintParams.maxTotalMintableByWallet as number), mintParams.maxTokenSupplyForStage)
+    // withArgs(2 * (mintParams.maxTotalMintableByWalletPerToken as number), mintParams.maxTokenSupplyForStage)
   });
 
   it("Should not mint an allow list stage after exceeding max token supply", async () => {
     // Update the max supply.
-    await token.setMaxSupply(10);
+    await token.setMaxSupply(10, 10);
 
     // Create the second minter that will call the transaction exceeding
     // the drop stage supply.
@@ -652,7 +666,8 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 10,
+      tokenId: 10,
+      quantity: mintParams.maxTotalMintableByWalletPerToken,
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -662,7 +677,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       proof,
     });
 
-    // Mint the maxTotalMintableByWallet to the minter and verify
+    // Mint the maxTotalMintableByWalletPerToken to the minter and verify
     // the expected event was emitted.
     await expect(
       marketplaceContract
@@ -675,6 +690,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -685,7 +701,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       proof: proofSecondMinter,
     }));
 
-    // Attempt to mint the maxTotalMintableByWallet to the second minter, exceeding
+    // Attempt to mint the maxTotalMintableByWalletPerToken to the second minter, exceeding
     // the token max supply.
     await expect(
       marketplaceContract
@@ -695,14 +711,14 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // QuantityExceedsMaxTokenSupply
-    // withArgs(2 * (mintParams.maxTotalMintableByWallet as number), 11)
+    // withArgs(2 * (mintParams.maxTotalMintableByWalletPerToken as number), 11)
   });
 
   it("Should not mint with an uninitialized AllowList", async () => {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const { proof } = await createAllowListAndGetProof([minter], mintParams);
@@ -715,6 +731,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -739,6 +756,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -763,7 +781,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Set a random quantity under maxTotalMintableByWallet.
     const quantity = randomInt(
       1,
-      mintParams.maxTotalMintableByWallet as number
+      mintParams.maxTotalMintableByWalletPerToken as number
     );
 
     const mintParamsInvalidFeeBps = { ...mintParams, feeBps: 10_100 };
@@ -784,6 +802,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -833,6 +852,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -887,6 +907,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -953,6 +974,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 10,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,

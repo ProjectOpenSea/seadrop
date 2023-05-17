@@ -3,7 +3,8 @@ import { MerkleTree } from "merkletreejs";
 
 import { toPaddedBuffer } from "./encoding";
 
-import type { MintParamsStruct } from "../../typechain-types/src/shim/Shim";
+import type { MintParamsStruct as MintParamsStruct721 } from "../../typechain-types/src/shim/Shim";
+import type { MintParamsStruct as MintParamsStruct1155 } from "../../typechain-types/src/shim/Shim2";
 import type { Wallet } from "ethers";
 
 const { keccak256 } = ethers.utils;
@@ -15,30 +16,52 @@ const createMerkleTree = (leaves: Buffer[]) =>
     sortPairs: true,
   });
 
-type Leaf = [minter: string, mintParams: MintParamsStruct];
+type Leaf = [
+  minter: string,
+  mintParams: MintParamsStruct721 | MintParamsStruct1155
+];
 
 export const allowListElementsBuffer = (leaves: Leaf[]) =>
   leaves.map(([minter, mintParams]) =>
     Buffer.concat(
-      [
-        minter,
-        mintParams.startPrice,
-        mintParams.endPrice,
-        mintParams.startTime,
-        mintParams.endTime,
-        mintParams.paymentToken,
-        mintParams.maxTotalMintableByWallet,
-        mintParams.maxTokenSupplyForStage,
-        mintParams.dropStageIndex,
-        mintParams.feeBps,
-        mintParams.restrictFeeRecipients ? 1 : 0,
-      ].map(toPaddedBuffer)
+      (Object.keys(mintParams).length === 10
+        ? [
+            minter,
+            mintParams.startPrice,
+            mintParams.endPrice,
+            mintParams.startTime,
+            mintParams.endTime,
+            mintParams.paymentToken,
+            mintParams.maxTotalMintableByWallet,
+            mintParams.maxTokenSupplyForStage,
+            mintParams.dropStageIndex,
+            mintParams.feeBps,
+            mintParams.restrictFeeRecipients ? 1 : 0,
+          ]
+        : [
+            minter,
+            mintParams.startPrice,
+            mintParams.endPrice,
+            mintParams.startTime,
+            mintParams.endTime,
+            mintParams.paymentToken,
+            (mintParams as MintParamsStruct1155).fromTokenId,
+            (mintParams as MintParamsStruct1155).toTokenId,
+            mintParams.maxTotalMintableByWallet,
+            (mintParams as MintParamsStruct1155)
+              .maxTotalMintableByWalletPerToken,
+            mintParams.maxTokenSupplyForStage,
+            mintParams.dropStageIndex,
+            mintParams.feeBps,
+            mintParams.restrictFeeRecipients ? 1 : 0,
+          ]
+      ).map(toPaddedBuffer)
     )
   );
 
 export const createAllowListAndGetProof = async (
   minters: Wallet[],
-  mintParams: MintParamsStruct,
+  mintParams: MintParamsStruct721 | MintParamsStruct1155,
   minterIndexForProof = 0
 ) => {
   // Construct the leaves.

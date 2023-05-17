@@ -8,7 +8,7 @@ import { faucet } from "./utils/faucet";
 import {
   VERSION,
   deployDelegationRegistryToCanonicalAddress,
-  deployERC721SeaDrop,
+  deployERC1155SeaDrop,
   returnDataToOfferAndConsideration,
   txDataForPreviewOrder,
 } from "./utils/helpers";
@@ -18,17 +18,17 @@ import type { AwaitedObject } from "./utils/helpers";
 import type {
   ConduitInterface,
   ConsiderationInterface,
-  ERC721SeaDrop,
-  IERC721SeaDrop,
+  ERC1155SeaDrop,
+  IERC1155SeaDrop,
 } from "../typechain-types";
-import type { SignedMintValidationParamsStruct } from "../typechain-types/src/ERC721SeaDrop";
-import type { MintParamsStruct } from "../typechain-types/src/shim/Shim";
+import type { SignedMintValidationParamsStruct } from "../typechain-types/src/ERC1155SeaDrop";
+import type { MintParamsStruct } from "../typechain-types/src/shim/Shim2";
 import type { Wallet } from "ethers";
 
 const { AddressZero, HashZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 
-describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
+describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
   const { provider } = ethers;
 
   // Seaport
@@ -36,8 +36,8 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
   let conduitOne: ConduitInterface;
 
   // SeaDrop
-  let token: ERC721SeaDrop;
-  let tokenSeaDropInterface: IERC721SeaDrop;
+  let token: ERC1155SeaDrop;
+  let tokenSeaDropInterface: IERC1155SeaDrop;
   let mintParams: AwaitedObject<MintParamsStruct>;
   let signedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
   let emptySignedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
@@ -78,7 +78,10 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     emptySignedMintValidationParams = {
       minMintPrice: 0,
       paymentToken: AddressZero,
+      maxFromTokenId: 0,
+      maxToTokenId: 0,
       maxMaxTotalMintableByWallet: 0,
+      maxMaxTotalMintableByWalletPerToken: 0,
       minStartTime: 0,
       maxEndTime: 0,
       maxMaxTokenSupplyForStage: 0,
@@ -89,7 +92,10 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     signedMintValidationParams = {
       minMintPrice: 1,
       paymentToken: AddressZero,
+      maxFromTokenId: 5,
+      maxToTokenId: 5,
       maxMaxTotalMintableByWallet: 11,
+      maxMaxTotalMintableByWalletPerToken: 10,
       minStartTime: 50,
       maxEndTime: 100000000000,
       maxMaxTokenSupplyForStage: 10000,
@@ -100,7 +106,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
+    ({ token, tokenSeaDropInterface } = await deployERC1155SeaDrop(
       owner,
       marketplaceContract.address,
       conduitOne.address
@@ -108,7 +114,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Set EIP-712 params
     eip712Domain = {
-      name: "ERC721SeaDrop",
+      name: "ERC1155SeaDrop",
       version: "2.0",
       chainId: (await provider.getNetwork()).chainId,
       verifyingContract: token.address,
@@ -126,7 +132,10 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
         { name: "startTime", type: "uint256" },
         { name: "endTime", type: "uint256" },
         { name: "paymentToken", type: "address" },
+        { name: "fromTokenId", type: "uint256" },
+        { name: "toTokenId", type: "uint256" },
         { name: "maxTotalMintableByWallet", type: "uint256" },
+        { name: "maxTotalMintableByWalletPerToken", type: "uint256" },
         { name: "maxTokenSupplyForStage", type: "uint256" },
         { name: "dropStageIndex", type: "uint256" },
         { name: "feeBps", type: "uint256" },
@@ -135,7 +144,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     };
 
     // Configure token
-    await token.setMaxSupply(100);
+    await token.setMaxSupply(5, 100);
     await tokenSeaDropInterface.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
@@ -149,8 +158,11 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       endPrice: parseEther("0.1"),
       startTime: Math.round(Date.now() / 1000) - 100,
       endTime: Math.round(Date.now() / 1000) + 500,
+      fromTokenId: 5,
+      toTokenId: 5,
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
+      maxTotalMintableByWalletPerToken: 9,
       maxTokenSupplyForStage: 100,
       dropStageIndex: 1,
       feeBps: 1000,
@@ -212,6 +224,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -244,9 +257,9 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       .to.emit(token, "SeaDropMint")
       .withArgs(payer.address, mintParams.dropStageIndex);
 
-    let minterBalance = await token.balanceOf(minter.address);
+    let minterBalance = await token.balanceOf(minter.address, 5);
     expect(minterBalance).to.eq(3);
-    expect(await token.totalSupply()).to.eq(3);
+    expect(await token.totalSupply(5)).to.eq(3);
 
     // Ensure a signature can only be used once.
     // Mint again with the same params.
@@ -273,6 +286,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -295,9 +309,9 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
         mintParams.dropStageIndex
       );
 
-    minterBalance = await token.balanceOf(minter.address);
+    minterBalance = await token.balanceOf(minter.address, 5);
     expect(minterBalance).to.eq(6);
-    expect(await token.totalSupply()).to.eq(6);
+    expect(await token.totalSupply(5)).to.eq(6);
   });
 
   it("Should not mint a signed mint with different params", async () => {
@@ -313,6 +327,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -340,6 +355,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient: payer, // Test with different fee recipient
       feeBps: mintParams.feeBps,
@@ -362,12 +378,12 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Test with different token contract
     const { token: token2, tokenSeaDropInterface: tokenSeaDropInterface2 } =
-      await deployERC721SeaDrop(
+      await deployERC1155SeaDrop(
         owner,
         marketplaceContract.address,
         conduitOne.address
       );
-    await token2.setMaxSupply(100);
+    await token2.setMaxSupply(5, 100);
     await tokenSeaDropInterface2.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
@@ -430,7 +446,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       await tokenSeaDropInterface2.getSignedMintValidationParams(
         signer2.address
       )
-    ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0]);
+    ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     expect(await tokenSeaDropInterface2.getSigners()).to.deep.eq([
       signer.address,
     ]);
@@ -445,6 +461,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -472,6 +489,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -495,6 +513,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -530,7 +549,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
     expect(
       await tokenSeaDropInterface.getSignedMintValidationParams(signer.address)
-    ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0]);
+    ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     // Add two signers and remove the second for branch coverage.
     await tokenSeaDropInterface.updateSignedMintValidationParams(
@@ -547,7 +566,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
     expect(
       await tokenSeaDropInterface.getSignedMintValidationParams(signer2.address)
-    ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0]);
+    ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it("Should not mint a signed mint after exceeding max mints per wallet", async () => {
@@ -563,7 +582,8 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 10, // Max mints per wallet is 10. Mint 10
+      tokenId: 5,
+      quantity: 9, // Max mints per wallet per token is 9. Mint 9
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -589,6 +609,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -612,13 +633,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
-      mintParams: { ...mintParams, maxTotalMintableByWallet: 11 },
+      mintParams: { ...mintParams, maxTotalMintableByWalletPerToken: 10 },
       salt,
       signature,
     }));
@@ -652,6 +674,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParamsZeroFee.feeBps,
@@ -674,9 +697,9 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
         mintParams.dropStageIndex
       );
 
-    const minterBalance = await token.balanceOf(minter.address);
+    const minterBalance = await token.balanceOf(minter.address, 5);
     expect(minterBalance).to.eq(3);
-    expect(await token.totalSupply()).to.eq(3);
+    expect(await token.totalSupply(5)).to.eq(3);
   });
 
   it("Should not mint with invalid fee bps", async () => {
@@ -694,6 +717,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -730,6 +754,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const orderParams = {
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -958,7 +983,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // SignedMintsMustRestrictFeeRecipients
 
-    expect(await token.totalSupply()).to.eq(0);
+    expect(await token.totalSupply(5)).to.eq(0);
   });
 
   it("Should not update SignedMintValidationParams with invalid fee bps", async () => {
@@ -1010,6 +1035,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -1072,6 +1098,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -1123,6 +1150,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 1,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -1190,6 +1218,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,
@@ -1244,6 +1273,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
+      tokenId: 5,
       quantity: 3,
       feeRecipient,
       feeBps: mintParams.feeBps,

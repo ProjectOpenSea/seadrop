@@ -1,13 +1,18 @@
 import { setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 
-import { IERC721SeaDrop__factory } from "../../typechain-types";
+import {
+  IERC1155SeaDrop__factory,
+  IERC721SeaDrop__factory,
+} from "../../typechain-types";
 
 import { MintType, createMintOrder } from "./order";
 
 import type {
   ConsiderationInterface,
+  ERC1155SeaDrop,
   ERC721SeaDrop,
+  IERC1155SeaDrop,
   IERC721SeaDrop,
 } from "../../typechain-types";
 import type { Wallet } from "ethers";
@@ -52,22 +57,60 @@ export const deployERC721SeaDrop = async (
   return { configurer, token, tokenSeaDropInterface };
 };
 
+export const deployERC1155SeaDrop = async (
+  owner: Wallet,
+  marketplaceContract: string,
+  conduit: string
+) => {
+  // Deploy configurer
+  const ERC1155SeaDropConfigurer = await ethers.getContractFactory(
+    "ERC1155SeaDropConfigurer",
+    owner
+  );
+  const configurer = await ERC1155SeaDropConfigurer.deploy();
+
+  // Deploy token
+  const ERC1155SeaDrop = await ethers.getContractFactory(
+    "ERC1155SeaDrop",
+    owner
+  );
+  const token = await ERC1155SeaDrop.deploy(
+    configurer.address,
+    conduit,
+    marketplaceContract
+  );
+
+  const tokenSeaDropInterface = IERC1155SeaDrop__factory.connect(
+    token.address,
+    owner
+  );
+
+  return { configurer, token, tokenSeaDropInterface };
+};
+
 export const mintTokens = async ({
   marketplaceContract,
   token,
   tokenSeaDropInterface,
   minter,
+  tokenId,
   quantity,
 }: {
   marketplaceContract: ConsiderationInterface;
-  token: ERC721SeaDrop;
-  tokenSeaDropInterface: IERC721SeaDrop;
+  token: ERC721SeaDrop | ERC1155SeaDrop;
+  tokenSeaDropInterface: IERC721SeaDrop | IERC1155SeaDrop;
   minter: Wallet;
+  tokenId?: number;
   quantity: number;
 }) => {
-  const prevPublicDrop = await tokenSeaDropInterface.getPublicDrop();
+  const seadrop1155 = tokenId !== undefined;
+  const publicDropIndex = 0;
 
-  const temporaryPublicDrop = {
+  const prevPublicDrop = await (seadrop1155
+    ? (tokenSeaDropInterface as IERC1155SeaDrop).getPublicDrop(publicDropIndex)
+    : (tokenSeaDropInterface as IERC721SeaDrop).getPublicDrop());
+
+  const temporaryPublicDrop: any = {
     startPrice: 0,
     endPrice: 0,
     startTime: Math.round(Date.now() / 1000) - 1000,
@@ -77,11 +120,25 @@ export const mintTokens = async ({
     feeBps: 0,
     restrictFeeRecipients: false,
   };
-  await tokenSeaDropInterface.updatePublicDrop(temporaryPublicDrop);
+  if (seadrop1155) {
+    temporaryPublicDrop.fromTokenId = tokenId;
+    temporaryPublicDrop.toTokenId = tokenId;
+    temporaryPublicDrop.maxTotalMintableByWalletPerToken = 1000;
+  }
+  await (seadrop1155
+    ? (tokenSeaDropInterface as IERC1155SeaDrop).updatePublicDrop(
+        temporaryPublicDrop,
+        publicDropIndex
+      )
+    : (tokenSeaDropInterface as IERC721SeaDrop).updatePublicDrop(
+        temporaryPublicDrop
+      ));
 
   const { order, value } = await createMintOrder({
     token,
     tokenSeaDropInterface,
+    tokenId,
+    publicDropIndex: seadrop1155 ? publicDropIndex : undefined,
     quantity,
     feeRecipient: { address: `0x${"1".repeat(40)}` } as any,
     feeBps: 0,
@@ -95,7 +152,14 @@ export const mintTokens = async ({
     .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value });
 
   // Reset the public drop.
-  await tokenSeaDropInterface.updatePublicDrop(prevPublicDrop);
+  await (seadrop1155
+    ? (tokenSeaDropInterface as IERC1155SeaDrop).updatePublicDrop(
+        prevPublicDrop as any,
+        publicDropIndex
+      )
+    : (tokenSeaDropInterface as IERC721SeaDrop).updatePublicDrop(
+        prevPublicDrop
+      ));
 };
 
 export const deployDelegationRegistryToCanonicalAddress = async () => {

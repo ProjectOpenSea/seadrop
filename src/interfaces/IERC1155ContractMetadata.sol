@@ -22,11 +22,6 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     }
 
     /**
-     * @dev The token does not exist.
-     */
-    error URIQueryForNonexistentToken();
-
-    /**
      * @dev Revert with an error if the mint quantity exceeds the max token
      *      supply.
      */
