@@ -385,7 +385,7 @@ contract ERC721SeaDrop is
     function updateSignedMintValidationParams(
         address seaDropImpl,
         address signer,
-        SignedMintValidationParams memory signedMintValidationParams
+        SignedMintValidationParams calldata signedMintValidationParams
     ) external virtual override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
