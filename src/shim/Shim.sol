@@ -15,12 +15,11 @@ import { Shim2 } from "./Shim2.sol";
  */
 import { MintParams } from "../lib/ERC721SeaDropStructs.sol";
 
-import { AllowListData, TokenGatedMintParams } from "../lib/SeaDropStructs.sol";
+import { AllowListData } from "../lib/SeaDropStructs.sol";
 
 contract Shim {
     function _shim(
         MintParams calldata mintParams,
-        AllowListData calldata allowListData,
-        TokenGatedMintParams calldata tokenGatedMintParams
+        AllowListData calldata allowListData
     ) external {}
 }

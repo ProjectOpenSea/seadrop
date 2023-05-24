@@ -8,8 +8,7 @@ import {
 import {
     PublicDrop,
     MultiConfigureStruct,
-    SignedMintValidationParams,
-    TokenGatedDropStage
+    SignedMintValidationParams
 } from "./ERC1155SeaDropStructs.sol";
 
 import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
@@ -176,39 +175,6 @@ contract ERC1155SeaDropConfigurer is
                 IERC1155SeaDrop(address(token)).updatePayer(
                     config.disallowedPayers[i],
                     false
-                );
-                unchecked {
-                    ++i;
-                }
-            }
-        }
-        if (config.tokenGatedDropStages.length != 0) {
-            if (
-                config.tokenGatedDropStages.length !=
-                config.tokenGatedAllowedNftTokens.length
-            ) {
-                revert TokenGatedMismatch();
-            }
-            for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
-                IERC1155SeaDrop(address(token)).updateTokenGatedDrop(
-                    config.tokenGatedAllowedNftTokens[i],
-                    config.tokenGatedDropStages[i]
-                );
-                unchecked {
-                    ++i;
-                }
-            }
-        }
-        if (config.disallowedTokenGatedAllowedNftTokens.length != 0) {
-            TokenGatedDropStage memory emptyStage;
-            for (
-                uint256 i = 0;
-                i < config.disallowedTokenGatedAllowedNftTokens.length;
-
-            ) {
-                IERC1155SeaDrop(address(token)).updateTokenGatedDrop(
-                    config.disallowedTokenGatedAllowedNftTokens[i],
-                    emptyStage
                 );
                 unchecked {
                     ++i;

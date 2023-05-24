@@ -10,11 +10,8 @@ import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 import {
     MintParams,
     PublicDrop,
-    SignedMintValidationParams,
-    TokenGatedDropStage
+    SignedMintValidationParams
 } from "seadrop/lib/ERC721SeaDropStructs.sol";
-
-import { TokenGatedMintParams } from "seadrop/lib/SeaDropStructs.sol";
 
 import { AdvancedOrder } from "seaport/lib/ConsiderationStructs.sol";
 
@@ -213,104 +210,6 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         assertEq(context.args.creator.balance, 3 ether * 0.95);
 
         // Minting any more should exceed maxTotalMintableByWallet
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
-            )
-        );
-        consideration.fulfillAdvancedOrder({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
-    }
-
-    function testMintAllowedTokenHolder(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
-        address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
-        token.setMaxSupply(10);
-        setSingleCreatorPayout(context.args.creator);
-
-        // Configure the drop stage.
-        TokenGatedDropStage memory dropStage = TokenGatedDropStage({
-            startPrice: 1 ether,
-            endPrice: 1 ether,
-            startTime: uint40(block.timestamp),
-            endTime: uint40(block.timestamp) + 500,
-            paymentToken: address(0),
-            maxMintablePerRedeemedToken: 3,
-            maxTotalMintableByWallet: 10,
-            dropStageIndex: 2,
-            maxTokenSupplyForStage: 1000,
-            feeBps: uint16(feeBps),
-            restrictFeeRecipients: false
-        });
-        IERC721SeaDrop(address(token)).updateTokenGatedDrop(
-            address(test721_1),
-            dropStage
-        );
-
-        // Mint a token gated token to the minter.
-        test721_1.mint(address(this), 1);
-
-        // Set the mint params.
-        uint256[] memory allowedTokenIds = new uint256[](1);
-        allowedTokenIds[0] = 1;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 3;
-        TokenGatedMintParams memory mintParams = TokenGatedMintParams({
-            allowedNftToken: address(test721_1),
-            allowedNftTokenIds: allowedTokenIds,
-            amounts: amounts
-        });
-
-        addSeaDropOfferItem(3); // 3 mints
-        addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
-        configureSeaDropOrderParameters();
-
-        address minter = address(this);
-        bytes memory extraData = bytes.concat(
-            bytes1(0x00), // SIP-6 version byte
-            bytes1(0x02), // substandard version byte: token holder mint
-            bytes20(feeRecipient),
-            bytes20(minter),
-            abi.encode(mintParams)
-        );
-
-        AdvancedOrder memory order = AdvancedOrder({
-            parameters: baseOrderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: extraData
-        });
-
-        vm.deal(address(this), 10 ether);
-
-        vm.expectEmit(true, true, true, true, address(token));
-        emit SeaDropMint(address(this), 2);
-
-        consideration.fulfillAdvancedOrder{ value: 3 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
-
-        assertEq(token.ownerOf(1), minter);
-        assertEq(token.ownerOf(2), minter);
-        assertEq(token.ownerOf(3), minter);
-        assertEq(context.args.creator.balance, 3 ether * 0.95);
-
-        // Minting any more should exceed maxMintablePerRedeemedToken
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,

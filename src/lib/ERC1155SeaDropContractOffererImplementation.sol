@@ -8,19 +8,14 @@ import {
 import {
     MintParams,
     PublicDrop,
-    SignedMintValidationParams,
-    TokenGatedDropStage
+    SignedMintValidationParams
 } from "./ERC1155SeaDropStructs.sol";
 
 import {
     ERC1155SeaDropErrorsAndEvents
 } from "./ERC1155SeaDropErrorsAndEvents.sol";
 
-import {
-    AllowListData,
-    CreatorPayout,
-    TokenGatedMintParams
-} from "./SeaDropStructs.sol";
+import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 
 import "./ERC1155SeaDropConstants.sol";
 
@@ -215,48 +210,10 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedPayers
                 );
-        } else if (selector == GET_TOKEN_GATED_ALLOWED_TOKENS_SELECTOR) {
-            // Return the allowed token gated tokens.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedTokenGatedTokens
-                );
-        } else if (selector == GET_TOKEN_GATED_DROP_SELECTOR) {
-            // Get the allowed nft token.
-            address allowedNftToken = address(bytes20(data[12:32]));
-
-            // Return the token gated drop.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._tokenGatedDrops[allowedNftToken]
-                );
         } else {
             // Revert if the function selector is not supported.
             revert UnsupportedFunctionSelector(selector);
         }
-    }
-
-    /**
-     * @notice Implementation function to return the token gated redeemed
-     *         count for a token id.
-     *
-     *         Do not use this method directly.
-     *
-     * @param allowedNftToken   The allowed nft token.
-     * @param allowedNftTokenId The allowed nft token id.
-     */
-    function getAllowedNftTokenIdRedeemedCount(
-        address allowedNftToken,
-        uint256 allowedNftTokenId
-    ) external view returns (uint256) {
-        return
-            ERC1155SeaDropContractOffererStorage.layout()._tokenGatedRedeemed[
-                allowedNftToken
-            ][allowedNftTokenId];
     }
 
     /**
@@ -620,23 +577,9 @@ contract ERC1155SeaDropContractOffererImplementation is
                 proof,
                 withEffects_
             );
-        } else if (substandard == 2) {
-            // 2: Token gated mint
-            TokenGatedMintParams memory mintParams = abi.decode(
-                context[42:],
-                (TokenGatedMintParams)
-            );
-            consideration = _mintAllowedTokenHolder(
-                tokenId,
-                feeRecipient,
-                fulfiller_,
-                minter,
-                mintParams,
-                withEffects_
-            );
         } else {
-            // substandard == 3
-            // 3: Signed mint
+            // substandard == 2
+            // 2: Signed mint
             MintParams memory mintParams = abi.decode(
                 context[42:458],
                 (MintParams)
@@ -980,131 +923,6 @@ contract ERC1155SeaDropContractOffererImplementation is
         if (!mintParams.restrictFeeRecipients) {
             revert SignedMintsMustRestrictFeeRecipients();
         }
-    }
-
-    /**
-     * @notice Mint as an allowed token holder.
-     *
-     * @param tokenId      The token id to mint.
-     * @param feeRecipient The fee recipient.
-     * @param payer        The payer of the mint.
-     * @param minter       The mint recipient.
-     * @param mintParams   The token gated mint params.
-     * @param withEffects  Whether to apply state changes of the mint.
-     */
-    function _mintAllowedTokenHolder(
-        uint256 tokenId,
-        address feeRecipient,
-        address payer,
-        address minter,
-        TokenGatedMintParams memory mintParams,
-        bool withEffects
-    ) internal returns (ReceivedItem[] memory consideration) {
-        // Put the allowedNftToken on the stack for more efficient access.
-        address allowedNftToken = mintParams.allowedNftToken;
-
-        // Put the drop stage on the stack.
-        TokenGatedDropStage
-            memory dropStage = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._tokenGatedDrops[allowedNftToken];
-
-        // Put the length on the stack for more efficient access.
-        uint256 allowedNftTokenIdsLength = mintParams.allowedNftTokenIds.length;
-
-        // Revert if the token ids and amounts are not the same length.
-        if (allowedNftTokenIdsLength != mintParams.amounts.length) {
-            revert TokenGatedTokenIdsAndAmountsLengthMismatch();
-        }
-
-        // Track the total number of mints requested.
-        uint256 totalMintQuantity;
-
-        // Iterate through each allowedNftTokenId
-        // to ensure it is not already fully redeemed.
-        for (uint256 i = 0; i < allowedNftTokenIdsLength; ) {
-            // Put the tokenId on the stack.
-            uint256 allowedNftTokenId = mintParams.allowedNftTokenIds[i];
-
-            // Put the amount on the stack.
-            uint256 amount = mintParams.amounts[i];
-
-            // Check that the minter is the owner of the allowedNftTokenId.
-            if (IERC721(allowedNftToken).ownerOf(allowedNftTokenId) != minter) {
-                revert TokenGatedNotTokenOwner(
-                    allowedNftToken,
-                    allowedNftTokenId
-                );
-            }
-
-            // Cache the storage pointer for cheaper access.
-            mapping(uint256 => uint256)
-                storage redeemedTokenIds = ERC1155SeaDropContractOffererStorage
-                    .layout()
-                    ._tokenGatedRedeemed[allowedNftToken];
-
-            // Check that the token id has not already been redeemed to its limit.
-            if (
-                redeemedTokenIds[allowedNftTokenId] + amount >
-                dropStage.maxMintablePerRedeemedToken
-            ) {
-                revert TokenGatedTokenIdMintExceedsQuantityRemaining(
-                    allowedNftToken,
-                    allowedNftTokenId,
-                    dropStage.maxMintablePerRedeemedToken,
-                    redeemedTokenIds[allowedNftTokenId],
-                    amount
-                );
-            }
-
-            // Add to the total mint quantity.
-            totalMintQuantity += amount;
-
-            // Apply the state changes of the mint.
-            if (withEffects) {
-                // Increase mint count on redeemed token id.
-                redeemedTokenIds[allowedNftTokenId] += amount;
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Put items back on the stack to avoid stack too deep.
-        TokenGatedDropStage memory dropStage_ = dropStage;
-        bool withEffects_ = withEffects;
-
-        // Check that the tokenId is within the range of the stage.
-        _checkTokenId(tokenId, dropStage_.fromTokenId, dropStage_.toTokenId);
-
-        // Check that the stage is active and calculate the current price.
-        uint256 currentPrice = _currentPrice(
-            dropStage_.startTime,
-            dropStage_.endTime,
-            dropStage_.startPrice,
-            dropStage_.endPrice
-        );
-
-        // Validate the mint parameters.
-        // If passed withEffects=true, sets the mint recipient
-        // and emits an event for analytics.
-        consideration = _validateMint(
-            tokenId,
-            feeRecipient,
-            payer,
-            minter,
-            totalMintQuantity,
-            currentPrice,
-            dropStage_.paymentToken,
-            dropStage_.maxTotalMintableByWallet,
-            dropStage_.maxTotalMintableByWalletPerToken,
-            dropStage_.maxTokenSupplyForStage,
-            dropStage_.feeBps,
-            dropStage_.dropStageIndex,
-            dropStage_.restrictFeeRecipients,
-            withEffects_
-        );
     }
 
     /**
@@ -1550,88 +1368,6 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         // Emit an event for the update.
         emit AllowedSeaportUpdated(allowedSeaport);
-    }
-
-    /**
-     * @notice Updates the token gated drop stage for the nft contract
-     *         and emits an event.
-     *
-     *         Note: If two SeaDrop tokens are doing simultaneous token gated
-     *         drop promotions for each other, they can be minted by the same
-     *         actor until `maxTokenSupplyForStage` is reached. Please ensure
-     *         the `allowedNftToken` is not running an active drop during the
-     *         `dropStage` time period.
-     *
-     * @param allowedNftToken The token gated nft token.
-     * @param dropStage       The token gated drop stage data.
-     */
-    function updateTokenGatedDrop(
-        address allowedNftToken,
-        TokenGatedDropStage calldata dropStage
-    ) external {
-        // Ensure the allowedNftToken is not the zero address.
-        if (allowedNftToken == address(0)) {
-            revert TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
-        }
-
-        // Ensure the allowedNftToken is not the drop token itself.
-        if (allowedNftToken == address(this)) {
-            revert TokenGatedDropAllowedNftTokenCannotBeDropToken();
-        }
-
-        // Revert if the fee basis points are greater than 10_000.
-        if (dropStage.feeBps > 10_000) {
-            revert InvalidFeeBps(dropStage.feeBps);
-        }
-
-        // Use maxTotalMintableByWallet != 0 as a signal that this update should
-        // add or update the drop stage, otherwise we will be removing.
-        bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
-
-        // Get pointers to the token gated drop data and enumerated addresses.
-        TokenGatedDropStage
-            storage existingDropStageData = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._tokenGatedDrops[allowedNftToken];
-        address[]
-            storage enumeratedTokens = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._enumeratedTokenGatedTokens;
-
-        // Stage struct packs to two slots, so load it
-        // as a uint256; if it is 0, it is empty.
-        bool dropStageDoesNotExist;
-        assembly {
-            dropStageDoesNotExist := iszero(
-                add(
-                    sload(existingDropStageData.slot),
-                    sload(add(existingDropStageData.slot, 1))
-                )
-            )
-        }
-
-        if (addOrUpdateDropStage) {
-            ERC1155SeaDropContractOffererStorage.layout()._tokenGatedDrops[
-                    allowedNftToken
-                ] = dropStage;
-            // Add to enumeration if it does not exist already.
-            if (dropStageDoesNotExist) {
-                enumeratedTokens.push(allowedNftToken);
-            }
-        } else {
-            // Check we are not deleting a drop stage that does not exist.
-            if (dropStageDoesNotExist) {
-                revert TokenGatedDropStageNotPresent();
-            }
-            // Clear storage slot and remove from enumeration.
-            delete ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._tokenGatedDrops[allowedNftToken];
-            _removeFromEnumeration(allowedNftToken, enumeratedTokens);
-        }
-
-        // Emit an event with the update.
-        emit TokenGatedDropStageUpdated(allowedNftToken, dropStage);
     }
 
     /**

@@ -4,8 +4,7 @@ pragma solidity ^0.8.19;
 import {
     CreatorPayout,
     PublicDrop,
-    SignedMintValidationParams,
-    TokenGatedDropStage
+    SignedMintValidationParams
 } from "./ERC721SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
@@ -31,13 +30,6 @@ interface SeaDropErrorsAndEvents {
      * @notice Revert with an error if the function selector is not supported.
      */
     error UnsupportedFunctionSelector(bytes4 selector);
-
-    /**
-     * @notice Revert with an error if the number of token gated
-     *         allowedNftTokens doesn't match the length of supplied
-     *         drop stages.
-     */
-    error TokenGatedMismatch();
 
     /**
      *  @notice Revert with an error if the number of signers doesn't match
@@ -175,51 +167,6 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert if a supplied payer address is the zero address.
      */
     error PayerCannotBeZeroAddress();
-
-    /**
-     * @dev Revert with an error if the token gated token ids and amounts
-     *      to mint do not match.
-     */
-    error TokenGatedTokenIdsAndAmountsLengthMismatch();
-
-    /**
-     * @dev Revert with an error if the sender of a token gated supplied
-     *      drop stage redeem is not the owner of the token.
-     */
-    error TokenGatedNotTokenOwner(
-        address allowedNftToken,
-        uint256 allowedNftTokenId
-    );
-
-    /**
-     * @dev Revert with an error if the token id has reached its quantity limit
-     *      to redeem a token gated drop stage.
-     */
-    error TokenGatedTokenIdMintExceedsQuantityRemaining(
-        address allowedNftToken,
-        uint256 allowedNftTokenId,
-        uint256 quantityLimit,
-        uint256 quantityRedeemed,
-        uint256 additionalQuantityToMint
-    );
-
-    /**
-     * @dev Revert with an error if an empty TokenGatedDropStage is provided
-     *      for an already-empty TokenGatedDropStage.
-     */
-    error TokenGatedDropStageNotPresent();
-
-    /**
-     * @dev Revert with an error if an allowedNftToken is set to
-     *      the zero address.
-     */
-    error TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
-
-    /**
-     * @dev Revert with an error if an allowedNftToken is set to
-     *      the drop token itself.
-     */
-    error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
     /**
      * @dev Revert with an error if the signer payment token is not the same.

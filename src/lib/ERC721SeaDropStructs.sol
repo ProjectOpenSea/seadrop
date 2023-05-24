@@ -36,48 +36,6 @@ struct PublicDrop {
 }
 
 /**
- * @notice A struct defining token gated drop stage data.
- *         Designed to fit efficiently in two storage slots.
- *
- * @param startPrice               The start price per token. (Up to 1.2m
- *                                 of native token, e.g. ETH, MATIC)
- * @param endPrice                 The end price per token. If this differs
- *                                 from startPrice, the current price will
- *                                 be calculated based on the current time.
- * @param startTime                The start time, ensure this is not zero.
- * @param endTime                  The end time, ensure this is not zero.
- * @param paymentToken             The payment token for the mint. Null for
- *                                 native token.
- * @param maxTotalMintableByWallet Maximum total number of mints a user is
- *                                 allowed. (The limit for this field is
- *                                 2^16 - 1)
- * @param maxTokenSupplyForStage   The limit of token supply this stage can
- *                                 mint within. (The limit for this field is
- *                                 2^16 - 1)
- * @param dropStageIndex           The drop stage index to emit with the event
- *                                 for analytical purposes. This should be
- *                                 non-zero since the public mint emits
- *                                 with index zero.
- * @param feeBps                   Fee out of 10_000 basis points to be
- *                                 collected.
- * @param restrictFeeRecipients    If false, allow any fee recipient;
- *                                 if true, check fee recipient is allowed.
- */
-struct TokenGatedDropStage {
-    uint80 startPrice; // 80/512 bits
-    uint80 endPrice; // 160/512 bits
-    uint40 startTime; // 392/512 bits
-    uint40 endTime; // 432/512 bits
-    address paymentToken; // 320/512 bits
-    uint16 maxMintablePerRedeemedToken; // 336/512 bits
-    uint16 maxTotalMintableByWallet; // 352/512 bits
-    uint32 maxTokenSupplyForStage; // 482/512 bits
-    uint8 dropStageIndex; // non-zero. 450/512 bits
-    uint16 feeBps; // 498/512 bits
-    bool restrictFeeRecipients; // 506/512 bits
-}
-
-/**
  * @notice A struct defining mint params for an allow list.
  *         An allow list leaf will be composed of `msg.sender` and
  *         the following params.
@@ -161,10 +119,6 @@ struct MultiConfigureStruct {
     address[] disallowedFeeRecipients;
     address[] allowedPayers;
     address[] disallowedPayers;
-    // Token-gated
-    address[] tokenGatedAllowedNftTokens;
-    TokenGatedDropStage[] tokenGatedDropStages;
-    address[] disallowedTokenGatedAllowedNftTokens;
     // Server-signed
     address[] signers;
     SignedMintValidationParams[] signedMintValidationParams;

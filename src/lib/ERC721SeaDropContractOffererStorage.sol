@@ -3,8 +3,7 @@ pragma solidity ^0.8.19;
 
 import {
     PublicDrop,
-    SignedMintValidationParams,
-    TokenGatedDropStage
+    SignedMintValidationParams
 } from "./ERC721SeaDropStructs.sol";
 
 import { CreatorPayout } from "./SeaDropStructs.sol";
@@ -35,12 +34,6 @@ library ERC721SeaDropContractOffererStorage {
         mapping(address => bool) _allowedPayers;
         /// @notice The enumerated allowed payers.
         address[] _enumeratedPayers;
-        /// @notice The token gated drop stages.
-        mapping(address => TokenGatedDropStage) _tokenGatedDrops;
-        /// @notice The tokens for token gated drops.
-        address[] _enumeratedTokenGatedTokens;
-        /// @notice The token ids and redeemed counts for token gated drop stages.
-        mapping(address => mapping(uint256 => uint256)) _tokenGatedRedeemed;
     }
 
     bytes32 internal constant STORAGE_SLOT =

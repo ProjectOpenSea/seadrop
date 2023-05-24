@@ -12,10 +12,7 @@ import type {
   IERC721SeaDrop,
   TestERC20,
 } from "../../typechain-types";
-import type {
-  MintParamsStruct as MintParamsStruct721,
-  TokenGatedMintParamsStruct,
-} from "../../typechain-types/src/shim/Shim";
+import type { MintParamsStruct as MintParamsStruct721 } from "../../typechain-types/src/shim/Shim";
 import type { MintParamsStruct as MintParamsStruct1155 } from "../../typechain-types/src/shim/Shim2";
 import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
 import type { BigNumberish, Wallet } from "ethers";
@@ -49,8 +46,7 @@ export const expectedPrice = ({
 export enum MintType {
   PUBLIC = 0,
   ALLOW_LIST = 1,
-  TOKEN_GATED = 2,
-  SIGNED = 3,
+  SIGNED = 2,
 }
 
 export const createMintOrder = async ({
@@ -69,8 +65,6 @@ export const createMintOrder = async ({
   mintParams,
   // Allow list
   proof,
-  // Token gated
-  tokenGatedMintParams,
   // Signed
   salt,
   signature,
@@ -80,7 +74,7 @@ export const createMintOrder = async ({
   token: ERC721SeaDrop | ERC1155SeaDrop;
   tokenSeaDropInterface: IERC721SeaDrop | IERC1155SeaDrop;
   tokenId?: BigNumberish;
-  quantity?: BigNumberish;
+  quantity: BigNumberish;
   feeRecipient: Wallet;
   feeBps: BigNumberish;
   price: BigNumberish;
@@ -91,23 +85,11 @@ export const createMintOrder = async ({
   endTime?: number;
   mintParams?: AwaitedObject<MintParamsStruct721 | MintParamsStruct1155>;
   proof?: string[];
-  tokenGatedMintParams?: AwaitedObject<TokenGatedMintParamsStruct>;
   signature?: string;
   salt?: string;
   publicDropIndex?: number;
 }) => {
   const paymentTokenAddress = paymentToken?.address ?? AddressZero;
-
-  if (mintType === MintType.TOKEN_GATED) {
-    if (!tokenGatedMintParams)
-      throw new Error("Token gated mint params required for token gated mint");
-    quantity = (tokenGatedMintParams?.amounts as number[]).reduce(
-      (prev, curr) => prev + curr,
-      0
-    );
-  }
-  if (quantity === undefined)
-    throw new Error("Quantity missing for mint order");
 
   const offer = [
     {
@@ -192,16 +174,6 @@ export const createMintOrder = async ({
         ...proof.map((p) => Buffer.from(p.slice(2), "hex")),
       ]);
       break;
-    case MintType.TOKEN_GATED:
-      if (!tokenGatedMintParams)
-        throw new Error(
-          "Token gated mint params required for token gated mint"
-        );
-      extraDataBuffer = Buffer.concat([
-        extraDataBuffer,
-        tokenGatedMintParamsBuffer(tokenGatedMintParams),
-      ]);
-      break;
     case MintType.SIGNED:
       if (!mintParams) throw new Error("Mint params required for signed mint");
       if (!salt) throw new Error("Salt required for signed mint");
@@ -263,17 +235,4 @@ export const mintParamsBuffer = (
           mintParams.restrictFeeRecipients ? 1 : 0,
         ]
     ).map(toPaddedBuffer)
-  );
-
-const tokenGatedMintParamsBuffer = (mintParams: TokenGatedMintParamsStruct) =>
-  Buffer.from(
-    defaultAbiCoder
-      .encode(
-        [
-          "tuple(address allowedNftToken, uint256[] allowedNftTokenIds, uint256[] amounts)",
-        ],
-        [mintParams]
-      )
-      .slice(2),
-    "hex"
   );

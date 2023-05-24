@@ -8,15 +8,10 @@ import {
 import {
     MintParams,
     PublicDrop,
-    SignedMintValidationParams,
-    TokenGatedDropStage
+    SignedMintValidationParams
 } from "../lib/ERC1155SeaDropStructs.sol";
 
-import {
-    AllowListData,
-    CreatorPayout,
-    TokenGatedMintParams
-} from "../lib/SeaDropStructs.sol";
+import { AllowListData, CreatorPayout } from "../lib/SeaDropStructs.sol";
 
 /**
  * @dev A helper interface to get and set parameters for ERC1155SeaDrop.
@@ -43,11 +38,6 @@ interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
     ) external;
 
     function updateAllowList(AllowListData calldata allowListData) external;
-
-    function updateTokenGatedDrop(
-        address allowedNftToken,
-        TokenGatedDropStage calldata dropStage
-    ) external;
 
     function updateSignedMintValidationParams(
         address signer,
@@ -88,18 +78,4 @@ interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
     ) external view returns (SignedMintValidationParams memory);
 
     function getPayers() external view returns (address[] memory);
-
-    function getTokenGatedAllowedTokens()
-        external
-        view
-        returns (address[] memory);
-
-    function getTokenGatedDrop(
-        address allowedNftToken
-    ) external view returns (TokenGatedDropStage memory);
-
-    function getAllowedNftTokenIdRedeemedCount(
-        address allowedNftToken,
-        uint256 allowedNftTokenId
-    ) external view returns (uint256);
 }

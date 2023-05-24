@@ -29,7 +29,6 @@ import type {
 import type {
   PublicDropStruct,
   SignedMintValidationParamsStruct,
-  TokenGatedDropStageStruct,
 } from "../typechain-types/src/ERC1155SeaDrop";
 import type { AllowListDataStruct } from "../typechain-types/src/shim/Shim";
 import type { Wallet } from "ethers";
@@ -52,7 +51,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
   let tokenSeaDropInterface: IERC1155SeaDrop;
   let configurer: ERC1155SeaDropConfigurer;
   let publicDrop: AwaitedObject<PublicDropStruct>;
-  let tokenGatedDropStage: AwaitedObject<TokenGatedDropStageStruct>;
   let signedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
   let allowListData: AwaitedObject<AllowListDataStruct>;
 
@@ -103,23 +101,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       maxTotalMintableByWallet: 10,
       maxTotalMintableByWalletPerToken: 9,
       feeBps: 1000,
-      restrictFeeRecipients: true,
-    };
-
-    tokenGatedDropStage = {
-      startPrice: parseEther("0.1"),
-      endPrice: parseEther("0.1"),
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 500,
-      paymentToken: AddressZero,
-      fromTokenId: 0,
-      toTokenId: 10,
-      maxMintablePerRedeemedToken: 3,
-      maxTotalMintableByWallet: 10,
-      maxTotalMintableByWalletPerToken: 9,
-      maxTokenSupplyForStage: 100,
-      dropStageIndex: 1,
-      feeBps: 100,
       restrictFeeRecipients: true,
     };
 
@@ -570,21 +551,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         .updateAllowList(allowListData, { gasLimit: 100_000 })
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
-    // Test `updateTokenGatedDrop` for coverage.
-
-    await tokenSeaDropInterface.updateTokenGatedDrop(
-      `0x${"4".repeat(40)}`,
-      tokenGatedDropStage
-    );
-
-    await expect(
-      tokenSeaDropInterface
-        .connect(creator)
-        .updateTokenGatedDrop(`0x${"4".repeat(40)}`, tokenGatedDropStage, {
-          gasLimit: 100_000,
-        })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
-
     // Test `updateSigner` for coverage.
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       `0x${"5".repeat(40)}`,
@@ -661,7 +627,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       "updateAllowedSeaport",
       "updatePublicDrop",
       "updateAllowList",
-      "updateTokenGatedDrop",
       "updateDropURI",
       "updateCreatorPayouts",
       "updateAllowedFeeRecipient",
@@ -673,7 +638,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       updateAllowedSeaport: [[token.address]],
       updatePublicDrop: [publicDrop, 0],
       updateAllowList: [allowListData],
-      updateTokenGatedDrop: [`0x${"4".repeat(40)}`, tokenGatedDropStage],
       updateDropURI: ["http://test.com"],
       updateCreatorPayouts: [
         [{ payoutAddress: `0x${"4".repeat(40)}`, basisPoints: 10_000 }],
@@ -723,19 +687,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       disallowedFeeRecipients: [],
       allowedPayers: [`0x${"4".repeat(40)}`, `0x${"5".repeat(40)}`],
       disallowedPayers: [],
-      tokenGatedAllowedNftTokens: [
-        `0x${"6".repeat(40)}`,
-        `0x${"7".repeat(40)}`,
-      ],
-      tokenGatedDropStages: [
-        tokenGatedDropStage,
-        {
-          ...tokenGatedDropStage,
-          price: tokenGatedDropStage.startPrice + "1",
-          endPrice: tokenGatedDropStage.endPrice + "1",
-        },
-      ],
-      disallowedTokenGatedAllowedNftTokens: [],
       signers: [`0x${"8".repeat(40)}`, `0x${"9".repeat(40)}`],
       signedMintValidationParams: [
         signedMintValidationParams,
@@ -749,14 +700,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       configurer.connect(creator).multiConfigure(token.address, config)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
-
-    // Should revert if tokenGatedAllowedNftToken.length != tokenGatedDropStages.length
-    await expect(
-      configurer.multiConfigure(token.address, {
-        ...config,
-        tokenGatedAllowedNftTokens: config.tokenGatedAllowedNftTokens.slice(1),
-      })
-    ).to.be.revertedWithCustomError(token, "TokenGatedMismatch");
 
     // Should revert if signers.length != signedMintValidationParams.length
     await expect(
@@ -801,8 +744,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         await tokenSeaDropInterface.getAllowedFeeRecipients();
       const signers = await tokenSeaDropInterface.getSigners();
       const payers = await tokenSeaDropInterface.getPayers();
-      const tokenGatedAllowedNftTokens =
-        await tokenSeaDropInterface.getTokenGatedAllowedTokens();
 
       expect(publicDrop).to.deep.eq([
         publicDrop.startPrice,
@@ -822,30 +763,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       expect(allowedFeeRecipients).to.deep.eq([feeRecipient.address]);
       expect(payers).to.deep.eq(config.allowedPayers);
       expect(signers).to.deep.eq(config.signers);
-      expect(tokenGatedAllowedNftTokens).to.deep.eq(
-        config.tokenGatedAllowedNftTokens
-      );
-      for (const [i, allowed] of config.tokenGatedAllowedNftTokens.entries()) {
-        expect(
-          await tokenSeaDropInterface.getTokenGatedDrop(allowed)
-        ).to.deep.eq([
-          BigNumber.from(config.tokenGatedDropStages[i].startPrice),
-          BigNumber.from(config.tokenGatedDropStages[i].endPrice),
-          config.tokenGatedDropStages[i].startTime,
-          config.tokenGatedDropStages[i].endTime,
-          config.tokenGatedDropStages[i].paymentToken,
-          config.tokenGatedDropStages[i].fromTokenId,
-          config.tokenGatedDropStages[i].toTokenId,
-          config.tokenGatedDropStages[i].maxMintablePerRedeemedToken,
-          config.tokenGatedDropStages[i].maxTotalMintableByWallet,
-          config.tokenGatedDropStages[i].maxTotalMintableByWalletPerToken,
-          config.tokenGatedDropStages[i].maxTokenSupplyForStage,
-          config.tokenGatedDropStages[i].dropStageIndex,
-          config.tokenGatedDropStages[i].feeBps,
-          config.tokenGatedDropStages[i].restrictFeeRecipients,
-        ]);
-      }
-
       for (const [i, signer] of config.signers.entries()) {
         expect(
           await tokenSeaDropInterface.getSignedMintValidationParams(signer)
@@ -892,9 +809,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       disallowedFeeRecipients: [],
       allowedPayers: [],
       disallowedPayers: [],
-      tokenGatedAllowedNftTokens: [],
-      tokenGatedDropStages: [],
-      disallowedTokenGatedAllowedNftTokens: [],
       signers: [],
       signedMintValidationParams: [],
       disallowedSigners: [],
@@ -923,31 +837,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "PayerUpdated")
       .withArgs(config.allowedPayers[0], false);
-    await expect(
-      configurer.multiConfigure(token.address, {
-        ...zeroedConfig,
-        disallowedTokenGatedAllowedNftTokens: [
-          config.tokenGatedAllowedNftTokens[0],
-        ],
-      })
-    )
-      .to.emit(token, "TokenGatedDropStageUpdated")
-      .withArgs(config.tokenGatedAllowedNftTokens[0], [
-        0,
-        0,
-        0,
-        0,
-        AddressZero,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        false,
-      ]);
     await expect(
       configurer.multiConfigure(token.address, {
         ...zeroedConfig,

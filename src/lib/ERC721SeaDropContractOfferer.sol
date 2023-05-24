@@ -96,7 +96,6 @@ contract ERC721SeaDropContractOfferer is
                     selector == UPDATE_DROP_URI_SELECTOR ||
                     selector == UPDATE_PUBLIC_DROP_SELECTOR ||
                     selector == UPDATE_ALLOW_LIST_SELECTOR ||
-                    selector == UPDATE_TOKEN_GATED_DROP_SELECTOR ||
                     selector == UPDATE_CREATOR_PAYOUTS_SELECTOR ||
                     selector == UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR ||
                     selector == UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
@@ -110,10 +109,7 @@ contract ERC721SeaDropContractOfferer is
                     selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR ||
                     selector == GET_SIGNERS_SELECTOR ||
                     selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
-                    selector == GET_PAYERS_SELECTOR ||
-                    selector == GET_TOKEN_GATED_ALLOWED_TOKENS_SELECTOR ||
-                    selector == GET_TOKEN_GATED_DROP_SELECTOR ||
-                    selector == GET_ALLOWED_NFT_TOKEN_ID_REDEEMED_COUNT_SELECTOR
+                    selector == GET_PAYERS_SELECTOR
             ) == 1
         ) {
             // For update calls, ensure the sender is only the owner
@@ -124,7 +120,6 @@ contract ERC721SeaDropContractOfferer is
                         selector == UPDATE_DROP_URI_SELECTOR ||
                         selector == UPDATE_PUBLIC_DROP_SELECTOR ||
                         selector == UPDATE_ALLOW_LIST_SELECTOR ||
-                        selector == UPDATE_TOKEN_GATED_DROP_SELECTOR ||
                         selector == UPDATE_CREATOR_PAYOUTS_SELECTOR ||
                         selector == UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR ||
                         selector ==

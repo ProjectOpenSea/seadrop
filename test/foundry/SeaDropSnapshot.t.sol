@@ -10,14 +10,10 @@ import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 import {
     MintParams,
     PublicDrop,
-    SignedMintValidationParams,
-    TokenGatedDropStage
+    SignedMintValidationParams
 } from "seadrop/lib/ERC721SeaDropStructs.sol";
 
-import {
-    CreatorPayout,
-    TokenGatedMintParams
-} from "seadrop/lib/SeaDropStructs.sol";
+import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
 
 import { AdvancedOrder } from "seaport/lib/ConsiderationStructs.sol";
 
@@ -56,7 +52,6 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
 
     bytes extraDataPublicDrop;
     bytes extraDataAllowList;
-    bytes extraDataTokenGated;
     bytes extraDataSigned;
     bytes extraDataSignedCompact2098;
 
@@ -79,7 +74,6 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
 
         _configurePublic();
         _configureAllowList();
-        _configureTokenGated();
         _configureSigned();
 
         addSeaDropOfferItem(numMints);
@@ -152,49 +146,6 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
             bytes20(minter),
             abi.encode(mintParams),
             abi.encodePacked(proof)
-        );
-    }
-
-    function _configureTokenGated() internal {
-        TokenGatedDropStage memory dropStage = TokenGatedDropStage({
-            startPrice: uint80(mintPrice),
-            endPrice: uint80(mintPrice),
-            startTime: uint40(block.timestamp),
-            endTime: uint40(block.timestamp) + 500,
-            paymentToken: address(0),
-            maxMintablePerRedeemedToken: uint16(numMints),
-            maxTotalMintableByWallet: 10,
-            maxTokenSupplyForStage: 1000,
-            dropStageIndex: 2,
-            feeBps: uint16(feeBps),
-            restrictFeeRecipients: true
-        });
-        IERC721SeaDrop(address(token)).updateTokenGatedDrop(
-            address(test721_1),
-            dropStage
-        );
-
-        // Mint a token gated token to the minter.
-        test721_1.mint(address(this), 2);
-
-        // Set the mint params.
-        uint256[] memory allowedTokenIds = new uint256[](1);
-        allowedTokenIds[0] = 2;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = numMints;
-        TokenGatedMintParams memory mintParams = TokenGatedMintParams({
-            allowedNftToken: address(test721_1),
-            allowedNftTokenIds: allowedTokenIds,
-            amounts: amounts
-        });
-
-        address minter = address(0);
-        extraDataTokenGated = bytes.concat(
-            bytes1(0x00), // SIP-6 version byte
-            bytes1(0x02), // substandard version byte: token holder mint
-            bytes20(feeRecipient),
-            bytes20(minter),
-            abi.encode(mintParams)
         );
     }
 
@@ -301,22 +252,6 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
             denominator: 1,
             signature: "",
             extraData: extraDataAllowList
-        });
-        consideration.fulfillAdvancedOrder{ value: mintPrice * numMints }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
-    }
-
-    function testMintAllowedTokenHolder_snapshot() public {
-        AdvancedOrder memory order = AdvancedOrder({
-            parameters: baseOrderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: extraDataTokenGated
         });
         consideration.fulfillAdvancedOrder{ value: mintPrice * numMints }({
             advancedOrder: order,

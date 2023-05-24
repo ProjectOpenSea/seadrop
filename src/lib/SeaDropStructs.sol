@@ -28,19 +28,6 @@ struct AllowListData {
 }
 
 /**
- * @notice A struct defining token gated mint params.
- *
- * @param allowedNftToken    The allowed nft token contract address.
- * @param allowedNftTokenIds The token ids to redeem.
- * @param amounts            The token amounts to redeem, per allowedNftTokenId.
- */
-struct TokenGatedMintParams {
-    address allowedNftToken;
-    uint256[] allowedNftTokenIds;
-    uint256[] amounts;
-}
-
-/**
  * @dev From Seaport.
  *      For SpentItem struct.
  * */
