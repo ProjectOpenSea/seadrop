@@ -47,6 +47,16 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     error NotAuthorized();
 
     /**
+     * @notice Returns the name of the token.
+     */
+    function name() external view returns (string memory);
+
+    /**
+     * @notice Returns the symbol of the token.
+     */
+    function symbol() external view returns (string memory);
+
+    /**
      * @notice Sets the max supply for a token id and emits an event.
      *
      * @param tokenId      The token id to set the max supply for.

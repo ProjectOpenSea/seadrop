@@ -39,8 +39,14 @@ contract ERC1155ContractMetadata is
     /// @notice The total number of tokens minted per token id by address.
     mapping(address => mapping(uint256 => uint256)) _totalMintedByUserPerToken;
 
+    /// @notice The name of the token.
+    string internal _name;
+
+    /// @notice The symbol of the token.
+    string internal _symbol;
+
     /// @notice The base URI for token metadata.
-    string private _baseURI;
+    string internal _baseURI;
 
     /// @notice The contract URI for contract metadata.
     string internal _contractURI;
@@ -68,10 +74,22 @@ contract ERC1155ContractMetadata is
     /**
      * @notice Deploy the token contract.
      *
+     * @param name_              The name of the token.
+     * @param symbol_            The symbol of the token.
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters.
      */
-    constructor(address allowedConfigurer) {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        address allowedConfigurer
+    ) {
+        // Set the name of the token.
+        _name = name_;
+
+        // Set the symbol of the token.
+        _symbol = symbol_;
+
         // Set the allowed configurer contract to interact with this contract.
         _CONFIGURER = allowedConfigurer;
     }
@@ -217,6 +235,20 @@ contract ERC1155ContractMetadata is
 
         // Emit an event with the updated params.
         emit RoyaltyInfoUpdated(receiver, feeNumerator);
+    }
+
+    /**
+     * @notice Returns the name of the token.
+     */
+    function name() external view returns (string memory) {
+        return _name;
+    }
+
+    /**
+     * @notice Returns the symbol of the token.
+     */
+    function symbol() external view returns (string memory) {
+        return _symbol;
     }
 
     /**

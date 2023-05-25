@@ -60,6 +60,11 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
     ));
   });
 
+  it("Should return the name and symbol", async () => {
+    expect(await token.name()).to.equal("Test1155");
+    expect(await token.symbol()).to.equal("T1155");
+  });
+
   it("Should only let the owner set and get the base URI", async () => {
     expect(await token.baseURI()).to.equal("");
 

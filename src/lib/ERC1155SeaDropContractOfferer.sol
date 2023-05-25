@@ -44,6 +44,8 @@ contract ERC1155SeaDropContractOfferer is
     /**
      * @notice Deploy the token contract.
      *
+     * @param name_             The name of the token.
+     * @param symbol_           The symbol of the token.
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters.
      * @param allowedConduit    The address of the conduit contract allowed to
@@ -52,10 +54,12 @@ contract ERC1155SeaDropContractOfferer is
      *                          interact.
      */
     constructor(
+        string memory name_,
+        string memory symbol_,
         address allowedConfigurer,
         address allowedConduit,
         address allowedSeaport
-    ) ERC1155ContractMetadata(allowedConfigurer) {
+    ) ERC1155ContractMetadata(name_, symbol_, allowedConfigurer) {
         // Set the allowed conduit to interact with this contract.
         _CONDUIT = allowedConduit;
 
