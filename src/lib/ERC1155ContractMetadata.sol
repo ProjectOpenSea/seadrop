@@ -5,7 +5,7 @@ import {
     IERC1155ContractMetadata
 } from "../interfaces/IERC1155ContractMetadata.sol";
 
-import { ERC1155 } from "@rari-capital/solmate/src/tokens/ERC1155.sol";
+import { ERC1155 } from "solmate/tokens/ERC1155.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
