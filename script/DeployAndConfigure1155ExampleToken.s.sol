@@ -34,7 +34,7 @@ import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
 
 contract DeployAndConfigure1155ExampleToken is Script {
     // Addresses: Seaport
-    address seaport = 0x00000000000001ad428e4906aE43D8F9852d0dD6;
+    address seaport = 0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC;
     address conduit = 0x1E0049783F008A0085193E00003D00cd54003c71;
 
     // Addresses: SeaDrop
