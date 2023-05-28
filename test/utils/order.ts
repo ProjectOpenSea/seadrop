@@ -18,7 +18,6 @@ import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
 import type { BigNumberish, Wallet } from "ethers";
 
 const { AddressZero, HashZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
 
 export const expectedPrice = ({
   startPrice,

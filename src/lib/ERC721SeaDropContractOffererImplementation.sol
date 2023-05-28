@@ -1184,10 +1184,10 @@ contract ERC721SeaDropContractOffererImplementation is
         // Reset the old mapping.
         for (uint256 i = 0; i < enumeratedAllowedSeaportLength; ) {
             ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
-                    ERC721SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedAllowedSeaport[i]
-                ] = false;
+                ERC721SeaDropContractOffererStorage
+                    .layout()
+                    ._enumeratedAllowedSeaport[i]
+            ] = false;
             unchecked {
                 ++i;
             }
@@ -1196,8 +1196,8 @@ contract ERC721SeaDropContractOffererImplementation is
         // Set the new mapping for allowed SeaDrop contracts.
         for (uint256 i = 0; i < allowedSeaportLength; ) {
             ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
-                    allowedSeaport[i]
-                ] = true;
+                allowedSeaport[i]
+            ] = true;
             unchecked {
                 ++i;
             }
@@ -1211,7 +1211,6 @@ contract ERC721SeaDropContractOffererImplementation is
         // Emit an event for the update.
         emit AllowedSeaportUpdated(allowedSeaport);
     }
-
 
     /**
      * @notice Updates the creator payouts and emits an event.

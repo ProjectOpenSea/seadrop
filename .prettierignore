@@ -5,5 +5,7 @@ coverage*
 gasReporterOutput.json
 lib/*
 !/src/lib/*
-temp-coverage-*
+src-upgradeable/lib
 src-upgradeable/lib-upgradeable
+src/seaport-contracts
+temp-coverage-*

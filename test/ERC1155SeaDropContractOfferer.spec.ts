@@ -3,9 +3,9 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
 import {
+  ERC1155__factory,
   IERC1155ContractMetadata__factory,
   IERC1155SeaDrop__factory,
-  ERC1155__factory,
   IERC165__factory,
   IERC2981__factory,
 } from "../typechain-types";

@@ -172,9 +172,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
 
             ) {
                 IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
-                        config.signers[i],
-                        config.signedMintValidationParams[i]
-                    );
+                    config.signers[i],
+                    config.signedMintValidationParams[i]
+                );
                 unchecked {
                     ++i;
                 }
@@ -184,9 +184,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
             SignedMintValidationParams memory emptyParams;
             for (uint256 i = 0; i < config.disallowedSigners.length; ) {
                 IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
-                        config.disallowedSigners[i],
-                        emptyParams
-                    );
+                    config.disallowedSigners[i],
+                    emptyParams
+                );
                 unchecked {
                     ++i;
                 }
