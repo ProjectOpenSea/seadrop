@@ -28,7 +28,7 @@ import { OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 import {
     ZoneInteractionErrors
-} from "seaport/interfaces/ZoneInteractionErrors.sol";
+} from "../../../lib/seaport/contracts/interfaces/ZoneInteractionErrors.sol";
 
 import { Merkle } from "murky/Merkle.sol";
 

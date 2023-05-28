@@ -16,4 +16,3 @@ seaport-sol/=lib/seaport/lib/seaport-sol/src/
 seaport-types/=lib/seaport/lib/seaport-types/
 seaport-core/=lib/seaport/lib/seaport-core/
 seaport-test-utils/=lib/seaport/test/foundry/utils
-seaport/=lib/seaport/contracts/
