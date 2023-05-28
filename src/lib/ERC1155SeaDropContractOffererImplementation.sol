@@ -856,11 +856,11 @@ contract ERC1155SeaDropContractOffererImplementation is
             );
         }
         if (
-            mintParams.fromTokenId > signedMintValidationParams.maxFromTokenId
+            mintParams.fromTokenId < signedMintValidationParams.minFromTokenId
         ) {
             revert InvalidSignedFromTokenId(
                 mintParams.fromTokenId,
-                signedMintValidationParams.maxFromTokenId
+                signedMintValidationParams.minFromTokenId
             );
         }
         if (mintParams.toTokenId > signedMintValidationParams.maxToTokenId) {

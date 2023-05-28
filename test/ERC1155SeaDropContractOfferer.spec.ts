@@ -107,7 +107,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     signedMintValidationParams = {
       minMintPrice: 10,
       paymentToken: AddressZero,
-      maxFromTokenId: 0,
+      minFromTokenId: 0,
       maxToTokenId: 10,
       maxMaxTotalMintableByWallet: 5,
       maxMaxTotalMintableByWalletPerToken: 4,
@@ -141,6 +141,8 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       owner
     );
     const tx = await ERC1155SeaDrop.deploy(
+      "",
+      "",
       AddressZero,
       marketplaceContract.address,
       conduitOne.address
@@ -769,7 +771,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         ).to.deep.eq([
           config.signedMintValidationParams[i].minMintPrice,
           config.signedMintValidationParams[i].paymentToken,
-          config.signedMintValidationParams[i].maxFromTokenId,
+          config.signedMintValidationParams[i].minFromTokenId,
           config.signedMintValidationParams[i].maxToTokenId,
           config.signedMintValidationParams[i].maxMaxTotalMintableByWallet,
           config.signedMintValidationParams[i]

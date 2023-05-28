@@ -243,7 +243,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
             memory validationParams = SignedMintValidationParams({
                 minMintPrice: 1 ether,
                 paymentToken: address(0),
-                maxFromTokenId: 1,
+                minFromTokenId: 1,
                 maxToTokenId: 1,
                 maxMaxTotalMintableByWallet: 10,
                 maxMaxTotalMintableByWalletPerToken: 9,

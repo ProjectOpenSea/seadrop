@@ -78,7 +78,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     emptySignedMintValidationParams = {
       minMintPrice: 0,
       paymentToken: AddressZero,
-      maxFromTokenId: 0,
+      minFromTokenId: 0,
       maxToTokenId: 0,
       maxMaxTotalMintableByWallet: 0,
       maxMaxTotalMintableByWalletPerToken: 0,
@@ -92,7 +92,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     signedMintValidationParams = {
       minMintPrice: 1,
       paymentToken: AddressZero,
-      maxFromTokenId: 5,
+      minFromTokenId: 5,
       maxToTokenId: 5,
       maxMaxTotalMintableByWallet: 11,
       maxMaxTotalMintableByWalletPerToken: 10,
