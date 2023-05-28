@@ -1,51 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    ISeaDropTokenContractMetadata
-} from "./ISeaDropTokenContractMetadata.sol";
+import { ISeaDropToken } from "./ISeaDropToken.sol";
 
 import {
-    MintParams,
     PublicDrop,
     SignedMintValidationParams
 } from "../lib/ERC1155SeaDropStructs.sol";
 
-import { AllowListData, CreatorPayout } from "../lib/SeaDropStructs.sol";
-
 /**
  * @dev A helper interface to get and set parameters for ERC1155SeaDrop.
  *      The token does not expose these methods as part of its external
- *      interface to reduce bloat, but does implement them.
+ *      interface to optimize contract size, but does implement them.
  */
-interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
-    function updateAllowedSeaport(address[] calldata allowedSeaport) external;
-
-    function updateAllowedFeeRecipient(
-        address feeRecipient,
-        bool allowed
-    ) external;
-
-    function updateCreatorPayouts(
-        CreatorPayout[] calldata creatorPayouts
-    ) external;
-
-    function updateDropURI(string calldata dropURI) external;
-
-    function updatePublicDrop(
-        PublicDrop calldata publicDrop,
+interface IERC1155SeaDrop is ISeaDropToken {
+    /**
+     * @notice Returns the public drop stage parameters at a given index.
+     *
+     * @param index The index of the public drop stage.
+     */
+    function getPublicDrop(
         uint256 index
-    ) external;
+    ) external view returns (PublicDrop memory);
 
-    function updateAllowList(AllowListData calldata allowListData) external;
-
-    function updateSignedMintValidationParams(
-        address signer,
-        SignedMintValidationParams memory signedMintValidationParams
-    ) external;
-
-    function updatePayer(address payer, bool allowed) external;
-
+    /**
+     * @notice Returns a set of mint stats for the address.
+     *         This assists SeaDrop in enforcing maxSupply,
+     *         maxTotalMintableByWallet, maxTotalMintableByWalletPerToken,
+     *         and maxTokenSupplyForStage checks.
+     *
+     * @dev    NOTE: Implementing contracts should always update these numbers
+     *         before transferring any tokens with _safeMint() to mitigate
+     *         consequences of malicious onERC721Received() hooks.
+     *
+     * @param minter  The minter address.
+     * @param tokenId The token id to return stats for.
+     */
     function getMintStats(
         address minter,
         uint256 tokenId
@@ -59,23 +49,34 @@ interface IERC1155SeaDrop is ISeaDropTokenContractMetadata {
             uint256 maxSupply
         );
 
-    function getPublicDrop(
-        uint256 index
-    ) external view returns (PublicDrop memory);
-
-    function getPublicDropIndexes() external view returns (uint256[] memory);
-
-    function getCreatorPayouts() external view returns (CreatorPayout[] memory);
-
-    function getAllowListMerkleRoot() external view returns (bytes32);
-
-    function getAllowedFeeRecipients() external view returns (address[] memory);
-
-    function getSigners() external view returns (address[] memory);
-
+    /**
+     * @notice Returns the SeaDrop signed mint validation params for a signer.
+     */
     function getSignedMintValidationParams(
         address signer
     ) external view returns (SignedMintValidationParams memory);
 
-    function getPayers() external view returns (address[] memory);
+    /**
+     * @notice Update the SeaDrop public drop parameters at a given index.
+     *
+     * @param publicDrop The new public drop parameters.
+     * @param index      The public drop index.
+     */
+    function updatePublicDrop(
+        PublicDrop calldata publicDrop,
+        uint256 index
+    ) external;
+
+    /**
+     * @notice Update the SeaDrop signer validation params.
+     *         Only the owner can use this function.
+     *
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
+     */
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams memory signedMintValidationParams
+    ) external;
 }

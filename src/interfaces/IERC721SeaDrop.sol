@@ -1,48 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    ISeaDropTokenContractMetadata
-} from "./ISeaDropTokenContractMetadata.sol";
+import { ISeaDropToken } from "./ISeaDropToken.sol";
 
 import {
-    MintParams,
     PublicDrop,
     SignedMintValidationParams
 } from "../lib/ERC721SeaDropStructs.sol";
 
-import { AllowListData, CreatorPayout } from "../lib/SeaDropStructs.sol";
-
 /**
  * @dev A helper interface to get and set parameters for ERC721SeaDrop.
  *      The token does not expose these methods as part of its external
- *      interface to reduce bloat, but does implement them.
+ *      interface to optimize contract size, but does implement them.
  */
-interface IERC721SeaDrop is ISeaDropTokenContractMetadata {
-    function updateAllowedSeaport(address[] calldata allowedSeaport) external;
+interface IERC721SeaDrop is ISeaDropToken {
+    /**
+     * @notice Returns the public drop stage parameters.
+     */
+    function getPublicDrop() external view returns (PublicDrop memory);
 
-    function updateAllowedFeeRecipient(
-        address feeRecipient,
-        bool allowed
-    ) external;
-
-    function updateCreatorPayouts(
-        CreatorPayout[] calldata creatorPayouts
-    ) external;
-
-    function updateDropURI(string calldata dropURI) external;
-
-    function updatePublicDrop(PublicDrop calldata publicDrop) external;
-
-    function updateAllowList(AllowListData calldata allowListData) external;
-
-    function updateSignedMintValidationParams(
-        address signer,
-        SignedMintValidationParams memory signedMintValidationParams
-    ) external;
-
-    function updatePayer(address payer, bool allowed) external;
-
+    /**
+     * @notice Returns a set of mint stats for the address.
+     *         This assists SeaDrop in enforcing maxSupply,
+     *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
+     *
+     * @dev    NOTE: Implementing contracts should always update these numbers
+     *         before transferring any tokens with _safeMint() to mitigate
+     *         consequences of malicious onERC721Received() hooks.
+     *
+     * @param minter The minter address.
+     */
     function getMintStats(
         address minter
     )
@@ -54,19 +41,30 @@ interface IERC721SeaDrop is ISeaDropTokenContractMetadata {
             uint256 maxSupply
         );
 
-    function getPublicDrop() external view returns (PublicDrop memory);
-
-    function getCreatorPayouts() external view returns (CreatorPayout[] memory);
-
-    function getAllowListMerkleRoot() external view returns (bytes32);
-
-    function getAllowedFeeRecipients() external view returns (address[] memory);
-
-    function getSigners() external view returns (address[] memory);
-
+    /**
+     * @notice Returns the SeaDrop signed mint validation params for a signer.
+     */
     function getSignedMintValidationParams(
         address signer
     ) external view returns (SignedMintValidationParams memory);
 
-    function getPayers() external view returns (address[] memory);
+    /**
+     * @notice Update the SeaDrop public drop parameters.
+     *
+     * @param publicDrop The new public drop parameters.
+     */
+    function updatePublicDrop(PublicDrop calldata publicDrop) external;
+
+    /**
+     * @notice Update the SeaDrop signer validation params.
+     *         Only the owner can use this function.
+     *
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
+     */
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams memory signedMintValidationParams
+    ) external;
 }
