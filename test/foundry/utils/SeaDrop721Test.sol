@@ -22,9 +22,9 @@ import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
 import {
     CriteriaResolver,
     ItemType
-} from "seaport/lib/ConsiderationStructs.sol";
+} from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
+import { OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 import {
     ZoneInteractionErrors

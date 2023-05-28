@@ -17,7 +17,7 @@ import { PublicDrop } from "../src/lib/ERC1155SeaDropStructs.sol";
 
 import {
     ConsiderationInterface
-} from "seaport/interfaces/ConsiderationInterface.sol";
+} from "seaport-types/src/interfaces/ConsiderationInterface.sol";
 
 import {
     CriteriaResolver,
@@ -28,9 +28,9 @@ import {
     OrderComponents,
     OrderParameters,
     FulfillmentComponent
-} from "seaport/lib/ConsiderationStructs.sol";
+} from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
+import { OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 contract DeployAndConfigure1155ExampleToken is Script {
     // Addresses: Seaport

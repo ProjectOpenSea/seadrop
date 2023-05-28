@@ -13,7 +13,7 @@ import {
     SignedMintValidationParams
 } from "seadrop/lib/ERC1155SeaDropStructs.sol";
 
-import { AdvancedOrder } from "seaport/lib/ConsiderationStructs.sol";
+import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 contract ERC1155SeaDropTest is SeaDrop1155Test {
     FuzzArgs empty;

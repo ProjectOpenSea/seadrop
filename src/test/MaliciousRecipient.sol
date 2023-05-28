@@ -7,7 +7,7 @@ import { CreatorPayout } from "../lib/ERC721SeaDropStructs.sol";
 
 import {
     ConsiderationInterface
-} from "seaport/interfaces/ConsiderationInterface.sol";
+} from "seaport-types/src/interfaces/ConsiderationInterface.sol";
 
 import {
     AdvancedOrder,
@@ -16,9 +16,9 @@ import {
     OfferItem,
     ConsiderationItem,
     ItemType
-} from "seaport/lib/ConsiderationStructs.sol";
+} from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { OrderType } from "seaport/lib/ConsiderationEnums.sol";
+import { OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 import "../lib/ERC721SeaDropConstants.sol";
 

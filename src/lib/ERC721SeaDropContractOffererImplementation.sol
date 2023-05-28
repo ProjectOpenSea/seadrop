@@ -21,13 +21,13 @@ import "./ERC721SeaDropConstants.sol";
 
 import { IDelegationRegistry } from "../interfaces/IDelegationRegistry.sol";
 
-import { ItemType } from "seaport/lib/ConsiderationEnums.sol";
+import { ItemType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 import {
     ReceivedItem,
     SpentItem,
     Schema
-} from "seaport/lib/ConsiderationStructs.sol";
+} from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 

@@ -15,7 +15,7 @@ import {
 
 import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
 
-import { AdvancedOrder } from "seaport/lib/ConsiderationStructs.sol";
+import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 import { Merkle } from "murky/Merkle.sol";
 

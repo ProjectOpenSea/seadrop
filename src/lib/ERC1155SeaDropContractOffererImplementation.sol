@@ -21,13 +21,13 @@ import "./ERC1155SeaDropConstants.sol";
 
 import { IDelegationRegistry } from "../interfaces/IDelegationRegistry.sol";
 
-import { ItemType } from "seaport/lib/ConsiderationEnums.sol";
+import { ItemType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 import {
     ReceivedItem,
     SpentItem,
     Schema
-} from "seaport/lib/ConsiderationStructs.sol";
+} from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -302,8 +302,8 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         if (addOrUpdateDropStage) {
             ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
-                index
-            ] = publicDrop;
+                    index
+                ] = publicDrop;
             // Add to enumeration if it does not exist already.
             if (dropStageDoesNotExist) {
                 enumeratedIndexes.push(index);
@@ -1342,10 +1342,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Reset the old mapping.
         for (uint256 i = 0; i < enumeratedAllowedSeaportLength; ) {
             ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                ERC1155SeaDropContractOffererStorage
-                    .layout()
-                    ._enumeratedAllowedSeaport[i]
-            ] = false;
+                    ERC1155SeaDropContractOffererStorage
+                        .layout()
+                        ._enumeratedAllowedSeaport[i]
+                ] = false;
             unchecked {
                 ++i;
             }
@@ -1354,8 +1354,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Set the new mapping for allowed SeaDrop contracts.
         for (uint256 i = 0; i < allowedSeaportLength; ) {
             ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                allowedSeaport[i]
-            ] = true;
+                    allowedSeaport[i]
+                ] = true;
             unchecked {
                 ++i;
             }
@@ -1582,8 +1582,8 @@ contract ERC1155SeaDropContractOffererImplementation is
                 revert PayerNotPresent();
             }
             delete ERC1155SeaDropContractOffererStorage.layout()._allowedPayers[
-                payer
-            ];
+                    payer
+                ];
             _removeFromEnumeration(payer, enumeratedStorage);
         }
 
