@@ -302,8 +302,8 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         if (addOrUpdateDropStage) {
             ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
-                    index
-                ] = publicDrop;
+                index
+            ] = publicDrop;
             // Add to enumeration if it does not exist already.
             if (dropStageDoesNotExist) {
                 enumeratedIndexes.push(index);
@@ -1342,10 +1342,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Reset the old mapping.
         for (uint256 i = 0; i < enumeratedAllowedSeaportLength; ) {
             ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedAllowedSeaport[i]
-                ] = false;
+                ERC1155SeaDropContractOffererStorage
+                    .layout()
+                    ._enumeratedAllowedSeaport[i]
+            ] = false;
             unchecked {
                 ++i;
             }
@@ -1354,8 +1354,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Set the new mapping for allowed SeaDrop contracts.
         for (uint256 i = 0; i < allowedSeaportLength; ) {
             ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                    allowedSeaport[i]
-                ] = true;
+                allowedSeaport[i]
+            ] = true;
             unchecked {
                 ++i;
             }
@@ -1582,8 +1582,8 @@ contract ERC1155SeaDropContractOffererImplementation is
                 revert PayerNotPresent();
             }
             delete ERC1155SeaDropContractOffererStorage.layout()._allowedPayers[
-                    payer
-                ];
+                payer
+            ];
             _removeFromEnumeration(payer, enumeratedStorage);
         }
 

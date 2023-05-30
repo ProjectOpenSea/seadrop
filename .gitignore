@@ -13,8 +13,6 @@ temp-coverage-*
 # Foundry test compilation files
 cache
 out
-reference-out
-optimized-out
 reference-working
 broadcast
 lcov*.info

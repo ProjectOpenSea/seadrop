@@ -9,3 +9,6 @@ src-upgradeable/lib
 src-upgradeable/lib-upgradeable
 src/seaport-contracts
 temp-coverage-*
+
+# Temporary until addressed
+src-upgradeable

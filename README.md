@@ -28,9 +28,7 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
 
 ## Background
 
-SeaDrop is a contract to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, token gated drops, and server-side signed mints. An implementing token contract should contain the methods to interface with `SeaDrop` through an authorized user such as an Owner or Administrator.
-
-Future SeaDrop contracts are envisioned to contain additional functionality like descending dutch auction mechanisms and payment in ERC20 tokens.
+SeaDrop is a contract to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, and server-side signed mints. An implementing token contract should contain the methods to interface with `SeaDrop` through an authorized user such as the contract owner.
 
 ## Deployments
 
@@ -62,13 +60,6 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 <tr><td>BSC Testnet</td></tr>
 <tr><td>Gnosis Chain</td></tr>
 </table>
-
-To be deployed on other EVM chains:
-
-- Skale
-- Celo
-- Fantom
-- RSK
 
 To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeployment.md).
 
@@ -130,6 +121,12 @@ To install dependencies:
 
 ```
 forge install
+```
+
+To build the contracts:
+
+```
+yarn build:foundry
 ```
 
 To run tests:
