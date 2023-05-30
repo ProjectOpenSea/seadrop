@@ -35,7 +35,7 @@ interface IERC1155SeaDrop is ISeaDropToken {
      */
     function updateSignedMintValidationParams(
         address signer,
-        SignedMintValidationParams memory signedMintValidationParams
+        SignedMintValidationParams calldata signedMintValidationParams
     ) external;
 
     /**
