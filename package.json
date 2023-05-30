@@ -11,7 +11,7 @@
     "build": "hardhat compile --config ./hardhat.config.ts",
     "build:foundry": "yarn build:seaport && forge build && yarn show:headroom",
     "build:seaport": "yarn seaport:updateSolidityVersion && cd lib/seaport && FOUNDRY_PROFILE=reference forge build && FOUNDRY_PROFILE=optimized forge build",
-    "seaport:updateSolidityVersion": "find ./lib/seaport/contracts ./lib/seaport/lib/seaport-sol/src ./lib/seaport/lib/seaport-types/src ./lib/seaport/lib/seaport-core/src -type f -name '*.sol' -print0 | xargs -0 sed -i '' -e 's/pragma solidity 0/pragma solidity ^0/g'",
+    "seaport:updateSolidityVersion": "find ./lib/seaport/contracts ./lib/seaport/lib/seaport-sol/src ./lib/seaport/lib/seaport-types/src ./lib/seaport/lib/seaport-core/src -type f -name '*.sol' -print0 | xargs -0 sed -i'.bak' -e 's/pragma solidity 0/pragma solidity ^0/g'",
     "clean": "hardhat clean; hardhat clean --config ./hardhat-coverage.config.ts; forge clean; rm -rf coverage coverage.json hh-cache temp-coverage-cache",
     "test": "hardhat test --config ./hardhat.config.ts",
     "test:upgradeable": "hardhat test --config ./src-upgradeable/hardhat.config.ts",
