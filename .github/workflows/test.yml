@@ -144,13 +144,13 @@ jobs:
       #         ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
       #         GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
-      - name: Submit coverage to Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./lcov-filtered.info
-          flag-name: foundry
-          parallel: true
+      # - name: Submit coverage to Coveralls
+      #   uses: coverallsapp/github-action@master
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     path-to-lcov: ./lcov-filtered.info
+      #     flag-name: foundry
+      #     parallel: true
 
   coverage-finish:
     name: Finish Coverage Results
