@@ -138,8 +138,8 @@ export const createMintOrder = async ({
     orderType: 4, // CONTRACT
     offer,
     consideration,
-    startTime: startTime ?? Math.round(Date.now() / 1000) - 100,
-    endTime: endTime ?? Math.round(Date.now() / 1000) + 500,
+    startTime: startTime ?? Math.round(Date.now() / 1000) - 1000,
+    endTime: endTime ?? Math.round(Date.now() / 1000) + 1000,
     zone: AddressZero,
     zoneHash: HashZero,
     salt: "0x00",

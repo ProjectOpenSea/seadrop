@@ -1,5 +1,10 @@
 module.exports = {
-  skipFiles: ["./shim", "./seaport-contracts", "./test"],
+  skipFiles: [
+    "./shim",
+    "./seaport-contracts",
+    "./test",
+    "./interfaces/IDelegationRegistry.sol",
+  ],
   modifierWhitelist: ["onlyAllowedOperatorApproval", "onlyAllowedOperator"],
   configureYulOptimizer: true,
   solcOptimizerDetails: {

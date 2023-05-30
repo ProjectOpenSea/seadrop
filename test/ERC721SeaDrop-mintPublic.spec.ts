@@ -85,8 +85,8 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     publicDrop = {
       startPrice: parseEther("0.1"),
       endPrice: parseEther("0.1"),
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 500,
+      startTime: Math.round(Date.now() / 1000) - 1000,
+      endTime: Math.round(Date.now() / 1000) + 1000,
       paymentToken: AddressZero,
       maxTotalMintableByWallet: 10,
       feeBps: 1000,
@@ -201,7 +201,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     // Set end time in the past.
     await tokenSeaDropInterface.updatePublicDrop({
       ...publicDrop,
-      endTime: Math.round(Date.now() / 1000) - 100,
+      endTime: Math.round(Date.now() / 1000) - 1000,
     });
 
     // Mint public with payer for minter.
