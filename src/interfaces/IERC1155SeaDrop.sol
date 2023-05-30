@@ -15,6 +15,30 @@ import {
  */
 interface IERC1155SeaDrop is ISeaDropToken {
     /**
+     * @notice Update the SeaDrop public drop parameters at a given index.
+     *
+     * @param publicDrop The new public drop parameters.
+     * @param index      The public drop index.
+     */
+    function updatePublicDrop(
+        PublicDrop calldata publicDrop,
+        uint256 index
+    ) external;
+
+    /**
+     * @notice Update the SeaDrop signer validation params.
+     *         Only the owner can use this function.
+     *
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
+     */
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams memory signedMintValidationParams
+    ) external;
+
+    /**
      * @notice Returns the public drop stage parameters at a given index.
      *
      * @param index The index of the public drop stage.
@@ -55,28 +79,4 @@ interface IERC1155SeaDrop is ISeaDropToken {
     function getSignedMintValidationParams(
         address signer
     ) external view returns (SignedMintValidationParams memory);
-
-    /**
-     * @notice Update the SeaDrop public drop parameters at a given index.
-     *
-     * @param publicDrop The new public drop parameters.
-     * @param index      The public drop index.
-     */
-    function updatePublicDrop(
-        PublicDrop calldata publicDrop,
-        uint256 index
-    ) external;
-
-    /**
-     * @notice Update the SeaDrop signer validation params.
-     *         Only the owner can use this function.
-     *
-     * @param signer                     The signer to update.
-     * @param signedMintValidationParams Minimum and maximum parameters
-     *                                   to enforce for signed mints.
-     */
-    function updateSignedMintValidationParams(
-        address signer,
-        SignedMintValidationParams memory signedMintValidationParams
-    ) external;
 }

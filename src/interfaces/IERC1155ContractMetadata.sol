@@ -22,15 +22,15 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     }
 
     /**
+     * @dev Emit an event when the max token supply for a token id is updated.
+     */
+    event MaxSupplyUpdated(uint256 tokenId, uint256 newMaxSupply);
+
+    /**
      * @dev Revert with an error if the mint quantity exceeds the max token
      *      supply.
      */
     error MintExceedsMaxSupply(uint256 total, uint256 maxSupply);
-
-    /**
-     * @dev Emit an event when the max token supply for a token id is updated.
-     */
-    event MaxSupplyUpdated(uint256 tokenId, uint256 newMaxSupply);
 
     /**
      * @dev Emit an event if the user has insufficient balance for a token id.
@@ -47,6 +47,14 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     error NotAuthorized();
 
     /**
+     * @notice Sets the max supply for a token id and emits an event.
+     *
+     * @param tokenId      The token id to set the max supply for.
+     * @param newMaxSupply The new max supply to set.
+     */
+    function setMaxSupply(uint256 tokenId, uint256 newMaxSupply) external;
+
+    /**
      * @notice Returns the name of the token.
      */
     function name() external view returns (string memory);
@@ -55,14 +63,6 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
      * @notice Returns the symbol of the token.
      */
     function symbol() external view returns (string memory);
-
-    /**
-     * @notice Sets the max supply for a token id and emits an event.
-     *
-     * @param tokenId      The token id to set the max supply for.
-     * @param newMaxSupply The new max supply to set.
-     */
-    function setMaxSupply(uint256 tokenId, uint256 newMaxSupply) external;
 
     /**
      * @notice Returns the max token supply for a token id.

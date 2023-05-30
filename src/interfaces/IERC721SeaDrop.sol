@@ -15,6 +15,26 @@ import {
  */
 interface IERC721SeaDrop is ISeaDropToken {
     /**
+     * @notice Update the SeaDrop public drop parameters.
+     *
+     * @param publicDrop The new public drop parameters.
+     */
+    function updatePublicDrop(PublicDrop calldata publicDrop) external;
+
+    /**
+     * @notice Update the SeaDrop signer validation params.
+     *         Only the owner can use this function.
+     *
+     * @param signer                     The signer to update.
+     * @param signedMintValidationParams Minimum and maximum parameters
+     *                                   to enforce for signed mints.
+     */
+    function updateSignedMintValidationParams(
+        address signer,
+        SignedMintValidationParams memory signedMintValidationParams
+    ) external;
+
+    /**
      * @notice Returns the public drop stage parameters.
      */
     function getPublicDrop() external view returns (PublicDrop memory);
@@ -47,24 +67,4 @@ interface IERC721SeaDrop is ISeaDropToken {
     function getSignedMintValidationParams(
         address signer
     ) external view returns (SignedMintValidationParams memory);
-
-    /**
-     * @notice Update the SeaDrop public drop parameters.
-     *
-     * @param publicDrop The new public drop parameters.
-     */
-    function updatePublicDrop(PublicDrop calldata publicDrop) external;
-
-    /**
-     * @notice Update the SeaDrop signer validation params.
-     *         Only the owner can use this function.
-     *
-     * @param signer                     The signer to update.
-     * @param signedMintValidationParams Minimum and maximum parameters
-     *                                   to enforce for signed mints.
-     */
-    function updateSignedMintValidationParams(
-        address signer,
-        SignedMintValidationParams memory signedMintValidationParams
-    ) external;
 }

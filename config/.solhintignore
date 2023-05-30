@@ -3,6 +3,7 @@ node_modules/
 src/clones
 src/test/
 src/shim/
+src/interfaces/IDelegationRegistry.sol
 
 test/
 lib/

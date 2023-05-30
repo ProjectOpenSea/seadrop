@@ -5,28 +5,6 @@ import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 interface ISeaDropTokenContractMetadata is IERC2981 {
     /**
-     * @notice Throw if the max supply exceeds uint64, a limit
-     *         due to the storage of bit-packed variables.
-     */
-    error CannotExceedMaxSupplyOfUint64(uint256 got);
-
-    /**
-     * @dev Revert with an error when attempting to set the provenance
-     *      hash after the mint has started.
-     */
-    error ProvenanceHashCannotBeSetAfterMintStarted();
-
-    /**
-     * @dev Revert if the royalty basis points is greater than 10_000.
-     */
-    error InvalidRoyaltyBasisPoints(uint256 got);
-
-    /**
-     * @dev Revert if the royalty receiver is being set to the zero address.
-     */
-    error RoyaltyReceiverCannotBeZeroAddress();
-
-    /**
      * @dev Emit an event for token metadata reveals/updates,
      *      according to EIP-4906.
      *
@@ -51,6 +29,28 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      * @dev Emit an event when the EIP-2981 royalty info is updated.
      */
     event RoyaltyInfoUpdated(address receiver, uint256 basisPoints);
+
+    /**
+     * @notice Throw if the max supply exceeds uint64, a limit
+     *         due to the storage of bit-packed variables.
+     */
+    error CannotExceedMaxSupplyOfUint64(uint256 got);
+
+    /**
+     * @dev Revert with an error when attempting to set the provenance
+     *      hash after the mint has started.
+     */
+    error ProvenanceHashCannotBeSetAfterMintStarted();
+
+    /**
+     * @dev Revert if the royalty basis points is greater than 10_000.
+     */
+    error InvalidRoyaltyBasisPoints(uint256 got);
+
+    /**
+     * @dev Revert if the royalty receiver is being set to the zero address.
+     */
+    error RoyaltyReceiverCannotBeZeroAddress();
 
     /**
      * @notice Sets the base URI for the token metadata and emits an event.
@@ -80,6 +80,17 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     function setProvenanceHash(bytes32 newProvenanceHash) external;
 
     /**
+     * @notice Sets the default royalty information.
+     *
+     * Requirements:
+     *
+     * - `receiver` cannot be the zero address.
+     * - `feeNumerator` cannot be greater than the fee denominator of
+     *   10_000 basis points.
+     */
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external;
+
+    /**
      * @notice Returns the base URI for token metadata.
      */
     function baseURI() external view returns (string memory);
@@ -96,14 +107,4 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
      *         after mint has started.
      */
     function provenanceHash() external view returns (bytes32);
-
-    /**
-     * @notice Sets the default royalty information.
-     *
-     * Requirements:
-     *
-     * - `receiver` cannot be the zero address.
-     * - `feeNumerator` cannot be greater than the fee denominator of 10_000 basis points.
-     */
-    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external;
 }
