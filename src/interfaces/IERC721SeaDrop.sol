@@ -28,10 +28,13 @@ interface IERC721SeaDrop is ISeaDropToken {
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
      *                                   to enforce for signed mints.
+     * @param index                      The index for the signer's mint
+     *                                   validation params.
      */
     function updateSignedMintValidationParams(
         address signer,
-        SignedMintValidationParams calldata signedMintValidationParams
+        SignedMintValidationParams calldata signedMintValidationParams,
+        uint256 index
     ) external;
 
     /**
@@ -62,9 +65,11 @@ interface IERC721SeaDrop is ISeaDropToken {
         );
 
     /**
-     * @notice Returns the SeaDrop signed mint validation params for a signer.
+     * @notice Returns the SeaDrop signed mint validation params for a signer
+     *         at a given index.
      */
     function getSignedMintValidationParams(
-        address signer
+        address signer,
+        uint256 index
     ) external view returns (SignedMintValidationParams memory);
 }

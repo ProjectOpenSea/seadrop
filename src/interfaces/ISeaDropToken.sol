@@ -90,6 +90,13 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
     function getSigners() external view returns (address[] memory);
 
     /**
+     * @notice Returns the SeaDrop mint validation params indexes for a signer.
+     */
+    function getSignedMintValidationParamsIndexes(
+        address signer
+    ) external view returns (uint256[] memory);
+
+    /**
      * @notice Returns the SeaDrop allowed payers.
      */
     function getPayers() external view returns (address[] memory);

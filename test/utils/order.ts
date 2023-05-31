@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 import { toBN } from "../seaport-utils/encoding";
 
@@ -65,6 +65,7 @@ export const createMintOrder = async ({
   // Allow list
   proof,
   // Signed
+  signedMintValidationParamsIndex,
   salt,
   signature,
   // 1155
@@ -84,6 +85,7 @@ export const createMintOrder = async ({
   endTime?: number;
   mintParams?: AwaitedObject<MintParamsStruct721 | MintParamsStruct1155>;
   proof?: string[];
+  signedMintValidationParamsIndex?: number;
   signature?: string;
   salt?: string;
   publicDropIndex?: number;
@@ -174,11 +176,21 @@ export const createMintOrder = async ({
       ]);
       break;
     case MintType.SIGNED:
+      if (signedMintValidationParamsIndex === undefined)
+        throw new Error(
+          "Signed mint validation params index required for signed mint"
+        );
       if (!mintParams) throw new Error("Mint params required for signed mint");
       if (!salt) throw new Error("Salt required for signed mint");
       if (!signature) throw new Error("Signature required for signed mint");
       extraDataBuffer = Buffer.concat([
         extraDataBuffer,
+        Buffer.from(
+          BigNumber.from(signedMintValidationParamsIndex)
+            .toHexString()
+            .slice(2),
+          "hex"
+        ),
         mintParamsBuffer(mintParams),
         Buffer.from(salt.slice(2), "hex"),
         Buffer.from(signature.slice(2), "hex"),

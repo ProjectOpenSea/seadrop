@@ -109,6 +109,8 @@ contract ERC721SeaDropContractOfferer is
                     selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR ||
                     selector == GET_SIGNERS_SELECTOR ||
                     selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
+                    selector ==
+                    GET_SIGNED_MINT_VALIDATION_PARAMS_INDEXES_SELECTOR ||
                     selector == GET_PAYERS_SELECTOR
             ) == 1
         ) {

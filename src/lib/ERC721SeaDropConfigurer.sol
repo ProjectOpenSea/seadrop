@@ -161,8 +161,12 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
         if (config.signedMintValidationParams.length != 0) {
             if (
-                config.signedMintValidationParams.length !=
-                config.signers.length
+                _cast(
+                    config.signedMintValidationParams.length !=
+                        config.signers.length ||
+                        config.signedMintValidationParamsIndexes.length !=
+                        config.signers.length
+                ) == 1
             ) {
                 revert SignersMismatch();
             }
@@ -173,7 +177,8 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
             ) {
                 IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
                     config.signers[i],
-                    config.signedMintValidationParams[i]
+                    config.signedMintValidationParams[i],
+                    config.signedMintValidationParamsIndexes[i]
                 );
                 unchecked {
                     ++i;
@@ -181,11 +186,18 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
             }
         }
         if (config.disallowedSigners.length != 0) {
+            if (
+                config.disallowedSigners.length !=
+                config.disallowedSignedMintValidationParamsIndexes.length
+            ) {
+                revert SignersMismatch();
+            }
             SignedMintValidationParams memory emptyParams;
             for (uint256 i = 0; i < config.disallowedSigners.length; ) {
                 IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
                     config.disallowedSigners[i],
-                    emptyParams
+                    emptyParams,
+                    config.disallowedSignedMintValidationParamsIndexes[i]
                 );
                 unchecked {
                     ++i;

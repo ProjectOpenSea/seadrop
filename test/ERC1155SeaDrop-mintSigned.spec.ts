@@ -41,6 +41,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
   let mintParams: AwaitedObject<MintParamsStruct>;
   let signedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
   let emptySignedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
+  let signedMintValidationParamsIndex: number;
   let eip712Domain: { [key: string]: string | number };
   let eip712Types: Record<string, Array<{ name: string; type: string }>>;
   let salt: string;
@@ -169,10 +170,14 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       restrictFeeRecipients: true,
     };
 
+    // Set a random signed mint validation params index.
+    signedMintValidationParamsIndex = Math.floor(Math.random() * 254);
+
     // Add signer.
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer.address,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
 
     // Set a random salt.
@@ -231,6 +236,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -293,6 +299,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt: newSalt,
       signature,
@@ -334,6 +341,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter: payer, // Test with different minter address
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -362,6 +370,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -397,18 +406,45 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       tokenSeaDropInterface2.updateSignedMintValidationParams(
         `0x${"8".repeat(40)}`,
         emptySignedMintValidationParams,
+        signedMintValidationParamsIndex,
         { gasLimit: 100_000 }
       )
     ).to.be.revertedWithCustomError(token, "SignerNotPresent");
 
     await tokenSeaDropInterface2.updateSignedMintValidationParams(
       signer.address,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
     await tokenSeaDropInterface2.updateSignedMintValidationParams(
       signer.address,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
+
+    await tokenSeaDropInterface2.updateSignedMintValidationParams(
+      signer.address,
+      signedMintValidationParams,
+      signedMintValidationParamsIndex + 1
+    );
+    expect(
+      await tokenSeaDropInterface2.getSignedMintValidationParamsIndexes(
+        signer.address
+      )
+    ).to.deep.eq([
+      signedMintValidationParamsIndex,
+      signedMintValidationParamsIndex + 1,
+    ]);
+    await tokenSeaDropInterface2.updateSignedMintValidationParams(
+      signer.address,
+      emptySignedMintValidationParams,
+      signedMintValidationParamsIndex + 1
+    );
+    expect(
+      await tokenSeaDropInterface2.getSignedMintValidationParamsIndexes(
+        signer.address
+      )
+    ).to.deep.eq([signedMintValidationParamsIndex]);
 
     ({ order, value } = await createMintOrder({
       token: token2, // Different token contract
@@ -419,6 +455,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -436,20 +473,28 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const signer2 = new ethers.Wallet(randomHex(32), provider);
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer2.address,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer2.address,
-      emptySignedMintValidationParams
+      emptySignedMintValidationParams,
+      signedMintValidationParamsIndex
     );
     expect(
       await tokenSeaDropInterface2.getSignedMintValidationParams(
-        signer2.address
+        signer2.address,
+        signedMintValidationParamsIndex
       )
     ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     expect(await tokenSeaDropInterface2.getSigners()).to.deep.eq([
       signer.address,
     ]);
+    expect(
+      await tokenSeaDropInterface2.getSignedMintValidationParamsIndexes(
+        signer.address
+      )
+    ).to.deep.eq([signedMintValidationParamsIndex]);
     const signature2 = await signMint(
       token.address,
       minter, // sign mint for minter
@@ -468,6 +513,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature: signature2,
@@ -496,6 +542,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams: differentMintParams,
       salt,
       signature,
@@ -520,6 +567,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams: differentMintParams,
       salt: randomHex(),
       signature,
@@ -538,34 +586,56 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       tokenSeaDropInterface.updateSignedMintValidationParams(
         AddressZero,
         signedMintValidationParams,
+        signedMintValidationParamsIndex,
         { gasLimit: 100_000 }
       )
     ).to.be.revertedWithCustomError(token, "SignerCannotBeZeroAddress");
 
+    expect(
+      await tokenSeaDropInterface.getSignedMintValidationParamsIndexes(
+        signer.address
+      )
+    ).to.deep.eq([signedMintValidationParamsIndex]);
+
     // Remove the original signer for branch coverage.
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer.address,
-      emptySignedMintValidationParams
+      emptySignedMintValidationParams,
+      signedMintValidationParamsIndex
     );
     expect(
-      await tokenSeaDropInterface.getSignedMintValidationParams(signer.address)
+      await tokenSeaDropInterface.getSignedMintValidationParams(
+        signer.address,
+        signedMintValidationParamsIndex
+      )
     ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(
+      await tokenSeaDropInterface.getSignedMintValidationParamsIndexes(
+        signer.address
+      )
+    ).to.deep.eq([]);
 
     // Add two signers and remove the second for branch coverage.
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer.address,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer2.address,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer2.address,
-      emptySignedMintValidationParams
+      emptySignedMintValidationParams,
+      signedMintValidationParamsIndex
     );
     expect(
-      await tokenSeaDropInterface.getSignedMintValidationParams(signer2.address)
+      await tokenSeaDropInterface.getSignedMintValidationParams(
+        signer2.address,
+        signedMintValidationParamsIndex
+      )
     ).to.deep.eq([0, AddressZero, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
@@ -589,6 +659,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -616,6 +687,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -640,6 +712,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams: { ...mintParams, maxTotalMintableByWalletPerToken: 10 },
       salt,
       signature,
@@ -681,6 +754,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParamsZeroFee.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams: mintParamsZeroFee,
       salt,
       signature,
@@ -724,6 +798,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams: mintParamsInvalidFeeBps,
       salt,
       signature,
@@ -761,6 +836,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       salt,
       signature,
     };
@@ -994,6 +1070,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
           ...signedMintValidationParams,
           minFeeBps: 11_000,
         },
+        signedMintValidationParamsIndex,
         { gasLimit: 100_000 }
       )
     )
@@ -1007,6 +1084,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
           ...signedMintValidationParams,
           maxFeeBps: 12_000,
         },
+        signedMintValidationParamsIndex,
         { gasLimit: 100_000 }
       )
     )
@@ -1042,6 +1120,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -1083,7 +1162,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
         ...signedMintValidationParams,
         paymentToken: `0x${"1".repeat(40)}`,
         minMintPrice: 1,
-      }
+      },
+      signedMintValidationParamsIndex
     );
 
     const signature = await signMint(
@@ -1105,6 +1185,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -1122,7 +1203,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       signer.address,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
 
     await expect(
@@ -1157,6 +1239,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -1225,6 +1308,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,
@@ -1280,6 +1364,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       price: mintParams.startPrice,
       minter,
       mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
       mintParams,
       salt,
       signature,

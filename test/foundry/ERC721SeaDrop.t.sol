@@ -248,9 +248,11 @@ contract ERC721SeaDropTest is SeaDrop721Test {
                 maxFeeBps: 1000
             });
         address signer = makeAddr("signer-doug");
+        uint8 signedMintValidationParamsIndex = 0;
         IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
             signer,
-            validationParams
+            validationParams,
+            signedMintValidationParamsIndex
         );
 
         MintParams memory mintParams = MintParams({
@@ -288,6 +290,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             bytes1(0x02), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(minter),
+            bytes1(signedMintValidationParamsIndex),
             abi.encode(mintParams),
             bytes32(salt),
             signature

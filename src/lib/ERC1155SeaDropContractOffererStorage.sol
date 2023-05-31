@@ -26,10 +26,12 @@ library ERC1155SeaDropContractOffererStorage {
         mapping(address => bool) _allowedFeeRecipients;
         /// @notice The enumerated allowed fee recipients.
         address[] _enumeratedFeeRecipients;
-        /// @notice The parameters for allowed signers for server-side drops.
-        mapping(address => SignedMintValidationParams) _signedMintValidationParams;
+        /// @notice The parameters for allowed signers for server-side drops by index.
+        mapping(address => mapping(uint256 => SignedMintValidationParams)) _signedMintValidationParams;
         /// @notice The signers for each server-side drop.
         address[] _enumeratedSigners;
+        /// @notice The enumerated indexes for the signer validation params.
+        mapping(address => uint256[]) _enumeratedSignedMintValidationParamsIndexes;
         /// @notice The used signature digests.
         mapping(bytes32 => bool) _usedDigests;
         /// @notice The allowed payers.

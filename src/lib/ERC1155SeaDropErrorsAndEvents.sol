@@ -58,6 +58,7 @@ interface ERC1155SeaDropErrorsAndEvents is SeaDropErrorsAndEvents {
      */
     event SignedMintValidationParamsUpdated(
         address indexed signer,
-        SignedMintValidationParams signedMintValidationParams
+        SignedMintValidationParams signedMintValidationParams,
+        uint256 index
     );
 }

@@ -192,15 +192,31 @@ contract ERC1155SeaDropContractOffererImplementation is
                         ._enumeratedSigners
                 );
         } else if (selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR) {
-            // Get the signers.
+            // Get the signer.
             address signer = address(bytes20(data[12:32]));
+            // Get the validation params index.
+            uint256 index = uint256(bytes32(data[32:64]));
 
-            // Return the signed mint validation params for the signer.
+            // Return the signed mint validation params for the signer
+            // at the index.
             return
                 abi.encode(
                     ERC1155SeaDropContractOffererStorage
                         .layout()
-                        ._signedMintValidationParams[signer]
+                        ._signedMintValidationParams[signer][index]
+                );
+        } else if (
+            selector == GET_SIGNED_MINT_VALIDATION_PARAMS_INDEXES_SELECTOR
+        ) {
+            // Get the signer.
+            address signer = address(bytes20(data[12:32]));
+
+            // Return the enumerated indexes for the signer validation params.
+            return
+                abi.encode(
+                    ERC1155SeaDropContractOffererStorage
+                        .layout()
+                        ._enumeratedSignedMintValidationParamsIndexes[signer]
                 );
         } else if (selector == GET_PAYERS_SELECTOR) {
             // Return the allowed signers.
@@ -235,11 +251,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         schemas[0].id = 12;
 
         // Encode the SIP-12 substandards.
-        uint256[] memory substandards = new uint256[](4);
+        uint256[] memory substandards = new uint256[](3);
         substandards[0] = 0;
         substandards[1] = 1;
         substandards[2] = 2;
-        substandards[3] = 3;
         schemas[0].metadata = abi.encode(substandards);
     }
 
@@ -580,12 +595,15 @@ contract ERC1155SeaDropContractOffererImplementation is
         } else {
             // substandard == 2
             // 2: Signed mint
+            uint8 signedMintValidationParamsIndex = uint8(
+                bytes1(context[42:43])
+            );
             MintParams memory mintParams = abi.decode(
-                context[42:458],
+                context[43:459],
                 (MintParams)
             );
-            uint256 salt = uint256(bytes32(context[458:490]));
-            bytes memory signature = context[490:];
+            uint256 salt = uint256(bytes32(context[459:491]));
+            bytes memory signature = context[491:];
             bytes32 digest;
             (consideration, digest) = _mintSigned(
                 tokenId,
@@ -593,6 +611,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                 fulfiller_,
                 minter,
                 quantity,
+                signedMintValidationParamsIndex,
                 mintParams,
                 salt,
                 signature,
@@ -740,6 +759,8 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
      * @param quantity     The number of tokens to mint.
+     * @param index        The signed mint validation params index for
+     *                     the signer.
      * @param mintParams   The mint parameters.
      * @param salt         The salt for the signed mint.
      * @param signature    The server-side signature, must be an allowed
@@ -752,6 +773,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         address payer,
         address minter,
         uint256 quantity,
+        uint256 index,
         MintParams memory mintParams,
         uint256 salt,
         bytes memory signature,
@@ -812,7 +834,12 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Note that if the digest doesn't exactly match what was signed we'll
         // get a random recovered address.
         address recoveredAddress = digest.recover(signature);
-        _validateSignerAndParams(mintParams, recoveredAddress, currentPrice);
+        _validateSignerAndParams(
+            mintParams,
+            recoveredAddress,
+            index,
+            currentPrice
+        );
     }
 
     /**
@@ -821,17 +848,19 @@ contract ERC1155SeaDropContractOffererImplementation is
      *
      * @param mintParams   The mint parameters.
      * @param signer       The signer.
+     * @param index        The index for the signed mint validation params.
      * @param currentPrice The current price.
      */
     function _validateSignerAndParams(
         MintParams memory mintParams,
         address signer,
+        uint256 index,
         uint256 currentPrice
     ) internal view {
         SignedMintValidationParams
             memory signedMintValidationParams = ERC1155SeaDropContractOffererStorage
                 .layout()
-                ._signedMintValidationParams[signer];
+                ._signedMintValidationParams[signer][index];
 
         // Check that SignedMintValidationParams have been initialized; if not,
         // this is an invalid signer.
@@ -1479,10 +1508,13 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
      *                                   to enforce for signed mints.
+     * @param index                      The index for the signer's mint
+     *                                   validation params.
      */
     function updateSignedMintValidationParams(
         address signer,
-        SignedMintValidationParams calldata signedMintValidationParams
+        SignedMintValidationParams calldata signedMintValidationParams,
+        uint256 index
     ) external {
         if (signer == address(0)) {
             revert SignerCannotBeZeroAddress();
@@ -1498,17 +1530,21 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         // Track the enumerated storage.
         address[]
-            storage enumeratedStorage = ERC1155SeaDropContractOffererStorage
+            storage enumeratedSignersStorage = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._enumeratedSigners;
-        mapping(address => SignedMintValidationParams)
+        mapping(address => mapping(uint256 => SignedMintValidationParams))
             storage signedMintValidationParamsMap = ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._signedMintValidationParams;
+        mapping(address => uint256[])
+            storage enumeratedSignedMintValidationParamsIndexesStorage = ERC1155SeaDropContractOffererStorage
+                .layout()
+                ._enumeratedSignedMintValidationParamsIndexes;
         SignedMintValidationParams
             storage existingSignedMintValidationParams = signedMintValidationParamsMap[
                 signer
-            ];
+            ][index];
 
         // Validation params struct packs to two slots, so load it
         // as a uint256; if it is 0, it is empty.
@@ -1526,9 +1562,14 @@ contract ERC1155SeaDropContractOffererImplementation is
             .maxMaxTotalMintableByWallet != 0;
 
         if (addOrUpdate) {
-            signedMintValidationParamsMap[signer] = signedMintValidationParams;
+            signedMintValidationParamsMap[signer][
+                index
+            ] = signedMintValidationParams;
             if (signedMintValidationParamsDoesNotExist) {
-                enumeratedStorage.push(signer);
+                enumeratedSignersStorage.push(signer);
+                enumeratedSignedMintValidationParamsIndexesStorage[signer].push(
+                    index
+                );
             }
         } else {
             if (
@@ -1539,14 +1580,19 @@ contract ERC1155SeaDropContractOffererImplementation is
             }
             delete ERC1155SeaDropContractOffererStorage
                 .layout()
-                ._signedMintValidationParams[signer];
-            _removeFromEnumeration(signer, enumeratedStorage);
+                ._signedMintValidationParams[signer][index];
+            _removeFromEnumeration(signer, enumeratedSignersStorage);
+            _removeFromEnumeration(
+                index,
+                enumeratedSignedMintValidationParamsIndexesStorage[signer]
+            );
         }
 
         // Emit an event with the update.
         emit SignedMintValidationParamsUpdated(
             signer,
-            signedMintValidationParams
+            signedMintValidationParams,
+            index
         );
     }
 

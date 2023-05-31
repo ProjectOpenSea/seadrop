@@ -33,7 +33,8 @@ interface SeaDropErrorsAndEvents {
 
     /**
      *  @notice Revert with an error if the number of signers doesn't match
-     *          the length of supplied signedMintValidationParams.
+     *          the length of supplied signedMintValidationParams and
+     *          signedMintValidationParamsIndexes.
      */
     error SignersMismatch();
 

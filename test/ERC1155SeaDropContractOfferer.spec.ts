@@ -3,7 +3,6 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
 import {
-  ERC1155__factory,
   IERC1155ContractMetadata__factory,
   IERC1155SeaDrop__factory,
   IERC165__factory,
@@ -54,6 +53,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
   let configurer: ERC1155SeaDropConfigurer;
   let publicDrop: AwaitedObject<PublicDropStruct>;
   let signedMintValidationParams: AwaitedObject<SignedMintValidationParamsStruct>;
+  let signedMintValidationParamsIndex: number;
   let allowListData: AwaitedObject<AllowListDataStruct>;
 
   // Wallets
@@ -135,6 +135,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     await tokenSeaDropInterface.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },
     ]);
+
+    // Set a random signed mint validation params index.
+    signedMintValidationParamsIndex = Math.floor(Math.random() * 254);
   });
 
   it("Should emit an event when the contract is deployed", async () => {
@@ -553,7 +556,8 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     // Test `updateSigner` for coverage.
     await tokenSeaDropInterface.updateSignedMintValidationParams(
       `0x${"5".repeat(40)}`,
-      signedMintValidationParams
+      signedMintValidationParams,
+      signedMintValidationParamsIndex
     );
 
     await expect(
@@ -562,6 +566,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         .updateSignedMintValidationParams(
           `0x${"5".repeat(40)}`,
           signedMintValidationParams,
+          signedMintValidationParamsIndex,
           { gasLimit: 100_000 }
         )
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
@@ -575,6 +580,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         .updateSignedMintValidationParams(
           `0x${"6".repeat(40)}`,
           signedMintValidationParams,
+          signedMintValidationParamsIndex,
           { gasLimit: 100_000 }
         )
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
@@ -645,6 +651,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       updateSignedMintValidationParams: [
         `0x${"4".repeat(40)}`,
         signedMintValidationParams,
+        signedMintValidationParamsIndex,
       ],
       updatePayer: [`0x${"4".repeat(40)}`, true],
     };
@@ -691,7 +698,12 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         signedMintValidationParams,
         { ...signedMintValidationParams, minEndTime: 200 },
       ],
+      signedMintValidationParamsIndexes: [
+        signedMintValidationParamsIndex,
+        signedMintValidationParamsIndex + 1,
+      ],
       disallowedSigners: [],
+      disallowedSignedMintValidationParamsIndexes: [],
       royaltyReceiver: `0x${"12".repeat(20)}`,
       royaltyBps: 1_000,
     };
@@ -705,6 +717,15 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       configurer.multiConfigure(token.address, {
         ...config,
         signers: config.signers.slice(1),
+      })
+    ).to.be.revertedWithCustomError(token, "SignersMismatch");
+
+    // Should revert if signers.length != signedMintValidationParamsIndexes.length
+    await expect(
+      configurer.multiConfigure(token.address, {
+        ...config,
+        signedMintValidationParamsIndexes:
+          config.signedMintValidationParamsIndexes.slice(1),
       })
     ).to.be.revertedWithCustomError(token, "SignersMismatch");
 
@@ -764,7 +785,10 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       expect(signers).to.deep.eq(config.signers);
       for (const [i, signer] of config.signers.entries()) {
         expect(
-          await tokenSeaDropInterface.getSignedMintValidationParams(signer)
+          await tokenSeaDropInterface.getSignedMintValidationParams(
+            signer,
+            config.signedMintValidationParamsIndexes[i]
+          )
         ).to.deep.eq([
           config.signedMintValidationParams[i].minMintPrice,
           config.signedMintValidationParams[i].paymentToken,
@@ -779,6 +803,11 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
           config.signedMintValidationParams[i].minFeeBps,
           config.signedMintValidationParams[i].maxFeeBps,
         ]);
+        expect(
+          await tokenSeaDropInterface.getSignedMintValidationParamsIndexes(
+            signer
+          )
+        ).to.deep.eq([config.signedMintValidationParamsIndexes[i]]);
       }
       expect(await token.royaltyInfo(0, 100)).to.deep.eq([
         config.royaltyReceiver,
@@ -810,7 +839,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       disallowedPayers: [],
       signers: [],
       signedMintValidationParams: [],
+      signedMintValidationParamsIndexes: [],
       disallowedSigners: [],
+      disallowedSignedMintValidationParamsIndexes: [],
       royaltyReceiver: AddressZero,
       royaltyBps: 0,
     };
@@ -836,14 +867,26 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "PayerUpdated")
       .withArgs(config.allowedPayers[0], false);
-    await expect(
-      configurer.multiConfigure(token.address, {
-        ...zeroedConfig,
-        disallowedSigners: [config.signers[0]],
-      })
-    )
-      .to.emit(token, "SignedMintValidationParamsUpdated")
-      .withArgs(config.signers[0], [0, AddressZero, 0, 0, 0, 0, 0, 0]);
+    for (const [i, signer] of config.signers.entries()) {
+      await expect(
+        configurer.multiConfigure(token.address, {
+          ...zeroedConfig,
+          disallowedSigners: [signer],
+          disallowedSignedMintValidationParamsIndexes: [
+            config.signedMintValidationParamsIndexes[i],
+          ],
+        })
+      )
+        .to.emit(token, "SignedMintValidationParamsUpdated")
+        .withArgs(
+          signer,
+          [0, AddressZero, 0, 0, 0, 0, 0, 0],
+          config.signedMintValidationParamsIndexes[i]
+        );
+      expect(
+        await tokenSeaDropInterface.getSignedMintValidationParamsIndexes(signer)
+      ).to.deep.eq([]);
+    }
   });
 
   it("Should not allow reentrancy during mint", async () => {
@@ -1162,7 +1205,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       returnData
     );
 
-    const supportedSubstandards = [0, 1, 2, 3];
+    const supportedSubstandards = [0, 1, 2];
     const metadata = defaultAbiCoder.encode(
       ["uint256[]"],
       [supportedSubstandards]

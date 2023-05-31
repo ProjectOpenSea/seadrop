@@ -122,7 +122,9 @@ struct MultiConfigureStruct {
     // Server-signed
     address[] signers;
     SignedMintValidationParams[] signedMintValidationParams;
+    uint256[] signedMintValidationParamsIndexes;
     address[] disallowedSigners;
+    uint256[] disallowedSignedMintValidationParamsIndexes;
     // ERC-2981
     address royaltyReceiver;
     uint96 royaltyBps;
