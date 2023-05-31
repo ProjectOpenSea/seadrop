@@ -369,6 +369,10 @@ contract ERC1155ContractMetadata is
         for (uint256 i = 0; i < idsLength; ) {
             // Increment mint counts.
             _incrementMintCounts(to, ids[i], amounts[i]);
+
+            unchecked {
+                ++i;
+            }
         }
 
         super._batchMint(to, ids, amounts, data);

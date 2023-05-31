@@ -204,7 +204,7 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
 
         extraDataSigned = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x03), // substandard version byte: signed mint
+            bytes1(0x02), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(address(0)),
             abi.encode(mintParams),
@@ -213,7 +213,7 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
         );
         extraDataSignedCompact2098 = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x03), // substandard version byte: signed mint
+            bytes1(0x02), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(address(0)),
             abi.encode(mintParams),

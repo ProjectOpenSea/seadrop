@@ -216,4 +216,36 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
 
     expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
   });
+
+  it("Should handle incrementing counts on batchMint", async () => {
+    // Deploy token
+    const ERC1155SeaDropWithBatchMint = await ethers.getContractFactory(
+      "ERC1155SeaDropWithBatchMint",
+      owner
+    );
+    const token = await ERC1155SeaDropWithBatchMint.deploy(
+      "Test1155",
+      "T1155",
+      AddressZero,
+      AddressZero,
+      marketplaceContract.address
+    );
+    await token.setMaxSupply(0, 1);
+    await token.setMaxSupply(1, 1);
+
+    expect(await token.totalMinted(0)).to.equal(0);
+    expect(await token.totalMinted(1)).to.equal(0);
+
+    await token.batchMint(owner.address, [0, 1], [1, 1], []);
+
+    expect(await token.totalMinted(0)).to.equal(1);
+    expect(await token.totalMinted(1)).to.equal(1);
+
+    await expect(token.batchMint(owner.address, [0, 1], [1, 1], []))
+      .to.be.revertedWithCustomError(token, "MintExceedsMaxSupply")
+      .withArgs(2, 1);
+
+    expect(await token.totalMinted(0)).to.equal(1);
+    expect(await token.totalMinted(1)).to.equal(1);
+  });
 });

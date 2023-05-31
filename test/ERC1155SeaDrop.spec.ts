@@ -70,6 +70,14 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
       quantity: 5,
     });
 
+    await expect(
+      token
+        .connect(minter)
+        .safeTransferFrom(token.address, creator.address, 0, 1, "0x")
+    )
+      .to.be.revertedWithCustomError(token, "InvalidCallerOnlyAllowedSeaport")
+      .withArgs(minter.address);
+
     await token
       .connect(minter)
       .safeTransferFrom(minter.address, creator.address, 0, 1, "0x");
@@ -90,19 +98,19 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
     expect(await token.maxSupply(tokenId)).to.equal(0);
 
     // Mint 3 tokens to the minter.
-    await token.setMaxSupply(tokenId, 3);
+    await token.setMaxSupply(tokenId, 6);
     await mintTokens({
       marketplaceContract,
       token,
       tokenSeaDropInterface,
       minter,
       tokenId,
-      quantity: 3,
+      quantity: 6,
     });
 
-    expect(await token.balanceOf(minter.address, tokenId)).to.equal(3);
-    expect(await token.totalSupply(tokenId)).to.equal(3);
-    expect(await token.maxSupply(tokenId)).to.equal(3);
+    expect(await token.balanceOf(minter.address, tokenId)).to.equal(6);
+    expect(await token.totalSupply(tokenId)).to.equal(6);
+    expect(await token.maxSupply(tokenId)).to.equal(6);
 
     // Only the owner or approved of the minted token should be able to burn it.
     await expect(
@@ -112,17 +120,17 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
       token.connect(creator).batchBurn(minter.address, [tokenId], [2])
     ).to.be.revertedWithCustomError(token, "NotAuthorized");
 
-    expect(await token.balanceOf(minter.address, tokenId)).to.equal(3);
-    expect(await token.totalSupply(tokenId)).to.equal(3);
+    expect(await token.balanceOf(minter.address, tokenId)).to.equal(6);
+    expect(await token.totalSupply(tokenId)).to.equal(6);
 
     await token.connect(minter).burn(minter.address, tokenId, 1);
 
-    expect(await token.totalSupply(tokenId)).to.equal(2);
+    expect(await token.totalSupply(tokenId)).to.equal(5);
 
     await token.connect(minter).setApprovalForAll(creator.address, true);
     await token.connect(creator).burn(minter.address, tokenId, 1);
 
-    expect(await token.totalSupply(tokenId)).to.equal(1);
+    expect(await token.totalSupply(tokenId)).to.equal(4);
 
     await token.connect(minter).setApprovalForAll(creator.address, false);
     await expect(
@@ -130,10 +138,10 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "NotAuthorized");
 
     await token.connect(minter).burn(minter.address, tokenId, 1);
-    expect(await token.balanceOf(minter.address, tokenId)).to.eq(0);
-    expect(await token.totalSupply(tokenId)).to.equal(0);
+    expect(await token.balanceOf(minter.address, tokenId)).to.eq(3);
+    expect(await token.totalSupply(tokenId)).to.equal(3);
 
-    await expect(token.connect(minter).burn(minter.address, tokenId, 1))
+    await expect(token.connect(minter).burn(minter.address, tokenId, 4))
       .to.be.revertedWithCustomError(token, "InsufficientBalance")
       .withArgs(minter.address, tokenId);
 
@@ -142,6 +150,24 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
       await expect(token.connect(minter).burn(minter.address, tokenId, 1))
         .to.be.revertedWithCustomError(token, "InsufficientBalance")
         .withArgs(minter.address, tokenId);
+      await expect(
+        token.connect(minter).batchBurn(minter.address, [tokenId], [1])
+      )
+        .to.be.revertedWithCustomError(token, "InsufficientBalance")
+        .withArgs(minter.address, tokenId);
     }
+
+    // Should revert if trying to burn more than the balance.
+    await expect(
+      token.connect(minter).batchBurn(minter.address, [0, tokenId], [1, 1])
+    ).to.be.revertedWithCustomError(token, "InsufficientBalance");
+
+    await token.connect(minter).batchBurn(minter.address, [tokenId], [1]);
+    expect(await token.balanceOf(minter.address, tokenId)).to.eq(2);
+    expect(await token.totalSupply(tokenId)).to.equal(2);
+
+    await token.connect(minter).batchBurn(minter.address, [tokenId], [2]);
+    expect(await token.balanceOf(minter.address, tokenId)).to.eq(0);
+    expect(await token.totalSupply(tokenId)).to.equal(0);
   });
 });

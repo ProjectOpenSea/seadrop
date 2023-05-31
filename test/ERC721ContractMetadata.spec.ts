@@ -189,6 +189,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     // If the baseURI is empty then the tokenURI should be empty
     await expect(token.setBaseURI("")).to.emit(token, "BatchMetadataUpdate");
     expect(await token.baseURI()).to.equal("");
+    expect(await token.tokenURI(1)).to.equal("");
     await expect(token.tokenURI(15)).to.be.revertedWithCustomError(
       token,
       "URIQueryForNonexistentToken"
@@ -249,5 +250,17 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     );
 
     expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
+  });
+
+  it("Should revert on unsupported function selector", async () => {
+    await expect(
+      owner.sendTransaction({
+        to: token.address,
+        data: "0x12345678",
+        gasLimit: 50_000,
+      })
+    )
+      .to.be.revertedWithCustomError(token, "UnsupportedFunctionSelector")
+      .withArgs("0x12345678");
   });
 });

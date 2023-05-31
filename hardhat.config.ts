@@ -57,10 +57,9 @@ const config: HardhatUserConfig = {
         if (line.match(/( from "|import ")/i)) {
           getRemappings().forEach(([find, replace]: string[]) => {
             // Fix for having `@rari-capital/solmate` in seaport and `solmate` in seadrop
-            if (find === "solmate/") {
-              find = '"solmate/';
-              replace = `"${replace}`;
-            }
+            // We ensure find/replace only happens with a leading quote to avoid replacing within the file path
+            find = `"${find}`;
+            replace = `"${replace}`;
 
             if (line.match(find)) {
               line = line.replace(find, replace);

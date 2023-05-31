@@ -210,21 +210,31 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     // Note: If the below owner storage slot changes, the updated value can be found
     // with `forge inspect ERC721SeaDrop storage-layout`
     const ownerStorageSlot = "0xa";
-    const ownerStorageValue = "0x" + token.address.slice(2).padStart(64, "0");
-    await provider.send("hardhat_setStorageAt", [
-      token.address,
-      ownerStorageSlot,
-      ownerStorageValue,
-    ]);
-    expect(await token.owner()).to.equal(token.address);
-    await token.connect(minter).approve(owner.address, 1, { value: 100 });
-    await whileImpersonating(
-      token.address,
-      provider,
-      async (impersonatedSigner) => {
-        await expect(token.connect(impersonatedSigner).withdraw()).to.be
-          .reverted;
-      }
+
+    const revertedRecipientFactory = await ethers.getContractFactory(
+      "RevertedRecipient"
     );
+    const revertedRecipient = await revertedRecipientFactory.deploy();
+    // token.address will revert with no data, and RevertedRecipient will revert with custom error.
+    const ownerAddresses = [token.address, revertedRecipient.address];
+
+    for (const ownerAddress of ownerAddresses) {
+      const ownerStorageValue = "0x" + ownerAddress.slice(2).padStart(64, "0");
+      await provider.send("hardhat_setStorageAt", [
+        token.address,
+        ownerStorageSlot,
+        ownerStorageValue,
+      ]);
+      expect(await token.owner()).to.equal(ownerAddress);
+      await token.connect(minter).approve(owner.address, 1, { value: 100 });
+      await whileImpersonating(
+        ownerAddress,
+        provider,
+        async (impersonatedSigner) => {
+          await expect(token.connect(impersonatedSigner).withdraw()).to.be
+            .reverted;
+        }
+      );
+    }
   });
 });

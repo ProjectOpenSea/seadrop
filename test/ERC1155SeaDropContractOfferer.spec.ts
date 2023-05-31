@@ -8,6 +8,8 @@ import {
   IERC1155SeaDrop__factory,
   IERC165__factory,
   IERC2981__factory,
+  ISeaDropTokenContractMetadata__factory,
+  ISeaDropToken__factory,
 } from "../typechain-types";
 
 import { getItemETH, toBN } from "./seaport-utils/encoding";
@@ -429,18 +431,18 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     expect(await token.balanceOf(minter.address, 0)).to.eq(0);
   });
 
-  it.skip("Should return supportsInterface true for supported interfaces", async () => {
-    // TODO get working
-
-    const supportedInterfacesERC1155SeaDrop = [[IERC1155SeaDrop__factory]];
+  it("Should return supportsInterface true for supported interfaces", async () => {
+    const supportedInterfacesERC1155SeaDrop = [
+      [IERC1155SeaDrop__factory, ISeaDropToken__factory],
+    ];
     const supportedInterfacesERC1155ContractMetadata = [
-      [IERC1155ContractMetadata__factory],
+      [
+        IERC1155ContractMetadata__factory,
+        ISeaDropTokenContractMetadata__factory,
+      ],
       [IERC2981__factory, IERC165__factory],
     ];
-    const supportedInterfacesERC1155 = [
-      [ERC1155__factory, IERC165__factory],
-      [IERC165__factory],
-    ];
+    const supportedInterfacesERC1155 = [[IERC165__factory]];
 
     for (const factories of [
       ...supportedInterfacesERC1155SeaDrop,
@@ -456,9 +458,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Ensure the supported interfaces from ERC1155 return true.
     // 0xd9b67a26: ERC1155
-    expect(await token.supportsInterface("0x80ac58cd")).to.be.true;
+    expect(await token.supportsInterface("0xd9b67a26")).to.be.true;
     // 0x0e89341c: ERC1155MetadataURI
-    expect(await token.supportsInterface("0x5b5e139f")).to.be.true;
+    expect(await token.supportsInterface("0x0e89341c")).to.be.true;
     // 0x01ffc9a7: ERC165
     expect(await token.supportsInterface("0x01ffc9a7")).to.be.true;
 
@@ -844,9 +846,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       .withArgs(config.signers[0], [0, AddressZero, 0, 0, 0, 0, 0, 0]);
   });
 
-  it.skip("Should not allow reentrancy during mint", async () => {
-    // TODO get working
-
+  it("Should not allow reentrancy during mint", async () => {
     // Set a public drop with maxTotalMintableByWallet: 1
     // and restrictFeeRecipient: false
     const oneEther = parseEther("1");
@@ -1238,5 +1238,17 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // InvalidExtraDataEncoding
     // withArgs(0)
+  });
+
+  it("Should revert on unsupported function selector", async () => {
+    await expect(
+      owner.sendTransaction({
+        to: token.address,
+        data: "0x12345678",
+        gasLimit: 50_000,
+      })
+    )
+      .to.be.revertedWithCustomError(token, "UnsupportedFunctionSelector")
+      .withArgs("0x12345678");
   });
 });

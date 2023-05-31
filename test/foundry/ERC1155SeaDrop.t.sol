@@ -294,7 +294,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
 
         bytes memory extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x03), // substandard version byte: signed mint
+            bytes1(0x02), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(minter),
             abi.encode(mintParams),
@@ -353,7 +353,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         );
         extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
-            bytes1(0x03), // substandard version byte: signed mint
+            bytes1(0x02), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(minter),
             abi.encode(mintParams),

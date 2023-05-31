@@ -8,6 +8,8 @@ import {
   IERC721ContractMetadata__factory,
   IERC721SeaDrop__factory,
   IERC721__factory,
+  ISeaDropTokenContractMetadata__factory,
+  ISeaDropToken__factory,
 } from "../typechain-types";
 
 import { getItemETH, toBN } from "./seaport-utils/encoding";
@@ -458,12 +460,15 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .withArgs(owner.address);
   });
 
-  it.skip("Should return supportsInterface true for supported interfaces", async () => {
-    // TODO get working
-
-    const supportedInterfacesERC721SeaDrop = [[IERC721SeaDrop__factory]];
+  it("Should return supportsInterface true for supported interfaces", async () => {
+    const supportedInterfacesERC721SeaDrop = [
+      [IERC721SeaDrop__factory, ISeaDropToken__factory],
+    ];
     const supportedInterfacesERC721ContractMetadata = [
-      [IERC721ContractMetadata__factory, IERC2981__factory],
+      [
+        IERC721ContractMetadata__factory,
+        ISeaDropTokenContractMetadata__factory,
+      ],
       [IERC2981__factory, IERC165__factory],
     ];
     const supportedInterfacesERC721A = [

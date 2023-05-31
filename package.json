@@ -17,7 +17,7 @@
     "test:upgradeable": "hardhat test --config ./src-upgradeable/hardhat.config.ts",
     "test:forge": "forge test -vvv",
     "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",
-    "coverage": "rm -rf temp-coverage-src; hardhat preprocess --dest temp-coverage-src; yarn coverage:hardhat:fix-lib-link; yarn coverage:hardhat:fix-lib-link2; hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js; yarn lcov-convert-relative-paths-to-absolute",
+    "coverage": "rm -rf temp-coverage-src coverage coverage.json lcov.info lcov-filtered.info; hardhat preprocess --dest temp-coverage-src; yarn coverage:hardhat:fix-lib-link; yarn coverage:hardhat:fix-lib-link2; hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js; yarn lcov-convert-relative-paths-to-absolute",
     "coverage:forge": "forge coverage --report summary --report lcov && yarn lcov-filter-ignored-files",
     "coverage:hardhat:fix-lib-link": "sed -i'.bak' 's|\"openzeppelin-contracts-upgradeable|\"../../../../lib/openzeppelin-contracts-upgradeable/contracts|g' lib/operator-filter-registry/src/upgradeable/OperatorFiltererUpgradeable.sol",
     "coverage:hardhat:fix-lib-link2": "find ./lib/seaport/lib/seaport-core/src -type f -name '*.sol' -print0 | xargs -0 sed -i'.bak' -e 's#\"seaport-types#\"../../../seaport-types#g'",

@@ -22,7 +22,9 @@ import {
 
 import { OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
-contract MaliciousRecipient {
+import { ERC1155TokenReceiver } from "solmate/tokens/ERC1155.sol";
+
+contract MaliciousRecipient is ERC1155TokenReceiver {
     bool public startAttack;
     address public token;
     ConsiderationInterface public seaport;

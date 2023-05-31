@@ -479,7 +479,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         errorBuffer |= _castAndInvert(context[0] == bytes1(0x00)) << 1;
 
         // Next, check for supported substandard.
-        errorBuffer |= _castAndInvert(substandard < 4) << 2;
+        errorBuffer |= _castAndInvert(substandard < 3) << 2;
 
         // Next, check for correct context length. Minimum is 42 bytes
         // (version byte, substandard byte, feeRecipient, minter)
@@ -1061,7 +1061,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 toTokenId
     ) internal pure {
         if (_cast(tokenId < fromTokenId || tokenId > toTokenId) == 1) {
-            // Revert if the drop stage is not active.
+            // Revert if the token id is not within range.
             revert TokenIdNotWithinDropStageRange(
                 tokenId,
                 fromTokenId,
