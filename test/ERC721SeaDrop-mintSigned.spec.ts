@@ -217,7 +217,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -279,7 +279,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -320,7 +320,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -348,7 +348,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient: payer, // Test with different fee recipient
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -433,7 +433,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token: token2, // Different token contract
       tokenSeaDropInterface: tokenSeaDropInterface2,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -490,7 +490,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -518,7 +518,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -542,7 +542,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -633,7 +633,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 10, // Max mints per wallet is 10. Mint 10
+      quantities: [10], // Max mints per wallet is 10. Mint 10
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -660,7 +660,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -684,7 +684,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -725,7 +725,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParamsZeroFee.feeBps,
       price: mintParamsZeroFee.startPrice,
@@ -768,7 +768,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -805,7 +805,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const orderParams = {
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1088,7 +1088,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1152,7 +1152,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1205,7 +1205,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1273,7 +1273,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1328,7 +1328,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,

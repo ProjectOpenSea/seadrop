@@ -105,7 +105,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -170,7 +170,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -209,7 +209,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -251,7 +251,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -311,7 +311,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -334,7 +334,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -358,7 +358,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient: { address: AddressZero } as any,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -378,7 +378,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient: creator,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -418,7 +418,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient,
       feeBps: 0,
       price: publicDrop.startPrice,
@@ -443,7 +443,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity,
+      quantities: [quantity],
       feeRecipient: creator,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -473,7 +473,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -512,7 +512,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 0,
+      quantities: [0],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -534,7 +534,7 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.endPrice,

@@ -180,7 +180,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token: token2,
       tokenSeaDropInterface: tokenSeaDropInterface2,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -205,7 +205,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token: token2,
       tokenSeaDropInterface: tokenSeaDropInterface2,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -307,7 +307,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDropDescMintPrice.startPrice,
@@ -357,7 +357,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDropAscMintPrice.endPrice,
@@ -1112,7 +1112,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -1231,7 +1231,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      quantity: 1,
+      quantities: [1],
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,

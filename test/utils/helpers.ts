@@ -139,9 +139,9 @@ export const mintTokens = async ({
   const { order, value } = await createMintOrder({
     token,
     tokenSeaDropInterface,
-    tokenId,
+    tokenIds: tokenId ? [tokenId] : undefined,
+    quantities: [quantity],
     publicDropIndex: seadrop1155 ? publicDropIndex : undefined,
-    quantity,
     feeRecipient: { address: `0x${"1".repeat(40)}` } as any,
     feeBps: 0,
     price: 0,

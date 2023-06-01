@@ -229,8 +229,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -292,8 +292,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -334,8 +334,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -363,8 +363,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient: payer, // Test with different fee recipient
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -449,7 +449,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token: token2, // Different token contract
       tokenSeaDropInterface: tokenSeaDropInterface2,
-      quantity: 3,
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -506,8 +506,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -535,8 +535,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -560,8 +560,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -652,8 +652,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 9, // Max mints per wallet per token is 9. Mint 9
+      tokenIds: [5],
+      quantities: [9], // Max mints per wallet per token is 9. Mint 9
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -680,8 +680,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 1,
+      tokenIds: [5],
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -705,8 +705,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 1,
+      tokenIds: [5],
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -747,8 +747,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParamsZeroFee.feeBps,
       price: mintParamsZeroFee.startPrice,
@@ -791,8 +791,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 1,
+      tokenIds: [5],
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -829,8 +829,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const orderParams = {
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 1,
+      tokenIds: [5],
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1113,8 +1113,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1178,8 +1178,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1232,8 +1232,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 1,
+      tokenIds: [5],
+      quantities: [1],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1301,8 +1301,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
@@ -1357,8 +1357,8 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 5,
-      quantity: 3,
+      tokenIds: [5],
+      quantities: [3],
       feeRecipient,
       feeBps: mintParams.feeBps,
       price: mintParams.startPrice,
