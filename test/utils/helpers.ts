@@ -42,11 +42,11 @@ export const deployERC721SeaDrop = async (
   // Deploy token
   const ERC721SeaDrop = await ethers.getContractFactory("ERC721SeaDrop", owner);
   const token = await ERC721SeaDrop.deploy(
-    "Test721",
-    "T721",
     configurer.address,
     conduit,
-    marketplaceContract
+    marketplaceContract,
+    "Test721",
+    "T721"
   );
 
   const tokenSeaDropInterface = IERC721SeaDrop__factory.connect(
@@ -75,11 +75,11 @@ export const deployERC1155SeaDrop = async (
     owner
   );
   const token = await ERC1155SeaDrop.deploy(
-    "Test1155",
-    "T1155",
     configurer.address,
     conduit,
-    marketplaceContract
+    marketplaceContract,
+    "Test1155",
+    "T1155"
   );
 
   const tokenSeaDropInterface = IERC1155SeaDrop__factory.connect(

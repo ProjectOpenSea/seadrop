@@ -53,11 +53,11 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
     function setUp() public override {
         super.setUp();
         token = new ERC1155SeaDrop(
-            "",
-            "",
             address(configurer),
             address(0),
-            allowedSeaport
+            allowedSeaport,
+            "",
+            ""
         );
     }
 

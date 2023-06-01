@@ -224,11 +224,11 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
       owner
     );
     const token = await ERC1155SeaDropWithBatchMint.deploy(
+      AddressZero,
+      AddressZero,
+      marketplaceContract.address,
       "Test1155",
-      "T1155",
-      AddressZero,
-      AddressZero,
-      marketplaceContract.address
+      "T1155"
     );
     await token.setMaxSupply(0, 1);
     await token.setMaxSupply(1, 1);

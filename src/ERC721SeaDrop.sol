@@ -25,28 +25,29 @@ contract ERC721SeaDrop is
     /**
      * @notice Deploy the token contract.
      *
-     * @param name              The name of the token.
-     * @param symbol            The symbol of the token.
      * @param allowedConfigurer The address of the contract allowed to
-     *                          configure parameters.
+     *                          implementation code. Also contains SeaDrop
+     *                          implementation code.
      * @param allowedConduit    The address of the conduit contract allowed to
      *                          interact.
      * @param allowedSeaport    The address of the Seaport contract allowed to
      *                          interact.
+     * @param name              The name of the token.
+     * @param symbol            The symbol of the token.
      */
     constructor(
-        string memory name,
-        string memory symbol,
         address allowedConfigurer,
         address allowedConduit,
-        address allowedSeaport
+        address allowedSeaport,
+        string memory name,
+        string memory symbol
     )
         ERC721SeaDropContractOfferer(
-            name,
-            symbol,
             allowedConfigurer,
             allowedConduit,
-            allowedSeaport
+            allowedSeaport,
+            name,
+            symbol
         )
     {}
 

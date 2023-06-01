@@ -74,15 +74,16 @@ contract ERC1155ContractMetadata is
     /**
      * @notice Deploy the token contract.
      *
-     * @param name_              The name of the token.
-     * @param symbol_            The symbol of the token.
      * @param allowedConfigurer The address of the contract allowed to
-     *                          configure parameters.
+     *                          configure parameters. Also contains SeaDrop
+     *                          implementation code.
+     * @param name_             The name of the token.
+     * @param symbol_           The symbol of the token.
      */
     constructor(
+        address allowedConfigurer,
         string memory name_,
-        string memory symbol_,
-        address allowedConfigurer
+        string memory symbol_
     ) {
         // Set the name of the token.
         _name = name_;

@@ -21,18 +21,18 @@ import { Merkle } from "murky/Merkle.sol";
 
 contract ERC721SeaDropPlusRegularMint is ERC721SeaDrop {
     constructor(
-        string memory name,
-        string memory symbol,
         address allowedConfigurer,
         address allowedConduit,
-        address allowedSeaport
+        address allowedSeaport,
+        string memory name,
+        string memory symbol
     )
         ERC721SeaDrop(
-            name,
-            symbol,
             allowedConfigurer,
             allowedConduit,
-            allowedSeaport
+            allowedSeaport,
+            name,
+            symbol
         )
     {}
 
@@ -59,11 +59,11 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
         super.setUp();
 
         token = new ERC721SeaDropPlusRegularMint(
-            "",
-            "",
             address(configurer),
             address(0),
-            allowedSeaport
+            allowedSeaport,
+            "",
+            ""
         );
         token.setMaxSupply(1000);
         setSingleCreatorPayout(creator);

@@ -53,11 +53,11 @@ contract ERC721SeaDropTest is SeaDrop721Test {
     function setUp() public override {
         super.setUp();
         token = new ERC721SeaDrop(
-            "",
-            "",
             address(configurer),
             address(0),
-            allowedSeaport
+            allowedSeaport,
+            "",
+            ""
         );
     }
 

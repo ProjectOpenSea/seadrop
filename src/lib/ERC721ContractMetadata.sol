@@ -62,15 +62,16 @@ contract ERC721ContractMetadata is
     /**
      * @notice Deploy the token contract.
      *
+     * @param allowedConfigurer The address of the contract allowed to
+     *                          configure parameters. Also contains SeaDrop
+     *                          implementation code.
      * @param name              The name of the token.
      * @param symbol            The symbol of the token.
-     * @param allowedConfigurer The address of the contract allowed to
-     *                          configure parameters.
      */
     constructor(
+        address allowedConfigurer,
         string memory name,
-        string memory symbol,
-        address allowedConfigurer
+        string memory symbol
     ) ERC721A(name, symbol) {
         // Set the allowed configurer contract to interact with this contract.
         _CONFIGURER = allowedConfigurer;

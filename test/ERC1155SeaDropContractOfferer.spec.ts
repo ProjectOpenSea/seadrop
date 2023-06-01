@@ -146,11 +146,11 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       owner
     );
     const tx = await ERC1155SeaDrop.deploy(
-      "",
-      "",
       AddressZero,
       marketplaceContract.address,
-      conduitOne.address
+      conduitOne.address,
+      "",
+      ""
     );
     const receipt = await tx.deployTransaction.wait();
     const event = (receipt as any).events.filter(
