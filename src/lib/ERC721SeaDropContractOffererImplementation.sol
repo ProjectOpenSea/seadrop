@@ -6,6 +6,7 @@ import {
 } from "./ERC721SeaDropContractOffererStorage.sol";
 
 import {
+    MintDetails,
     MintParams,
     PublicDrop,
     SignedMintValidationParams
@@ -412,7 +413,7 @@ contract ERC721SeaDropContractOffererImplementation is
     function _decodeOrder(
         SpentItem[] calldata minimumReceived,
         bytes calldata context
-    ) internal view returns (SpentItem[] memory offer, uint8 substandard) {
+    ) internal view returns (uint8 substandard) {
         // Declare an error buffer; first check that the minimumReceived has the
         // this address and a non-zero "amount" as the quantity for the mint.
         uint256 errorBuffer = (
@@ -423,9 +424,6 @@ contract ERC721SeaDropContractOffererImplementation is
                     minimumReceived[0].amount != 0
             )
         );
-
-        // The offer is the minimumReceived.
-        offer = minimumReceived;
 
         // Set the substandard version.
         substandard = uint8(context[1]);
@@ -481,10 +479,11 @@ contract ERC721SeaDropContractOffererImplementation is
         internal
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
-        // Define a variable for the substandard version.
-        uint8 substandard;
+        // The offer is the minimumReceived.
+        offer = minimumReceived;
 
-        (offer, substandard) = _decodeOrder(minimumReceived, context);
+        // Derive the substandard version.
+        uint8 substandard = _decodeOrder(minimumReceived, context);
 
         // Quantity is the amount of the ERC-1155 min received item.
         uint256 quantity = minimumReceived[0].amount;
@@ -498,19 +497,18 @@ contract ERC721SeaDropContractOffererImplementation is
             minter = fulfiller;
         }
 
-        // Put items back on the stack to avoid stack too deep.
-        address fulfiller_ = fulfiller;
-        bool withEffects_ = withEffects;
+        // Start compiling the MintDetails struct to avoid stack too deep.
+        MintDetails memory mintDetails = MintDetails({
+            feeRecipient: feeRecipient,
+            payer: fulfiller,
+            minter: minter,
+            quantity: quantity,
+            withEffects: withEffects
+        });
 
         if (substandard == 0) {
             // 0: Public mint
-            consideration = _mintPublic(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity,
-                withEffects_
-            );
+            consideration = _mintPublic(mintDetails);
         } else if (substandard == 1) {
             // 1: Allow list mint
             MintParams memory mintParams = abi.decode(
@@ -518,15 +516,7 @@ contract ERC721SeaDropContractOffererImplementation is
                 (MintParams)
             );
             bytes32[] memory proof = _bytesToBytes32Array(context[362:]);
-            consideration = _mintAllowList(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity,
-                mintParams,
-                proof,
-                withEffects_
-            );
+            consideration = _mintAllowList(mintDetails, mintParams, proof);
         } else {
             // substandard == 2
             // 3: Signed mint
@@ -540,15 +530,11 @@ contract ERC721SeaDropContractOffererImplementation is
             uint256 salt = uint256(bytes32(context[363:395]));
             bytes memory signature = context[395:];
             consideration = _mintSigned(
-                feeRecipient,
-                fulfiller_,
-                minter,
-                quantity,
+                mintDetails,
                 signedMintValidationParamsIndex,
                 mintParams,
                 salt,
-                signature,
-                withEffects_
+                signature
             );
         }
     }
@@ -556,24 +542,15 @@ contract ERC721SeaDropContractOffererImplementation is
     /**
      * @notice Mint a public drop stage.
      *
-     * @param feeRecipient The fee recipient.
-     * @param payer        The payer of the mint.
-     * @param minter       The mint recipient.
-     * @param quantity     The number of tokens to mint.
-     * @param withEffects  Whether to apply state changes of the mint.
+     * @param mintDetails The mint details
      */
     function _mintPublic(
-        address feeRecipient,
-        address payer,
-        address minter,
-        uint256 quantity,
-        bool withEffects
+        MintDetails memory mintDetails
     ) internal returns (ReceivedItem[] memory consideration) {
-        // Put items back on the stack to avoid stack too deep.
+        // Get the public drop.
         PublicDrop memory publicDrop = ERC721SeaDropContractOffererStorage
             .layout()
             ._publicDrop;
-        bool withEffects_ = withEffects;
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -586,40 +563,28 @@ contract ERC721SeaDropContractOffererImplementation is
         // Validate the mint parameters.
         // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
-            feeRecipient,
-            payer,
-            minter,
-            quantity,
+            mintDetails,
             currentPrice,
             publicDrop.paymentToken,
             publicDrop.maxTotalMintableByWallet,
             _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE,
             publicDrop.feeBps,
             _PUBLIC_DROP_STAGE_INDEX,
-            publicDrop.restrictFeeRecipients,
-            withEffects_
+            publicDrop.restrictFeeRecipients
         );
     }
 
     /**
      * @notice Mint an allow list drop stage.
      *
-     * @param feeRecipient The fee recipient.
-     * @param payer        The payer of the mint.
-     * @param minter       The mint recipient.
-     * @param quantity     The number of tokens to mint.
+     * @param mintDetails  The mint details.
      * @param mintParams   The mint parameters.
      * @param proof        The proof for the leaf of the allow list.
-     * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintAllowList(
-        address feeRecipient,
-        address payer,
-        address minter,
-        uint256 quantity,
+        MintDetails memory mintDetails,
         MintParams memory mintParams,
-        bytes32[] memory proof,
-        bool withEffects
+        bytes32[] memory proof
     ) internal returns (ReceivedItem[] memory consideration) {
         // Verify the proof.
         if (
@@ -628,39 +593,31 @@ contract ERC721SeaDropContractOffererImplementation is
                 ERC721SeaDropContractOffererStorage
                     .layout()
                     ._allowListMerkleRoot,
-                keccak256(abi.encode(minter, mintParams))
+                keccak256(abi.encode(mintDetails.minter, mintParams))
             )
         ) {
             revert InvalidProof();
         }
 
-        // Put items back on the stack to avoid stack too deep.
-        MintParams memory mintParams_ = mintParams;
-        bool withEffects_ = withEffects;
-
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
-            mintParams_.startTime,
-            mintParams_.endTime,
-            mintParams_.startPrice,
-            mintParams_.endPrice
+            mintParams.startTime,
+            mintParams.endTime,
+            mintParams.startPrice,
+            mintParams.endPrice
         );
 
         // Validate the mint parameters.
         // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
-            feeRecipient,
-            payer,
-            minter,
-            quantity,
+            mintDetails,
             currentPrice,
-            mintParams_.paymentToken,
-            mintParams_.maxTotalMintableByWallet,
-            mintParams_.maxTokenSupplyForStage,
-            mintParams_.feeBps,
-            mintParams_.dropStageIndex,
-            mintParams_.restrictFeeRecipients,
-            withEffects_
+            mintParams.paymentToken,
+            mintParams.maxTotalMintableByWallet,
+            mintParams.maxTokenSupplyForStage,
+            mintParams.feeBps,
+            mintParams.dropStageIndex,
+            mintParams.restrictFeeRecipients
         );
     }
 
@@ -668,69 +625,58 @@ contract ERC721SeaDropContractOffererImplementation is
      * @notice Mint with a server-side signature.
      *         Note that a signature can only be used once.
      *
-     * @param feeRecipient The fee recipient.
-     * @param payer        The payer of the mint.
-     * @param minter       The mint recipient.
-     * @param quantity     The number of tokens to mint.
+     * @param mintDetails  The mint details.
      * @param index        The index of the signed mint validation params for
      *                     the signer.
      * @param mintParams   The mint parameters.
      * @param salt         The salt for the signed mint.
      * @param signature    The server-side signature, must be an allowed
      *                     signer.
-     * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintSigned(
-        address feeRecipient,
-        address payer,
-        address minter,
-        uint256 quantity,
+        MintDetails memory mintDetails,
         uint256 index,
         MintParams memory mintParams,
         uint256 salt,
-        bytes memory signature,
-        bool withEffects
+        bytes memory signature
     ) internal returns (ReceivedItem[] memory consideration) {
         // Get the digest to verify the EIP-712 signature.
-        bytes32 digest = _getDigest(minter, feeRecipient, mintParams, salt);
+        bytes32 digest = _getDigest(
+            mintDetails.minter,
+            mintDetails.feeRecipient,
+            mintParams,
+            salt
+        );
 
         // Ensure the digest has not already been used.
         if (ERC721SeaDropContractOffererStorage.layout()._usedDigests[digest]) {
             revert SignatureAlreadyUsed();
-        } else if (withEffects) {
+        } else if (mintDetails.withEffects) {
             // Mark the digest as used.
             ERC721SeaDropContractOffererStorage.layout()._usedDigests[
                 digest
             ] = true;
         }
 
-        // Put items back on the stack to avoid stack too deep.
-        MintParams memory mintParams_ = mintParams;
-        bool withEffects_ = withEffects;
-
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
-            mintParams_.startTime,
-            mintParams_.endTime,
-            mintParams_.startPrice,
-            mintParams_.endPrice
+            mintParams.startTime,
+            mintParams.endTime,
+            mintParams.startPrice,
+            mintParams.endPrice
         );
 
         // Validate the mint parameters.
         // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
-            feeRecipient,
-            payer,
-            minter,
-            quantity,
+            mintDetails,
             currentPrice,
-            mintParams_.paymentToken,
-            mintParams_.maxTotalMintableByWallet,
-            mintParams_.maxTokenSupplyForStage,
-            mintParams_.feeBps,
-            mintParams_.dropStageIndex,
-            mintParams_.restrictFeeRecipients,
-            withEffects_
+            mintParams.paymentToken,
+            mintParams.maxTotalMintableByWallet,
+            mintParams.maxTokenSupplyForStage,
+            mintParams.feeBps,
+            mintParams.dropStageIndex,
+            mintParams.restrictFeeRecipients
         );
 
         // Use the recover method to see what address was used to create
@@ -838,48 +784,56 @@ contract ERC721SeaDropContractOffererImplementation is
     /**
      * @dev Validates a mint, reverting if the mint is invalid.
      *      If withEffects=true, sets mint recipient and emits an event.
+     *
+     * @param mintDetails           The mint details.
+     * @param currentPrice          The current price.
+     * @param paymentToken          The payment token.
+     * @param maxTotalMintableByWallet The maximum total mintable by wallet.
+     * @param maxTokenSupplyForStage The maximum token supply for the stage.
+     * @param feeBps                The fee basis points.
+     * @param dropStageIndex        The drop stage index.
+     * @param restrictFeeRecipients Whether to restrict fee recipients.
      */
     function _validateMint(
-        address feeRecipient,
-        address payer,
-        address minter,
-        uint256 quantity,
+        MintDetails memory mintDetails,
         uint256 currentPrice,
         address paymentToken,
         uint256 maxTotalMintableByWallet,
         uint256 maxTokenSupplyForStage,
         uint256 feeBps,
         uint256 dropStageIndex,
-        bool restrictFeeRecipients,
-        bool withEffects
+        bool restrictFeeRecipients
     ) internal returns (ReceivedItem[] memory consideration) {
         // Check the payer is allowed.
-        _checkPayerIsAllowed(payer, minter);
+        _checkPayerIsAllowed(mintDetails.payer, mintDetails.minter);
 
-        // Check the number of mints are available.
+        // Check the number of mints are availabl.
         _checkMintQuantity(
-            minter,
-            quantity,
+            mintDetails.minter,
+            mintDetails.quantity,
             maxTotalMintableByWallet,
             maxTokenSupplyForStage
         );
 
         // Check that the fee recipient is allowed if restricted.
-        _checkFeeRecipientIsAllowed(feeRecipient, restrictFeeRecipients);
+        _checkFeeRecipientIsAllowed(
+            mintDetails.feeRecipient,
+            restrictFeeRecipients
+        );
 
         // Set the required consideration items.
         consideration = _requiredConsideration(
-            feeRecipient,
+            mintDetails.feeRecipient,
             feeBps,
-            quantity,
+            mintDetails.quantity,
             currentPrice,
             paymentToken
         );
 
         // Apply the state changes of the mint.
-        if (withEffects) {
+        if (mintDetails.withEffects) {
             // Emit an event for the mint, for analytics.
-            emit SeaDropMint(payer, dropStageIndex);
+            emit SeaDropMint(mintDetails.payer, dropStageIndex);
         }
     }
 

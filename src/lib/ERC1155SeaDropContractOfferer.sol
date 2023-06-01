@@ -150,7 +150,9 @@ contract ERC1155SeaDropContractOfferer is
             }
 
             // If the call was to generateOrder, mint the tokens.
-            _mintIfGenerateOrder(selector, data);
+            if (selector == GENERATE_ORDER_SELECTOR) {
+                _mintOrder(data);
+            }
 
             // Return the data from the delegate call.
             return returnedData;
@@ -282,14 +284,11 @@ contract ERC1155SeaDropContractOfferer is
     /**
      * @dev Internal function to mint tokens during a generateOrder call
      *      from Seaport.
+     *
+     * @param data The original transaction calldata, without the selector.
      */
-    function _mintIfGenerateOrder(
-        bytes4 selector,
-        bytes calldata data
-    ) internal {
-        if (selector != GENERATE_ORDER_SELECTOR) return;
-
-        // Decode function parameters from calldata.
+    function _mintOrder(bytes calldata data) internal {
+        // Decode fulfiller and context from calldata.
         (
             address fulfiller,
             SpentItem[] memory minimumReceived,
@@ -312,9 +311,9 @@ contract ERC1155SeaDropContractOfferer is
         }
 
         // Set the token ids and quantities.
-        uint256[] memory tokenIds = new uint256[](minimumReceived.length);
-        uint256[] memory quantities = new uint256[](minimumReceived.length);
         uint256 minimumReceivedLength = minimumReceived.length;
+        uint256[] memory tokenIds = new uint256[](minimumReceivedLength);
+        uint256[] memory quantities = new uint256[](minimumReceivedLength);
         for (uint256 i = 0; i < minimumReceivedLength; ) {
             tokenIds[i] = minimumReceived[i].identifier;
             quantities[i] = minimumReceived[i].amount;

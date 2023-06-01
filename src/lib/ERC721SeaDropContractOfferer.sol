@@ -149,7 +149,9 @@ contract ERC721SeaDropContractOfferer is
             }
 
             // If the call was to generateOrder, mint the tokens.
-            _mintIfGenerateOrder(selector, data);
+            if (selector == GENERATE_ORDER_SELECTOR) {
+                _mintOrder(data);
+            }
 
             // Return the data from the delegate call.
             return returnedData;
@@ -272,14 +274,11 @@ contract ERC721SeaDropContractOfferer is
     /**
      * @dev Internal function to mint tokens during a generateOrder call
      *      from Seaport.
+     *
+     * @param data The original transaction calldata, without the selector.
      */
-    function _mintIfGenerateOrder(
-        bytes4 selector,
-        bytes calldata data
-    ) internal {
-        if (selector != GENERATE_ORDER_SELECTOR) return;
-
-        // Decode function parameters from calldata.
+    function _mintOrder(bytes calldata data) internal {
+        // Decode fulfiller and context from calldata.
         (
             address fulfiller,
             SpentItem[] memory minimumReceived,

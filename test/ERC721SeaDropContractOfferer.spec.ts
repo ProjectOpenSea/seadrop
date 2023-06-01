@@ -1142,7 +1142,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address, // PAYER
+        minter.address, // payer
         _PUBLIC_DROP_STAGE_INDEX
       );
 

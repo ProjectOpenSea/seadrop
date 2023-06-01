@@ -1135,7 +1135,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address, // PAYER
+        minter.address, // payer
         0
       );
 
@@ -1215,7 +1215,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(
-        minter.address, // PAYER
+        minter.address, // payer
         0
       );
 

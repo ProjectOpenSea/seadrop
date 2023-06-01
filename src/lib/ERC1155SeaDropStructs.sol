@@ -126,6 +126,26 @@ struct SignedMintValidationParams {
 }
 
 /**
+ * @dev Struct containing internal SeaDrop implementation logic
+ *      mint details to avoid stack too deep.
+ *
+ * @param feeRecipient The fee recipient.
+ * @param payer        The payer of the mint.
+ * @param minter       The mint recipient.
+ * @param tokenIds     The tokenIds to mint.
+ * @param quantities   The number of tokens to mint per tokenId.
+ * @param withEffects  Whether to apply state changes of the mint.
+ */
+struct MintDetails {
+    address feeRecipient;
+    address payer;
+    address minter;
+    uint256[] tokenIds;
+    uint256[] quantities;
+    bool withEffects;
+}
+
+/**
  * @notice A struct to configure multiple contract options in one transaction.
  */
 struct MultiConfigureStruct {
