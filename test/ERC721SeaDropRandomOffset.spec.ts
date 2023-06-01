@@ -66,11 +66,11 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
       owner
     );
     token = await ERC721SeaDropRandomOffset.deploy(
-      "",
-      "",
       configurer.address,
       marketplaceContract.address,
-      conduitOne.address
+      conduitOne.address,
+      "",
+      ""
     );
 
     tokenSeaDropInterface = IERC721SeaDrop__factory.connect(
