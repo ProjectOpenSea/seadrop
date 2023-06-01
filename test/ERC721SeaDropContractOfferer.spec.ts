@@ -882,6 +882,14 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     )
       .to.emit(token, "PayerUpdated")
       .withArgs(config.allowedPayers[0], false);
+    await expect(
+      configurer.multiConfigure(token.address, {
+        ...zeroedConfig,
+        disallowedSigners: config.signers.slice(1),
+        disallowedSignedMintValidationParamsIndexes:
+          config.signedMintValidationParamsIndexes,
+      })
+    ).to.be.revertedWithCustomError(token, "SignersMismatch");
     for (const [i, signer] of config.signers.entries()) {
       await expect(
         configurer.multiConfigure(token.address, {
