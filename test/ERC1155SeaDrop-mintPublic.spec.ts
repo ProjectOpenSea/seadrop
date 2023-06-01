@@ -526,9 +526,9 @@ describe(`ERC1155SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -588,9 +588,9 @@ describe(`ERC1155SeaDrop - Mint Public (v${VERSION})`, function () {
     const { order } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.endPrice,

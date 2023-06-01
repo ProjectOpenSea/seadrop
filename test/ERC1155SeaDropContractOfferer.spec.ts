@@ -182,9 +182,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token: token2,
       tokenSeaDropInterface: tokenSeaDropInterface2,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -209,9 +209,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token: token2,
       tokenSeaDropInterface: tokenSeaDropInterface2,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -313,9 +313,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDropDescMintPrice.startPrice,
@@ -365,9 +365,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDropAscMintPrice.endPrice,
@@ -1103,9 +1103,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,
@@ -1193,6 +1193,48 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     );
   });
 
+  it("Should be able to handle minting multiple tokenIds in the same order", async () => {
+    await token.setMaxSupply(1, 1);
+    const { order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [0, 1],
+      quantities: [1, 1],
+      publicDropIndex: 0,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address, // PAYER
+        0
+      );
+
+    expect(await token.balanceOf(minter.address, 0)).to.eq(1);
+    expect(await token.balanceOf(minter.address, 1)).to.eq(1);
+    expect(
+      await token.balanceOfBatch([minter.address, minter.address], [0, 1])
+    ).to.deep.eq([1, 1]);
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // MintQuantityExceedsMaxSupply, .withParams(2, 1)
+  });
+
   it("Should return the expected values for getSeaportMetadata", async () => {
     const getSeaportMetadataSelector = "0x2e778efc";
     const returnData = await minter.call({
@@ -1224,9 +1266,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     const { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
-      tokenId: 0,
+      tokenIds: [0],
+      quantities: [1],
       publicDropIndex: 0,
-      quantity: 1,
       feeRecipient,
       feeBps: publicDrop.feeBps,
       price: publicDrop.startPrice,

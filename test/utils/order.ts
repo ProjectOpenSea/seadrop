@@ -51,8 +51,8 @@ export enum MintType {
 export const createMintOrder = async ({
   token,
   tokenSeaDropInterface,
-  tokenId,
-  quantity,
+  tokenIds,
+  quantities,
   feeRecipient,
   feeBps,
   price,
@@ -73,8 +73,8 @@ export const createMintOrder = async ({
 }: {
   token: ERC721SeaDrop | ERC1155SeaDrop;
   tokenSeaDropInterface: IERC721SeaDrop | IERC1155SeaDrop;
-  tokenId?: BigNumberish;
-  quantity: BigNumberish;
+  tokenIds?: BigNumberish[];
+  quantities: BigNumberish[];
   feeRecipient: Wallet;
   feeBps: BigNumberish;
   price: BigNumberish;
@@ -92,17 +92,24 @@ export const createMintOrder = async ({
 }) => {
   const paymentTokenAddress = paymentToken?.address ?? AddressZero;
 
-  const offer = [
-    {
+  const offer = [];
+  for (const [i, tokenId] of (tokenIds ?? [0]).entries()) {
+    const quantity = quantities[i];
+    const offerItem = {
       itemType: 3, // ERC1155
       token: token.address,
-      identifierOrCriteria: toBN(tokenId ?? 0),
+      identifierOrCriteria: toBN(tokenId),
       startAmount: toBN(quantity),
       endAmount: toBN(quantity),
-    },
-  ];
+    };
+    offer.push(offerItem);
+  }
 
-  const value = toBN(price).mul(quantity);
+  const totalQuantity = quantities.reduce(
+    (a, b) => toBN(a).add(toBN(b)),
+    toBN(0)
+  );
+  const value = toBN(price).mul(totalQuantity);
   const feeAmount = value.mul(feeBps).div(10_000);
   const creatorAmount = value.sub(feeAmount);
 

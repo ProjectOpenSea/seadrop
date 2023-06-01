@@ -70,6 +70,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
             true
         );
         token.setMaxSupply(1, 10);
+        token.setMaxSupply(3, 10);
         setSingleCreatorPayout(context.args.creator);
 
         PublicDrop memory publicDrop = PublicDrop({
@@ -79,7 +80,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
             endTime: uint48(block.timestamp + 500),
             paymentToken: address(0),
             fromTokenId: 1,
-            toTokenId: 1,
+            toTokenId: 3,
             maxTotalMintableByWallet: 6,
             maxTotalMintableByWalletPerToken: 5,
             feeBps: uint16(feeBps),
@@ -88,7 +89,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         IERC1155SeaDrop(address(token)).updatePublicDrop(publicDrop, 0);
 
         addSeaDropOfferItem(1, 3); // token id 1, 3 mints
-        addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
+        addSeaDropOfferItem(3, 1); // token id 3, 1 mint
+        addSeaDropConsiderationItems(feeRecipient, feeBps, 4 ether);
         configureSeaDropOrderParameters();
 
         address minter = address(this);
@@ -113,7 +115,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectEmit(true, true, true, true, address(token));
         emit SeaDropMint(address(this), 0);
 
-        consideration.fulfillAdvancedOrder{ value: 3 ether }({
+        consideration.fulfillAdvancedOrder{ value: 4 ether }({
             advancedOrder: order,
             criteriaResolvers: criteriaResolvers,
             fulfillerConduitKey: bytes32(0),
@@ -121,7 +123,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         });
 
         assertEq(token.balanceOf(minter, 1), 3);
-        assertEq(context.args.creator.balance, 3 ether * 0.95);
+        assertEq(token.balanceOf(minter, 3), 1);
+        assertEq(context.args.creator.balance, 4 ether * 0.95);
 
         // Minting any more should exceed maxTotalMintableByWalletPerToken
         vm.expectRevert(

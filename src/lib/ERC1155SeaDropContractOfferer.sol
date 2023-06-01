@@ -311,12 +311,19 @@ contract ERC1155SeaDropContractOfferer is
             minter = fulfiller;
         }
 
+        // Set the token ids and quantities.
+        uint256[] memory tokenIds = new uint256[](minimumReceived.length);
+        uint256[] memory quantities = new uint256[](minimumReceived.length);
+        uint256 minimumReceivedLength = minimumReceived.length;
+        for (uint256 i = 0; i < minimumReceivedLength; ) {
+            tokenIds[i] = minimumReceived[i].identifier;
+            quantities[i] = minimumReceived[i].amount;
+            unchecked {
+                ++i;
+            }
+        }
+
         // Mint the tokens.
-        _mint(
-            minter,
-            minimumReceived[0].identifier,
-            minimumReceived[0].amount,
-            ""
-        );
+        _batchMint(minter, tokenIds, quantities, "");
     }
 }

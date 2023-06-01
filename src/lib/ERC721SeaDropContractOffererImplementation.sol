@@ -539,8 +539,7 @@ contract ERC721SeaDropContractOffererImplementation is
             );
             uint256 salt = uint256(bytes32(context[363:395]));
             bytes memory signature = context[395:];
-            bytes32 digest;
-            (consideration, digest) = _mintSigned(
+            consideration = _mintSigned(
                 feeRecipient,
                 fulfiller_,
                 minter,
@@ -585,8 +584,7 @@ contract ERC721SeaDropContractOffererImplementation is
         );
 
         // Validate the mint parameters.
-        // If passed withEffects=true, sets the mint recipient
-        // and emits an event for analytics.
+        // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
             feeRecipient,
             payer,
@@ -649,8 +647,7 @@ contract ERC721SeaDropContractOffererImplementation is
         );
 
         // Validate the mint parameters.
-        // If passed withEffects=true, sets the mint recipient
-        // and emits an event for analytics.
+        // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
             feeRecipient,
             payer,
@@ -693,9 +690,9 @@ contract ERC721SeaDropContractOffererImplementation is
         uint256 salt,
         bytes memory signature,
         bool withEffects
-    ) internal returns (ReceivedItem[] memory consideration, bytes32 digest) {
+    ) internal returns (ReceivedItem[] memory consideration) {
         // Get the digest to verify the EIP-712 signature.
-        digest = _getDigest(minter, feeRecipient, mintParams, salt);
+        bytes32 digest = _getDigest(minter, feeRecipient, mintParams, salt);
 
         // Ensure the digest has not already been used.
         if (ERC721SeaDropContractOffererStorage.layout()._usedDigests[digest]) {
@@ -720,8 +717,7 @@ contract ERC721SeaDropContractOffererImplementation is
         );
 
         // Validate the mint parameters.
-        // If passed withEffects=true, sets the mint recipient
-        // and emits an event for analytics.
+        // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
             feeRecipient,
             payer,

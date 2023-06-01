@@ -474,15 +474,19 @@ contract ERC1155SeaDropContractOffererImplementation is
         SpentItem[] calldata minimumReceived,
         bytes calldata context
     ) internal view returns (SpentItem[] memory offer, uint8 substandard) {
-        // Declare an error buffer; first check that the minimumReceived has
-        // this address and length of 1.
-        uint256 errorBuffer = (
-            _castAndInvert(
-                minimumReceived.length == 1 &&
-                    minimumReceived[0].itemType == ItemType.ERC1155 &&
-                    minimumReceived[0].token == address(this)
-            )
-        );
+        // Declare an error buffer; first check that every minimumReceived has
+        // this address.
+        uint256 errorBuffer = 0;
+        uint256 minimumReceivedLength = minimumReceived.length;
+        for (uint256 i = 0; i < minimumReceivedLength; ) {
+            errorBuffer |= _castAndInvert(
+                minimumReceived[i].itemType == ItemType.ERC1155 &&
+                    minimumReceived[i].token == address(this)
+            );
+            unchecked {
+                ++i;
+            }
+        }
 
         // The offer is the minimumReceived.
         offer = minimumReceived;
@@ -546,9 +550,17 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         (offer, substandard) = _decodeOrder(minimumReceived, context);
 
-        // Set token id and quantity.
-        uint256 tokenId = minimumReceived[0].identifier;
-        uint256 quantity = minimumReceived[0].amount;
+        // Set the token ids and quantities.
+        uint256[] memory tokenIds = new uint256[](minimumReceived.length);
+        uint256[] memory quantities = new uint256[](minimumReceived.length);
+        uint256 minimumReceivedLength = minimumReceived.length;
+        for (uint256 i = 0; i < minimumReceivedLength; ) {
+            tokenIds[i] = minimumReceived[i].identifier;
+            quantities[i] = minimumReceived[i].amount;
+            unchecked {
+                ++i;
+            }
+        }
 
         // All substandards have feeRecipient and minter as first two params.
         address feeRecipient = address(bytes20(context[2:22]));
@@ -567,12 +579,12 @@ contract ERC1155SeaDropContractOffererImplementation is
             // 0: Public mint
             uint8 publicDropIndex = uint8(bytes1(context[42:43]));
             consideration = _mintPublic(
-                tokenId,
+                tokenIds,
+                quantities,
                 publicDropIndex,
                 feeRecipient,
                 fulfiller_,
                 minter,
-                quantity,
                 withEffects_
             );
         } else if (substandard == 1) {
@@ -583,11 +595,11 @@ contract ERC1155SeaDropContractOffererImplementation is
             );
             bytes32[] memory proof = _bytesToBytes32Array(context[458:]);
             consideration = _mintAllowList(
-                tokenId,
+                tokenIds,
+                quantities,
                 feeRecipient,
                 fulfiller_,
                 minter,
-                quantity,
                 mintParams,
                 proof,
                 withEffects_
@@ -595,27 +607,28 @@ contract ERC1155SeaDropContractOffererImplementation is
         } else {
             // substandard == 2
             // 2: Signed mint
+            bytes calldata context_ = context;
             uint8 signedMintValidationParamsIndex = uint8(
-                bytes1(context[42:43])
+                bytes1(context_[42:43])
             );
             MintParams memory mintParams = abi.decode(
-                context[43:459],
+                context_[43:459],
                 (MintParams)
             );
-            uint256 salt = uint256(bytes32(context[459:491]));
-            bytes memory signature = context[491:];
-            bytes32 digest;
-            (consideration, digest) = _mintSigned(
-                tokenId,
+            uint256 salt = uint256(bytes32(context_[459:491]));
+            bytes memory signature = context_[491:];
+            bool _withEffects = withEffects_;
+            consideration = _mintSigned(
+                tokenIds,
+                quantities,
                 feeRecipient,
                 fulfiller_,
                 minter,
-                quantity,
                 signedMintValidationParamsIndex,
                 mintParams,
                 salt,
                 signature,
-                withEffects_
+                _withEffects
             );
         }
     }
@@ -623,21 +636,21 @@ contract ERC1155SeaDropContractOffererImplementation is
     /**
      * @notice Mint a public drop stage.
      *
-     * @param tokenId         The token id to mint.
+     * @param tokenIds        The token ids to mint.
+     * @param quantities      The number of tokens to mint per token id.
      * @param publicDropIndex The public drop index to mint.
      * @param feeRecipient    The fee recipient.
      * @param payer           The payer of the mint.
      * @param minter          The mint recipient.
-     * @param quantity        The number of tokens to mint.
-     * @param withEffects      Whether to apply state changes of the mint.
+     * @param withEffects     Whether to apply state changes of the mint.
      */
     function _mintPublic(
-        uint256 tokenId,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
         uint8 publicDropIndex,
         address feeRecipient,
         address payer,
         address minter,
-        uint256 quantity,
         bool withEffects
     ) internal returns (ReceivedItem[] memory consideration) {
         // Put items back on the stack to avoid stack too deep.
@@ -648,7 +661,17 @@ contract ERC1155SeaDropContractOffererImplementation is
         bool withEffects_ = withEffects;
 
         // Check that the tokenId is within the range of the stage.
-        _checkTokenId(tokenId, publicDrop.fromTokenId, publicDrop.toTokenId);
+        _checkTokenIds(tokenIds, publicDrop.fromTokenId, publicDrop.toTokenId);
+
+        // Check the number of mints are available.
+        uint256 totalQuantity = _checkMintQuantities(
+            tokenIds,
+            quantities,
+            minter,
+            publicDrop.maxTotalMintableByWallet,
+            publicDrop.maxTotalMintableByWalletPerToken,
+            _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE
+        );
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -659,19 +682,14 @@ contract ERC1155SeaDropContractOffererImplementation is
         );
 
         // Validate the mint parameters.
-        // If passed withEffects=true, sets the mint recipient
-        // and emits an event for analytics.
+        // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
-            tokenId,
+            totalQuantity,
             feeRecipient,
             payer,
             minter,
-            quantity,
             currentPrice,
             publicDrop.paymentToken,
-            publicDrop.maxTotalMintableByWallet,
-            publicDrop.maxTotalMintableByWalletPerToken,
-            _UNLIMITED_MAX_TOKEN_SUPPLY_FOR_STAGE,
             publicDrop.feeBps,
             publicDropIndex_,
             publicDrop.restrictFeeRecipients,
@@ -682,21 +700,21 @@ contract ERC1155SeaDropContractOffererImplementation is
     /**
      * @notice Mint an allow list drop stage.
      *
-     * @param tokenId      The token id to mint.
+     * @param tokenIds     The token ids to mint.
+     * @param quantities   The number of tokens to mint per token id.
      * @param feeRecipient The fee recipient.
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
-     * @param quantity     The number of tokens to mint.
      * @param mintParams   The mint parameters.
      * @param proof        The proof for the leaf of the allow list.
      * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintAllowList(
-        uint256 tokenId,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
         address feeRecipient,
         address payer,
         address minter,
-        uint256 quantity,
         MintParams memory mintParams,
         bytes32[] memory proof,
         bool withEffects
@@ -719,7 +737,21 @@ contract ERC1155SeaDropContractOffererImplementation is
         bool withEffects_ = withEffects;
 
         // Check that the tokenId is within the range of the stage.
-        _checkTokenId(tokenId, mintParams_.fromTokenId, mintParams_.toTokenId);
+        _checkTokenIds(
+            tokenIds,
+            mintParams_.fromTokenId,
+            mintParams_.toTokenId
+        );
+
+        // Check the number of mints are available.
+        uint256 totalQuantity = _checkMintQuantities(
+            tokenIds,
+            quantities,
+            minter,
+            mintParams_.maxTotalMintableByWallet,
+            mintParams_.maxTotalMintableByWalletPerToken,
+            mintParams_.maxTokenSupplyForStage
+        );
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -730,19 +762,14 @@ contract ERC1155SeaDropContractOffererImplementation is
         );
 
         // Validate the mint parameters.
-        // If passed withEffects=true, sets the mint recipient
-        // and emits an event for analytics.
+        // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
-            tokenId,
+            totalQuantity,
             feeRecipient,
             payer,
             minter,
-            quantity,
             currentPrice,
             mintParams_.paymentToken,
-            mintParams_.maxTotalMintableByWallet,
-            mintParams_.maxTotalMintableByWalletPerToken,
-            mintParams_.maxTokenSupplyForStage,
             mintParams_.feeBps,
             mintParams_.dropStageIndex,
             mintParams_.restrictFeeRecipients,
@@ -754,11 +781,11 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @notice Mint with a server-side signature.
      *         Note that a signature can only be used once.
      *
-     * @param tokenId      The token id to mint.
+     * @param tokenIds     The token ids to mint.
+     * @param quantities   The number of tokens to mint per token id.
      * @param feeRecipient The fee recipient.
      * @param payer        The payer of the mint.
      * @param minter       The mint recipient.
-     * @param quantity     The number of tokens to mint.
      * @param index        The signed mint validation params index for
      *                     the signer.
      * @param mintParams   The mint parameters.
@@ -768,19 +795,19 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @param withEffects  Whether to apply state changes of the mint.
      */
     function _mintSigned(
-        uint256 tokenId,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
         address feeRecipient,
         address payer,
         address minter,
-        uint256 quantity,
         uint256 index,
         MintParams memory mintParams,
         uint256 salt,
         bytes memory signature,
         bool withEffects
-    ) internal returns (ReceivedItem[] memory consideration, bytes32 digest) {
+    ) internal returns (ReceivedItem[] memory consideration) {
         // Get the digest to verify the EIP-712 signature.
-        digest = _getDigest(minter, feeRecipient, mintParams, salt);
+        bytes32 digest = _getDigest(minter, feeRecipient, mintParams, salt);
 
         // Ensure the digest has not already been used.
         if (
@@ -799,7 +826,21 @@ contract ERC1155SeaDropContractOffererImplementation is
         bool withEffects_ = withEffects;
 
         // Check that the tokenId is within the range of the stage.
-        _checkTokenId(tokenId, mintParams_.fromTokenId, mintParams_.toTokenId);
+        _checkTokenIds(
+            tokenIds,
+            mintParams_.fromTokenId,
+            mintParams_.toTokenId
+        );
+
+        // Check the number of mints are available.
+        uint256 totalQuantity = _checkMintQuantities(
+            tokenIds,
+            quantities,
+            minter,
+            mintParams_.maxTotalMintableByWallet,
+            mintParams_.maxTotalMintableByWalletPerToken,
+            mintParams_.maxTokenSupplyForStage
+        );
 
         // Check that the stage is active and calculate the current price.
         uint256 currentPrice = _currentPrice(
@@ -810,19 +851,14 @@ contract ERC1155SeaDropContractOffererImplementation is
         );
 
         // Validate the mint parameters.
-        // If passed withEffects=true, sets the mint recipient
-        // and emits an event for analytics.
+        // If passed withEffects=true, emits an event for analytics.
         consideration = _validateMint(
-            tokenId,
+            totalQuantity,
             feeRecipient,
             payer,
             minter,
-            quantity,
             currentPrice,
             mintParams_.paymentToken,
-            mintParams_.maxTotalMintableByWallet,
-            mintParams_.maxTotalMintableByWalletPerToken,
-            mintParams_.maxTokenSupplyForStage,
             mintParams_.feeBps,
             mintParams_.dropStageIndex,
             mintParams_.restrictFeeRecipients,
@@ -959,16 +995,12 @@ contract ERC1155SeaDropContractOffererImplementation is
      *      If withEffects=true, sets mint recipient and emits an event.
      */
     function _validateMint(
-        uint256 tokenId,
+        uint256 totalQuantity,
         address feeRecipient,
         address payer,
         address minter,
-        uint256 quantity,
         uint256 currentPrice,
         address paymentToken,
-        uint256 maxTotalMintableByWallet,
-        uint256 maxTotalMintableByWalletPerToken,
-        uint256 maxTokenSupplyForStage,
         uint256 feeBps,
         uint256 dropStageIndex,
         bool restrictFeeRecipients,
@@ -977,16 +1009,6 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Check the payer is allowed.
         _checkPayerIsAllowed(payer, minter);
 
-        // Check the number of mints are available.
-        _checkMintQuantity(
-            tokenId,
-            minter,
-            quantity,
-            maxTotalMintableByWallet,
-            maxTotalMintableByWalletPerToken,
-            maxTokenSupplyForStage
-        );
-
         // Check that the fee recipient is allowed if restricted.
         _checkFeeRecipientIsAllowed(feeRecipient, restrictFeeRecipients);
 
@@ -994,7 +1016,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         consideration = _requiredConsideration(
             feeRecipient,
             feeBps,
-            quantity,
+            totalQuantity,
             currentPrice,
             paymentToken
         );
@@ -1078,24 +1100,32 @@ contract ERC1155SeaDropContractOffererImplementation is
     }
 
     /**
-     * @notice Check that the token id is within the stage range.
+     * @notice Check that the token ids are within the stage range.
      *
-     * @param tokenId     The token id.
+     * @param tokenIds    The token ids.
      * @param fromTokenId The drop stage start token id
      * @param toTokenId   The drop stage end token id.
      */
-    function _checkTokenId(
-        uint256 tokenId,
+    function _checkTokenIds(
+        uint256[] memory tokenIds,
         uint256 fromTokenId,
         uint256 toTokenId
     ) internal pure {
-        if (_cast(tokenId < fromTokenId || tokenId > toTokenId) == 1) {
-            // Revert if the token id is not within range.
-            revert TokenIdNotWithinDropStageRange(
-                tokenId,
-                fromTokenId,
-                toTokenId
-            );
+        uint256 tokenIdsLength = tokenIds.length;
+        for (uint256 i = 0; i < tokenIdsLength; ) {
+            if (
+                _cast(tokenIds[i] < fromTokenId || tokenIds[i] > toTokenId) == 1
+            ) {
+                // Revert if the token id is not within range.
+                revert TokenIdNotWithinDropStageRange(
+                    tokenIds[i],
+                    fromTokenId,
+                    toTokenId
+                );
+            }
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1161,19 +1191,54 @@ contract ERC1155SeaDropContractOffererImplementation is
     }
 
     /**
+     * @notice Check that the wallet is allowed to mint the desired quantities.
+     *
+     * @param tokenIds                 The token ids.
+     * @param quantities               The number of tokens to mint per token id.
+     * @param minter                   The mint recipient.
+     * @param maxTotalMintableByWallet The max allowed mints per wallet.
+     * @param maxTotalMintableByWalletPerToken The max allowed mints per wallet per token.
+     * @param maxTokenSupplyForStage   The max token supply for the drop stage.
+     */
+    function _checkMintQuantities(
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        address minter,
+        uint256 maxTotalMintableByWallet,
+        uint256 maxTotalMintableByWalletPerToken,
+        uint256 maxTokenSupplyForStage
+    ) internal view returns (uint256 totalQuantity) {
+        uint256 tokenIdsLength = tokenIds.length;
+        for (uint256 i = 0; i < tokenIdsLength; ) {
+            _checkMintQuantity(
+                tokenIds[i],
+                quantities[i],
+                minter,
+                maxTotalMintableByWallet,
+                maxTotalMintableByWalletPerToken,
+                maxTokenSupplyForStage
+            );
+            totalQuantity += quantities[i];
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
      * @notice Check that the wallet is allowed to mint the desired quantity.
      *
      * @param tokenId                  The token id.
-     * @param minter                   The mint recipient.
      * @param quantity                 The number of tokens to mint.
+     * @param minter                   The mint recipient.
      * @param maxTotalMintableByWallet The max allowed mints per wallet.
      * @param maxTotalMintableByWalletPerToken The max allowed mints per wallet per token.
      * @param maxTokenSupplyForStage   The max token supply for the drop stage.
      */
     function _checkMintQuantity(
         uint256 tokenId,
-        address minter,
         uint256 quantity,
+        address minter,
         uint256 maxTotalMintableByWallet,
         uint256 maxTotalMintableByWalletPerToken,
         uint256 maxTokenSupplyForStage
@@ -1237,7 +1302,7 @@ contract ERC1155SeaDropContractOffererImplementation is
      *
      * @param feeRecipient The fee recipient.
      * @param feeBps       The fee basis points.
-     * @param quantity     The number of tokens to mint.
+     * @param quantity     The total number of tokens to mint.
      * @param currentPrice The current price of each token.
      * @param paymentToken The payment token.
      */
