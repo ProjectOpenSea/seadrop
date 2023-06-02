@@ -1514,7 +1514,10 @@ contract ERC1155SeaDropContractOffererImplementation is
             delete ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._allowedFeeRecipients[feeRecipient];
-            _removeFromEnumeration(feeRecipient, enumeratedStorage);
+            _asAddressArray(_removeFromEnumeration)(
+                feeRecipient,
+                enumeratedStorage
+            );
         }
 
         // Emit an event with the update.
@@ -1600,7 +1603,10 @@ contract ERC1155SeaDropContractOffererImplementation is
             delete ERC1155SeaDropContractOffererStorage
                 .layout()
                 ._signedMintValidationParams[signer][index];
-            _removeFromEnumeration(signer, enumeratedSignersStorage);
+            _asAddressArray(_removeFromEnumeration)(
+                signer,
+                enumeratedSignersStorage
+            );
             _removeFromEnumeration(
                 index,
                 enumeratedSignedMintValidationParamsIndexesStorage[signer]
@@ -1649,7 +1655,7 @@ contract ERC1155SeaDropContractOffererImplementation is
             delete ERC1155SeaDropContractOffererStorage.layout()._allowedPayers[
                 payer
             ];
-            _removeFromEnumeration(payer, enumeratedStorage);
+            _asAddressArray(_removeFromEnumeration)(payer, enumeratedStorage);
         }
 
         // Emit an event with the update.
@@ -1740,31 +1746,23 @@ contract ERC1155SeaDropContractOffererImplementation is
     }
 
     /**
-     * @notice Internal utility function to remove an address from a supplied
-     *         enumeration.
+     * @notice Internal utility function to cast uint types to address
+     *         to dedupe the need for multiple implementations of
+     *         `_removeFromEnumeration`.
      *
-     * @param toRemove    The address to remove.
-     * @param enumeration The enumerated addresses to parse.
+     * @param fnIn The fn with uint input.
+     *
+     * @return fnOut The fn with address input.
      */
-    function _removeFromEnumeration(
-        address toRemove,
-        address[] storage enumeration
-    ) internal {
-        // Cache the length.
-        uint256 enumerationLength = enumeration.length;
-        for (uint256 i = 0; i < enumerationLength; ) {
-            // Check if the enumerated element is the one we are deleting.
-            if (enumeration[i] == toRemove) {
-                // Swap with the last element.
-                enumeration[i] = enumeration[enumerationLength - 1];
-                // Delete the (now duplicated) last element.
-                enumeration.pop();
-                // Exit the loop.
-                break;
-            }
-            unchecked {
-                ++i;
-            }
+    function _asAddressArray(
+        function(uint256, uint256[] storage) internal fnIn
+    )
+        internal
+        pure
+        returns (function(address, address[] storage) internal fnOut)
+    {
+        assembly {
+            fnOut := fnIn
         }
     }
 
