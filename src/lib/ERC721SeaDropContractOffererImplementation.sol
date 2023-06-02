@@ -528,13 +528,18 @@ contract ERC721SeaDropContractOffererImplementation is
                 (MintParams)
             );
             uint256 salt = uint256(bytes32(context[363:395]));
-            bytes memory signature = context[395:];
+            bytes32 signatureR = bytes32(context[395:427]);
+            bytes32 signatureVS = bytes32(context[427:459]);
+            if (context.length > 459) {
+                revert MintSignedSignatureMustBeERC2098Compact();
+            }
             consideration = _mintSigned(
                 mintDetails,
                 signedMintValidationParamsIndex,
                 mintParams,
                 salt,
-                signature
+                signatureR,
+                signatureVS
             );
         }
     }
@@ -630,15 +635,16 @@ contract ERC721SeaDropContractOffererImplementation is
      *                     the signer.
      * @param mintParams   The mint parameters.
      * @param salt         The salt for the signed mint.
-     * @param signature    The server-side signature, must be an allowed
-     *                     signer.
+     * @param signatureR   The server-side signature `r` value.
+     * @param signatureVS  The server-side signature `vs` value.
      */
     function _mintSigned(
         MintDetails memory mintDetails,
         uint256 index,
         MintParams memory mintParams,
         uint256 salt,
-        bytes memory signature
+        bytes32 signatureR,
+        bytes32 signatureVS
     ) internal returns (ReceivedItem[] memory consideration) {
         // Get the digest to verify the EIP-712 signature.
         bytes32 digest = _getDigest(
@@ -683,7 +689,7 @@ contract ERC721SeaDropContractOffererImplementation is
         // the signature on this data.
         // Note that if the digest doesn't exactly match what was signed we'll
         // get a random recovered address.
-        address recoveredAddress = digest.recover(signature);
+        address recoveredAddress = digest.recover(signatureR, signatureVS);
         _validateSignerAndParams(
             mintParams,
             recoveredAddress,

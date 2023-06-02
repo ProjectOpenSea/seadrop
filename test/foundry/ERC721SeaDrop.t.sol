@@ -278,7 +278,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             feeRecipient,
             mintParams,
             salt,
-            false
+            true
         );
 
         addSeaDropOfferItem(2); // 2 mints
@@ -344,7 +344,7 @@ contract ERC721SeaDropTest is SeaDrop721Test {
             feeRecipient,
             mintParams,
             salt,
-            false
+            true
         );
         extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte

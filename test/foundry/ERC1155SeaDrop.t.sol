@@ -290,7 +290,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
             feeRecipient,
             mintParams,
             salt,
-            false
+            true
         );
 
         addSeaDropOfferItem(1, 2); // token id 1, 2 mints
@@ -355,7 +355,7 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
             feeRecipient,
             mintParams,
             salt,
-            false
+            true
         );
         extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte

@@ -192,18 +192,8 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
             feeRecipient,
             mintParams,
             salt,
-            false
-        );
-        bytes memory signatureCompact = getSignedMint(
-            "signer-doug",
-            address(token),
-            minter,
-            feeRecipient,
-            mintParams,
-            salt,
             true
         );
-
         extraDataSigned = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
             bytes1(0x02), // substandard version byte: signed mint
@@ -213,16 +203,6 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
             abi.encode(mintParams),
             bytes32(salt),
             signature
-        );
-        extraDataSignedCompact2098 = bytes.concat(
-            bytes1(0x00), // SIP-6 version byte
-            bytes1(0x02), // substandard version byte: signed mint
-            bytes20(feeRecipient),
-            bytes20(address(0)),
-            bytes1(signedMintValidationParamsIndex),
-            abi.encode(mintParams),
-            bytes32(salt),
-            signatureCompact
         );
     }
 

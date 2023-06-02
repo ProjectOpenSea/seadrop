@@ -178,7 +178,8 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     feeRecipient: Wallet,
     mintParams: MintParamsStruct,
     salt: string,
-    signer: Wallet
+    signer: Wallet,
+    compact = true
   ) => {
     const signedMint = {
       nftContract,
@@ -187,11 +188,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       mintParams,
       salt,
     };
-    const signature = await signer._signTypedData(
+    let signature = await signer._signTypedData(
       eip712Domain,
       eip712Types,
       signedMint
     );
+    if (compact) {
+      signature = ethers.utils.splitSignature(signature).compact;
+    }
     // Verify recovered address matchers signer address
     const verifiedAddress = ethers.utils.verifyTypedData(
       eip712Domain,
@@ -305,6 +309,79 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(6);
     expect(await token.totalSupply()).to.eq(6);
+  });
+
+  it("Should not mint a non-compact signed mint", async () => {
+    let signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      salt,
+      signer,
+      false // passing compact=false should fail
+    );
+
+    let { order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      quantities: [3],
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
+      mintParams,
+      salt,
+      signature,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // MintSignedSignatureMustBeERC2098Compact
+
+    signature = await signMint(
+      token.address,
+      minter,
+      feeRecipient,
+      mintParams,
+      salt,
+      signer,
+      true // passing compact=true should succeed
+    );
+
+    ({ order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      quantities: [3],
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.SIGNED,
+      signedMintValidationParamsIndex,
+      mintParams,
+      salt,
+      signature,
+    }));
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(minter.address, mintParams.dropStageIndex);
+
+    const minterBalance = await token.balanceOf(minter.address);
+    expect(minterBalance).to.eq(3);
+    expect(await token.totalSupply()).to.eq(3);
   });
 
   it("Should not mint a signed mint with different params", async () => {
