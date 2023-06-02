@@ -3,11 +3,7 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 solc_version = '0.8.19'
-remappings = [
-    'ds-test/=lib/forge-std/lib/ds-test/src/',
-    'seadrop/=src/',
-]
-auto_detect_remappings = false
+auto_detect_remappings = false # remappings in remappings.txt
 optimizer_runs = 100
 # via_ir = true
 ignored_error_codes = []
