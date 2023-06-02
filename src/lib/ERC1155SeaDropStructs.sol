@@ -32,15 +32,15 @@ import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 struct PublicDrop {
     uint80 startPrice; // 80/512 bits
     uint80 endPrice; // 160/512 bits
-    uint48 startTime; // 368/512 bits
-    uint48 endTime; // 416/512 bits
-    address paymentToken; // 320/512 bits
-    uint24 fromTokenId;
-    uint24 toTokenId;
-    uint16 maxTotalMintableByWallet; // 432/512 bits
-    uint16 maxTotalMintableByWalletPerToken; // 432/512 bits
-    uint16 feeBps; // 448/512 bits
-    bool restrictFeeRecipients; // 456/512 bits
+    uint40 startTime; // 200/512 bits
+    uint40 endTime; // 240/512 bits
+    address paymentToken; // 400/512 bits
+    uint24 fromTokenId; // 424/512 bits
+    uint24 toTokenId; // 448/512 bits
+    uint16 maxTotalMintableByWallet; // 472/512 bits
+    uint16 maxTotalMintableByWalletPerToken; // 488/512 bits
+    uint16 feeBps; // 504/512 bits
+    bool restrictFeeRecipients; // 512/512 bits
 }
 
 /**
@@ -114,15 +114,15 @@ struct MintParams {
 struct SignedMintValidationParams {
     uint80 minMintPrice; // 80/512 bits
     address paymentToken; // 240/512 bits
-    uint24 minFromTokenId;
-    uint24 maxToTokenId;
-    uint24 maxMaxTotalMintableByWallet; // 264/512 bits
-    uint24 maxMaxTotalMintableByWalletPerToken;
-    uint40 minStartTime; // 304/512 bits
-    uint40 maxEndTime; // 344/512 bits
-    uint40 maxMaxTokenSupplyForStage; // 384/512 bits
-    uint16 minFeeBps; // 400/512 bits
-    uint16 maxFeeBps; // 416/512 bits
+    uint24 minFromTokenId; // 264/512 bits
+    uint24 maxToTokenId; // 288/512 bits
+    uint24 maxMaxTotalMintableByWallet; // 312/512 bits
+    uint24 maxMaxTotalMintableByWalletPerToken; // 336/512 bits
+    uint40 minStartTime; // 376/512 bits
+    uint40 maxEndTime; // 416/512 bits
+    uint40 maxMaxTokenSupplyForStage; // 456/512 bits
+    uint16 minFeeBps; // 472/512 bits
+    uint16 maxFeeBps; // 488/512 bits
 }
 
 /**

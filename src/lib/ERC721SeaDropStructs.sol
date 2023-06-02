@@ -27,12 +27,12 @@ import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 struct PublicDrop {
     uint80 startPrice; // 80/512 bits
     uint80 endPrice; // 160/512 bits
-    uint48 startTime; // 368/512 bits
-    uint48 endTime; // 416/512 bits
-    address paymentToken; // 320/512 bits
-    uint16 maxTotalMintableByWallet; // 432/512 bits
-    uint16 feeBps; // 448/512 bits
-    bool restrictFeeRecipients; // 456/512 bits
+    uint40 startTime; // 200/512 bits
+    uint40 endTime; // 240/512 bits
+    address paymentToken; // 400/512 bits
+    uint16 maxTotalMintableByWallet; // 416/512 bits
+    uint16 feeBps; // 432/512 bits
+    bool restrictFeeRecipients; // 440/512 bits
 }
 
 /**

@@ -76,8 +76,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         PublicDrop memory publicDrop = PublicDrop({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp + 500),
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp + 500),
             paymentToken: address(0),
             fromTokenId: 1,
             toTokenId: 3,
@@ -156,8 +156,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         MintParams memory mintParams = MintParams({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp) + 500,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp) + 500,
             paymentToken: address(0),
             fromTokenId: 1,
             toTokenId: 1,
@@ -267,8 +267,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         MintParams memory mintParams = MintParams({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp) + 500,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp) + 500,
             paymentToken: address(0),
             fromTokenId: 1,
             toTokenId: 1,

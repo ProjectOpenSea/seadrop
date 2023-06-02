@@ -77,8 +77,8 @@ contract DeployAndConfigure1155ExampleToken is Script {
             PublicDrop({
                 startPrice: mintPrice,
                 endPrice: mintPrice,
-                startTime: uint48(block.timestamp),
-                endTime: uint48(block.timestamp) + 1_000_000,
+                startTime: uint40(block.timestamp),
+                endTime: uint40(block.timestamp) + 1_000_000,
                 paymentToken: address(0),
                 fromTokenId: 1,
                 toTokenId: 3,

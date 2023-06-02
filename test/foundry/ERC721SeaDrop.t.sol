@@ -75,8 +75,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         PublicDrop memory publicDrop = PublicDrop({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp + 500),
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp + 500),
             paymentToken: address(0),
             maxTotalMintableByWallet: 5,
             feeBps: uint16(feeBps),
@@ -151,8 +151,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         MintParams memory mintParams = MintParams({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp) + 500,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp) + 500,
             paymentToken: address(0),
             maxTotalMintableByWallet: 5,
             maxTokenSupplyForStage: 1000,
@@ -258,8 +258,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         MintParams memory mintParams = MintParams({
             startPrice: 1 ether,
             endPrice: 1 ether,
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp) + 500,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp) + 500,
             paymentToken: address(0),
             maxTotalMintableByWallet: 4,
             maxTokenSupplyForStage: 1000,
