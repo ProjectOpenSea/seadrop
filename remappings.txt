@@ -14,4 +14,5 @@ seadrop/=src/
 seaport-sol/=lib/seaport/lib/seaport-sol/
 seaport-types/=lib/seaport/lib/seaport-types/
 seaport-core/=lib/seaport/lib/seaport-core/
-seaport-test-utils/=lib/seaport/test/foundry/utils
+seaport-test-utils/=lib/seaport/test/foundry/utils/
+solady=lib/seaport/lib/solady/
