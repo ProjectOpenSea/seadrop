@@ -1,7 +1,7 @@
 forge-std/=lib/forge-std/src/
 ERC721A/=lib/ERC721A/contracts/
 ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/contracts/
-@openzeppelin/contracts/=lib/seaport/lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 @openzeppelin-upgradeable/contracts/=lib/openzeppelin-contracts-upgradeable/contracts/
 @rari-capital/solmate/=lib/solmate/
 solmate/=lib/solmate/src/

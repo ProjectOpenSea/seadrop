@@ -7,6 +7,7 @@ remappings = [
     'ds-test/=lib/forge-std/lib/ds-test/src/',
     'seadrop/=src/',
 ]
+auto_detect_remappings = false
 optimizer_runs = 100
 # via_ir = true
 ignored_error_codes = []
