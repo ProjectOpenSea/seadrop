@@ -58,7 +58,7 @@ interface IERC1155SeaDrop is ISeaDropToken {
      *
      * @dev    NOTE: Implementing contracts should always update these numbers
      *         before transferring any tokens with _safeMint() to mitigate
-     *         consequences of malicious onERC721Received() hooks.
+     *         consequences of malicious onERC1155Received() hooks.
      *
      * @param minter  The minter address.
      * @param tokenId The token id to return stats for.

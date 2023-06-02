@@ -278,7 +278,7 @@ contract ERC721SeaDropContractOfferer is
      * @param data The original transaction calldata, without the selector.
      */
     function _mintOrder(bytes calldata data) internal {
-        // Decode fulfiller and context from calldata.
+        // Decode fulfiller, minimumReceived, and context from calldata.
         (
             address fulfiller,
             SpentItem[] memory minimumReceived,
@@ -286,7 +286,7 @@ contract ERC721SeaDropContractOfferer is
             bytes memory context
         ) = abi.decode(data, (address, SpentItem[], SpentItem[], bytes));
 
-        // Assign the minter in context[22:42]
+        // Assign the minter from context[22:42]
         address minter;
         assembly {
             minter := div(
