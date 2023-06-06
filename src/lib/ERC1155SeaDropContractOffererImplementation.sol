@@ -1546,11 +1546,14 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Revert if the min or max fee bps is greater than 10_000.
-        if (signedMintValidationParams.minFeeBps > 10_000) {
-            revert InvalidFeeBps(signedMintValidationParams.minFeeBps);
-        }
         if (signedMintValidationParams.maxFeeBps > 10_000) {
             revert InvalidFeeBps(signedMintValidationParams.maxFeeBps);
+        }
+        if (
+            signedMintValidationParams.minFeeBps >
+            signedMintValidationParams.maxFeeBps
+        ) {
+            revert InvalidFeeBps(signedMintValidationParams.minFeeBps);
         }
 
         // Track the enumerated storage.
