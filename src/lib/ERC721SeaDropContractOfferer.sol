@@ -25,6 +25,10 @@ import {
 
 import { SpentItem } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
+import {
+    ContractOffererInterface
+} from "seaport-types/src/interfaces/ContractOffererInterface.sol";
+
 /**
  * @title  ERC721SeaDropContractOfferer
  * @author James Wenzel (emo.eth)
@@ -265,6 +269,7 @@ contract ERC721SeaDropContractOfferer is
     ) public view virtual override(ERC721ContractMetadata) returns (bool) {
         return
             interfaceId == type(IERC721SeaDrop).interfaceId ||
+            interfaceId == type(ContractOffererInterface).interfaceId ||
             interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
             // ERC721ContractMetadata returns supportsInterface true for
             //     IERC721ContractMetadata, ERC-4906, ERC-2981

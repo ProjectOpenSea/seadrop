@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
 import {
+  ContractOffererInterface__factory,
   IERC165__factory,
   IERC2981__factory,
   IERC721ContractMetadata__factory,
@@ -538,11 +539,15 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       [IERC721__factory, IERC165__factory],
       [IERC165__factory],
     ];
+    const supportedInterfacesContractOffererInterface = [
+      [ContractOffererInterface__factory],
+    ];
 
     for (const factories of [
       ...supportedInterfacesERC721SeaDrop,
       ...supportedInterfacesERC721ContractMetadata,
       ...supportedInterfacesERC721A,
+      ...supportedInterfacesContractOffererInterface,
     ]) {
       const interfaceId = factories
         .map((factory) => getInterfaceID(factory.createInterface()))

@@ -17,9 +17,13 @@ import { PublicDrop } from "./ERC1155SeaDropStructs.sol";
 
 import { AllowListData } from "./SeaDropStructs.sol";
 
+import "./ERC1155SeaDropConstants.sol";
+
 import { SpentItem } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import "./ERC1155SeaDropConstants.sol";
+import {
+    ContractOffererInterface
+} from "seaport-types/src/interfaces/ContractOffererInterface.sol";
 
 import {
     IERC165
@@ -277,6 +281,7 @@ contract ERC1155SeaDropContractOfferer is
     ) public view virtual override(ERC1155ContractMetadata) returns (bool) {
         return
             interfaceId == type(IERC1155SeaDrop).interfaceId ||
+            interfaceId == type(ContractOffererInterface).interfaceId ||
             interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
             // ERC1155ContractMetadata returns supportsInterface true for
             //     IERC1155ContractMetadata, ERC-4906, ERC-2981
