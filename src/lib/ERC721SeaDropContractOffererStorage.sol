@@ -39,7 +39,11 @@ library ERC721SeaDropContractOffererStorage {
     }
 
     bytes32 internal constant STORAGE_SLOT =
-        keccak256("contracts.storage.ERC721SeaDropContractOfferer");
+        bytes32(
+            uint256(
+                keccak256("contracts.storage.ERC721SeaDropContractOfferer")
+            ) - 1
+        );
 
     function layout() internal pure returns (Layout storage l) {
         bytes32 slot = STORAGE_SLOT;
