@@ -15,7 +15,9 @@ import {
 
 import { PublicDrop } from "./ERC1155SeaDropStructs.sol";
 
-import { AllowListData, SpentItem } from "./SeaDropStructs.sol";
+import { AllowListData } from "./SeaDropStructs.sol";
+
+import { SpentItem } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 import "./ERC1155SeaDropConstants.sol";
 

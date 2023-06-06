@@ -26,35 +26,3 @@ struct AllowListData {
     string[] publicKeyURIs;
     string allowListURI;
 }
-
-/**
- * @dev From Seaport.
- *      For SpentItem struct.
- * */
-enum ItemType {
-    // 0: ETH on mainnet, MATIC on polygon, etc.
-    NATIVE,
-    // 1: ERC20 items (ERC777 and ERC20 analogues could also technically work)
-    ERC20,
-    // 2: ERC721 items
-    ERC721,
-    // 3: ERC1155 items
-    ERC1155,
-    // 4: ERC721 items where a number of tokenIds are supported
-    ERC721_WITH_CRITERIA,
-    // 5: ERC1155 items where a number of ids are supported
-    ERC1155_WITH_CRITERIA
-}
-
-/**
- * @dev From Seaport.
- *      A spent item is translated from a utilized offer item and has four
- *      components: an item type (ETH or other native tokens, ERC20, ERC721,
- *      and ERC1155), a token address, a tokenId, and an amount.
- */
-struct SpentItem {
-    ItemType itemType;
-    address token;
-    uint256 identifier;
-    uint256 amount;
-}

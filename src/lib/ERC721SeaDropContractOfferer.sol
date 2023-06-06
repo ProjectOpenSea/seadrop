@@ -15,13 +15,15 @@ import {
 
 import { PublicDrop } from "./ERC721SeaDropStructs.sol";
 
-import { AllowListData, SpentItem } from "./SeaDropStructs.sol";
+import { AllowListData } from "./SeaDropStructs.sol";
 
 import "./ERC721SeaDropConstants.sol";
 
 import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
+import { SpentItem } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 /**
  * @title  ERC721SeaDropContractOfferer
