@@ -496,10 +496,11 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Next, check for supported substandard.
         errorBuffer |= _castAndInvert(substandard < 3) << 2;
 
-        // Next, check for correct context length. Minimum is 42 bytes
-        // (version byte, substandard byte, feeRecipient, minter)
+        // Next, check for correct context length. Minimum is 43 bytes
+        // (version byte, substandard byte, feeRecipient, minter,
+        //  publicDropIndex OR other substandard mint params)
         unchecked {
-            errorBuffer |= _castAndInvert(context.length > 41) << 3;
+            errorBuffer |= _castAndInvert(context.length > 42) << 3;
         }
 
         // Handle decoding errors.
