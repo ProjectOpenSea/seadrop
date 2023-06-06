@@ -188,7 +188,7 @@ contract ERC1155SeaDropContractOfferer is
             // Utilize assembly to efficiently return the ratifyOrder magic value.
             assembly {
                 mstore(0, 0xf4dd92ce)
-                return(0x1c, 0x04)
+                return(0x1c, 32)
             }
         } else {
             // Revert if the function selector is not supported.
