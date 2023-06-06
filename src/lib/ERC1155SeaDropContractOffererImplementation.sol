@@ -543,11 +543,11 @@ contract ERC1155SeaDropContractOffererImplementation is
         internal
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
-        // The offer is the minimumReceived.
-        offer = minimumReceived;
-
         // Derive the substandard version.
         uint8 substandard = _decodeOrder(minimumReceived, context);
+
+        // The offer is the minimumReceived which is validated in `_decodeOrder`.
+        offer = minimumReceived;
 
         // All substandards have feeRecipient and minter as first two params.
         address feeRecipient = address(bytes20(context[2:22]));

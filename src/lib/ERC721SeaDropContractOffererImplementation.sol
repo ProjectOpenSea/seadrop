@@ -479,11 +479,11 @@ contract ERC721SeaDropContractOffererImplementation is
         internal
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
-        // The offer is the minimumReceived.
-        offer = minimumReceived;
-
         // Derive the substandard version.
         uint8 substandard = _decodeOrder(minimumReceived, context);
+
+        // The offer is the minimumReceived which is validated in `_decodeOrder`.
+        offer = minimumReceived;
 
         // Quantity is the amount of the ERC-1155 min received item.
         uint256 quantity = minimumReceived[0].amount;
