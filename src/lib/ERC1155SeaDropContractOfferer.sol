@@ -300,13 +300,11 @@ contract ERC1155SeaDropContractOfferer is
             bytes memory context
         ) = abi.decode(data, (address, SpentItem[], SpentItem[], bytes));
 
-        // Assign the minter from context[22:42]
+        // Assign the minter from context[22:42]. We validate context has the
+        // correct minimum length in the implementation's `_decodeOrder`.
         address minter;
         assembly {
-            minter := div(
-                mload(add(add(context, 0x20), 22)),
-                0x1000000000000000000000000
-            )
+            minter := shr(96, mload(add(add(context, 0x20), 22)))
         }
 
         // If the minter is the zero address, set it to the fulfiller.
