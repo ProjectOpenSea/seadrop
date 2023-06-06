@@ -1356,7 +1356,7 @@ contract ERC721SeaDropContractOffererImplementation is
         bool signedMintValidationParamsDoesNotExist;
         assembly {
             signedMintValidationParamsDoesNotExist := iszero(
-                add(
+                or(
                     sload(existingSignedMintValidationParams.slot),
                     sload(add(existingSignedMintValidationParams.slot, 1))
                 )

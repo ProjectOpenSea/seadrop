@@ -307,7 +307,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         bool dropStageDoesNotExist;
         assembly {
             dropStageDoesNotExist := iszero(
-                add(
+                or(
                     sload(existingDropStageData.slot),
                     sload(add(existingDropStageData.slot, 1))
                 )
@@ -1576,7 +1576,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         bool signedMintValidationParamsDoesNotExist;
         assembly {
             signedMintValidationParamsDoesNotExist := iszero(
-                add(
+                or(
                     sload(existingSignedMintValidationParams.slot),
                     sload(add(existingSignedMintValidationParams.slot, 1))
                 )
