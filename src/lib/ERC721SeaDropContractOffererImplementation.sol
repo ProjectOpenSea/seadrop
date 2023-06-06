@@ -30,8 +30,6 @@ import {
     Schema
 } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {
