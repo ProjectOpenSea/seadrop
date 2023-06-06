@@ -9,6 +9,8 @@ import {
     DefaultOperatorFilterer
 } from "operator-filter-registry/DefaultOperatorFilterer.sol";
 
+import { ERC1155 } from "solmate/tokens/ERC1155.sol";
+
 /**
  * @title  ERC1155SeaDrop
  * @author James Wenzel (emo.eth)
@@ -61,7 +63,7 @@ contract ERC1155SeaDrop is
         address operator,
         bool approved
     ) public override onlyAllowedOperatorApproval(operator) {
-        super.setApprovalForAll(operator, approved);
+        ERC1155.setApprovalForAll(operator, approved);
     }
 
     /**
@@ -77,7 +79,13 @@ contract ERC1155SeaDrop is
         uint256 amount,
         bytes calldata data
     ) public override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId, amount, data);
+        ERC1155SeaDropContractOfferer.safeTransferFrom(
+            from,
+            to,
+            tokenId,
+            amount,
+            data
+        );
     }
 
     /**
@@ -93,7 +101,7 @@ contract ERC1155SeaDrop is
         uint256[] calldata amounts,
         bytes calldata data
     ) public virtual override onlyAllowedOperator(from) {
-        super.safeBatchTransferFrom(from, to, ids, amounts, data);
+        ERC1155.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
 
     /**

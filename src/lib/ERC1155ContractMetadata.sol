@@ -347,7 +347,7 @@ contract ERC1155ContractMetadata is
         // Increment mint counts.
         _incrementMintCounts(to, id, amount);
 
-        super._mint(to, id, amount, data);
+        ERC1155._mint(to, id, amount, data);
     }
 
     /**
@@ -376,7 +376,7 @@ contract ERC1155ContractMetadata is
             }
         }
 
-        super._batchMint(to, ids, amounts, data);
+        ERC1155._batchMint(to, ids, amounts, data);
     }
 
     /**
@@ -394,7 +394,7 @@ contract ERC1155ContractMetadata is
         // Reduce the supply.
         _reduceSupplyOnBurn(id, amount);
 
-        super._burn(from, id, amount);
+        ERC1155._burn(from, id, amount);
     }
 
     /**
@@ -421,7 +421,7 @@ contract ERC1155ContractMetadata is
             }
         }
 
-        super._batchBurn(from, ids, amounts);
+        ERC1155._batchBurn(from, ids, amounts);
     }
 
     function _reduceSupplyOnBurn(uint256 id, uint256 amount) internal {

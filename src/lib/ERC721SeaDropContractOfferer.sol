@@ -268,7 +268,7 @@ contract ERC721SeaDropContractOfferer is
             //     IERC721ContractMetadata, ERC-4906, ERC-2981
             // ERC721A returns supportsInterface true for
             //     ERC165, ERC721, ERC721Metadata
-            super.supportsInterface(interfaceId);
+            ERC721ContractMetadata.supportsInterface(interfaceId);
     }
 
     /**

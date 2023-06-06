@@ -23,6 +23,8 @@ import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
+import { ERC1155 } from "solmate/tokens/ERC1155.sol";
+
 /**
  * @title  ERC1155SeaDropContractOfferer
  * @author James Wenzel (emo.eth)
@@ -260,7 +262,7 @@ contract ERC1155SeaDropContractOfferer is
             return;
         }
 
-        super.safeTransferFrom(from, to, id, amount, data);
+        ERC1155.safeTransferFrom(from, to, id, amount, data);
     }
 
     /**
@@ -278,7 +280,7 @@ contract ERC1155SeaDropContractOfferer is
             //     IERC1155ContractMetadata, ERC-4906, ERC-2981
             // ERC1155A returns supportsInterface true for
             //     ERC165, ERC1155, ERC1155MetadataURI
-            super.supportsInterface(interfaceId);
+            ERC1155ContractMetadata.supportsInterface(interfaceId);
     }
 
     /**

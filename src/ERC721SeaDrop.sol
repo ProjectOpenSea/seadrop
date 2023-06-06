@@ -9,6 +9,8 @@ import {
     DefaultOperatorFilterer
 } from "operator-filter-registry/DefaultOperatorFilterer.sol";
 
+import { ERC721A } from "ERC721A/ERC721A.sol";
+
 /**
  * @title  ERC721SeaDrop
  * @author James Wenzel (emo.eth)
@@ -78,7 +80,7 @@ contract ERC721SeaDrop is
         address operator,
         bool approved
     ) public override onlyAllowedOperatorApproval(operator) {
-        super.setApprovalForAll(operator, approved);
+        ERC721A.setApprovalForAll(operator, approved);
     }
 
     /**
@@ -100,7 +102,7 @@ contract ERC721SeaDrop is
         address operator,
         uint256 tokenId
     ) public payable override onlyAllowedOperatorApproval(operator) {
-        super.approve(operator, tokenId);
+        ERC721A.approve(operator, tokenId);
     }
 
     /**
@@ -122,7 +124,7 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId
     ) public payable override onlyAllowedOperator(from) {
-        super.transferFrom(from, to, tokenId);
+        ERC721A.transferFrom(from, to, tokenId);
     }
 
     /**
@@ -133,7 +135,7 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId
     ) public payable override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId);
+        ERC721A.safeTransferFrom(from, to, tokenId);
     }
 
     /**
@@ -158,7 +160,7 @@ contract ERC721SeaDrop is
         uint256 tokenId,
         bytes memory data
     ) public payable override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId, data);
+        ERC721A.safeTransferFrom(from, to, tokenId, data);
     }
 
     /**
