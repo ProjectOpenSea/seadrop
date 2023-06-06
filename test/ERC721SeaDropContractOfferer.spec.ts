@@ -230,6 +230,17 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         minter.address, // payer
         _PUBLIC_DROP_STAGE_INDEX
       );
+
+    // For coverage, ensure mint reverts if offer item identifier is not 0
+    order.parameters.offer[0].identifierOrCriteria = toBN(1);
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // MustSpecifyERC1155ConsiderationItemForSeaDropMint
   });
 
   it("Should only let the token owner update the drop URI", async () => {

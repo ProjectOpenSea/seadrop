@@ -419,6 +419,7 @@ contract ERC721SeaDropContractOffererImplementation is
                 minimumReceived.length == 1 &&
                     minimumReceived[0].itemType == ItemType.ERC1155 &&
                     minimumReceived[0].token == address(this) &&
+                    minimumReceived[0].identifier == 0 &&
                     minimumReceived[0].amount != 0
             )
         );
