@@ -432,6 +432,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     await token.setMaxSupply(3);
 
     const safeTransferFrom1155Selector = "0xf242432a";
+
     const encodedParams = defaultAbiCoder.encode(
       ["address", "address", "uint256", "uint256", "bytes"],
       [token.address, AddressZero, 0, 1, []]
@@ -459,6 +460,64 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     // Impersonate as owner
     await expect(
       owner.sendTransaction({ to: token.address, data, gasLimit: 100_000 })
+    )
+      .to.be.revertedWithCustomError(token, "InvalidCallerOnlyAllowedSeaport")
+      .withArgs(owner.address);
+
+    // Should always throw "InvalidCallerOnlyAllowedSeaport" when from != token,
+    // to protect against others making fake listings.
+    const encodedParamsFromNotTokenContract = defaultAbiCoder.encode(
+      ["address", "address", "uint256", "uint256", "bytes"],
+      [owner.address, AddressZero, 0, 1, []]
+    );
+    const dataFromNotTokenContract =
+      safeTransferFrom1155Selector + encodedParamsFromNotTokenContract.slice(2);
+
+    // Impersonate as Seaport
+    await whileImpersonating(
+      marketplaceContract.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(
+          impersonatedSigner.sendTransaction({
+            to: token.address,
+            data: dataFromNotTokenContract,
+          })
+        )
+          .to.be.revertedWithCustomError(
+            token,
+            "InvalidCallerOnlyAllowedSeaport"
+          )
+          .withArgs(marketplaceContract.address);
+      }
+    );
+
+    // Impersonate as conduit
+    await whileImpersonating(
+      conduitOne.address,
+      provider,
+      async (impersonatedSigner) => {
+        await expect(
+          impersonatedSigner.sendTransaction({
+            to: token.address,
+            data: dataFromNotTokenContract,
+          })
+        )
+          .to.be.revertedWithCustomError(
+            token,
+            "InvalidCallerOnlyAllowedSeaport"
+          )
+          .withArgs(conduitOne.address);
+      }
+    );
+
+    // Impersonate as owner
+    await expect(
+      owner.sendTransaction({
+        to: token.address,
+        data: dataFromNotTokenContract,
+        gasLimit: 100_000,
+      })
     )
       .to.be.revertedWithCustomError(token, "InvalidCallerOnlyAllowedSeaport")
       .withArgs(owner.address);
