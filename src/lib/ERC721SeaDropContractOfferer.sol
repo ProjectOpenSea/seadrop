@@ -71,6 +71,9 @@ contract ERC721SeaDropContractOfferer is
         _CONDUIT = allowedConduit;
 
         // Set the allowed Seaport to interact with this contract.
+        if (allowedSeaport == address(0)) {
+            revert AllowedSeaportCannotBeZeroAddress();
+        }
         ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
             allowedSeaport
         ] = true;

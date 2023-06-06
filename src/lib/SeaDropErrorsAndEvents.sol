@@ -284,6 +284,12 @@ interface SeaDropErrorsAndEvents {
     error InvalidSubstandard(uint8 substandard);
 
     /**
+     * @dev Revert with an error if the provided allowed Seaport is the
+     *      zero address.
+     */
+    error AllowedSeaportCannotBeZeroAddress();
+
+    /**
      * @dev Emit an event when allowed Seaport contracts are updated.
      */
     event AllowedSeaportUpdated(address[] allowedSeaport);

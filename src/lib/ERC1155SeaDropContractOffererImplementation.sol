@@ -1399,8 +1399,13 @@ contract ERC1155SeaDropContractOffererImplementation is
             }
         }
 
-        // Set the new mapping for allowed SeaDrop contracts.
+        // Set the new mapping for allowed Seaport contracts.
         for (uint256 i = 0; i < allowedSeaportLength; ) {
+            // Ensure the allowed Seaport address is not the zero address.
+            if (allowedSeaport[i] == address(0)) {
+                revert AllowedSeaportCannotBeZeroAddress();
+            }
+
             ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
                 allowedSeaport[i]
             ] = true;

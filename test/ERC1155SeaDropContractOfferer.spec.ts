@@ -148,8 +148,8 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     );
     const tx = await ERC1155SeaDrop.deploy(
       AddressZero,
-      marketplaceContract.address,
       conduitOne.address,
+      marketplaceContract.address,
       "",
       ""
     );
@@ -158,6 +158,12 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       ({ event }: any) => event === "SeaDropTokenDeployed"
     );
     expect(event).to.not.be.null;
+
+    await expect(
+      ERC1155SeaDrop.deploy(AddressZero, AddressZero, AddressZero, "", "", {
+        gasLimit: 10_000_000,
+      })
+    ).to.be.revertedWithCustomError(token, "AllowedSeaportCannotBeZeroAddress");
   });
 
   it("Should not be able to mint until the creator payout is set", async () => {
@@ -501,6 +507,12 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
           gasLimit: 100_000,
         })
     ).to.revertedWithCustomError(token, "OnlyOwner");
+
+    await expect(
+      tokenSeaDropInterface.connect(owner).updateAllowedSeaport([AddressZero], {
+        gasLimit: 100_000,
+      })
+    ).to.revertedWithCustomError(token, "AllowedSeaportCannotBeZeroAddress");
 
     await expect(
       tokenSeaDropInterface.updateAllowedSeaport([marketplaceContract.address])
