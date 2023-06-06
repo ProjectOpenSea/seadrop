@@ -518,7 +518,7 @@ contract ERC721SeaDropContractOffererImplementation is
             consideration = _mintAllowList(mintDetails, mintParams, proof);
         } else {
             // substandard == 2
-            // 3: Signed mint
+            // 2: Signed mint
             uint8 signedMintValidationParamsIndex = uint8(
                 bytes1(context[42:43])
             );
