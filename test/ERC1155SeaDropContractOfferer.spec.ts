@@ -770,13 +770,13 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         publicDrop.endPrice,
         publicDrop.startTime,
         publicDrop.endTime,
+        publicDrop.restrictFeeRecipients,
         publicDrop.paymentToken,
         publicDrop.fromTokenId,
         publicDrop.toTokenId,
         publicDrop.maxTotalMintableByWallet,
         publicDrop.maxTotalMintableByWalletPerToken,
         publicDrop.feeBps,
-        publicDrop.restrictFeeRecipients,
       ]);
       expect(creatorPayouts).to.deep.eq([[creator.address, 10_000]]);
       expect(allowListMerkleRoot).to.eq(allowListData.merkleRoot);

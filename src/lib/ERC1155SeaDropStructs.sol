@@ -14,6 +14,8 @@ import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
  *                                 be calculated based on the current time.
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
+ * @param restrictFeeRecipients    If false, allow any fee recipient;
+ *                                 if true, check fee recipient is allowed.
  * @param paymentToken             The payment token address. Null for
  *                                 native token.
  * @param fromTokenId              The start token id for the stage.
@@ -26,21 +28,23 @@ import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
  *                                 this field is 2^16 - 1)
  * @param feeBps                   Fee out of 10_000 basis points to be
  *                                 collected.
- * @param restrictFeeRecipients    If false, allow any fee recipient;
- *                                 if true, check fee recipient is allowed.
  */
 struct PublicDrop {
+    // slot 1
     uint80 startPrice; // 80/512 bits
     uint80 endPrice; // 160/512 bits
     uint40 startTime; // 200/512 bits
     uint40 endTime; // 240/512 bits
-    address paymentToken; // 400/512 bits
-    uint24 fromTokenId; // 424/512 bits
-    uint24 toTokenId; // 448/512 bits
+    bool restrictFeeRecipients; // 248/512 bits
+    // uint8 unused;
+
+    // slot 2
+    address paymentToken; // 408/512 bits
+    uint24 fromTokenId; // 432/512 bits
+    uint24 toTokenId; // 456/512 bits
     uint16 maxTotalMintableByWallet; // 472/512 bits
     uint16 maxTotalMintableByWalletPerToken; // 488/512 bits
     uint16 feeBps; // 504/512 bits
-    bool restrictFeeRecipients; // 512/512 bits
 }
 
 /**
