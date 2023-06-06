@@ -166,6 +166,51 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "AllowedSeaportCannotBeZeroAddress");
   });
 
+  it("Should not be able to call into the implementation contract without delegatecall", async () => {
+    // Fallback
+    await expect(
+      owner.sendTransaction({
+        to: configurer.address,
+        data: "0x123456",
+        gasLimit: 50_000,
+      })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updateDropURI
+    await expect(
+      configurer.updateDropURI("", { gasLimit: 50_000 })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updatePublicDrop
+    await expect(
+      configurer.updatePublicDrop(publicDrop, 0, { gasLimit: 50_000 })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updateAllowList
+    await expect(
+      configurer.updateAllowList(
+        {
+          merkleRoot: `0x${"1".repeat(64)}`,
+          publicKeyURIs: [],
+          allowListURI: "",
+        },
+        { gasLimit: 50_000 }
+      )
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // generateOrder
+    await expect(
+      configurer.generateOrder(AddressZero, [], [], [], { gasLimit: 50_000 })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // previewOrder
+    await expect(
+      configurer.previewOrder(AddressZero, AddressZero, [], [], [], {
+        gasLimit: 50_000,
+      })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+  });
+
   it("Should not be able to mint until the creator payout is set", async () => {
     const { token: token2, tokenSeaDropInterface: tokenSeaDropInterface2 } =
       await deployERC1155SeaDrop(

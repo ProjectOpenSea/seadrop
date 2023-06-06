@@ -284,6 +284,12 @@ interface SeaDropErrorsAndEvents {
     error InvalidSubstandard(uint8 substandard);
 
     /**
+     * @dev Revert with an error if the implementation contract is called without
+     *      delegatecall.
+     */
+    error OnlyDelegateCalled();
+
+    /**
      * @dev Revert with an error if the provided allowed Seaport is the
      *      zero address.
      */

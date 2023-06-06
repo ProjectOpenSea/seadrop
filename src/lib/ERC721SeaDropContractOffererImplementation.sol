@@ -56,6 +56,10 @@ contract ERC721SeaDropContractOffererImplementation is
     IDelegationRegistry public constant DELEGATION_REGISTRY =
         IDelegationRegistry(0x00000000000076A84feF008CDAbe6409d2FE638B);
 
+    /// @notice The original address of this contract, to ensure that it can
+    ///         only be called into with delegatecall.
+    address internal immutable _originalImplementation;
+
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
@@ -127,13 +131,19 @@ contract ERC721SeaDropContractOffererImplementation is
     /**
      * @dev Constructor for contract deployment.
      */
-    constructor() {}
+    constructor() {
+        // Set the immutable address of this contract.
+        _originalImplementation = address(this);
+    }
 
     /**
      * @notice The fallback function is used as a dispatcher for SeaDrop
      *         methods.
      */
     fallback(bytes calldata) external returns (bytes memory output) {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // Get the function selector.
         bytes4 selector = msg.sig;
 
@@ -252,6 +262,9 @@ contract ERC721SeaDropContractOffererImplementation is
      * @param dropURI The new drop URI.
      */
     function updateDropURI(string calldata dropURI) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // Emit an event with the update.
         emit DropURIUpdated(dropURI);
     }
@@ -265,6 +278,9 @@ contract ERC721SeaDropContractOffererImplementation is
      * @param publicDrop The public drop data.
      */
     function updatePublicDrop(PublicDrop calldata publicDrop) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // Revert if the fee basis points is greater than 10_000.
         if (publicDrop.feeBps > 10_000) {
             revert InvalidFeeBps(publicDrop.feeBps);
@@ -286,6 +302,9 @@ contract ERC721SeaDropContractOffererImplementation is
      * @param allowListData The allow list data.
      */
     function updateAllowList(AllowListData calldata allowListData) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // Put the previous root on the stack to use for the event.
         bytes32 prevRoot = ERC721SeaDropContractOffererStorage
             .layout()
@@ -333,6 +352,9 @@ contract ERC721SeaDropContractOffererImplementation is
         external
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // Only an allowed Seaport can call this function.
         if (
             !ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
@@ -379,6 +401,9 @@ contract ERC721SeaDropContractOffererImplementation is
         view
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration)
     {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // To avoid the solidity compiler complaining about calling a non-view
         // function here (_createOrder), we will cast it as a view and use it.
         // This is okay because we are not modifying any state when passing
@@ -1585,6 +1610,16 @@ contract ERC721SeaDropContractOffererImplementation is
         }
         // Return data list
         return (dataList);
+    }
+
+    /**
+     * @dev Internal view function to revert if this implementation contract is
+     *      called without delegatecall.
+     */
+    function _onlyDelegateCalled() internal view {
+        if (address(this) == _originalImplementation) {
+            revert OnlyDelegateCalled();
+        }
     }
 
     /**
