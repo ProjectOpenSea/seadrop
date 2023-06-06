@@ -506,15 +506,17 @@ contract ERC1155SeaDropContractOffererImplementation is
         if (errorBuffer != 0) {
             uint8 version = uint8(context[0]);
 
-            if (errorBuffer << 255 != 0) {
-                revert MustSpecifyERC1155ConsiderationItemForSeaDropMint();
-            } else if (errorBuffer << 254 != 0) {
+            // We'll first revert with SIP-6 errors to follow spec.
+            // (`UnsupportedExtraDataVersion` and `InvalidExtraDataEncoding`)
+            if (errorBuffer << 254 != 0) {
                 revert UnsupportedExtraDataVersion(version);
+            } else if (errorBuffer << 252 != 0) {
+                revert InvalidExtraDataEncoding(version);
             } else if (errorBuffer << 253 != 0) {
                 revert InvalidSubstandard(substandard);
             } else {
-                // errorBuffer << 252 != 0
-                revert InvalidExtraDataEncoding(version);
+                // errorBuffer << 255 != 0
+                revert MustSpecifyERC1155ConsiderationItemForSeaDropMint();
             }
         }
     }
