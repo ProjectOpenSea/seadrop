@@ -1899,9 +1899,6 @@ contract ERC1155SeaDropContractOffererImplementation is
      *      If no reason is provided, reverts with no message.
      */
     function _revertWithReason(bytes memory data) internal pure {
-        // Revert if no revert reason.
-        if (data.length == 0) revert();
-
         // Bubble up the revert reason.
         assembly {
             revert(add(32, data), mload(data))

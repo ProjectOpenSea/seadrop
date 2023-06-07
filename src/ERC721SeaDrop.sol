@@ -189,9 +189,6 @@ contract ERC721SeaDrop is
 
         // Require that the call was successful.
         if (!success) {
-            // Revert if no revert reason.
-            if (data.length == 0) revert();
-
             // Bubble up the revert reason.
             assembly {
                 revert(add(32, data), mload(data))
