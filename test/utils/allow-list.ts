@@ -68,7 +68,7 @@ export const createAllowListAndGetProof = async (
   const leaves = minters.map((minter) => [minter.address, mintParams] as Leaf);
 
   // Encode the leaves.
-  const elementsBuffer = await allowListElementsBuffer(leaves);
+  const elementsBuffer = allowListElementsBuffer(leaves);
 
   // Construct a merkle tree from the allow list elements.
   const merkleTree = createMerkleTree(elementsBuffer);

@@ -34,10 +34,6 @@ import {
 
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import {
-    MerkleProof
-} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-
 /**
  * @title  ERC721SeaDropContractOffererImplementation
  * @author James Wenzel (emo.eth)
@@ -554,8 +550,14 @@ contract ERC721SeaDropContractOffererImplementation is
                 context[42:362],
                 (MintParams)
             );
-            bytes32[] memory proof = _bytesToBytes32Array(context[362:]);
-            consideration = _mintAllowList(mintDetails, mintParams, proof);
+            // Instead of putting the proof in memory, pass context and offset
+            // to use it directly from calldata.
+            consideration = _mintAllowList(
+                mintDetails,
+                mintParams,
+                context,
+                362
+            );
         } else {
             // substandard == 2
             // 2: Signed mint
@@ -623,17 +625,20 @@ contract ERC721SeaDropContractOffererImplementation is
      *
      * @param mintDetails  The mint details.
      * @param mintParams   The mint parameters.
-     * @param proof        The proof for the leaf of the allow list.
+     * @param context      The context of the order.
+     * @param proofOffsetInContext The offset of the proof in the context.
      */
     function _mintAllowList(
         MintDetails memory mintDetails,
         MintParams memory mintParams,
-        bytes32[] memory proof
+        bytes calldata context,
+        uint256 proofOffsetInContext
     ) internal returns (ReceivedItem[] memory consideration) {
         // Verify the proof.
         if (
-            !MerkleProof.verify(
-                proof,
+            !_verifyProof(
+                context,
+                proofOffsetInContext,
                 ERC721SeaDropContractOffererStorage
                     .layout()
                     ._allowListMerkleRoot,
@@ -1594,32 +1599,48 @@ contract ERC721SeaDropContractOffererImplementation is
     }
 
     /**
-     * @dev Internal utility function to convert bytes to bytes32[].
+     * @dev Returns whether `leaf` exists in the Merkle tree with `root`,
+     *      given `proof`.
+     *
+     *      Original function from solady called `verifyCalldata`, modified
+     *      to use an offset from the context calldata to avoid expanding
+     *      memory.
      */
-    function _bytesToBytes32Array(
-        bytes memory data
-    ) internal pure returns (bytes32[] memory) {
-        // Find 32 bytes segments nb.
-        uint256 dataNb = data.length / 32;
-        // Create an array of dataNb elements.
-        bytes32[] memory dataList = new bytes32[](dataNb);
-        // Start array index at 0.
-        uint256 index = 0;
-        // Loop all 32 bytes segments.
-        for (uint256 i = 32; i <= data.length; i = i + 32) {
-            bytes32 temp;
-            // Get 32 bytes from data.
-            assembly {
-                temp := mload(add(data, i))
+    function _verifyProof(
+        bytes calldata context,
+        uint256 proofOffsetInContext,
+        bytes32 root,
+        bytes32 leaf
+    ) internal pure returns (bool isValid) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            if sub(context.length, proofOffsetInContext) {
+                // Initialize `offset` to the offset of `proof` in the calldata.
+                let offset := add(context.offset, proofOffsetInContext)
+                let end := add(
+                    offset,
+                    sub(context.length, proofOffsetInContext)
+                )
+                // Iterate over proof elements to compute root hash.
+                // prettier-ignore
+                for {} 1 {} {
+                    // Slot of `leaf` in scratch space.
+                    // If the condition is true: 0x20, otherwise: 0x00.
+                    let scratch := shl(5, gt(leaf, calldataload(offset)))
+                    // Store elements to hash contiguously in scratch space.
+                    // Scratch space is 64 bytes (0x00 - 0x3f) and both elements are 32 bytes.
+                    mstore(scratch, leaf)
+                    mstore(xor(scratch, 0x20), calldataload(offset))
+                    // Reuse `leaf` to store the hash to reduce stack operations.
+                    leaf := keccak256(0x00, 0x40)
+                    offset := add(offset, 0x20)
+                    if iszero(lt(offset, end)) {
+                        break
+                    }
+                }
             }
-            // Add extracted 32 bytes to list.
-            dataList[index] = temp;
-            unchecked {
-                ++index;
-            }
+            isValid := eq(leaf, root)
         }
-        // Return data list
-        return (dataList);
     }
 
     /**
