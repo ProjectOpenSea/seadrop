@@ -304,6 +304,22 @@ contract ERC1155SeaDropContractOffererImplementation is
             revert InvalidFeeBps(publicDrop.feeBps);
         }
 
+        // Revert if the startTime is past the endTime.
+        if (publicDrop.startTime > publicDrop.endTime) {
+            revert InvalidStartAndEndTime(
+                publicDrop.startTime,
+                publicDrop.endTime
+            );
+        }
+
+        // Revert if the fromTokenId is greater than the toTokenId.
+        if (publicDrop.fromTokenId > publicDrop.toTokenId) {
+            revert InvalidFromAndToTokenId(
+                publicDrop.fromTokenId,
+                publicDrop.toTokenId
+            );
+        }
+
         // Use maxTotalMintableByWallet != 0 as a signal that this update should
         // add or update the drop stage, otherwise we will be removing.
         bool addOrUpdateDropStage = publicDrop.maxTotalMintableByWallet != 0;

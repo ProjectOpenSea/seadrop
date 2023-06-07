@@ -286,6 +286,14 @@ contract ERC721SeaDropContractOffererImplementation is
             revert InvalidFeeBps(publicDrop.feeBps);
         }
 
+        // Revert if the startTime is past the endTime.
+        if (publicDrop.startTime > publicDrop.endTime) {
+            revert InvalidStartAndEndTime(
+                publicDrop.startTime,
+                publicDrop.endTime
+            );
+        }
+
         // Set the public drop data.
         ERC721SeaDropContractOffererStorage.layout()._publicDrop = publicDrop;
 

@@ -176,6 +176,11 @@ interface SeaDropErrorsAndEvents {
     error PayerCannotBeZeroAddress();
 
     /**
+     * @dev Revert if the start time is greater than the end time.
+     */
+    error InvalidStartAndEndTime(uint256 startTime, uint256 endTime);
+
+    /**
      * @dev Revert with an error if the signer payment token is not the same.
      */
     error InvalidSignedPaymentToken(address got, address want);

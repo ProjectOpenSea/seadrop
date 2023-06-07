@@ -198,6 +198,16 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
   });
 
   it("Should not mint a public stage that has ended", async () => {
+    // Should not allow startTime > endTime.
+    await expect(
+      tokenSeaDropInterface.updatePublicDrop(
+        { ...publicDrop, endTime: 100 },
+        { gasLimit: 50_000 }
+      )
+    )
+      .to.be.revertedWithCustomError(token, "InvalidStartAndEndTime")
+      .withArgs(publicDrop.startTime, 100);
+
     // Set end time in the past.
     await tokenSeaDropInterface.updatePublicDrop({
       ...publicDrop,

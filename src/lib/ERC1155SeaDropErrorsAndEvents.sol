@@ -48,6 +48,11 @@ interface ERC1155SeaDropErrorsAndEvents is SeaDropErrorsAndEvents {
     error OfferContainsDuplicateTokenId(uint256 tokenId);
 
     /**
+     * @dev Revert if the fromTokenId is greater than the toTokenId.
+     */
+    error InvalidFromAndToTokenId(uint256 fromTokenId, uint256 toTokenId);
+
+    /**
      *  @notice Revert with an error if the number of publicDropIndexes doesn't
      *          match the number of publicDrops.
      */

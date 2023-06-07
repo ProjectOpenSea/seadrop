@@ -1302,7 +1302,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
-    ); // MintQuantityExceedsMaxSupply, .withParams(2, 1)
+    ); // MintQuantityExceedsMaxSupply, .withArgs(2, 1)
 
     // Should revert if duplicate tokenIds are provided.
     ({ order, value } = await createMintOrder({
@@ -1357,7 +1357,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
-    ); // MintQuantityExceedsMaxMintedPerWallet withParams(4, 3)
+    ); // MintQuantityExceedsMaxMintedPerWallet withArgs(4, 3)
 
     // Update maxTotalMintableByWallet to 4, the order should now succeed.
     await tokenSeaDropInterface.updatePublicDrop(

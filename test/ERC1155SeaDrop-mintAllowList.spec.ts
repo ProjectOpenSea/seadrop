@@ -1100,7 +1100,7 @@ describe(`ERC1155SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
-    ); // MintQuantityExceedsMaxTotalMintableByWallet, .withParams(4, 2)
+    ); // MintQuantityExceedsMaxTotalMintableByWallet, .withArgs(4, 2)
 
     // Update maxTotalMintableByWallet to 4, the order should now succeed.
     mintParams = {
