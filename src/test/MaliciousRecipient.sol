@@ -3,9 +3,7 @@ pragma solidity ^0.8.19;
 
 import { CreatorPayout } from "../lib/SeaDropStructs.sol";
 
-import {
-    GET_CREATOR_PAYOUTS_SELECTOR
-} from "../lib/ERC721SeaDropConstants.sol";
+import { ISeaDropToken } from "../interfaces/ISeaDropToken.sol";
 
 import {
     ConsiderationInterface
@@ -84,7 +82,7 @@ contract MaliciousRecipient is ERC1155TokenReceiver {
         });
 
         (, bytes memory data) = token.staticcall(
-            abi.encode(GET_CREATOR_PAYOUTS_SELECTOR)
+            abi.encode(ISeaDropToken.getCreatorPayouts.selector)
         );
         CreatorPayout[] memory creatorPayouts = abi.decode(
             data,

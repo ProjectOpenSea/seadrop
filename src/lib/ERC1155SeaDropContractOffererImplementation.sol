@@ -18,7 +18,9 @@ import {
 
 import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 
-import "./ERC1155SeaDropConstants.sol";
+import { IERC1155SeaDrop } from "../interfaces/IERC1155SeaDrop.sol";
+
+import { ISeaDropToken } from "../interfaces/ISeaDropToken.sol";
 
 import { IDelegationRegistry } from "../interfaces/IDelegationRegistry.sol";
 
@@ -149,7 +151,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Get the rest of the msg data after the selector.
         bytes calldata data = msg.data[4:];
 
-        if (selector == GET_PUBLIC_DROP_SELECTOR) {
+        if (selector == IERC1155SeaDrop.getPublicDrop.selector) {
             // Get the public drop index.
             uint256 publicDropIndex = uint256(bytes32(data[:32]));
 
@@ -160,7 +162,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                         publicDropIndex
                     ]
                 );
-        } else if (selector == GET_PUBLIC_DROP_INDEXES_SELECTOR) {
+        } else if (selector == IERC1155SeaDrop.getPublicDropIndexes.selector) {
             // Return the public drop indexes.
             return
                 abi.encode(
@@ -168,7 +170,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedPublicDropIndexes
                 );
-        } else if (selector == GET_CREATOR_PAYOUTS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getCreatorPayouts.selector) {
             // Return the creator payouts.
             return
                 abi.encode(
@@ -176,7 +178,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._creatorPayouts
                 );
-        } else if (selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR) {
+        } else if (selector == ISeaDropToken.getAllowListMerkleRoot.selector) {
             // Return the creator payouts.
             return
                 abi.encode(
@@ -184,7 +186,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._allowListMerkleRoot
                 );
-        } else if (selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getAllowedFeeRecipients.selector) {
             // Return the allowed fee recipients.
             return
                 abi.encode(
@@ -192,7 +194,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedFeeRecipients
                 );
-        } else if (selector == GET_SIGNERS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getSigners.selector) {
             // Return the allowed signers.
             return
                 abi.encode(
@@ -200,7 +202,9 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedSigners
                 );
-        } else if (selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR) {
+        } else if (
+            selector == IERC1155SeaDrop.getSignedMintValidationParams.selector
+        ) {
             // Get the signer.
             address signer = address(bytes20(data[12:32]));
             // Get the validation params index.
@@ -215,7 +219,8 @@ contract ERC1155SeaDropContractOffererImplementation is
                         ._signedMintValidationParams[signer][index]
                 );
         } else if (
-            selector == GET_SIGNED_MINT_VALIDATION_PARAMS_INDEXES_SELECTOR
+            selector ==
+            ISeaDropToken.getSignedMintValidationParamsIndexes.selector
         ) {
             // Get the signer.
             address signer = address(bytes20(data[12:32]));
@@ -227,7 +232,7 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedSignedMintValidationParamsIndexes[signer]
                 );
-        } else if (selector == GET_PAYERS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getPayers.selector) {
             // Return the allowed signers.
             return
                 abi.encode(
@@ -1284,7 +1289,11 @@ contract ERC1155SeaDropContractOffererImplementation is
     ) internal view {
         // Get the mint stats from the token contract.
         (bool success, bytes memory data) = address(this).staticcall(
-            abi.encodeWithSelector(GET_MINT_STATS_SELECTOR, minter, tokenId)
+            abi.encodeWithSelector(
+                IERC1155SeaDrop.getMintStats.selector,
+                minter,
+                tokenId
+            )
         );
 
         // Require that the call was successful.

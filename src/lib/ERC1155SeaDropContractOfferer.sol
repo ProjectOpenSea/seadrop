@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import { IERC1155SeaDrop } from "../interfaces/IERC1155SeaDrop.sol";
 
+import { ISeaDropToken } from "../interfaces/ISeaDropToken.sol";
+
 import { ERC1155ContractMetadata } from "./ERC1155ContractMetadata.sol";
 
 import {
@@ -16,8 +18,6 @@ import {
 import { PublicDrop } from "./ERC1155SeaDropStructs.sol";
 
 import { AllowListData } from "./SeaDropStructs.sol";
-
-import "./ERC1155SeaDropConstants.sol";
 
 import { SpentItem } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
@@ -104,42 +104,55 @@ contract ERC1155SeaDropContractOfferer is
 
         if (
             _cast(
-                selector == UPDATE_ALLOWED_SEAPORT_SELECTOR ||
-                    selector == UPDATE_DROP_URI_SELECTOR ||
-                    selector == UPDATE_PUBLIC_DROP_SELECTOR ||
-                    selector == UPDATE_ALLOW_LIST_SELECTOR ||
-                    selector == UPDATE_CREATOR_PAYOUTS_SELECTOR ||
-                    selector == UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR ||
-                    selector == UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
-                    selector == UPDATE_PAYER_SELECTOR ||
-                    selector == PREVIEW_ORDER_SELECTOR ||
-                    selector == GENERATE_ORDER_SELECTOR ||
-                    selector == GET_SEAPORT_METADATA_SELECTOR ||
-                    selector == GET_PUBLIC_DROP_SELECTOR ||
-                    selector == GET_PUBLIC_DROP_INDEXES_SELECTOR ||
-                    selector == GET_CREATOR_PAYOUTS_SELECTOR ||
-                    selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR ||
-                    selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR ||
-                    selector == GET_SIGNERS_SELECTOR ||
-                    selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
+                selector == ISeaDropToken.updateAllowedSeaport.selector ||
+                    selector == ISeaDropToken.updateDropURI.selector ||
+                    selector == ISeaDropToken.updateAllowList.selector ||
+                    selector == ISeaDropToken.updateCreatorPayouts.selector ||
+                    selector == ISeaDropToken.updatePayer.selector ||
                     selector ==
-                    GET_SIGNED_MINT_VALIDATION_PARAMS_INDEXES_SELECTOR ||
-                    selector == GET_PAYERS_SELECTOR
+                    ISeaDropToken.updateAllowedFeeRecipient.selector ||
+                    selector == IERC1155SeaDrop.updatePublicDrop.selector ||
+                    selector ==
+                    IERC1155SeaDrop.updateSignedMintValidationParams.selector ||
+                    selector ==
+                    ContractOffererInterface.previewOrder.selector ||
+                    selector ==
+                    ContractOffererInterface.generateOrder.selector ||
+                    selector ==
+                    ContractOffererInterface.getSeaportMetadata.selector ||
+                    selector == IERC1155SeaDrop.getPublicDrop.selector ||
+                    selector == IERC1155SeaDrop.getPublicDropIndexes.selector ||
+                    selector == ISeaDropToken.getCreatorPayouts.selector ||
+                    selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
+                    selector ==
+                    ISeaDropToken.getAllowedFeeRecipients.selector ||
+                    selector == ISeaDropToken.getSigners.selector ||
+                    selector ==
+                    IERC1155SeaDrop.getSignedMintValidationParams.selector ||
+                    selector ==
+                    ISeaDropToken
+                        .getSignedMintValidationParamsIndexes
+                        .selector ||
+                    selector == ISeaDropToken.getPayers.selector
             ) == 1
         ) {
             // For update calls, ensure the sender is only the owner
             // or configurer contract.
             if (
                 _cast(
-                    selector == UPDATE_ALLOWED_SEAPORT_SELECTOR ||
-                        selector == UPDATE_DROP_URI_SELECTOR ||
-                        selector == UPDATE_PUBLIC_DROP_SELECTOR ||
-                        selector == UPDATE_ALLOW_LIST_SELECTOR ||
-                        selector == UPDATE_CREATOR_PAYOUTS_SELECTOR ||
-                        selector == UPDATE_ALLOWED_FEE_RECIPIENT_SELECTOR ||
+                    selector == ISeaDropToken.updateAllowedSeaport.selector ||
+                        selector == ISeaDropToken.updateDropURI.selector ||
+                        selector == ISeaDropToken.updateAllowList.selector ||
                         selector ==
-                        UPDATE_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR ||
-                        selector == UPDATE_PAYER_SELECTOR
+                        ISeaDropToken.updateCreatorPayouts.selector ||
+                        selector == ISeaDropToken.updatePayer.selector ||
+                        selector ==
+                        ISeaDropToken.updateAllowedFeeRecipient.selector ||
+                        selector == IERC1155SeaDrop.updatePublicDrop.selector ||
+                        selector ==
+                        IERC1155SeaDrop
+                            .updateSignedMintValidationParams
+                            .selector
                 ) == 1
             ) {
                 _onlyOwnerOrConfigurer();
@@ -161,13 +174,13 @@ contract ERC1155SeaDropContractOfferer is
             }
 
             // If the call was to generateOrder, mint the tokens.
-            if (selector == GENERATE_ORDER_SELECTOR) {
+            if (selector == ContractOffererInterface.generateOrder.selector) {
                 _mintOrder(data);
             }
 
             // Return the data from the delegate call.
             return returnedData;
-        } else if (selector == GET_MINT_STATS_SELECTOR) {
+        } else if (selector == IERC1155SeaDrop.getMintStats.selector) {
             // Get the minter and token id.
             (address minter, uint256 tokenId) = abi.decode(
                 data,
@@ -190,7 +203,7 @@ contract ERC1155SeaDropContractOfferer is
                     totalMintedForTokenId,
                     maxSupply
                 );
-        } else if (selector == RATIFY_ORDER_SELECTOR) {
+        } else if (selector == ContractOffererInterface.ratifyOrder.selector) {
             // This function is a no-op, nothing additional needs to happen here.
             // Utilize assembly to efficiently return the ratifyOrder magic value.
             assembly {

@@ -18,7 +18,9 @@ import {
 
 import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 
-import "./ERC721SeaDropConstants.sol";
+import { IERC721SeaDrop } from "../interfaces/IERC721SeaDrop.sol";
+
+import { ISeaDropToken } from "../interfaces/ISeaDropToken.sol";
 
 import { IDelegationRegistry } from "../interfaces/IDelegationRegistry.sol";
 
@@ -150,19 +152,19 @@ contract ERC721SeaDropContractOffererImplementation is
         // Get the rest of the msg data after the selector.
         bytes calldata data = msg.data[4:];
 
-        if (selector == GET_PUBLIC_DROP_SELECTOR) {
+        if (selector == IERC721SeaDrop.getPublicDrop.selector) {
             // Return the public drop.
             return
                 abi.encode(
                     ERC721SeaDropContractOffererStorage.layout()._publicDrop
                 );
-        } else if (selector == GET_CREATOR_PAYOUTS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getCreatorPayouts.selector) {
             // Return the creator payouts.
             return
                 abi.encode(
                     ERC721SeaDropContractOffererStorage.layout()._creatorPayouts
                 );
-        } else if (selector == GET_ALLOW_LIST_MERKLE_ROOT_SELECTOR) {
+        } else if (selector == ISeaDropToken.getAllowListMerkleRoot.selector) {
             // Return the creator payouts.
             return
                 abi.encode(
@@ -170,7 +172,7 @@ contract ERC721SeaDropContractOffererImplementation is
                         .layout()
                         ._allowListMerkleRoot
                 );
-        } else if (selector == GET_ALLOWED_FEE_RECIPIENTS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getAllowedFeeRecipients.selector) {
             // Return the allowed fee recipients.
             return
                 abi.encode(
@@ -178,7 +180,7 @@ contract ERC721SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedFeeRecipients
                 );
-        } else if (selector == GET_SIGNERS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getSigners.selector) {
             // Return the allowed signers.
             return
                 abi.encode(
@@ -186,7 +188,9 @@ contract ERC721SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedSigners
                 );
-        } else if (selector == GET_SIGNED_MINT_VALIDATION_PARAMS_SELECTOR) {
+        } else if (
+            selector == IERC721SeaDrop.getSignedMintValidationParams.selector
+        ) {
             // Get the signer.
             address signer = address(bytes20(data[12:32]));
             // Get the validation params index.
@@ -201,7 +205,8 @@ contract ERC721SeaDropContractOffererImplementation is
                         ._signedMintValidationParams[signer][index]
                 );
         } else if (
-            selector == GET_SIGNED_MINT_VALIDATION_PARAMS_INDEXES_SELECTOR
+            selector ==
+            ISeaDropToken.getSignedMintValidationParamsIndexes.selector
         ) {
             // Get the signer.
             address signer = address(bytes20(data[12:32]));
@@ -213,7 +218,7 @@ contract ERC721SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedSignedMintValidationParamsIndexes[signer]
                 );
-        } else if (selector == GET_PAYERS_SELECTOR) {
+        } else if (selector == ISeaDropToken.getPayers.selector) {
             // Return the allowed signers.
             return
                 abi.encode(
@@ -1035,7 +1040,7 @@ contract ERC721SeaDropContractOffererImplementation is
     ) internal view {
         // Get the mint stats from the token contract.
         (bool success, bytes memory data) = address(this).staticcall(
-            abi.encodeWithSelector(GET_MINT_STATS_SELECTOR, minter)
+            abi.encodeWithSelector(IERC721SeaDrop.getMintStats.selector, minter)
         );
 
         // Require that the call was successful.

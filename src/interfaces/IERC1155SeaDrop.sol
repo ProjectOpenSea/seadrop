@@ -51,6 +51,11 @@ interface IERC1155SeaDrop is ISeaDropToken {
     ) external view returns (PublicDrop memory);
 
     /**
+     * @notice Returns the public drop indexes.
+     */
+    function getPublicDropIndexes() external view returns (uint256[] memory);
+
+    /**
      * @notice Returns a set of mint stats for the address.
      *         This assists SeaDrop in enforcing maxSupply,
      *         maxTotalMintableByWallet, maxTotalMintableByWalletPerToken,

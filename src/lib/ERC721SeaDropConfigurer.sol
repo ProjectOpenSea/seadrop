@@ -13,8 +13,6 @@ import {
 
 import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 
-import "./ERC721SeaDropConstants.sol";
-
 import {
     IERC721ContractMetadata
 } from "../interfaces/IERC721ContractMetadata.sol";
