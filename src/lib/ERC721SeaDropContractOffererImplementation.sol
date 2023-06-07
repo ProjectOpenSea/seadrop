@@ -1034,11 +1034,8 @@ contract ERC721SeaDropContractOffererImplementation is
         if (!success) _revertWithReason(data);
 
         // Decode the returned mint stats.
-        (
-            uint256 minterNumMinted,
-            uint256 currentTotalSupply,
-            uint256 maxSupply
-        ) = abi.decode(data, (uint256, uint256, uint256));
+        (uint256 minterNumMinted, uint256 totalMinted, uint256 maxSupply) = abi
+            .decode(data, (uint256, uint256, uint256));
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
         if (quantity + minterNumMinted > maxTotalMintableByWallet) {
@@ -1049,17 +1046,17 @@ contract ERC721SeaDropContractOffererImplementation is
         }
 
         // Ensure mint quantity doesn't exceed maxSupply.
-        if (quantity + currentTotalSupply > maxSupply) {
+        if (quantity + totalMinted > maxSupply) {
             revert MintQuantityExceedsMaxSupply(
-                quantity + currentTotalSupply,
+                quantity + totalMinted,
                 maxSupply
             );
         }
 
         // Ensure mint quantity doesn't exceed maxTokenSupplyForStage.
-        if (quantity + currentTotalSupply > maxTokenSupplyForStage) {
+        if (quantity + totalMinted > maxTokenSupplyForStage) {
             revert MintQuantityExceedsMaxTokenSupplyForStage(
-                quantity + currentTotalSupply,
+                quantity + totalMinted,
                 maxTokenSupplyForStage
             );
         }

@@ -60,7 +60,7 @@ interface IERC721SeaDrop is ISeaDropToken {
         view
         returns (
             uint256 minterNumMinted,
-            uint256 currentTotalSupply,
+            uint256 totalMinted,
             uint256 maxSupply
         );
 

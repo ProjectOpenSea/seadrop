@@ -178,7 +178,7 @@ contract ERC1155SeaDropContractOfferer is
             (
                 uint256 minterNumMinted,
                 uint256 minterNumMintedForTokenId,
-                uint256 currentTotalSupply,
+                uint256 totalMintedForTokenId,
                 uint256 maxSupply
             ) = _getMintStats(minter, tokenId);
 
@@ -187,7 +187,7 @@ contract ERC1155SeaDropContractOfferer is
                 abi.encode(
                     minterNumMinted,
                     minterNumMintedForTokenId,
-                    currentTotalSupply,
+                    totalMintedForTokenId,
                     maxSupply
                 );
         } else if (selector == RATIFY_ORDER_SELECTOR) {
@@ -224,7 +224,7 @@ contract ERC1155SeaDropContractOfferer is
         returns (
             uint256 minterNumMinted,
             uint256 minterNumMintedForTokenId,
-            uint256 currentTotalSupply,
+            uint256 totalMintedForTokenId,
             uint256 maxSupply
         )
     {
@@ -232,7 +232,7 @@ contract ERC1155SeaDropContractOfferer is
         TokenSupply storage tokenSupply = _tokenSupply[tokenId];
 
         // Assign the return values.
-        currentTotalSupply = tokenSupply.totalSupply;
+        totalMintedForTokenId = tokenSupply.totalMinted;
         maxSupply = tokenSupply.maxSupply;
         minterNumMinted = _totalMintedByUser[minter];
         minterNumMintedForTokenId = _totalMintedByUserPerToken[minter][tokenId];

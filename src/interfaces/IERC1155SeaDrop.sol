@@ -72,7 +72,7 @@ interface IERC1155SeaDrop is ISeaDropToken {
         returns (
             uint256 minterNumMinted,
             uint256 minterNumMintedForTokenId,
-            uint256 currentTotalSupply,
+            uint256 totalMintedForTokenId,
             uint256 maxSupply
         );
 

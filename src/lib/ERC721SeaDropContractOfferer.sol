@@ -183,12 +183,12 @@ contract ERC721SeaDropContractOfferer is
             // Get the mint stats.
             (
                 uint256 minterNumMinted,
-                uint256 currentTotalSupply,
+                uint256 totalMinted,
                 uint256 maxSupply
             ) = _getMintStats(minter);
 
             // Encode the return data.
-            return abi.encode(minterNumMinted, currentTotalSupply, maxSupply);
+            return abi.encode(minterNumMinted, totalMinted, maxSupply);
         } else if (selector == RATIFY_ORDER_SELECTOR) {
             // This function is a no-op, nothing additional needs to happen here.
             // Utilize assembly to efficiently return the ratifyOrder magic value.
@@ -220,12 +220,12 @@ contract ERC721SeaDropContractOfferer is
         view
         returns (
             uint256 minterNumMinted,
-            uint256 currentTotalSupply,
+            uint256 totalMinted,
             uint256 maxSupply
         )
     {
         minterNumMinted = _numberMinted(minter);
-        currentTotalSupply = _totalMinted();
+        totalMinted = _totalMinted();
         maxSupply = _maxSupply;
     }
 

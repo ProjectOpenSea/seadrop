@@ -1198,17 +1198,47 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 maxTotalMintableByWalletPerToken,
         uint256 maxTokenSupplyForStage
     ) internal view returns (uint256 totalQuantity) {
+        // Put the token ids length on the stack.
         uint256 tokenIdsLength = tokenIds.length;
+
+        // Define an array of seenTokenIds to ensure there are no duplicates.
+        uint256[] memory seenTokenIds = new uint256[](tokenIdsLength);
+        uint256 seenTokenIdsCurrentLength;
+
         for (uint256 i = 0; i < tokenIdsLength; ) {
+            // Put the tokenId and quantity on the stack.
+            uint256 tokenId = tokenIds[i];
+            uint256 quantity = quantities[i];
+
+            // Revert if the offer contains duplicate token ids.
+            for (uint256 j = 0; j < seenTokenIdsCurrentLength; ) {
+                if (tokenId == seenTokenIds[j]) {
+                    revert OfferContainsDuplicateTokenId(tokenId);
+                }
+                unchecked {
+                    ++j;
+                }
+            }
+
+            // Add to seen token ids.
+            seenTokenIds[i] = tokenId;
+            seenTokenIdsCurrentLength += 1;
+
+            // Add to total mint quantity.
+            totalQuantity += quantity;
+
+            // Check the mint quantities.
             _checkMintQuantity(
-                tokenIds[i],
-                quantities[i],
+                tokenId,
+                quantity,
+                // Only check totalQuantity on the last iteration.
+                i == tokenIdsLength - 1 ? totalQuantity : 0,
                 minter,
                 maxTotalMintableByWallet,
                 maxTotalMintableByWalletPerToken,
                 maxTokenSupplyForStage
             );
-            totalQuantity += quantities[i];
+
             unchecked {
                 ++i;
             }
@@ -1220,6 +1250,8 @@ contract ERC1155SeaDropContractOffererImplementation is
      *
      * @param tokenId                  The token id.
      * @param quantity                 The number of tokens to mint.
+     * @param totalQuantity            When provided as a nonzero value ensures
+     *                                 doesn't exceed maxTotalMintableByWallet.
      * @param minter                   The mint recipient.
      * @param maxTotalMintableByWallet The max allowed mints per wallet.
      * @param maxTotalMintableByWalletPerToken The max allowed mints per wallet per token.
@@ -1228,6 +1260,7 @@ contract ERC1155SeaDropContractOffererImplementation is
     function _checkMintQuantity(
         uint256 tokenId,
         uint256 quantity,
+        uint256 totalQuantity,
         address minter,
         uint256 maxTotalMintableByWallet,
         uint256 maxTotalMintableByWalletPerToken,
@@ -1245,17 +1278,9 @@ contract ERC1155SeaDropContractOffererImplementation is
         (
             uint256 minterNumMinted,
             uint256 minterNumMintedForTokenId,
-            uint256 currentTotalSupply,
+            uint256 totalMintedForTokenId,
             uint256 maxSupply
         ) = abi.decode(data, (uint256, uint256, uint256, uint256));
-
-        // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
-        if (quantity + minterNumMinted > maxTotalMintableByWallet) {
-            revert MintQuantityExceedsMaxMintedPerWallet(
-                quantity + minterNumMinted,
-                maxTotalMintableByWallet
-            );
-        }
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWalletPerToken.
         if (
@@ -1270,19 +1295,39 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Ensure mint quantity doesn't exceed maxSupply.
-        if (quantity + currentTotalSupply > maxSupply) {
+        if (quantity + totalMintedForTokenId > maxSupply) {
             revert MintQuantityExceedsMaxSupply(
-                quantity + currentTotalSupply,
+                quantity + totalMintedForTokenId,
                 maxSupply
             );
         }
 
         // Ensure mint quantity doesn't exceed maxTokenSupplyForStage.
-        if (quantity + currentTotalSupply > maxTokenSupplyForStage) {
+        if (quantity + totalMintedForTokenId > maxTokenSupplyForStage) {
             revert MintQuantityExceedsMaxTokenSupplyForStage(
-                quantity + currentTotalSupply,
+                quantity + totalMintedForTokenId,
                 maxTokenSupplyForStage
             );
+        }
+
+        // If totalQuantity is provided, ensure it doesn't exceed maxTotalMintableByWallet.
+        if (totalQuantity != 0) {
+            // Ensure total mint quantity doesn't exceed maxTotalMintableByWallet.
+            if (totalQuantity + minterNumMinted > maxTotalMintableByWallet) {
+                revert MintQuantityExceedsMaxMintedPerWallet(
+                    totalQuantity + minterNumMinted,
+                    maxTotalMintableByWallet
+                );
+            }
+        } else {
+            // Otherwise, just check the quantity.
+            // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
+            if (quantity + minterNumMinted > maxTotalMintableByWallet) {
+                revert MintQuantityExceedsMaxMintedPerWallet(
+                    quantity + minterNumMinted,
+                    maxTotalMintableByWallet
+                );
+            }
         }
     }
 

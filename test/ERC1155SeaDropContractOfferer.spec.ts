@@ -1263,9 +1263,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     );
   });
 
-  it("Should be able to handle minting multiple tokenIds in the same order", async () => {
+  it("Should be able to handle minting multiple tokenIds in the same order for the same stage", async () => {
     await token.setMaxSupply(1, 1);
-    const { order, value } = await createMintOrder({
+    let { order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
       tokenIds: [0, 1],
@@ -1303,6 +1303,81 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       marketplaceContract,
       "InvalidContractOrder"
     ); // MintQuantityExceedsMaxSupply, .withParams(2, 1)
+
+    // Should revert if duplicate tokenIds are provided.
+    ({ order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [0, 1, 0],
+      quantities: [1, 1, 1],
+      publicDropIndex: 0,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    }));
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // OfferContainsDuplicateTokenId
+
+    // Ensure we cannot exceed maxTotalMintableByWallet with the total mint quantity.
+    // We have already minted 2 tokens.
+    await tokenSeaDropInterface.updatePublicDrop(
+      { ...publicDrop, maxTotalMintableByWallet: 3 },
+      0
+    );
+    await token.setMaxSupply(7, 1);
+    await token.setMaxSupply(8, 1);
+    expect(await token.balanceOf(minter.address, 7)).to.eq(0);
+    expect(await token.balanceOf(minter.address, 8)).to.eq(0);
+    ({ order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [7, 8],
+      quantities: [1, 1],
+      publicDropIndex: 0,
+      feeRecipient,
+      feeBps: publicDrop.feeBps,
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    }));
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // MintQuantityExceedsMaxMintedPerWallet withParams(4, 3)
+
+    // Update maxTotalMintableByWallet to 4, the order should now succeed.
+    await tokenSeaDropInterface.updatePublicDrop(
+      { ...publicDrop, maxTotalMintableByWallet: 4 },
+      0
+    );
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address, // payer
+        0
+      );
+
+    expect(await token.balanceOf(minter.address, 7)).to.eq(1);
+    expect(await token.balanceOf(minter.address, 8)).to.eq(1);
   });
 
   it("Should return the expected values for getSeaportMetadata", async () => {

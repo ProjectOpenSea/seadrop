@@ -42,6 +42,12 @@ interface ERC1155SeaDropErrorsAndEvents is SeaDropErrorsAndEvents {
     error MaxSupplyMismatch();
 
     /**
+     * @notice Revert with an error if the mint order offer contains
+     *         a duplicate tokenId.
+     */
+    error OfferContainsDuplicateTokenId(uint256 tokenId);
+
+    /**
      *  @notice Revert with an error if the number of publicDropIndexes doesn't
      *          match the number of publicDrops.
      */

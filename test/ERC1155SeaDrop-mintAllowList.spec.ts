@@ -956,7 +956,6 @@ describe(`ERC1155SeaDrop - Mint Allow List (v${VERSION})`, function () {
   it("Should not allow feeBps over 10_000", async () => {
     const mintParamsFeeBpsOver10k = { ...mintParams, feeBps: 10_001 };
 
-    // Set a random quantity under maxTotalMintableByWallet.
     const { root, proof } = await createAllowListAndGetProof(
       [minter],
       mintParamsFeeBpsOver10k
@@ -994,5 +993,156 @@ describe(`ERC1155SeaDrop - Mint Allow List (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // InvalidFeeBps
     // withArgs(10_001)
+  });
+
+  it("Should be able to handle minting multiple tokenIds in the same order for the same stage", async () => {
+    await token.setMaxSupply(0, 1);
+    await token.setMaxSupply(1, 1);
+    await token.setMaxSupply(2, 1);
+    await token.setMaxSupply(3, 1);
+
+    mintParams = {
+      ...mintParams,
+      fromTokenId: 0,
+      toTokenId: 3,
+      maxTotalMintableByWallet: 2,
+    };
+
+    let { root, proof } = await createAllowListAndGetProof(
+      [minter],
+      mintParams
+    );
+
+    // Update the allow list of the token.
+    await tokenSeaDropInterface.updateAllowList({
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    });
+
+    let { order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [0, 1],
+      quantities: [1, 1],
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams,
+      proof,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address, // payer
+        mintParams.dropStageIndex
+      );
+
+    expect(await token.balanceOf(minter.address, 0)).to.eq(1);
+    expect(await token.balanceOf(minter.address, 1)).to.eq(1);
+    expect(
+      await token.balanceOfBatch([minter.address, minter.address], [0, 1])
+    ).to.deep.eq([1, 1]);
+
+    // Should revert if duplicate tokenIds are provided.
+    ({ order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [0, 1, 1],
+      quantities: [1, 1, 1],
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams,
+      proof,
+    }));
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // OfferContainsDuplicateTokenId
+
+    // Ensure we cannot exceed maxTokenSupplyForStage with the total mint quantity.
+    // We have already minted 2 tokens.
+    expect(await token.balanceOf(minter.address, 2)).to.eq(0);
+    expect(await token.balanceOf(minter.address, 3)).to.eq(0);
+    ({ order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [2, 3],
+      quantities: [1, 1],
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams,
+      proof,
+    }));
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // MintQuantityExceedsMaxTotalMintableByWallet, .withParams(4, 2)
+
+    // Update maxTotalMintableByWallet to 4, the order should now succeed.
+    mintParams = {
+      ...mintParams,
+      maxTotalMintableByWallet: 4,
+    };
+
+    ({ root, proof } = await createAllowListAndGetProof([minter], mintParams));
+
+    // Update the allow list of the token.
+    await tokenSeaDropInterface.updateAllowList({
+      merkleRoot: root,
+      publicKeyURIs: [],
+      allowListURI: "",
+    });
+
+    ({ order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [2, 3],
+      quantities: [1, 1],
+      feeRecipient,
+      feeBps: mintParams.feeBps,
+      price: mintParams.startPrice,
+      minter,
+      mintType: MintType.ALLOW_LIST,
+      mintParams,
+      proof,
+    }));
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address, // payer
+        mintParams.dropStageIndex
+      );
+
+    expect(await token.balanceOf(minter.address, 2)).to.eq(1);
+    expect(await token.balanceOf(minter.address, 3)).to.eq(1);
   });
 });
