@@ -54,17 +54,6 @@ contract ERC721SeaDrop is
     {}
 
     /**
-     * @dev Overrides the `_startTokenId` function from ERC721A to start at
-     *      token id `1`.
-     *
-     *      This is to avoid issues since `0` is typically used to signal
-     *      values that have not been set or have been removed.
-     */
-    function _startTokenId() internal view virtual override returns (uint256) {
-        return 1;
-    }
-
-    /**
      * @dev Approve or remove `operator` as an operator for the caller.
      * Operators can call {transferFrom} or {safeTransferFrom}
      * for any token owned by the caller.

@@ -91,7 +91,7 @@ contract ERC721ContractMetadata is
 
         // Emit an event with the update.
         if (totalSupply() != 0) {
-            emit BatchMetadataUpdate(1, _nextTokenId() - 1);
+            emit BatchMetadataUpdate(_startTokenId(), _nextTokenId() - 1);
         }
     }
 
@@ -294,6 +294,17 @@ contract ERC721ContractMetadata is
             // ERC721A returns supportsInterface true for
             //     ERC165, ERC721, ERC721Metadata
             ERC721A.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Overrides the `_startTokenId` function from ERC721A to start at
+     *      token id `1`.
+     *
+     *      This is to avoid issues since `0` is typically used to signal
+     *      values that have not been set or have been removed.
+     */
+    function _startTokenId() internal view virtual override returns (uint256) {
+        return 1;
     }
 
     /**
