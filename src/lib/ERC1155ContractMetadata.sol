@@ -221,17 +221,9 @@ contract ERC1155ContractMetadata is
         // Ensure the sender is only the owner or configurer contract.
         _onlyOwnerOrConfigurer();
 
-        // Revert if the receiver is the zero address.
-        if (receiver == address(0)) {
-            revert RoyaltyReceiverCannotBeZeroAddress();
-        }
-
-        // Revert if the fee numerator is greater than 10_000.
-        if (feeNumerator > 10_000) {
-            revert InvalidRoyaltyBasisPoints(feeNumerator);
-        }
-
         // Set the default royalty.
+        // ERC2981 implementation ensures feeNumerator <= feeDenominator
+        // and receiver != address(0).
         _setDefaultRoyalty(receiver, feeNumerator);
 
         // Emit an event with the updated params.

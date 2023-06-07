@@ -43,16 +43,6 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     error ProvenanceHashCannotBeSetAfterMintStarted();
 
     /**
-     * @dev Revert if the royalty basis points is greater than 10_000.
-     */
-    error InvalidRoyaltyBasisPoints(uint256 got);
-
-    /**
-     * @dev Revert if the royalty receiver is being set to the zero address.
-     */
-    error RoyaltyReceiverCannotBeZeroAddress();
-
-    /**
      * @notice Sets the base URI for the token metadata and emits an event.
      *
      * @param tokenURI The new base URI to set.

@@ -140,14 +140,11 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token.connect(bob).setDefaultRoyalty(owner.address, 100)
     ).to.be.revertedWithCustomError(token, "OnlyOwner");
 
-    await expect(token.setDefaultRoyalty(owner.address, 10_001))
-      .to.be.revertedWithCustomError(token, "InvalidRoyaltyBasisPoints")
-      .withArgs(BigNumber.from(10_001));
     await expect(
-      token.setDefaultRoyalty(AddressZero, 200)
-    ).to.be.revertedWithCustomError(
-      token,
-      "RoyaltyReceiverCannotBeZeroAddress"
+      token.setDefaultRoyalty(owner.address, 10_001)
+    ).to.be.revertedWith("ERC2981: royalty fee will exceed salePrice");
+    await expect(token.setDefaultRoyalty(AddressZero, 200)).to.be.revertedWith(
+      "ERC2981: invalid receiver"
     );
 
     await expect(token.setDefaultRoyalty(bob.address, 100))
