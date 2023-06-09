@@ -164,9 +164,6 @@ contract ERC1155SeaDropContractOfferer is
 
             // Require that the call was successful.
             if (!success) {
-                // Revert if no revert reason.
-                if (returnedData.length == 0) revert();
-
                 // Bubble up the revert reason.
                 assembly {
                     revert(add(32, returnedData), mload(returnedData))
