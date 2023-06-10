@@ -62,8 +62,8 @@ contract ERC1155ContractMetadata is
      * @dev Reverts if the sender is not the owner or the allowed
      *      configurer contract.
      *
-     *      This function is inlined instead of being a modifier
-     *      to save contract space from being inlined N times.
+     *      This is used as a function instead of a modifier
+     *      to save contract space when used multiple times.
      */
     function _onlyOwnerOrConfigurer() internal view {
         if (msg.sender != _CONFIGURER && msg.sender != owner()) {

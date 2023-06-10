@@ -41,8 +41,8 @@ contract ERC1155SeaDropConfigurer is
     /**
      * @dev Reverts if the sender is not the owner of the token.
      *
-     *      This function is inlined instead of being a modifier
-     *      to save contract space from being inlined N times.
+     *      This is used as a function instead of a modifier
+     *      to save contract space when used multiple times.
      */
     function _onlyOwner(address token) internal view {
         if (msg.sender != IERC173(token).owner()) {
