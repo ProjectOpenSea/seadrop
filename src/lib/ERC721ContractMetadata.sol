@@ -54,7 +54,7 @@ contract ERC721ContractMetadata is
      *      to save contract space from being inlined N times.
      */
     function _onlyOwnerOrConfigurer() internal view {
-        if (_cast(msg.sender != _CONFIGURER && msg.sender != owner()) == 1) {
+        if (msg.sender != _CONFIGURER && msg.sender != owner()) {
             revert OnlyOwner();
         }
     }

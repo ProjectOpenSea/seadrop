@@ -98,9 +98,9 @@ contract ERC1155SeaDropConfigurer is
             );
         }
         if (
-            _cast(
-                config.royaltyReceiver != address(0) && config.royaltyBps != 0
-            ) == 1
+            _cast(config.royaltyReceiver != address(0)) &
+                _cast(config.royaltyBps != 0) ==
+            1
         ) {
             IERC1155ContractMetadata(token).setDefaultRoyalty(
                 config.royaltyReceiver,
@@ -183,10 +183,13 @@ contract ERC1155SeaDropConfigurer is
             if (
                 _cast(
                     config.signedMintValidationParams.length !=
-                        config.signers.length ||
-                        config.signedMintValidationParamsIndexes.length !=
                         config.signers.length
-                ) == 1
+                ) |
+                    _cast(
+                        config.signedMintValidationParamsIndexes.length !=
+                            config.signers.length
+                    ) ==
+                1
             ) {
                 revert SignersMismatch();
             }

@@ -82,9 +82,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
             );
         }
         if (
-            _cast(
-                config.royaltyReceiver != address(0) && config.royaltyBps != 0
-            ) == 1
+            _cast(config.royaltyReceiver != address(0)) &
+                _cast(config.royaltyBps != 0) ==
+            1
         ) {
             IERC721ContractMetadata(token).setDefaultRoyalty(
                 config.royaltyReceiver,
@@ -93,10 +93,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
         }
 
         if (
-            _cast(
-                config.publicDrop.startTime != 0 &&
-                    config.publicDrop.endTime != 0
-            ) == 1
+            _cast(config.publicDrop.startTime != 0) &
+                _cast(config.publicDrop.endTime != 0) ==
+            1
         ) {
             IERC721SeaDrop(address(token)).updatePublicDrop(config.publicDrop);
         }
@@ -161,10 +160,13 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
             if (
                 _cast(
                     config.signedMintValidationParams.length !=
-                        config.signers.length ||
-                        config.signedMintValidationParamsIndexes.length !=
                         config.signers.length
-                ) == 1
+                ) |
+                    _cast(
+                        config.signedMintValidationParamsIndexes.length !=
+                            config.signers.length
+                    ) ==
+                1
             ) {
                 revert SignersMismatch();
             }

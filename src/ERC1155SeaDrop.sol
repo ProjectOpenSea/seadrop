@@ -111,10 +111,7 @@ contract ERC1155SeaDrop is
      */
     function burn(address from, uint256 id, uint256 amount) external {
         // Require that only the owner or approved operator can call.
-        if (
-            _cast(msg.sender != from && !isApprovedForAll[from][msg.sender]) ==
-            1
-        ) {
+        if (msg.sender != from && !isApprovedForAll[from][msg.sender]) {
             revert NotAuthorized();
         }
 
@@ -141,10 +138,7 @@ contract ERC1155SeaDrop is
         uint256[] calldata amounts
     ) external {
         // Require that only the owner or approved operator can call.
-        if (
-            _cast(msg.sender != from && !isApprovedForAll[from][msg.sender]) ==
-            1
-        ) {
+        if (msg.sender != from && !isApprovedForAll[from][msg.sender]) {
             revert NotAuthorized();
         }
 

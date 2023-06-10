@@ -66,7 +66,7 @@ contract ERC1155ContractMetadata is
      *      to save contract space from being inlined N times.
      */
     function _onlyOwnerOrConfigurer() internal view {
-        if (_cast(msg.sender != _CONFIGURER && msg.sender != owner()) == 1) {
+        if (msg.sender != _CONFIGURER && msg.sender != owner()) {
             revert OnlyOwner();
         }
     }
@@ -191,10 +191,7 @@ contract ERC1155ContractMetadata is
 
         // Revert if any items have been minted.
         if (
-            _cast(
-                _tokenSupply[0].totalMinted != 0 ||
-                    _tokenSupply[1].totalMinted != 0
-            ) == 1
+            _tokenSupply[0].totalMinted != 0 || _tokenSupply[1].totalMinted != 0
         ) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
         }

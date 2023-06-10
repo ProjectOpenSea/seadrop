@@ -102,56 +102,47 @@ contract ERC721SeaDropContractOfferer is
         // Get the rest of the msg data after the selector.
         bytes calldata data = msg.data[4:];
 
-        if (
-            _cast(
-                selector == ISeaDropToken.updateAllowedSeaport.selector ||
-                    selector == ISeaDropToken.updateDropURI.selector ||
-                    selector == ISeaDropToken.updateAllowList.selector ||
-                    selector == ISeaDropToken.updateCreatorPayouts.selector ||
-                    selector == ISeaDropToken.updatePayer.selector ||
-                    selector ==
-                    ISeaDropToken.updateAllowedFeeRecipient.selector ||
-                    selector == IERC721SeaDrop.updatePublicDrop.selector ||
-                    selector ==
-                    IERC721SeaDrop.updateSignedMintValidationParams.selector ||
-                    selector ==
-                    ContractOffererInterface.previewOrder.selector ||
-                    selector ==
-                    ContractOffererInterface.generateOrder.selector ||
-                    selector ==
-                    ContractOffererInterface.getSeaportMetadata.selector ||
-                    selector == IERC721SeaDrop.getPublicDrop.selector ||
-                    selector == ISeaDropToken.getCreatorPayouts.selector ||
-                    selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
-                    selector ==
-                    ISeaDropToken.getAllowedFeeRecipients.selector ||
-                    selector == ISeaDropToken.getSigners.selector ||
-                    selector ==
-                    IERC721SeaDrop.getSignedMintValidationParams.selector ||
-                    selector ==
-                    ISeaDropToken
-                        .getSignedMintValidationParamsIndexes
-                        .selector ||
-                    selector == ISeaDropToken.getPayers.selector
-            ) == 1
-        ) {
+        // Determine if we should forward the call to the implementation
+        // contract with SeaDrop logic.
+        bool callSeaDropImplementation = selector ==
+            ISeaDropToken.updateAllowedSeaport.selector ||
+            selector == ISeaDropToken.updateDropURI.selector ||
+            selector == ISeaDropToken.updateAllowList.selector ||
+            selector == ISeaDropToken.updateCreatorPayouts.selector ||
+            selector == ISeaDropToken.updatePayer.selector ||
+            selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
+            selector == IERC721SeaDrop.updatePublicDrop.selector ||
+            selector ==
+            IERC721SeaDrop.updateSignedMintValidationParams.selector ||
+            selector == ContractOffererInterface.previewOrder.selector ||
+            selector == ContractOffererInterface.generateOrder.selector ||
+            selector == ContractOffererInterface.getSeaportMetadata.selector ||
+            selector == IERC721SeaDrop.getPublicDrop.selector ||
+            selector == ISeaDropToken.getCreatorPayouts.selector ||
+            selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
+            selector == ISeaDropToken.getAllowedFeeRecipients.selector ||
+            selector == ISeaDropToken.getSigners.selector ||
+            selector == IERC721SeaDrop.getSignedMintValidationParams.selector ||
+            selector ==
+            ISeaDropToken.getSignedMintValidationParamsIndexes.selector ||
+            selector == ISeaDropToken.getPayers.selector;
+
+        // Determine if we should require only the owner or configurer calling.
+        bool requireOnlyOwnerOrConfigurer = selector ==
+            ISeaDropToken.updateAllowedSeaport.selector ||
+            selector == ISeaDropToken.updateDropURI.selector ||
+            selector == ISeaDropToken.updateAllowList.selector ||
+            selector == ISeaDropToken.updateCreatorPayouts.selector ||
+            selector == ISeaDropToken.updatePayer.selector ||
+            selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
+            selector == IERC721SeaDrop.updatePublicDrop.selector ||
+            selector ==
+            IERC721SeaDrop.updateSignedMintValidationParams.selector;
+
+        if (callSeaDropImplementation) {
             // For update calls, ensure the sender is only the owner
             // or configurer contract.
-            if (
-                _cast(
-                    selector == ISeaDropToken.updateAllowedSeaport.selector ||
-                        selector == ISeaDropToken.updateDropURI.selector ||
-                        selector == ISeaDropToken.updateAllowList.selector ||
-                        selector ==
-                        ISeaDropToken.updateCreatorPayouts.selector ||
-                        selector == ISeaDropToken.updatePayer.selector ||
-                        selector ==
-                        ISeaDropToken.updateAllowedFeeRecipient.selector ||
-                        selector == IERC721SeaDrop.updatePublicDrop.selector ||
-                        selector ==
-                        IERC721SeaDrop.updateSignedMintValidationParams.selector
-                ) == 1
-            ) {
+            if (requireOnlyOwnerOrConfigurer) {
                 _onlyOwnerOrConfigurer();
             }
 
@@ -259,12 +250,10 @@ contract ERC721SeaDropContractOfferer is
     ) internal view {
         // Only Seaport or the conduit can use this function.
         if (
-            _cast(
-                (msg.sender != _CONDUIT &&
-                    !ERC721SeaDropContractOffererStorage
-                        .layout()
-                        ._allowedSeaport[msg.sender]) || from != address(this)
-            ) == 1
+            (msg.sender != _CONDUIT &&
+                !ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
+                    msg.sender
+                ]) || from != address(this)
         ) {
             revert InvalidCallerOnlyAllowedSeaport(msg.sender);
         }

@@ -448,15 +448,11 @@ contract ERC721SeaDropContractOffererImplementation is
     ) internal view returns (uint8 substandard) {
         // Declare an error buffer; first check that the minimumReceived has the
         // this address and a non-zero "amount" as the quantity for the mint.
-        uint256 errorBuffer = (
-            _castAndInvert(
-                minimumReceived.length == 1 &&
-                    minimumReceived[0].itemType == ItemType.ERC1155 &&
-                    minimumReceived[0].token == address(this) &&
-                    minimumReceived[0].identifier == 0 &&
-                    minimumReceived[0].amount != 0
-            )
-        );
+        uint256 errorBuffer = _castAndInvert(minimumReceived.length == 1) |
+            _castAndInvert(minimumReceived[0].itemType == ItemType.ERC1155) |
+            _castAndInvert(minimumReceived[0].token == address(this)) |
+            _castAndInvert(minimumReceived[0].identifier == 0) |
+            _castAndInvert(minimumReceived[0].amount != 0);
 
         // Set the substandard version.
         substandard = uint8(context[1]);
@@ -1017,13 +1013,13 @@ contract ERC721SeaDropContractOffererImplementation is
      */
     function _checkPayerIsAllowed(address payer, address minter) internal view {
         if (
-            _cast(
-                payer != minter &&
-                    !ERC721SeaDropContractOffererStorage
-                        .layout()
-                        ._allowedPayers[payer] &&
-                    !DELEGATION_REGISTRY.checkDelegateForAll(payer, minter)
-            ) == 1
+            // Note: not using _cast pattern here to short-circuit
+            // and skip loading the allowed payers or delegation registry.
+            payer != minter &&
+            !ERC721SeaDropContractOffererStorage.layout()._allowedPayers[
+                payer
+            ] &&
+            !DELEGATION_REGISTRY.checkDelegateForAll(payer, minter)
         ) {
             revert PayerNotAllowed(payer);
         }

@@ -521,13 +521,14 @@ contract ERC1155SeaDropContractOffererImplementation is
     ) internal view returns (uint8 substandard) {
         // Declare an error buffer; first check that every minimumReceived has
         // this address.
-        uint256 errorBuffer = 0;
+        uint256 errorBuffer;
         uint256 minimumReceivedLength = minimumReceived.length;
         for (uint256 i = 0; i < minimumReceivedLength; ) {
-            errorBuffer |= _castAndInvert(
-                minimumReceived[i].itemType == ItemType.ERC1155 &&
-                    minimumReceived[i].token == address(this)
-            );
+            errorBuffer |=
+                _castAndInvert(
+                    minimumReceived[i].itemType == ItemType.ERC1155
+                ) |
+                _castAndInvert(minimumReceived[i].token == address(this));
             unchecked {
                 ++i;
             }
@@ -1124,7 +1125,9 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 tokenIdsLength = tokenIds.length;
         for (uint256 i = 0; i < tokenIdsLength; ) {
             if (
-                _cast(tokenIds[i] < fromTokenId || tokenIds[i] > toTokenId) == 1
+                _cast(tokenIds[i] < fromTokenId) |
+                    _cast(tokenIds[i] > toTokenId) ==
+                1
             ) {
                 // Revert if the token id is not within range.
                 revert TokenIdNotWithinDropStageRange(
@@ -1198,13 +1201,13 @@ contract ERC1155SeaDropContractOffererImplementation is
      */
     function _checkPayerIsAllowed(address payer, address minter) internal view {
         if (
-            _cast(
-                payer != minter &&
-                    !ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._allowedPayers[payer] &&
-                    !DELEGATION_REGISTRY.checkDelegateForAll(payer, minter)
-            ) == 1
+            // Note: not using _cast pattern here to short-circuit
+            // and skip loading the allowed payers or delegation registry.
+            payer != minter &&
+            !ERC1155SeaDropContractOffererStorage.layout()._allowedPayers[
+                payer
+            ] &&
+            !DELEGATION_REGISTRY.checkDelegateForAll(payer, minter)
         ) {
             revert PayerNotAllowed(payer);
         }
@@ -1902,7 +1905,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 proofOffsetInContext,
         bytes32 root,
         bytes32 leaf
-    ) internal view returns (bool isValid) {
+    ) internal pure returns (bool isValid) {
         /// @solidity memory-safe-assembly
         assembly {
             if sub(context.length, proofOffsetInContext) {

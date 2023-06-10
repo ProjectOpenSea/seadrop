@@ -164,6 +164,9 @@ export const mintTokens = async ({
       ));
 };
 
+export const CANONICAL_DELEGATION_REGISTRY_ADDRESS =
+  "0x00000000000076A84feF008CDAbe6409d2FE638B";
+
 export const deployDelegationRegistryToCanonicalAddress = async () => {
   const DelegationRegistry = await ethers.getContractFactory(
     "DelegationRegistry"
@@ -172,11 +175,12 @@ export const deployDelegationRegistryToCanonicalAddress = async () => {
   const delegationRegistryBytecode = await provider.getCode(
     exampleDelegationRegistry.address
   );
-  const canonicalDelegationRegistryAddress =
-    "0x00000000000076A84feF008CDAbe6409d2FE638B";
-  await setCode(canonicalDelegationRegistryAddress, delegationRegistryBytecode);
+  await setCode(
+    CANONICAL_DELEGATION_REGISTRY_ADDRESS,
+    delegationRegistryBytecode
+  );
   const delegationRegistry = DelegationRegistry.attach(
-    canonicalDelegationRegistryAddress
+    CANONICAL_DELEGATION_REGISTRY_ADDRESS
   );
   return delegationRegistry;
 };
