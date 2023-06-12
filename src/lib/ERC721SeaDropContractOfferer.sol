@@ -118,6 +118,7 @@ contract ERC721SeaDropContractOfferer is
             selector == ContractOffererInterface.generateOrder.selector ||
             selector == ContractOffererInterface.getSeaportMetadata.selector ||
             selector == IERC721SeaDrop.getPublicDrop.selector ||
+            selector == ISeaDropToken.getAllowedSeaport.selector ||
             selector == ISeaDropToken.getCreatorPayouts.selector ||
             selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
             selector == ISeaDropToken.getAllowedFeeRecipients.selector ||

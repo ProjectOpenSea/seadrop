@@ -154,6 +154,14 @@ contract ERC721SeaDropContractOffererImplementation is
                 abi.encode(
                     ERC721SeaDropContractOffererStorage.layout()._publicDrop
                 );
+        } else if (selector == ISeaDropToken.getAllowedSeaport.selector) {
+            // Return the allowed Seaport.
+            return
+                abi.encode(
+                    ERC721SeaDropContractOffererStorage
+                        .layout()
+                        ._enumeratedAllowedSeaport
+                );
         } else if (selector == ISeaDropToken.getCreatorPayouts.selector) {
             // Return the creator payouts.
             return

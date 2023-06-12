@@ -70,6 +70,11 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
     function updatePayer(address payer, bool allowed) external;
 
     /**
+     * @notice Get the SeaDrop allowed Seaport contracts privileged to mint.
+     */
+    function getAllowedSeaport() external view returns (address[] memory);
+
+    /**
      * @notice Returns the SeaDrop creator payouts.
      */
     function getCreatorPayouts() external view returns (CreatorPayout[] memory);

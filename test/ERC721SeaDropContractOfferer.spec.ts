@@ -668,6 +668,10 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([marketplaceContract.address]);
 
+    expect(await tokenSeaDropInterface.getAllowedSeaport()).to.deep.eq([
+      marketplaceContract.address,
+    ]);
+
     const address1 = `0x${"1".repeat(40)}`;
     const address2 = `0x${"2".repeat(40)}`;
     const address3 = `0x${"3".repeat(40)}`;
@@ -681,9 +685,18 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([marketplaceContract.address, address1]);
 
+    expect(await tokenSeaDropInterface.getAllowedSeaport()).to.deep.eq([
+      marketplaceContract.address,
+      address1,
+    ]);
+
     await expect(tokenSeaDropInterface.updateAllowedSeaport([address2]))
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([address2]);
+
+    expect(await tokenSeaDropInterface.getAllowedSeaport()).to.deep.eq([
+      address2,
+    ]);
 
     await expect(
       tokenSeaDropInterface.updateAllowedSeaport([
@@ -696,11 +709,22 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([address3, marketplaceContract.address, address2, address1]);
 
+    expect(await tokenSeaDropInterface.getAllowedSeaport()).to.deep.eq([
+      address3,
+      marketplaceContract.address,
+      address2,
+      address1,
+    ]);
+
     await expect(
       tokenSeaDropInterface.updateAllowedSeaport([marketplaceContract.address])
     )
       .to.emit(token, "AllowedSeaportUpdated")
       .withArgs([marketplaceContract.address]);
+
+    expect(await tokenSeaDropInterface.getAllowedSeaport()).to.deep.eq([
+      marketplaceContract.address,
+    ]);
   });
 
   it("Should let the token owner use admin methods", async () => {

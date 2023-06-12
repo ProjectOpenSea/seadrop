@@ -170,6 +170,14 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedPublicDropIndexes
                 );
+        } else if (selector == ISeaDropToken.getAllowedSeaport.selector) {
+            // Return the allowed Seaport.
+            return
+                abi.encode(
+                    ERC1155SeaDropContractOffererStorage
+                        .layout()
+                        ._enumeratedAllowedSeaport
+                );
         } else if (selector == ISeaDropToken.getCreatorPayouts.selector) {
             // Return the creator payouts.
             return

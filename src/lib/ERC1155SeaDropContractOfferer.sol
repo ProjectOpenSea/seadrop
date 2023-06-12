@@ -119,6 +119,7 @@ contract ERC1155SeaDropContractOfferer is
             selector == ContractOffererInterface.getSeaportMetadata.selector ||
             selector == IERC1155SeaDrop.getPublicDrop.selector ||
             selector == IERC1155SeaDrop.getPublicDropIndexes.selector ||
+            selector == ISeaDropToken.getAllowedSeaport.selector ||
             selector == ISeaDropToken.getCreatorPayouts.selector ||
             selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
             selector == ISeaDropToken.getAllowedFeeRecipients.selector ||
