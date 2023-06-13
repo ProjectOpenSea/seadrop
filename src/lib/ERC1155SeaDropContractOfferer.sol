@@ -111,9 +111,8 @@ contract ERC1155SeaDropContractOfferer is
             selector == ISeaDropToken.updateCreatorPayouts.selector ||
             selector == ISeaDropToken.updatePayer.selector ||
             selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
+            selector == ISeaDropToken.updateSigner.selector ||
             selector == IERC1155SeaDrop.updatePublicDrop.selector ||
-            selector ==
-            IERC1155SeaDrop.updateSignedMintValidationParams.selector ||
             selector == ContractOffererInterface.previewOrder.selector ||
             selector == ContractOffererInterface.generateOrder.selector ||
             selector == ContractOffererInterface.getSeaportMetadata.selector ||
@@ -125,10 +124,6 @@ contract ERC1155SeaDropContractOfferer is
             selector == ISeaDropToken.getAllowedFeeRecipients.selector ||
             selector == ISeaDropToken.getSigners.selector ||
             selector == ISeaDropToken.getDigestIsUsed.selector ||
-            selector ==
-            IERC1155SeaDrop.getSignedMintValidationParams.selector ||
-            selector ==
-            ISeaDropToken.getSignedMintValidationParamsIndexes.selector ||
             selector == ISeaDropToken.getPayers.selector;
 
         // Determine if we should require only the owner or configurer calling.
@@ -139,9 +134,8 @@ contract ERC1155SeaDropContractOfferer is
             selector == ISeaDropToken.updateCreatorPayouts.selector ||
             selector == ISeaDropToken.updatePayer.selector ||
             selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
-            selector == IERC1155SeaDrop.updatePublicDrop.selector ||
-            selector ==
-            IERC1155SeaDrop.updateSignedMintValidationParams.selector;
+            selector == ISeaDropToken.updateSigner.selector ||
+            selector == IERC1155SeaDrop.updatePublicDrop.selector;
 
         if (callSeaDropImplementation) {
             // For update calls, ensure the sender is only the owner

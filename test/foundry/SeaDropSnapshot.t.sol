@@ -7,11 +7,7 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
-import {
-    MintParams,
-    PublicDrop,
-    SignedMintValidationParams
-} from "seadrop/lib/ERC721SeaDropStructs.sol";
+import { MintParams, PublicDrop } from "seadrop/lib/ERC721SeaDropStructs.sol";
 
 import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
 
@@ -150,24 +146,8 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
     }
 
     function _configureSigned() internal {
-        SignedMintValidationParams
-            memory validationParams = SignedMintValidationParams({
-                minMintPrice: uint80(mintPrice),
-                paymentToken: address(0),
-                maxMaxTotalMintableByWallet: 10,
-                minStartTime: uint40(block.timestamp),
-                maxEndTime: uint40(block.timestamp + 500),
-                maxMaxTokenSupplyForStage: 1000,
-                minFeeBps: 100,
-                maxFeeBps: 1000
-            });
         address signer = makeAddr("signer-doug");
-        uint8 signedMintValidationParamsIndex = 0;
-        IERC721SeaDrop(address(token)).updateSignedMintValidationParams(
-            signer,
-            validationParams,
-            signedMintValidationParamsIndex
-        );
+        IERC721SeaDrop(address(token)).updateSigner(signer, true);
 
         MintParams memory mintParams = MintParams({
             paymentToken: address(0),
@@ -199,7 +179,6 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
             bytes1(0x02), // substandard version byte: signed mint
             bytes20(feeRecipient),
             bytes20(address(0)),
-            bytes1(signedMintValidationParamsIndex),
             abi.encode(mintParams),
             bytes32(salt),
             signature

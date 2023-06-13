@@ -5,6 +5,7 @@ import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION, deployERC1155SeaDrop, mintTokens } from "./utils/helpers";
+import { whileImpersonating } from "./utils/impersonate";
 
 import type {
   ConduitInterface,
@@ -13,7 +14,6 @@ import type {
   IERC1155SeaDrop,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
-import { whileImpersonating } from "./utils/impersonate";
 
 describe(`ERC1155SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;

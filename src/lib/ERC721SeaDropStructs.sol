@@ -79,31 +79,6 @@ struct MintParams {
 }
 
 /**
- * @notice A struct defining minimum and maximum parameters to validate for
- *         signed mints, to minimize negative effects of a compromised signer.
- *
- * @param minMintPrice                The minimum mint price allowed.
- * @param paymentToken                The required paymentToken.
- * @param maxMaxTotalMintableByWallet The maximum total number of mints allowed
- *                                    by a wallet.
- * @param minStartTime                The minimum start time allowed.
- * @param maxEndTime                  The maximum end time allowed.
- * @param maxMaxTokenSupplyForStage   The maximum token supply allowed.
- * @param minFeeBps                   The minimum fee allowed.
- * @param maxFeeBps                   The maximum fee allowed.
- */
-struct SignedMintValidationParams {
-    uint80 minMintPrice; // 80/512 bits
-    address paymentToken; // 240/512 bits
-    uint24 maxMaxTotalMintableByWallet; // 264/512 bits
-    uint40 minStartTime; // 304/512 bits
-    uint40 maxEndTime; // 344/512 bits
-    uint40 maxMaxTokenSupplyForStage; // 384/512 bits
-    uint16 minFeeBps; // 400/512 bits
-    uint16 maxFeeBps; // 416/512 bits
-}
-
-/**
  * @dev Struct containing internal SeaDrop implementation logic
  *      mint details to avoid stack too deep.
  *
@@ -138,11 +113,8 @@ struct MultiConfigureStruct {
     address[] allowedPayers;
     address[] disallowedPayers;
     // Server-signed
-    address[] signers;
-    SignedMintValidationParams[] signedMintValidationParams;
-    uint256[] signedMintValidationParamsIndexes;
+    address[] allowedSigners;
     address[] disallowedSigners;
-    uint256[] disallowedSignedMintValidationParamsIndexes;
     // ERC-2981
     address royaltyReceiver;
     uint96 royaltyBps;

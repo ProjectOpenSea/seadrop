@@ -3,10 +3,7 @@ pragma solidity ^0.8.19;
 
 import { ISeaDropToken } from "./ISeaDropToken.sol";
 
-import {
-    PublicDrop,
-    SignedMintValidationParams
-} from "../lib/ERC721SeaDropStructs.sol";
+import { PublicDrop } from "../lib/ERC721SeaDropStructs.sol";
 
 /**
  * @dev A helper interface to get and set parameters for ERC721SeaDrop.
@@ -20,22 +17,6 @@ interface IERC721SeaDrop is ISeaDropToken {
      * @param publicDrop The new public drop parameters.
      */
     function updatePublicDrop(PublicDrop calldata publicDrop) external;
-
-    /**
-     * @notice Update the SeaDrop signer validation params.
-     *         Only the owner can use this function.
-     *
-     * @param signer                     The signer to update.
-     * @param signedMintValidationParams Minimum and maximum parameters
-     *                                   to enforce for signed mints.
-     * @param index                      The index for the signer's mint
-     *                                   validation params.
-     */
-    function updateSignedMintValidationParams(
-        address signer,
-        SignedMintValidationParams calldata signedMintValidationParams,
-        uint256 index
-    ) external;
 
     /**
      * @notice Returns the public drop stage parameters.
@@ -63,13 +44,4 @@ interface IERC721SeaDrop is ISeaDropToken {
             uint256 totalMinted,
             uint256 maxSupply
         );
-
-    /**
-     * @notice Returns the SeaDrop signed mint validation params for a signer
-     *         at a given index.
-     */
-    function getSignedMintValidationParams(
-        address signer,
-        uint256 index
-    ) external view returns (SignedMintValidationParams memory);
 }

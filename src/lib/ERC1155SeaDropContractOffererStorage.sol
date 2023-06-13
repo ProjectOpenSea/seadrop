@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    PublicDrop,
-    SignedMintValidationParams
-} from "./ERC1155SeaDropStructs.sol";
+import { PublicDrop } from "./ERC1155SeaDropStructs.sol";
 
 import { CreatorPayout } from "./SeaDropStructs.sol";
 
@@ -26,12 +23,10 @@ library ERC1155SeaDropContractOffererStorage {
         mapping(address => bool) _allowedFeeRecipients;
         /// @notice The enumerated allowed fee recipients.
         address[] _enumeratedFeeRecipients;
-        /// @notice The parameters for allowed signers for server-side drops by index.
-        mapping(address => mapping(uint256 => SignedMintValidationParams)) _signedMintValidationParams;
-        /// @notice The signers for each server-side drop.
+        /// @notice The allowed server-side signers.
+        mapping(address => bool) _allowedSigners;
+        /// @notice The enumerated allowed signers.
         address[] _enumeratedSigners;
-        /// @notice The enumerated indexes for the signer validation params.
-        mapping(address => uint256[]) _enumeratedSignedMintValidationParamsIndexes;
         /// @notice The used signature digests.
         mapping(bytes32 => bool) _usedDigests;
         /// @notice The allowed payers.

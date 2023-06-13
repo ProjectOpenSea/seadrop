@@ -8,8 +8,7 @@ import {
 import {
     MintDetails,
     MintParams,
-    PublicDrop,
-    SignedMintValidationParams
+    PublicDrop
 } from "./ERC721SeaDropStructs.sol";
 
 import {
@@ -199,36 +198,6 @@ contract ERC721SeaDropContractOffererImplementation is
                     ERC721SeaDropContractOffererStorage.layout()._usedDigests[
                         digest
                     ]
-                );
-        } else if (
-            selector == IERC721SeaDrop.getSignedMintValidationParams.selector
-        ) {
-            // Get the signer.
-            address signer = address(bytes20(data[12:32]));
-            // Get the validation params index.
-            uint256 index = uint256(bytes32(data[32:64]));
-
-            // Return the signed mint validation params for the signer
-            // at the index.
-            return
-                abi.encode(
-                    ERC721SeaDropContractOffererStorage
-                        .layout()
-                        ._signedMintValidationParams[signer][index]
-                );
-        } else if (
-            selector ==
-            ISeaDropToken.getSignedMintValidationParamsIndexes.selector
-        ) {
-            // Get the signer.
-            address signer = address(bytes20(data[12:32]));
-
-            // Return the enumerated indexes for the signer validation params.
-            return
-                abi.encode(
-                    ERC721SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedSignedMintValidationParamsIndexes[signer]
                 );
         } else if (selector == ISeaDropToken.getPayers.selector) {
             // Return the allowed signers.
@@ -573,19 +542,15 @@ contract ERC721SeaDropContractOffererImplementation is
         } else {
             // substandard == 2
             // 2: Signed mint
-            uint8 signedMintValidationParamsIndex = uint8(
-                bytes1(context[42:43])
-            );
             MintParams memory mintParams = abi.decode(
-                context[43:363],
+                context[42:362],
                 (MintParams)
             );
-            uint256 salt = uint256(bytes32(context[363:395]));
-            bytes32 signatureR = bytes32(context[395:427]);
-            bytes32 signatureVS = bytes32(context[427:459]);
+            uint256 salt = uint256(bytes32(context[362:394]));
+            bytes32 signatureR = bytes32(context[394:426]);
+            bytes32 signatureVS = bytes32(context[426:458]);
             consideration = _mintSigned(
                 mintDetails,
-                signedMintValidationParamsIndex,
                 mintParams,
                 salt,
                 signatureR,
@@ -684,8 +649,6 @@ contract ERC721SeaDropContractOffererImplementation is
      *         Note that a signature can only be used once.
      *
      * @param mintDetails  The mint details.
-     * @param index        The index of the signed mint validation params for
-     *                     the signer.
      * @param mintParams   The mint parameters.
      * @param salt         The salt for the signed mint.
      * @param signatureR   The server-side signature `r` value.
@@ -693,7 +656,6 @@ contract ERC721SeaDropContractOffererImplementation is
      */
     function _mintSigned(
         MintDetails memory mintDetails,
-        uint256 index,
         MintParams memory mintParams,
         uint256 salt,
         bytes32 signatureR,
@@ -743,100 +705,12 @@ contract ERC721SeaDropContractOffererImplementation is
         // Note that if the digest doesn't exactly match what was signed we'll
         // get a random recovered address.
         address recoveredAddress = digest.recover(signatureR, signatureVS);
-        _validateSignerAndParams(
-            mintParams,
-            recoveredAddress,
-            index,
-            currentPrice
-        );
-    }
-
-    /**
-     * @notice Enforce stored parameters for signed mints to mitigate
-     *         the effects of a malicious signer.
-     *
-     * @param mintParams   The mint parameters.
-     * @param signer       The signer.
-     * @param index        The index for the signed mint validation params.
-     * @param currentPrice The current price.
-     */
-    function _validateSignerAndParams(
-        MintParams memory mintParams,
-        address signer,
-        uint256 index,
-        uint256 currentPrice
-    ) internal view {
-        SignedMintValidationParams
-            memory signedMintValidationParams = ERC721SeaDropContractOffererStorage
-                .layout()
-                ._signedMintValidationParams[signer][index];
-
-        // Check that SignedMintValidationParams have been initialized; if not,
-        // this is an invalid signer.
-        if (signedMintValidationParams.maxMaxTotalMintableByWallet == 0) {
-            revert InvalidSignature(signer);
-        }
-
-        // Validate individual params.
         if (
-            mintParams.paymentToken != signedMintValidationParams.paymentToken
+            !ERC721SeaDropContractOffererStorage.layout()._allowedSigners[
+                recoveredAddress
+            ]
         ) {
-            revert InvalidSignedPaymentToken(
-                mintParams.paymentToken,
-                signedMintValidationParams.paymentToken
-            );
-        }
-        if (currentPrice < signedMintValidationParams.minMintPrice) {
-            revert InvalidSignedMintPrice(
-                mintParams.paymentToken,
-                currentPrice,
-                signedMintValidationParams.minMintPrice
-            );
-        }
-        if (
-            mintParams.maxTotalMintableByWallet >
-            signedMintValidationParams.maxMaxTotalMintableByWallet
-        ) {
-            revert InvalidSignedMaxTotalMintableByWallet(
-                mintParams.maxTotalMintableByWallet,
-                signedMintValidationParams.maxMaxTotalMintableByWallet
-            );
-        }
-        if (mintParams.startTime < signedMintValidationParams.minStartTime) {
-            revert InvalidSignedStartTime(
-                mintParams.startTime,
-                signedMintValidationParams.minStartTime
-            );
-        }
-        if (mintParams.endTime > signedMintValidationParams.maxEndTime) {
-            revert InvalidSignedEndTime(
-                mintParams.endTime,
-                signedMintValidationParams.maxEndTime
-            );
-        }
-        if (
-            mintParams.maxTokenSupplyForStage >
-            signedMintValidationParams.maxMaxTokenSupplyForStage
-        ) {
-            revert InvalidSignedMaxTokenSupplyForStage(
-                mintParams.maxTokenSupplyForStage,
-                signedMintValidationParams.maxMaxTokenSupplyForStage
-            );
-        }
-        if (mintParams.feeBps > signedMintValidationParams.maxFeeBps) {
-            revert InvalidSignedFeeBps(
-                mintParams.feeBps,
-                signedMintValidationParams.maxFeeBps
-            );
-        }
-        if (mintParams.feeBps < signedMintValidationParams.minFeeBps) {
-            revert InvalidSignedFeeBps(
-                mintParams.feeBps,
-                signedMintValidationParams.minFeeBps
-            );
-        }
-        if (!mintParams.restrictFeeRecipients) {
-            revert SignedMintsMustRestrictFeeRecipients();
+            revert InvalidSignature(recoveredAddress);
         }
     }
 
@@ -1378,19 +1252,12 @@ contract ERC721SeaDropContractOffererImplementation is
     }
 
     /**
-     * @notice Updates the allowed server-side signers and emits an event.
+     * @notice Updates the allowed server-side signer and emits an event.
      *
-     * @param signer                     The signer to update.
-     * @param signedMintValidationParams Minimum and maximum parameters
-     *                                   to enforce for signed mints.
-     * @param index                      The signer's drop stage index
-     *                                   to update.
+     * @param signer  The signer to update.
+     * @param allowed Whether the signer is allowed.
      */
-    function updateSignedMintValidationParams(
-        address signer,
-        SignedMintValidationParams calldata signedMintValidationParams,
-        uint256 index
-    ) external {
+    function updateSigner(address signer, bool allowed) external {
         // Ensure this contract is only called into with delegatecall.
         _onlyDelegateCalled();
 
@@ -1398,86 +1265,34 @@ contract ERC721SeaDropContractOffererImplementation is
             revert SignerCannotBeZeroAddress();
         }
 
-        // Revert if the min or max fee bps is greater than 10_000.
-        if (signedMintValidationParams.maxFeeBps > 10_000) {
-            revert InvalidFeeBps(signedMintValidationParams.maxFeeBps);
-        }
-        if (
-            signedMintValidationParams.minFeeBps >
-            signedMintValidationParams.maxFeeBps
-        ) {
-            revert InvalidFeeBps(signedMintValidationParams.minFeeBps);
-        }
-
         // Track the enumerated storage.
         address[]
-            storage enumeratedSignersStorage = ERC721SeaDropContractOffererStorage
+            storage enumeratedStorage = ERC721SeaDropContractOffererStorage
                 .layout()
                 ._enumeratedSigners;
-        mapping(address => mapping(uint256 => SignedMintValidationParams))
-            storage signedMintValidationParamsMap = ERC721SeaDropContractOffererStorage
+        mapping(address => bool)
+            storage signersMap = ERC721SeaDropContractOffererStorage
                 .layout()
-                ._signedMintValidationParams;
-        mapping(address => uint256[])
-            storage enumeratedSignedMintValidationParamsIndexesStorage = ERC721SeaDropContractOffererStorage
-                .layout()
-                ._enumeratedSignedMintValidationParamsIndexes;
-        SignedMintValidationParams
-            storage existingSignedMintValidationParams = signedMintValidationParamsMap[
-                signer
-            ][index];
+                ._allowedSigners;
 
-        // Validation params struct packs to two slots, so load it
-        // as a uint256; if it is 0, it is empty.
-        bool signedMintValidationParamsDoesNotExist;
-        assembly {
-            signedMintValidationParamsDoesNotExist := iszero(
-                or(
-                    sload(existingSignedMintValidationParams.slot),
-                    sload(add(existingSignedMintValidationParams.slot, 1))
-                )
-            )
-        }
-        // Use maxMaxTotalMintableByWallet as sentry for add/update or delete.
-        bool addOrUpdate = signedMintValidationParams
-            .maxMaxTotalMintableByWallet != 0;
-
-        if (addOrUpdate) {
-            signedMintValidationParamsMap[signer][
-                index
-            ] = signedMintValidationParams;
-            if (signedMintValidationParamsDoesNotExist) {
-                enumeratedSignersStorage.push(signer);
-                enumeratedSignedMintValidationParamsIndexesStorage[signer].push(
-                    index
-                );
+        if (allowed) {
+            if (signersMap[signer]) {
+                revert DuplicateSigner();
             }
+            signersMap[signer] = true;
+            enumeratedStorage.push(signer);
         } else {
-            if (
-                existingSignedMintValidationParams
-                    .maxMaxTotalMintableByWallet == 0
-            ) {
+            if (!signersMap[signer]) {
                 revert SignerNotPresent();
             }
-            delete ERC721SeaDropContractOffererStorage
-                .layout()
-                ._signedMintValidationParams[signer][index];
-            _asAddressArray(_removeFromEnumeration)(
-                signer,
-                enumeratedSignersStorage
-            );
-            _removeFromEnumeration(
-                index,
-                enumeratedSignedMintValidationParamsIndexesStorage[signer]
-            );
+            delete ERC721SeaDropContractOffererStorage.layout()._allowedSigners[
+                signer
+            ];
+            _asAddressArray(_removeFromEnumeration)(signer, enumeratedStorage);
         }
 
         // Emit an event with the update.
-        emit SignedMintValidationParamsUpdated(
-            signer,
-            signedMintValidationParams,
-            index
-        );
+        emit SignerUpdated(signer, allowed);
     }
 
     /**

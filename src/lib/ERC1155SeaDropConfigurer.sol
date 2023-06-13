@@ -5,11 +5,7 @@ import {
     ERC1155SeaDropContractOffererImplementation
 } from "./ERC1155SeaDropContractOffererImplementation.sol";
 
-import {
-    PublicDrop,
-    MultiConfigureStruct,
-    SignedMintValidationParams
-} from "./ERC1155SeaDropStructs.sol";
+import { PublicDrop, MultiConfigureStruct } from "./ERC1155SeaDropStructs.sol";
 
 import { AllowListData, CreatorPayout } from "./SeaDropStructs.sol";
 
@@ -179,51 +175,23 @@ contract ERC1155SeaDropConfigurer is
                 }
             }
         }
-        if (config.signedMintValidationParams.length != 0) {
-            if (
-                _cast(
-                    config.signedMintValidationParams.length !=
-                        config.signers.length
-                ) |
-                    _cast(
-                        config.signedMintValidationParamsIndexes.length !=
-                            config.signers.length
-                    ) ==
-                1
-            ) {
-                revert SignersMismatch();
-            }
-            for (
-                uint256 i = 0;
-                i < config.signedMintValidationParams.length;
-
-            ) {
-                IERC1155SeaDrop(address(token))
-                    .updateSignedMintValidationParams(
-                        config.signers[i],
-                        config.signedMintValidationParams[i],
-                        config.signedMintValidationParamsIndexes[i]
-                    );
+        if (config.allowedSigners.length != 0) {
+            for (uint256 i = 0; i < config.allowedSigners.length; ) {
+                IERC1155SeaDrop(address(token)).updateSigner(
+                    config.allowedSigners[i],
+                    true
+                );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedSigners.length != 0) {
-            if (
-                config.disallowedSigners.length !=
-                config.disallowedSignedMintValidationParamsIndexes.length
-            ) {
-                revert SignersMismatch();
-            }
-            SignedMintValidationParams memory emptyParams;
             for (uint256 i = 0; i < config.disallowedSigners.length; ) {
-                IERC1155SeaDrop(address(token))
-                    .updateSignedMintValidationParams(
-                        config.disallowedSigners[i],
-                        emptyParams,
-                        config.disallowedSignedMintValidationParamsIndexes[i]
-                    );
+                IERC1155SeaDrop(address(token)).updateSigner(
+                    config.disallowedSigners[i],
+                    false
+                );
                 unchecked {
                     ++i;
                 }

@@ -70,6 +70,16 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
     function updatePayer(address payer, bool allowed) external;
 
     /**
+     * @notice Update the SeaDrop allowed signer.
+     *         Only the owner can use this function.
+     *         The signer can also disallow themselves.
+     *
+     * @param signer  The signer to update.
+     * @param allowed Whether the signer is allowed.
+     */
+    function updateSigner(address signer, bool allowed) external;
+
+    /**
      * @notice Get the SeaDrop allowed Seaport contracts privileged to mint.
      */
     function getAllowedSeaport() external view returns (address[] memory);
@@ -100,13 +110,6 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
      * @param digest The digest hash.
      */
     function getDigestIsUsed(bytes32 digest) external view returns (bool);
-
-    /**
-     * @notice Returns the SeaDrop mint validation params indexes for a signer.
-     */
-    function getSignedMintValidationParamsIndexes(
-        address signer
-    ) external view returns (uint256[] memory);
 
     /**
      * @notice Returns the SeaDrop allowed payers.

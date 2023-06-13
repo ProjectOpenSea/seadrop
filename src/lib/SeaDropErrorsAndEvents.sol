@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    CreatorPayout,
-    PublicDrop,
-    SignedMintValidationParams
-} from "./ERC721SeaDropStructs.sol";
+import { CreatorPayout, PublicDrop } from "./ERC721SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     /**
@@ -30,13 +26,6 @@ interface SeaDropErrorsAndEvents {
      * @notice Revert with an error if the function selector is not supported.
      */
     error UnsupportedFunctionSelector(bytes4 selector);
-
-    /**
-     *  @notice Revert with an error if the number of signers doesn't match
-     *          the length of supplied signedMintValidationParams and
-     *          signedMintValidationParamsIndexes.
-     */
-    error SignersMismatch();
 
     /**
      * @dev Revert with an error if the drop stage is not active.
@@ -153,10 +142,14 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev Revert with an error if a payer is already included in mapping
      *      when adding.
-     *      Note: only applies when adding a single payer, as duplicates in
-     *      enumeration can be removed with updatePayer.
      */
     error DuplicatePayer();
+
+    /**
+     * @dev Revert with an error if a signer is already included in mapping
+     *      when adding.
+     */
+    error DuplicateSigner();
 
     /**
      * @dev Revert with an error if the payer is not allowed. The minter must
@@ -309,7 +302,7 @@ interface SeaDropErrorsAndEvents {
     event SeaDropMint(address payer, uint256 dropStageIndex);
 
     /**
-     * @dev An event with updated allow list data for an nft contract.
+     * @dev An event with updated allow list data.
      *
      * @param previousMerkleRoot The previous allow list merkle root.
      * @param newMerkleRoot      The new allow list merkle root.
@@ -326,19 +319,17 @@ interface SeaDropErrorsAndEvents {
     );
 
     /**
-     * @dev An event with updated drop URI for an nft contract.
+     * @dev An event with updated drop URI.
      */
     event DropURIUpdated(string newDropURI);
 
     /**
-     * @dev An event with the updated creator payout address for an nft
-     *      contract.
+     * @dev An event with the updated creator payout address.
      */
     event CreatorPayoutsUpdated(CreatorPayout[] creatorPayouts);
 
     /**
-     * @dev An event with the updated allowed fee recipient for an nft
-     *      contract.
+     * @dev An event with the updated allowed fee recipient.
      */
     event AllowedFeeRecipientUpdated(
         address indexed feeRecipient,
@@ -346,7 +337,12 @@ interface SeaDropErrorsAndEvents {
     );
 
     /**
-     * @dev An event with the updated payer for an nft contract.
+     * @dev An event with the updated signer.
+     */
+    event SignerUpdated(address indexed signer, bool indexed allowed);
+
+    /**
+     * @dev An event with the updated payer.
      */
     event PayerUpdated(address indexed payer, bool indexed allowed);
 }
