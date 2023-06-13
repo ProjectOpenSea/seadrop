@@ -1157,20 +1157,20 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @param endTime   The drop stage end time.
      */
     function _checkActive(uint256 startTime, uint256 endTime) internal view {
-        // Define a variable if the drop stage is active.
-        bool valid;
+        // Define a variable if the drop stage is inactive.
+        bool invalid;
 
         // Using the same check for time boundary from Seaport.
         // startTime <= block.timestamp < endTime
         assembly {
-            valid := and(
+            invalid := or(
                 iszero(gt(startTime, timestamp())),
                 gt(endTime, timestamp())
             )
         }
 
         // Revert if the drop stage is not active.
-        if (!valid) {
+        if (invalid) {
             revert NotActive(block.timestamp, startTime, endTime);
         }
     }
