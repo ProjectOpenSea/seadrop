@@ -124,6 +124,7 @@ contract ERC1155SeaDropContractOfferer is
             selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
             selector == ISeaDropToken.getAllowedFeeRecipients.selector ||
             selector == ISeaDropToken.getSigners.selector ||
+            selector == ISeaDropToken.getDigestIsUsed.selector ||
             selector ==
             IERC1155SeaDrop.getSignedMintValidationParams.selector ||
             selector ==

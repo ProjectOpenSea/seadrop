@@ -95,6 +95,13 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
     function getSigners() external view returns (address[] memory);
 
     /**
+     * @notice Returns if the signed digest has been used.
+     *
+     * @param digest The digest hash.
+     */
+    function getDigestIsUsed(bytes32 digest) external view returns (bool);
+
+    /**
      * @notice Returns the SeaDrop mint validation params indexes for a signer.
      */
     function getSignedMintValidationParamsIndexes(

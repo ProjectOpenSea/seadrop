@@ -210,6 +210,17 @@ contract ERC1155SeaDropContractOffererImplementation is
                         .layout()
                         ._enumeratedSigners
                 );
+        } else if (selector == ISeaDropToken.getDigestIsUsed.selector) {
+            // Get the digest.
+            bytes32 digest = bytes32(data[0:32]);
+
+            // Return if the digest is used.
+            return
+                abi.encode(
+                    ERC1155SeaDropContractOffererStorage.layout()._usedDigests[
+                        digest
+                    ]
+                );
         } else if (
             selector == IERC1155SeaDrop.getSignedMintValidationParams.selector
         ) {

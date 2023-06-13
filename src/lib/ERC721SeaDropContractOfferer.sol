@@ -123,6 +123,7 @@ contract ERC721SeaDropContractOfferer is
             selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
             selector == ISeaDropToken.getAllowedFeeRecipients.selector ||
             selector == ISeaDropToken.getSigners.selector ||
+            selector == ISeaDropToken.getDigestIsUsed.selector ||
             selector == IERC721SeaDrop.getSignedMintValidationParams.selector ||
             selector ==
             ISeaDropToken.getSignedMintValidationParamsIndexes.selector ||

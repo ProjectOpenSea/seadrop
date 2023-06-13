@@ -188,6 +188,11 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       mintParams,
       salt,
     };
+    const digest = ethers.utils._TypedDataEncoder.hash(
+      eip712Domain,
+      eip712Types,
+      signedMint
+    );
     let signature = await signer._signTypedData(
       eip712Domain,
       eip712Types,
@@ -204,12 +209,12 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       signature
     );
     expect(verifiedAddress).to.eq(signer.address);
-    return signature;
+    return { signature, digest };
   };
 
   it("Should mint a signed mint", async () => {
     // Mint signed with payer for minter.
-    let signature = await signMint(
+    let { signature, digest } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -233,6 +238,8 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       signature,
     });
 
+    expect(await tokenSeaDropInterface.getDigestIsUsed(digest)).to.eq(false);
+
     await expect(
       marketplaceContract
         .connect(payer)
@@ -242,6 +249,8 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // PayerNotAllowed
     // withArgs(payer.address)
+
+    expect(await tokenSeaDropInterface.getDigestIsUsed(digest)).to.eq(false);
 
     // Allow the payer.
     await tokenSeaDropInterface.updatePayer(payer.address, true);
@@ -257,6 +266,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     let minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(3);
     expect(await token.totalSupply()).to.eq(3);
+    expect(await tokenSeaDropInterface.getDigestIsUsed(digest)).to.eq(true);
 
     // Ensure a signature can only be used once.
     // Mint again with the same params.
@@ -269,17 +279,19 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // SignatureAlreadyUsed
 
+    expect(await tokenSeaDropInterface.getDigestIsUsed(digest)).to.eq(true);
+
     // Mint signed with minter being payer.
     // Change the salt to use a new digest.
     const newSalt = randomHex();
-    signature = await signMint(
+    ({ signature, digest } = await signMint(
       token.address,
       minter,
       feeRecipient,
       mintParams,
       newSalt,
       signer
-    );
+    ));
     ({ order, value } = await createMintOrder({
       token,
       tokenSeaDropInterface,
@@ -295,6 +307,8 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       signature,
     }));
 
+    expect(await tokenSeaDropInterface.getDigestIsUsed(digest)).to.eq(false);
+
     await expect(
       marketplaceContract
         .connect(minter)
@@ -309,10 +323,11 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     minterBalance = await token.balanceOf(minter.address);
     expect(minterBalance).to.eq(6);
     expect(await token.totalSupply()).to.eq(6);
+    expect(await tokenSeaDropInterface.getDigestIsUsed(digest)).to.eq(true);
   });
 
   it("Should not mint a non-compact signed mint", async () => {
-    let signature = await signMint(
+    let { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -346,7 +361,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       "InvalidContractOrder"
     ); // MintSignedSignatureMustBeERC2098Compact
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -354,7 +369,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       salt,
       signer,
       true // passing compact=true should succeed
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       token,
@@ -385,7 +400,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
   });
 
   it("Should not mint a signed mint with different params", async () => {
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter, // sign mint for minter
       feeRecipient,
@@ -556,7 +571,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
     expect(await tokenSeaDropInterface2.getSigners()).to.deep.eq([
       signer.address,
     ]);
-    const signature2 = await signMint(
+    const { signature: signature2 } = await signMint(
       token.address,
       minter, // sign mint for minter
       feeRecipient,
@@ -698,7 +713,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
   });
 
   it("Should not mint a signed mint after exceeding max mints per wallet", async () => {
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -790,7 +805,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       feeBps: 1,
     };
 
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -833,7 +848,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
   it("Should not mint with invalid fee bps", async () => {
     const mintParamsInvalidFeeBps = { ...mintParams, feeBps: 11_000 };
 
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -870,7 +885,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
   it("Should not mint a signed mint that violates the validation params", async () => {
     let newMintParams: any = { ...mintParams, startPrice: 0, endPrice: 0 };
 
-    let signature = await signMint(
+    let { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -910,14 +925,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     newMintParams = { ...mintParams, maxTotalMintableByWallet: 12 };
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
       newMintParams,
       salt,
       signer
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       ...orderParams,
@@ -937,14 +952,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     newMintParams = { ...mintParams, startTime: 30 };
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
       newMintParams,
       salt,
       signer
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       ...orderParams,
@@ -967,14 +982,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       endTime: (signedMintValidationParams.maxEndTime as number) + 1,
     };
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
       newMintParams,
       salt,
       signer
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       ...orderParams,
@@ -997,14 +1012,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       maxTokenSupplyForStage: 10001,
     };
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
       newMintParams,
       salt,
       signer
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       ...orderParams,
@@ -1027,14 +1042,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       feeBps: 0,
     };
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
       newMintParams,
       salt,
       signer
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       ...orderParams,
@@ -1057,14 +1072,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       feeBps: 9010,
     };
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
       newMintParams,
       salt,
       signer
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       ...orderParams,
@@ -1087,14 +1102,14 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       restrictFeeRecipients: false,
     };
 
-    signature = await signMint(
+    ({ signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
       newMintParams,
       salt,
       signer
-    );
+    ));
 
     ({ order, value } = await createMintOrder({
       ...orderParams,
@@ -1153,7 +1168,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       { payoutAddress: owner.address, basisPoints: 5_000 },
     ]);
 
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -1217,7 +1232,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       signedMintValidationParamsIndex
     );
 
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -1270,7 +1285,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
   });
 
   it("Should return the expected offer and consideration in previewOrder", async () => {
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -1338,7 +1353,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       { payoutAddress: owner.address, basisPoints: 5_000 },
     ]);
 
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
@@ -1393,7 +1408,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   // NOTE: Run this test last in this file as it hacks changing the hre
   it("Reverts on changed chainId", async () => {
-    const signature = await signMint(
+    const { signature } = await signMint(
       token.address,
       minter,
       feeRecipient,
