@@ -207,6 +207,46 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         gasLimit: 50_000,
       })
     ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updateAllowedSeaport
+    await expect(
+      configurer.updateAllowedSeaport([], {
+        gasLimit: 50_000,
+      })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updateCreatorPayouts
+    await expect(
+      configurer.updateCreatorPayouts([], {
+        gasLimit: 50_000,
+      })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updateAllowedFeeRecipient
+    await expect(
+      configurer.updateAllowedFeeRecipient(AddressZero, true, {
+        gasLimit: 50_000,
+      })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updateSignedMintValidationParams
+    await expect(
+      configurer.updateSignedMintValidationParams(
+        AddressZero,
+        signedMintValidationParams,
+        1,
+        {
+          gasLimit: 50_000,
+        }
+      )
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
+
+    // updatePayer
+    await expect(
+      configurer.updatePayer(AddressZero, true, {
+        gasLimit: 50_000,
+      })
+    ).to.be.revertedWithCustomError(configurer, "OnlyDelegateCalled");
   });
 
   it("Should not be able to mint until the creator payout is set", async () => {

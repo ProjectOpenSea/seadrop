@@ -56,7 +56,7 @@ contract ERC721SeaDropContractOffererImplementation is
 
     /// @notice The original address of this contract, to ensure that it can
     ///         only be called into with delegatecall.
-    address internal immutable _originalImplementation;
+    address internal immutable _originalImplementation = address(this);
 
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
@@ -129,10 +129,7 @@ contract ERC721SeaDropContractOffererImplementation is
     /**
      * @dev Constructor for contract deployment.
      */
-    constructor() {
-        // Set the immutable address of this contract.
-        _originalImplementation = address(this);
-    }
+    constructor() {}
 
     /**
      * @notice The fallback function is used as a dispatcher for SeaDrop
@@ -1222,6 +1219,9 @@ contract ERC721SeaDropContractOffererImplementation is
      * @param allowedSeaport The allowed Seaport addresses.
      */
     function updateAllowedSeaport(address[] calldata allowedSeaport) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // Put the lengths on the stack for more efficient access.
         uint256 allowedSeaportLength = allowedSeaport.length;
         uint256 enumeratedAllowedSeaportLength = ERC721SeaDropContractOffererStorage
@@ -1274,6 +1274,9 @@ contract ERC721SeaDropContractOffererImplementation is
     function updateCreatorPayouts(
         CreatorPayout[] calldata creatorPayouts
     ) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         // Reset the creator payout array.
         delete ERC721SeaDropContractOffererStorage.layout()._creatorPayouts;
 
@@ -1334,6 +1337,9 @@ contract ERC721SeaDropContractOffererImplementation is
         address feeRecipient,
         bool allowed
     ) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         if (feeRecipient == address(0)) {
             revert FeeRecipientCannotBeZeroAddress();
         }
@@ -1385,6 +1391,9 @@ contract ERC721SeaDropContractOffererImplementation is
         SignedMintValidationParams calldata signedMintValidationParams,
         uint256 index
     ) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         if (signer == address(0)) {
             revert SignerCannotBeZeroAddress();
         }
@@ -1478,6 +1487,9 @@ contract ERC721SeaDropContractOffererImplementation is
      * @param allowed Whether to add or remove the payer.
      */
     function updatePayer(address payer, bool allowed) external {
+        // Ensure this contract is only called into with delegatecall.
+        _onlyDelegateCalled();
+
         if (payer == address(0)) {
             revert PayerCannotBeZeroAddress();
         }
