@@ -9,7 +9,7 @@ import {
     DefaultOperatorFilterer
 } from "operator-filter-registry/DefaultOperatorFilterer.sol";
 
-import { ERC1155 } from "solmate/tokens/ERC1155.sol";
+import { ERC1155 } from "./lib/ERC1155.sol";
 
 /**
  * @title  ERC1155SeaDrop
@@ -105,13 +105,27 @@ contract ERC1155SeaDrop is
     }
 
     /**
+     * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
+     *      Always returns true for the conduit.
+     */
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view virtual override returns (bool) {
+        if (operator == _CONDUIT) {
+            return true;
+        }
+        return ERC1155.isApprovedForAll(owner, operator);
+    }
+
+    /**
      * @notice Burns a token, restricted to the owner or approved operator.
      *
      * @param id The token id to burn.
      */
     function burn(address from, uint256 id, uint256 amount) external {
         // Require that only the owner or approved operator can call.
-        if (msg.sender != from && !isApprovedForAll[from][msg.sender]) {
+        if (msg.sender != from && !_isApprovedForAll[from][msg.sender]) {
             revert NotAuthorized();
         }
 
@@ -138,7 +152,7 @@ contract ERC1155SeaDrop is
         uint256[] calldata amounts
     ) external {
         // Require that only the owner or approved operator can call.
-        if (msg.sender != from && !isApprovedForAll[from][msg.sender]) {
+        if (msg.sender != from && !_isApprovedForAll[from][msg.sender]) {
             revert NotAuthorized();
         }
 

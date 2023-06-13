@@ -153,6 +153,20 @@ contract ERC721SeaDrop is
     }
 
     /**
+     * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
+     *      Always returns true for the conduit.
+     */
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view virtual override returns (bool) {
+        if (operator == _CONDUIT) {
+            return true;
+        }
+        return ERC721A.isApprovedForAll(owner, operator);
+    }
+
+    /**
      * @notice Withdraws contract balance to the contract owner.
      *         Provided as a safety measure to rescue stuck funds since ERC721A
      *         makes all methods payable for gas efficiency reasons.

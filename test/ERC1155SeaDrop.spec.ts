@@ -13,6 +13,7 @@ import type {
   IERC1155SeaDrop,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
+import { whileImpersonating } from "./utils/impersonate";
 
 describe(`ERC1155SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
@@ -89,6 +90,44 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
 
     expect(await token.balanceOf(creator.address, 0)).to.eq(3);
     expect(await token.balanceOf(minter.address, 0)).to.eq(2);
+
+    // Should auto-approve the conduit to transfer.
+    await whileImpersonating(
+      conduitOne.address,
+      provider,
+      async (impersonatedSigner) => {
+        await token
+          .connect(impersonatedSigner)
+          .safeTransferFrom(creator.address, minter.address, 0, 1, "0x");
+        await token
+          .connect(impersonatedSigner)
+          .safeBatchTransferFrom(
+            creator.address,
+            minter.address,
+            [0],
+            [1],
+            Buffer.from("dadb0d", "hex")
+          );
+      }
+    );
+
+    // Should not allow a non-approved address to transfer.
+    await expect(
+      token
+        .connect(owner)
+        .safeTransferFrom(minter.address, creator.address, 0, 1, "0x")
+    ).to.be.revertedWith("NOT_AUTHORIZED");
+    await expect(
+      token
+        .connect(owner)
+        .safeBatchTransferFrom(
+          minter.address,
+          creator.address,
+          [0],
+          [1],
+          Buffer.from("dadb0d", "hex")
+        )
+    ).to.be.revertedWith("NOT_AUTHORIZED");
   });
 
   it("Should only let the token owner burn their own token", async () => {

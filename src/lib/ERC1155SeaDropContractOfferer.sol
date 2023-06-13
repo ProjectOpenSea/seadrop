@@ -29,7 +29,7 @@ import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import { ERC1155 } from "solmate/tokens/ERC1155.sol";
+import { ERC1155 } from "./ERC1155.sol";
 
 /**
  * @title  ERC1155SeaDropContractOfferer

@@ -92,6 +92,56 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     await token.connect(minter).setApprovalForAll(creator.address, true);
     await token.connect(minter).approve(creator.address, 4);
+
+    // Should auto-approve the conduit to transfer.
+    await whileImpersonating(
+      conduitOne.address,
+      provider,
+      async (impersonatedSigner) => {
+        await token
+          .connect(impersonatedSigner)
+          .transferFrom(creator.address, minter.address, 1);
+        await token
+          .connect(impersonatedSigner)
+          ["safeTransferFrom(address,address,uint256)"](
+            creator.address,
+            minter.address,
+            2
+          );
+        await token
+          .connect(impersonatedSigner)
+          ["safeTransferFrom(address,address,uint256,bytes)"](
+            creator.address,
+            minter.address,
+            3,
+            Buffer.from("dadb0d", "hex")
+          );
+      }
+    );
+
+    // Should not allow a non-approved address to transfer.
+    await expect(
+      token.connect(owner).transferFrom(minter.address, creator.address, 1)
+    ).to.be.revertedWithCustomError(token, "TransferCallerNotOwnerNorApproved");
+    await expect(
+      token
+        .connect(owner)
+        ["safeTransferFrom(address,address,uint256)"](
+          minter.address,
+          creator.address,
+          2
+        )
+    ).to.be.revertedWithCustomError(token, "TransferCallerNotOwnerNorApproved");
+    await expect(
+      token
+        .connect(owner)
+        ["safeTransferFrom(address,address,uint256,bytes)"](
+          minter.address,
+          creator.address,
+          3,
+          Buffer.from("dadb0d", "hex")
+        )
+    ).to.be.revertedWithCustomError(token, "TransferCallerNotOwnerNorApproved");
   });
 
   it("Should only let the token owner burn their own token", async () => {
