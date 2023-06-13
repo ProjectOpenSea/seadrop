@@ -676,9 +676,6 @@ contract ERC1155SeaDropContractOffererImplementation is
             uint256 salt = uint256(bytes32(context[459:491]));
             bytes32 signatureR = bytes32(context[491:523]);
             bytes32 signatureVS = bytes32(context[523:555]);
-            if (context.length > 555) {
-                revert MintSignedSignatureMustBeERC2098Compact();
-            }
             consideration = _mintSigned(
                 mintDetails,
                 signedMintValidationParamsIndex,

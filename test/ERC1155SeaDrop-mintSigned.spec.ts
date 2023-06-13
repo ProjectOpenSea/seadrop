@@ -374,7 +374,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
-    ); // MintSignedSignatureMustBeERC2098Compact
+    ); // Signature must be compact
 
     ({ signature } = await signMint(
       token.address,

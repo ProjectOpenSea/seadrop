@@ -39,12 +39,6 @@ interface SeaDropErrorsAndEvents {
     error SignersMismatch();
 
     /**
-     * @dev Revert with an error if the signed mint signature is not compact
-     *      according to ERC-2098.
-     */
-    error MintSignedSignatureMustBeERC2098Compact();
-
-    /**
      * @dev Revert with an error if the drop stage is not active.
      */
     error NotActive(
