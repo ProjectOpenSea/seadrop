@@ -271,6 +271,22 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       mintType: MintType.PUBLIC,
     }));
 
+    // Should not be able to mint when minimumReceived.length is zero
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(
+          { ...order, parameters: { ...order.parameters, offer: [] } },
+          [],
+          HashZero,
+          AddressZero,
+          { value }
+        )
+    ).to.be.revertedWithCustomError(
+      marketplaceContract,
+      "InvalidContractOrder"
+    ); // MustSpecifyERC1155ConsiderationItemForSeaDropMint
+
     await expect(
       marketplaceContract
         .connect(minter)

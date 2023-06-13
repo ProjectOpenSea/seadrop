@@ -538,10 +538,11 @@ contract ERC1155SeaDropContractOffererImplementation is
         SpentItem[] calldata minimumReceived,
         bytes calldata context
     ) internal view returns (uint8 substandard) {
-        // Declare an error buffer; first check that every minimumReceived has
-        // this address.
+        // Declare an error buffer; first check minimumReceived is not length
+        // zero and every minimumReceived has this address for token.
         uint256 errorBuffer;
         uint256 minimumReceivedLength = minimumReceived.length;
+        errorBuffer |= _castAndInvert(minimumReceivedLength > 0);
         for (uint256 i = 0; i < minimumReceivedLength; ) {
             errorBuffer |=
                 _castAndInvert(
