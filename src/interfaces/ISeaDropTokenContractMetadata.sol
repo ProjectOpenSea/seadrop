@@ -43,6 +43,12 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     error ProvenanceHashCannotBeSetAfterMintStarted();
 
     /**
+     * @dev Revert with an error when attempting to set the provenance
+     *      hash after it has already been set.
+     */
+    error ProvenanceHashCannotBeSetAfterAlreadyBeingSet();
+
+    /**
      * @notice Sets the base URI for the token metadata and emits an event.
      *
      * @param tokenURI The new base URI to set.

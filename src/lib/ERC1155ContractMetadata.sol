@@ -181,7 +181,8 @@ contract ERC1155ContractMetadata is
      *         is a hash of the ordered metadata to show it has not been
      *         modified after mint started.
      *
-     *         This function will revert after the first item has been minted.
+     *         This function will revert if the provenance hash has already
+     *         been set, so be sure to carefully set it only once.
      *
      * @param newProvenanceHash The new provenance hash to set.
      */
@@ -189,15 +190,13 @@ contract ERC1155ContractMetadata is
         // Ensure the sender is only the owner or configurer contract.
         _onlyOwnerOrConfigurer();
 
-        // Revert if any items have been minted.
-        if (
-            _tokenSupply[0].totalMinted != 0 || _tokenSupply[1].totalMinted != 0
-        ) {
-            revert ProvenanceHashCannotBeSetAfterMintStarted();
-        }
-
         // Keep track of the old provenance hash for emitting with the event.
         bytes32 oldProvenanceHash = _provenanceHash;
+
+        // Revert if the provenance hash has already been set.
+        if (oldProvenanceHash != bytes32(0)) {
+            revert ProvenanceHashCannotBeSetAfterAlreadyBeingSet();
+        }
 
         // Set the new provenance hash.
         _provenanceHash = newProvenanceHash;
@@ -459,19 +458,6 @@ contract ERC1155ContractMetadata is
 
             // Increment total minted by user per token.
             _totalMintedByUserPerToken[to][id] += amount;
-        }
-    }
-
-    /**
-     * @dev Internal pure function to cast a `bool` value to a `uint256` value.
-     *
-     * @param b The `bool` value to cast.
-     *
-     * @return u The `uint256` value.
-     */
-    function _cast(bool b) internal pure returns (uint256 u) {
-        assembly {
-            u := b
         }
     }
 }

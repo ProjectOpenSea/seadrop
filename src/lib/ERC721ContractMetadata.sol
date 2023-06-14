@@ -298,17 +298,4 @@ contract ERC721ContractMetadata is
     function _startTokenId() internal view virtual override returns (uint256) {
         return 1;
     }
-
-    /**
-     * @dev Internal pure function to cast a `bool` value to a `uint256` value.
-     *
-     * @param b The `bool` value to cast.
-     *
-     * @return u The `uint256` value.
-     */
-    function _cast(bool b) internal pure returns (uint256 u) {
-        assembly {
-            u := b
-        }
-    }
 }

@@ -192,23 +192,12 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
       .to.emit(token, "ProvenanceHashUpdated")
       .withArgs(defaultProvenanceHash, firstProvenanceHash);
 
-    // Provenance hash should not be updatable after the first token has minted.
-    // Mint a token.
-    await token.setMaxSupply(0, 1);
-    await mintTokens({
-      marketplaceContract,
-      token,
-      tokenSeaDropInterface,
-      minter: owner,
-      tokenId: 0,
-      quantity: 1,
-    });
-
+    // Provenance hash should not be updatable after it has already been set.
     await expect(
       token.setProvenanceHash(secondProvenanceHash)
     ).to.be.revertedWithCustomError(
       token,
-      "ProvenanceHashCannotBeSetAfterMintStarted"
+      "ProvenanceHashCannotBeSetAfterAlreadyBeingSet"
     );
 
     expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
