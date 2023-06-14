@@ -134,7 +134,6 @@ contract ERC1155SeaDropContractOfferer is
             selector == ISeaDropToken.updateCreatorPayouts.selector ||
             selector == ISeaDropToken.updatePayer.selector ||
             selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
-            selector == ISeaDropToken.updateSigner.selector ||
             selector == IERC1155SeaDrop.updatePublicDrop.selector;
 
         if (callSeaDropImplementation) {
@@ -142,6 +141,21 @@ contract ERC1155SeaDropContractOfferer is
             // or configurer contract.
             if (requireOnlyOwnerOrConfigurer) {
                 _onlyOwnerOrConfigurer();
+            } else if (selector == ISeaDropToken.updateSigner.selector) {
+                // For updateSigner, a signer can disallow themselves.
+                // Get the signer parameter.
+                address signer = address(bytes20(data[12:32]));
+                // If the signer is not allowed, ensure sender is only owner
+                // or configurer.
+                if (
+                    msg.sender != signer ||
+                    (msg.sender == signer &&
+                        !ERC1155SeaDropContractOffererStorage
+                            .layout()
+                            ._allowedSigners[signer])
+                ) {
+                    _onlyOwnerOrConfigurer();
+                }
             }
 
             // Forward the call to the implementation contract.

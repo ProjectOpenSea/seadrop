@@ -863,6 +863,57 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       .delegateForAll(payer.address, false);
   });
 
+  it("Signers should be able to disallow themselves", async () => {
+    const signer2 = new ethers.Wallet(randomHex(32), provider);
+    await faucet(signer.address, provider);
+    await faucet(signer2.address, provider);
+
+    expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([
+      signer.address,
+    ]);
+
+    // A signer should be able to disallow themselves.
+    await tokenSeaDropInterface
+      .connect(signer)
+      .updateSigner(signer.address, false);
+    expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([]);
+
+    // A signer should not be able to re-allow themselves.
+    await expect(
+      tokenSeaDropInterface
+        .connect(signer)
+        .updateSigner(signer.address, true, { gasLimit: 100_000 })
+    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([]);
+
+    await tokenSeaDropInterface.updateSigner(signer.address, true);
+    // A signer should not be able to allow or disallow another signer.
+    await expect(
+      tokenSeaDropInterface
+        .connect(signer)
+        .updateSigner(signer2.address, true, { gasLimit: 100_000 })
+    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    await expect(
+      tokenSeaDropInterface
+        .connect(signer)
+        .updateSigner(signer2.address, false, { gasLimit: 100_000 })
+    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    await expect(
+      tokenSeaDropInterface
+        .connect(signer2)
+        .updateSigner(signer.address, true, { gasLimit: 100_000 })
+    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    await expect(
+      tokenSeaDropInterface
+        .connect(signer2)
+        .updateSigner(signer.address, false, { gasLimit: 100_000 })
+    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+
+    expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([
+      signer.address,
+    ]);
+  });
+
   // NOTE: Run this test last in this file as it hacks changing the hre
   it("Reverts on changed chainId", async () => {
     const { signature } = await signMint(

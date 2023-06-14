@@ -72,7 +72,7 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
     /**
      * @notice Update the SeaDrop allowed signer.
      *         Only the owner can use this function.
-     *         The signer can also disallow themselves.
+     *         An allowed signer can also disallow themselves.
      *
      * @param signer  The signer to update.
      * @param allowed Whether the signer is allowed.
