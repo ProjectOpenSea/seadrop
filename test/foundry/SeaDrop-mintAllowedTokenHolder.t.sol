@@ -3,16 +3,16 @@ pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { TestERC721 } from "seadrop/test/TestERC721.sol";
+import { TestERC721 } from "raribleDrop/test/TestERC721.sol";
 
-import { SeaDrop } from "seadrop/SeaDrop.sol";
+import { RaribleDrop } from "raribleDrop/RaribleDrop.sol";
 
-import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
+import { ERC721PartnerRaribleDrop } from "raribleDrop/ERC721PartnerRaribleDrop.sol";
 
 import {
     TokenGatedMintParams,
     TokenGatedDropStage
-} from "seadrop/lib/SeaDropStructs.sol";
+} from "raribleDrop/lib/RaribleDropStructs.sol";
 
 contract ERC721DropTest is TestHelper {
     struct FuzzInputsAllowedTokenHolders {
@@ -38,16 +38,16 @@ contract ERC721DropTest is TestHelper {
     }
 
     function setUp() public {
-        // Deploy the ERC721PartnerSeaDrop token.
-        address[] memory allowedSeaDrop = new address[](1);
-        allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
+        // Deploy the ERC721PartnerRaribleDrop token.
+        address[] memory allowedRaribleDrop = new address[](1);
+        allowedRaribleDrop[0] = address(raribleDrop);
+        token = new ERC721PartnerRaribleDrop("", "", address(this), allowedRaribleDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
 
         // Set the creator payout address.
-        token.updateCreatorPayoutAddress(address(seadrop), creator);
+        token.updateCreatorPayoutAddress(address(raribleDrop), creator);
     }
 
     function _deployAndMintGateToken(address minter, uint256[] memory tokenIds)
@@ -93,7 +93,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
         // Update token gated drop for the deployed gateToken.
-        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+        raribleDrop.updateTokenGatedDrop(gateToken, dropStage);
 
         // Keep track of the mint params.
         TokenGatedMintParams memory mintParams = TokenGatedMintParams(
@@ -108,7 +108,7 @@ contract ERC721DropTest is TestHelper {
         hoax(args.minter, 100 ether);
 
         // Call mintAllowedTokenHolder as the minter.
-        seadrop.mintAllowedTokenHolder{ value: mintValue }(
+        raribleDrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -145,7 +145,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
         // Update token gated drop for the deployed gateToken.
-        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+        raribleDrop.updateTokenGatedDrop(gateToken, dropStage);
 
         // Keep track of the mint params.
         TokenGatedMintParams memory mintParams = TokenGatedMintParams(
@@ -160,12 +160,12 @@ contract ERC721DropTest is TestHelper {
         address payer = makeAddr("payer");
 
         // Allow the payer.
-        token.updatePayer(address(seadrop), payer, true);
+        token.updatePayer(address(raribleDrop), payer, true);
 
         hoax(payer, 100 ether);
 
         // Call mintAllowedTokenHolder as the payer.
-        seadrop.mintAllowedTokenHolder{ value: mintValue }(
+        raribleDrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -202,7 +202,7 @@ contract ERC721DropTest is TestHelper {
 
         vm.prank(address(token));
         // Update token gated drop for the deployed gateToken.
-        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+        raribleDrop.updateTokenGatedDrop(gateToken, dropStage);
 
         // Keep track of the mint params.
         TokenGatedMintParams memory mintParams = TokenGatedMintParams(
@@ -215,7 +215,7 @@ contract ERC721DropTest is TestHelper {
 
         // Call mintAllowedTokenHolder.
         hoax(args.minter, 100 ether);
-        seadrop.mintAllowedTokenHolder{ value: mintValue }(
+        raribleDrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -238,7 +238,7 @@ contract ERC721DropTest is TestHelper {
         // Attempt to call mintAllowedTokenHolder with the
         // TokenGatedMintParams from the previous call.
         hoax(args.minter, 100 ether);
-        seadrop.mintAllowedTokenHolder{ value: mintValue }(
+        raribleDrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -273,7 +273,7 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Update token gated drop for the deployed gateToken.
-        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+        raribleDrop.updateTokenGatedDrop(gateToken, dropStage);
 
         // Keep track of the mint params.
         TokenGatedMintParams memory mintParams = TokenGatedMintParams(
@@ -283,7 +283,7 @@ contract ERC721DropTest is TestHelper {
 
         // Call mintAllowedTokenHolder.
         hoax(args.minter, 100 ether);
-        seadrop.mintAllowedTokenHolder(
+        raribleDrop.mintAllowedTokenHolder(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -321,7 +321,7 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Update token gated drop for the deployed gateToken.
-        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+        raribleDrop.updateTokenGatedDrop(gateToken, dropStage);
 
         // Keep track of the mint params.
         TokenGatedMintParams memory mintParams = TokenGatedMintParams(
@@ -349,7 +349,7 @@ contract ERC721DropTest is TestHelper {
             )
         );
         // Call mintAllowedTokenHolder.
-        seadrop.mintAllowedTokenHolder{ value: mintValue }(
+        raribleDrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
             notOwner,
@@ -384,7 +384,7 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Update token gated drop for the deployed gateToken.
-        seadrop.updateTokenGatedDrop(gateToken, dropStage);
+        raribleDrop.updateTokenGatedDrop(gateToken, dropStage);
 
         // Keep track of the mint params.
         TokenGatedMintParams memory mintParams = TokenGatedMintParams(
@@ -401,7 +401,7 @@ contract ERC721DropTest is TestHelper {
         );
         // Attempt to call mintAllowedTokenHolder with a fee recipient.
         hoax(args.minter, 100 ether);
-        seadrop.mintAllowedTokenHolder{ value: mintValue }(
+        raribleDrop.mintAllowedTokenHolder{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,

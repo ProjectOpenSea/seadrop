@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 import {
-    ISeaDropTokenContractMetadataUpgradeable
-} from "./interfaces/ISeaDropTokenContractMetadataUpgradeable.sol";
+    IRaribleDropTokenContractMetadataUpgradeable
+} from "./interfaces/IRaribleDropTokenContractMetadataUpgradeable.sol";
 
 import {
     ERC721AUpgradeable
@@ -36,7 +36,7 @@ import {
 contract ERC721ContractMetadataUpgradeable is
     ERC721AUpgradeable,
     TwoStepOwnableUpgradeable,
-    ISeaDropTokenContractMetadataUpgradeable
+    IRaribleDropTokenContractMetadataUpgradeable
 {
     using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
 

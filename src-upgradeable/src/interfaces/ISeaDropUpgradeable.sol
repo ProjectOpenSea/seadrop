@@ -8,13 +8,13 @@ import {
     TokenGatedDropStage,
     TokenGatedMintParams,
     SignedMintValidationParams
-} from "../lib/SeaDropStructsUpgradeable.sol";
+} from "../lib/RaribleDropStructsUpgradeable.sol";
 
 import {
-    SeaDropErrorsAndEventsUpgradeable
-} from "../lib/SeaDropErrorsAndEventsUpgradeable.sol";
+    RaribleDropErrorsAndEventsUpgradeable
+} from "../lib/RaribleDropErrorsAndEventsUpgradeable.sol";
 
-interface ISeaDropUpgradeable is SeaDropErrorsAndEventsUpgradeable {
+interface IRaribleDropUpgradeable is RaribleDropErrorsAndEventsUpgradeable {
     /**
      * @notice Mint a public drop.
      *
@@ -223,7 +223,7 @@ interface ISeaDropUpgradeable is SeaDropErrorsAndEventsUpgradeable {
 
     /**
      * The following methods assume msg.sender is an nft contract
-     * and its ERC165 interface id matches INonFungibleSeaDropToken.
+     * and its ERC165 interface id matches INonFungibleRaribleDropToken.
      */
 
     /**
@@ -246,7 +246,7 @@ interface ISeaDropUpgradeable is SeaDropErrorsAndEventsUpgradeable {
      *         and emits an event.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param allowListData The allow list data.
      */
@@ -256,7 +256,7 @@ interface ISeaDropUpgradeable is SeaDropErrorsAndEventsUpgradeable {
      * @notice Updates the token gated drop stage for the nft contract
      *         and emits an event.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing simultaneous
+     *         Note: If two INonFungibleRaribleDropToken tokens are doing simultaneous
      *         token gated drop promotions for each other, they can be
      *         minted by the same actor until `maxTokenSupplyForStage`
      *         is reached. Please ensure the `allowedNftToken` is not

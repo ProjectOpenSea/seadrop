@@ -3,9 +3,9 @@ pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
+import { ERC721PartnerRaribleDrop } from "raribleDrop/ERC721PartnerRaribleDrop.sol";
 
-import { TestERC721 } from "seadrop/test/TestERC721.sol";
+import { TestERC721 } from "raribleDrop/test/TestERC721.sol";
 import {
     AllowListData,
     MintParams,
@@ -13,27 +13,27 @@ import {
     TokenGatedDropStage,
     TokenGatedMintParams,
     SignedMintValidationParams
-} from "seadrop/lib/SeaDropStructs.sol";
+} from "raribleDrop/lib/RaribleDropStructs.sol";
 
 import { Merkle } from "murky/Merkle.sol";
 
-contract ERC721PartnerSeaDropPlusRegularMint is ERC721PartnerSeaDrop {
+contract ERC721PartnerRaribleDropPlusRegularMint is ERC721PartnerRaribleDrop {
     constructor(
         string memory name,
         string memory symbol,
         address admin,
         address[] memory allowed
-    ) ERC721PartnerSeaDrop(name, symbol, admin, allowed) {}
+    ) ERC721PartnerRaribleDrop(name, symbol, admin, allowed) {}
 
     function mint(address recip, uint256 quantity) public payable {
         _mint(recip, quantity);
     }
 }
 
-contract TestSeaDropSnapshot is TestHelper {
+contract TestRaribleDropSnapshot is TestHelper {
     TestERC721 tokenGatedEligible;
     mapping(address => bool) seenAddresses;
-    ERC721PartnerSeaDropPlusRegularMint snapshotToken;
+    ERC721PartnerRaribleDropPlusRegularMint snapshotToken;
 
     bytes32 merkleRoot;
     bytes32[] proof;
@@ -46,14 +46,14 @@ contract TestSeaDropSnapshot is TestHelper {
     address admin = makeAddr("admin");
 
     function setUp() public {
-        // Deploy the ERC721PartnerSeaDrop token.
-        address[] memory allowedSeaDrop = new address[](1);
-        allowedSeaDrop[0] = address(seadrop);
-        snapshotToken = new ERC721PartnerSeaDropPlusRegularMint(
+        // Deploy the ERC721PartnerRaribleDrop token.
+        address[] memory allowedRaribleDrop = new address[](1);
+        allowedRaribleDrop[0] = address(raribleDrop);
+        snapshotToken = new ERC721PartnerRaribleDropPlusRegularMint(
             "",
             "",
             admin,
-            allowedSeaDrop
+            allowedRaribleDrop
         );
         // Deploy a standard ERC721 token.
         tokenGatedEligible = new TestERC721();
@@ -62,7 +62,7 @@ contract TestSeaDropSnapshot is TestHelper {
         snapshotToken.setMaxSupply(1000);
 
         // Set the creator payout address.
-        snapshotToken.updateCreatorPayoutAddress(address(seadrop), creator);
+        snapshotToken.updateCreatorPayoutAddress(address(raribleDrop), creator);
 
         // Create the public drop stage.
         PublicDrop memory publicDrop = PublicDrop(
@@ -76,12 +76,12 @@ contract TestSeaDropSnapshot is TestHelper {
 
         // Set the public drop for the token contract.
         vm.prank(admin);
-        snapshotToken.updatePublicDrop(address(seadrop), publicDrop);
-        snapshotToken.updatePublicDrop(address(seadrop), publicDrop);
+        snapshotToken.updatePublicDrop(address(raribleDrop), publicDrop);
+        snapshotToken.updatePublicDrop(address(raribleDrop), publicDrop);
 
         vm.prank(admin);
         snapshotToken.updateAllowedFeeRecipient(
-            address(seadrop),
+            address(raribleDrop),
             address(5),
             true
         );
@@ -114,7 +114,7 @@ contract TestSeaDropSnapshot is TestHelper {
             publicKeyURIs: publicKeyURIs,
             allowListURI: ""
         });
-        snapshotToken.updateAllowList(address(seadrop), allowListData);
+        snapshotToken.updateAllowList(address(raribleDrop), allowListData);
 
         _configureTokenGated();
 
@@ -141,12 +141,12 @@ contract TestSeaDropSnapshot is TestHelper {
         });
         vm.prank(admin);
         snapshotToken.updateTokenGatedDrop(
-            address(seadrop),
+            address(raribleDrop),
             address(tokenGatedEligible),
             tokenGatedDropStage
         );
         snapshotToken.updateTokenGatedDrop(
-            address(seadrop),
+            address(raribleDrop),
             address(tokenGatedEligible),
             tokenGatedDropStage
         );
@@ -156,12 +156,12 @@ contract TestSeaDropSnapshot is TestHelper {
         address signer = makeAddr("signer");
         vm.prank(admin);
         snapshotToken.updateSignedMintValidationParams(
-            address(seadrop),
+            address(raribleDrop),
             signer,
             signedMintValidationParams
         );
         snapshotToken.updateSignedMintValidationParams(
-            address(seadrop),
+            address(raribleDrop),
             signer,
             signedMintValidationParams
         );
@@ -182,7 +182,7 @@ contract TestSeaDropSnapshot is TestHelper {
     }
 
     function testMintPublic_snapshot() public {
-        seadrop.mintPublic{ value: 0.1 ether }(
+        raribleDrop.mintPublic{ value: 0.1 ether }(
             address(snapshotToken),
             address(5),
             address(0),
@@ -191,7 +191,7 @@ contract TestSeaDropSnapshot is TestHelper {
     }
 
     function testMintAllowList_snapshot() public {
-        seadrop.mintAllowList{ value: 0.1 ether }(
+        raribleDrop.mintAllowList{ value: 0.1 ether }(
             address(snapshotToken),
             address(5),
             address(0),
@@ -210,7 +210,7 @@ contract TestSeaDropSnapshot is TestHelper {
                 allowedNftToken: address(tokenGatedEligible),
                 allowedNftTokenIds: ids
             });
-        seadrop.mintAllowedTokenHolder{ value: 0.1 ether }(
+        raribleDrop.mintAllowedTokenHolder{ value: 0.1 ether }(
             address(snapshotToken),
             address(5),
             address(0),
@@ -219,7 +219,7 @@ contract TestSeaDropSnapshot is TestHelper {
     }
 
     function testMintSigned_snapshot() public {
-        seadrop.mintSigned{ value: 0.1 ether }(
+        raribleDrop.mintSigned{ value: 0.1 ether }(
             address(snapshotToken),
             address(5),
             address(0),

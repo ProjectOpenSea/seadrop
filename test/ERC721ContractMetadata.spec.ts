@@ -6,13 +6,13 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
+import type { ERC721PartnerRaribleDrop, IRaribleDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
-  let token: ERC721PartnerSeaDrop;
+  let raribleDrop: IRaribleDrop;
+  let token: ERC721PartnerRaribleDrop;
   let owner: Wallet;
   let admin: Wallet;
 
@@ -32,17 +32,17 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop to mint tokens
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    // Deploy RaribleDrop to mint tokens
+    const RaribleDrop = await ethers.getContractFactory("RaribleDrop", owner);
+    raribleDrop = await RaribleDrop.deploy();
 
     // Deploy token
-    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop",
+    const ERC721PartnerRaribleDrop = await ethers.getContractFactory(
+      "ERC721PartnerRaribleDrop",
       owner
     );
-    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
-      seadrop.address,
+    token = await ERC721PartnerRaribleDrop.deploy("", "", admin.address, [
+      raribleDrop.address,
     ]);
 
     await token.connect(owner).setMaxSupply(5);
@@ -63,10 +63,10 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     // it should emit BatchMetadataUpdate when totalSupply is greater than 0
     await whileImpersonating(
-      seadrop.address,
+      raribleDrop.address,
       provider,
       async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 2);
+        await token.connect(impersonatedSigner).mintRaribleDrop(owner.address, 2);
       }
     );
     await expect(token.connect(owner).setBaseURI("http://example.com"))
@@ -174,10 +174,10 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     ).to.emit(token, "BatchMetadataUpdate");
 
     await whileImpersonating(
-      seadrop.address,
+      raribleDrop.address,
       provider,
       async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 2);
+        await token.connect(impersonatedSigner).mintRaribleDrop(owner.address, 2);
       }
     );
     expect(await token.baseURI()).to.equal("http://example.com/");

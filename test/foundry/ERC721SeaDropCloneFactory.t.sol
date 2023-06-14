@@ -3,34 +3,34 @@ pragma solidity ^0.8.17;
 
 import { Test } from "forge-std/Test.sol";
 import {
-    ERC721SeaDropCloneFactory
-} from "../../src/clones/ERC721SeaDropCloneFactory.sol";
+    ERC721RaribleDropCloneFactory
+} from "../../src/clones/ERC721RaribleDropCloneFactory.sol";
 import {
-    ERC721SeaDropCloneable
-} from "../../src/clones/ERC721SeaDropCloneable.sol";
-import { SeaDrop } from "../../src/SeaDrop.sol";
-import { PublicDrop } from "../../src/lib/SeaDropStructs.sol";
+    ERC721RaribleDropCloneable
+} from "../../src/clones/ERC721RaribleDropCloneable.sol";
+import { RaribleDrop } from "../../src/RaribleDrop.sol";
+import { PublicDrop } from "../../src/lib/RaribleDropStructs.sol";
 
-contract ERC721SeaDropCloneFactoryTest is Test {
-    ERC721SeaDropCloneFactory factory;
+contract ERC721RaribleDropCloneFactoryTest is Test {
+    ERC721RaribleDropCloneFactory factory;
 
     function setUp() public {
-        factory = new ERC721SeaDropCloneFactory();
+        factory = new ERC721RaribleDropCloneFactory();
     }
 
     function testClone__snapshot() public {
         factory.createClone("name", "symbol", bytes32("1"));
     }
 
-    event SeaDropTokenDeployed();
+    event RaribleDropTokenDeployed();
 
     function testClone1() public {
         vm.createSelectFork(getChain("mainnet").rpcUrl);
-        factory = new ERC721SeaDropCloneFactory();
+        factory = new ERC721RaribleDropCloneFactory();
         vm.expectEmit(false, false, false, false);
-        emit SeaDropTokenDeployed();
+        emit RaribleDropTokenDeployed();
         address clone = factory.createClone("name", "symbol", bytes32("1"));
-        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(clone);
+        ERC721RaribleDropCloneable token = ERC721RaribleDropCloneable(clone);
 
         assertEq(token.name(), "name", "name should be set");
         assertEq(token.symbol(), "symbol", "symbol should be set");
@@ -39,7 +39,7 @@ contract ERC721SeaDropCloneFactoryTest is Test {
             factory.DEFAULT_SEADROP(),
             address(1234)
         );
-        SeaDrop seaDrop = SeaDrop(factory.DEFAULT_SEADROP());
+        RaribleDrop seaDrop = RaribleDrop(factory.DEFAULT_SEADROP());
         assertEq(
             seaDrop.getCreatorPayoutAddress(address(token)),
             address(1234)
@@ -89,7 +89,7 @@ contract ERC721SeaDropCloneFactoryTest is Test {
 
     function testClone_Reinitialize() public {
         address clone = factory.createClone("name", "symbol", bytes32("1"));
-        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(clone);
+        ERC721RaribleDropCloneable token = ERC721RaribleDropCloneable(clone);
         vm.expectRevert("Initializable: contract is already initialized");
         token.initialize("name", "symbol", new address[](0), address(this));
     }

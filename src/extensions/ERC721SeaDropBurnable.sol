@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
+import { ERC721RaribleDrop } from "../ERC721RaribleDrop.sol";
 
 /**
- * @title  ERC721SeaDropBurnable
+ * @title  ERC721RaribleDropBurnable
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice ERC721SeaDropBurnable is a token contract that extends
- *         ERC721SeaDrop to additionally provide a burn function.
+ * @notice ERC721RaribleDropBurnable is a token contract that extends
+ *         ERC721RaribleDrop to additionally provide a burn function.
  */
-contract ERC721SeaDropBurnable is ERC721SeaDrop {
+contract ERC721RaribleDropBurnable is ERC721RaribleDrop {
     /**
      * @notice Deploy the token contract with its name, symbol,
-     *         and allowed SeaDrop addresses.
+     *         and allowed RaribleDrop addresses.
      */
     constructor(
         string memory name,
         string memory symbol,
-        address[] memory allowedSeaDrop
-    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) {}
+        address[] memory allowedRaribleDrop
+    ) ERC721RaribleDrop(name, symbol, allowedRaribleDrop) {}
 
     /**
      * @notice Burns `tokenId`. The caller must own `tokenId` or be an

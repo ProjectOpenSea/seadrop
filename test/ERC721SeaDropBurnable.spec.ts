@@ -6,13 +6,13 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721SeaDropBurnable, ISeaDrop } from "../typechain-types";
+import type { ERC721RaribleDropBurnable, IRaribleDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
 
-describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
+describe(`ERC721RaribleDropBurnable (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
-  let token: ERC721SeaDropBurnable;
+  let raribleDrop: IRaribleDrop;
+  let token: ERC721RaribleDropBurnable;
   let owner: Wallet;
   let creator: Wallet;
   let minter: Wallet;
@@ -36,18 +36,18 @@ describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    // Deploy RaribleDrop
+    const RaribleDrop = await ethers.getContractFactory("RaribleDrop", owner);
+    raribleDrop = await RaribleDrop.deploy();
   });
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDropBurnable = await ethers.getContractFactory(
-      "ERC721SeaDropBurnable",
+    const ERC721RaribleDropBurnable = await ethers.getContractFactory(
+      "ERC721RaribleDropBurnable",
       owner
     );
-    token = await ERC721SeaDropBurnable.deploy("", "", [seadrop.address]);
+    token = await ERC721RaribleDropBurnable.deploy("", "", [raribleDrop.address]);
   });
 
   it("Should only let the token owner burn their own token", async () => {
@@ -55,10 +55,10 @@ describe(`ERC721SeaDropBurnable (v${VERSION})`, function () {
 
     // Mint three tokens to the minter.
     await whileImpersonating(
-      seadrop.address,
+      raribleDrop.address,
       provider,
       async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(minter.address, 3);
+        await token.connect(impersonatedSigner).mintRaribleDrop(minter.address, 3);
       }
     );
 

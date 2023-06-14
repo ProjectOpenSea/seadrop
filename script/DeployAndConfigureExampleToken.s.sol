@@ -3,15 +3,15 @@ pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
 
-import { ERC721SeaDrop } from "../src/ERC721SeaDrop.sol";
+import { ERC721RaribleDrop } from "../src/ERC721RaribleDrop.sol";
 
-import { ISeaDrop } from "../src/interfaces/ISeaDrop.sol";
+import { IRaribleDrop } from "../src/interfaces/IRaribleDrop.sol";
 
-import { PublicDrop } from "../src/lib/SeaDropStructs.sol";
+import { PublicDrop } from "../src/lib/RaribleDropStructs.sol";
 
 contract DeployAndConfigureExampleToken is Script {
     // Addresses
-    address seadrop = 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5;
+    address raribleDrop = 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5;
     address creator = 0x26faf8AE18d15Ed1CA0563727Ad6D4Aa02fb2F80;
     address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
 
@@ -26,25 +26,25 @@ contract DeployAndConfigureExampleToken is Script {
     function run() external {
         vm.startBroadcast();
 
-        address[] memory allowedSeadrop = new address[](1);
-        allowedSeadrop[0] = seadrop;
+        address[] memory allowedRaribledrop = new address[](1);
+        allowedRaribledrop[0] = raribleDrop;
 
-        // This example uses ERC721SeaDrop. For separate Owner and
-        // Administrator privileges, use ERC721PartnerSeaDrop.
-        ERC721SeaDrop token = new ERC721SeaDrop(
+        // This example uses ERC721RaribleDrop. For separate Owner and
+        // Administrator privileges, use ERC721PartnerRaribleDrop.
+        ERC721RaribleDrop token = new ERC721RaribleDrop(
             "My Example Token",
             "ExTKN",
-            allowedSeadrop
+            allowedRaribledrop
         );
 
         // Configure the token.
         token.setMaxSupply(maxSupply);
 
         // Configure the drop parameters.
-        token.updateCreatorPayoutAddress(seadrop, creator);
-        token.updateAllowedFeeRecipient(seadrop, feeRecipient, true);
+        token.updateCreatorPayoutAddress(raribleDrop, creator);
+        token.updateAllowedFeeRecipient(raribleDrop, feeRecipient, true);
         token.updatePublicDrop(
-            seadrop,
+            raribleDrop,
             PublicDrop(
                 mintPrice,
                 uint48(block.timestamp), // start time
@@ -56,7 +56,7 @@ contract DeployAndConfigureExampleToken is Script {
         );
 
         // We are ready, let's mint the first 3 tokens!
-        ISeaDrop(seadrop).mintPublic{ value: mintPrice * 3 }(
+        IRaribleDrop(raribleDrop).mintPublic{ value: mintPrice * 3 }(
             address(token),
             feeRecipient,
             address(0),

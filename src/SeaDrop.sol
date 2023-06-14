@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
+import { IRaribleDrop } from "./interfaces/IRaribleDrop.sol";
 
 import {
-    INonFungibleSeaDropToken
-} from "./interfaces/INonFungibleSeaDropToken.sol";
+    INonFungibleRaribleDropToken
+} from "./interfaces/INonFungibleRaribleDropToken.sol";
 
 import {
     AllowListData,
@@ -14,7 +14,7 @@ import {
     TokenGatedDropStage,
     TokenGatedMintParams,
     SignedMintValidationParams
-} from "./lib/SeaDropStructs.sol";
+} from "./lib/RaribleDropStructs.sol";
 
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 
@@ -33,15 +33,15 @@ import {
 } from "openzeppelin-contracts/utils/cryptography/MerkleProof.sol";
 
 /**
- * @title  SeaDrop
+ * @title  RaribleDrop
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
- * @notice SeaDrop is a contract to help facilitate ERC721 token drops
+ * @notice RaribleDrop is a contract to help facilitate ERC721 token drops
  *         with functionality for public, allow list, server-side signed,
  *         and token-gated drops.
  */
-contract SeaDrop is ISeaDrop, ReentrancyGuard {
+contract RaribleDrop is IRaribleDrop, ReentrancyGuard {
     using ECDSA for bytes32;
 
     /// @notice Track the public drops.
@@ -133,7 +133,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
                 "address verifyingContract"
             ")"
         );
-    bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
+    bytes32 internal constant _NAME_HASH = keccak256("RaribleDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("1.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
     bytes32 internal immutable _DOMAIN_SEPARATOR;
@@ -150,16 +150,16 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     uint256 internal constant _PUBLIC_DROP_STAGE_INDEX = 0;
 
     /**
-     * @notice Ensure only tokens implementing INonFungibleSeaDropToken can
+     * @notice Ensure only tokens implementing INonFungibleRaribleDropToken can
      *         call the update methods.
      */
-    modifier onlyINonFungibleSeaDropToken() virtual {
+    modifier onlyINonFungibleRaribleDropToken() virtual {
         if (
             !IERC165(msg.sender).supportsInterface(
-                type(INonFungibleSeaDropToken).interfaceId
+                type(INonFungibleRaribleDropToken).interfaceId
             )
         ) {
-            revert OnlyINonFungibleSeaDropToken(msg.sender);
+            revert OnlyINonFungibleRaribleDropToken(msg.sender);
         }
         _;
     }
@@ -663,7 +663,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             uint256 minterNumMinted,
             uint256 currentTotalSupply,
             uint256 maxSupply
-        ) = INonFungibleSeaDropToken(nftContract).getMintStats(minter);
+        ) = INonFungibleRaribleDropToken(nftContract).getMintStats(minter);
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
         if (quantity + minterNumMinted > maxTotalMintableByWallet) {
@@ -780,7 +780,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         address feeRecipient
     ) internal nonReentrant {
         // Mint the token(s).
-        INonFungibleSeaDropToken(nftContract).mintSeaDrop(minter, quantity);
+        INonFungibleRaribleDropToken(nftContract).mintRaribleDrop(minter, quantity);
 
         if (mintPrice != 0) {
             // Split the payment between the creator and fee recipient.
@@ -788,7 +788,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         }
 
         // Emit an event for the mint.
-        emit SeaDropMint(
+        emit RaribleDropMint(
             nftContract,
             minter,
             feeRecipient,
@@ -1006,16 +1006,16 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @notice Emits an event to notify update of the drop URI.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param dropURI The new drop URI.
      */
     function updateDropURI(string calldata dropURI)
         external
-        onlyINonFungibleSeaDropToken
+        onlyINonFungibleRaribleDropToken
     {
         // Emit an event with the update.
         emit DropURIUpdated(msg.sender, dropURI);
@@ -1026,17 +1026,17 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      *         and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param publicDrop The public drop data.
      */
     function updatePublicDrop(PublicDrop calldata publicDrop)
         external
         override
-        onlyINonFungibleSeaDropToken
+        onlyINonFungibleRaribleDropToken
     {
         // Revert if the fee basis points is greater than 10_000.
         if (publicDrop.feeBps > 10_000) {
@@ -1055,17 +1055,17 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      *         and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param allowListData The allow list data.
      */
     function updateAllowList(AllowListData calldata allowListData)
         external
         override
-        onlyINonFungibleSeaDropToken
+        onlyINonFungibleRaribleDropToken
     {
         // Track the previous root.
         bytes32 prevRoot = _allowListMerkleRoots[msg.sender];
@@ -1088,12 +1088,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      *         and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         Note: If two INonFungibleRaribleDropToken tokens are doing
      *         simultaneous token gated drop promotions for each other,
      *         they can be minted by the same actor until
      *         `maxTokenSupplyForStage` is reached. Please ensure the
@@ -1106,7 +1106,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     function updateTokenGatedDrop(
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
-    ) external override onlyINonFungibleSeaDropToken {
+    ) external override onlyINonFungibleRaribleDropToken {
         // Ensure the allowedNftToken is not the zero address.
         if (allowedNftToken == address(0)) {
             revert TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
@@ -1165,16 +1165,16 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @notice Updates the creator payout address and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param payoutAddress The creator payout address.
      */
     function updateCreatorPayoutAddress(address payoutAddress)
         external
-        onlyINonFungibleSeaDropToken
+        onlyINonFungibleRaribleDropToken
     {
         if (payoutAddress == address(0)) {
             revert CreatorPayoutAddressCannotBeZeroAddress();
@@ -1190,17 +1190,17 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @notice Updates the allowed fee recipient and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param feeRecipient The fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
         external
-        onlyINonFungibleSeaDropToken
+        onlyINonFungibleRaribleDropToken
     {
         if (feeRecipient == address(0)) {
             revert FeeRecipientCannotBeZeroAddress();
@@ -1235,10 +1235,10 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @notice Updates the allowed server-side signers and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
@@ -1247,7 +1247,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     function updateSignedMintValidationParams(
         address signer,
         SignedMintValidationParams calldata signedMintValidationParams
-    ) external onlyINonFungibleSeaDropToken {
+    ) external onlyINonFungibleRaribleDropToken {
         if (signer == address(0)) {
             revert SignerCannotBeZeroAddress();
         }
@@ -1309,17 +1309,17 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      * @notice Updates the allowed payer and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param payer   The payer to add or remove.
      * @param allowed Whether to add or remove the payer.
      */
     function updatePayer(address payer, bool allowed)
         external
-        onlyINonFungibleSeaDropToken
+        onlyINonFungibleRaribleDropToken
     {
         if (payer == address(0)) {
             revert PayerCannotBeZeroAddress();

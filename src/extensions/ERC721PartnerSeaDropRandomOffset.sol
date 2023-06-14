@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ERC721PartnerSeaDrop } from "../ERC721PartnerSeaDrop.sol";
+import { ERC721PartnerRaribleDrop } from "../ERC721PartnerRaribleDrop.sol";
 
 /**
- * @title  ERC721PartnerSeaDropRandomOffset
+ * @title  ERC721PartnerRaribleDropRandomOffset
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
- * @notice ERC721PartnerSeaDropRandomOffset is a token contract that extends
- *         ERC721PartnerSeaDrop to apply a randomOffset to the tokenURI,
+ * @notice ERC721PartnerRaribleDropRandomOffset is a token contract that extends
+ *         ERC721PartnerRaribleDrop to apply a randomOffset to the tokenURI,
  *         to enable fair metadata reveals.
  */
-contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
+contract ERC721PartnerRaribleDropRandomOffset is ERC721PartnerRaribleDrop {
     /// @notice The random offset, between 1 and the MAX_SUPPLY at the time of
     ///         being set.
     uint256 public randomOffset;
@@ -34,14 +34,14 @@ contract ERC721PartnerSeaDropRandomOffset is ERC721PartnerSeaDrop {
 
     /**
      * @notice Deploy the token contract with its name, symbol,
-     *         administrator, and allowed SeaDrop addresses.
+     *         administrator, and allowed RaribleDrop addresses.
      */
     constructor(
         string memory name,
         string memory symbol,
         address administrator,
-        address[] memory allowedSeaDrop
-    ) ERC721PartnerSeaDrop(name, symbol, administrator, allowedSeaDrop) {}
+        address[] memory allowedRaribleDrop
+    ) ERC721PartnerRaribleDrop(name, symbol, administrator, allowedRaribleDrop) {}
 
     /**
      * @notice Set the random offset, for a fair metadata reveal. Only callable

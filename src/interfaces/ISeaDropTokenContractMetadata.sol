@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
 
-interface ISeaDropTokenContractMetadata is IERC2981 {
+interface IRaribleDropTokenContractMetadata is IERC2981 {
     /**
      * @notice Throw if the max supply exceeds uint64, a limit
      *         due to the storage of bit-packed variables in ERC721A.

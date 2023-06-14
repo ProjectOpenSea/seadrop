@@ -2,28 +2,28 @@
 pragma solidity 0.8.17;
 
 import {
-    ERC721PartnerSeaDropUpgradeable
-} from "../ERC721PartnerSeaDropUpgradeable.sol";
+    ERC721PartnerRaribleDropUpgradeable
+} from "../ERC721PartnerRaribleDropUpgradeable.sol";
 import {
-    ERC721PartnerSeaDropRandomOffsetStorage
-} from "./ERC721PartnerSeaDropRandomOffsetStorage.sol";
+    ERC721PartnerRaribleDropRandomOffsetStorage
+} from "./ERC721PartnerRaribleDropRandomOffsetStorage.sol";
 import {
     ERC721ContractMetadataStorage
 } from "../ERC721ContractMetadataStorage.sol";
 
 /**
- * @title  ERC721PartnerSeaDropRandomOffset
+ * @title  ERC721PartnerRaribleDropRandomOffset
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
- * @notice ERC721PartnerSeaDropRandomOffset is a token contract that extends
- *         ERC721PartnerSeaDrop to apply a randomOffset to the tokenURI,
+ * @notice ERC721PartnerRaribleDropRandomOffset is a token contract that extends
+ *         ERC721PartnerRaribleDrop to apply a randomOffset to the tokenURI,
  *         to enable fair metadata reveals.
  */
-contract ERC721PartnerSeaDropRandomOffsetUpgradeable is
-    ERC721PartnerSeaDropUpgradeable
+contract ERC721PartnerRaribleDropRandomOffsetUpgradeable is
+    ERC721PartnerRaribleDropUpgradeable
 {
-    using ERC721PartnerSeaDropRandomOffsetStorage for ERC721PartnerSeaDropRandomOffsetStorage.Layout;
+    using ERC721PartnerRaribleDropRandomOffsetStorage for ERC721PartnerRaribleDropRandomOffsetStorage.Layout;
     using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
 
     /// @notice Revert when setting the randomOffset if already set.
@@ -35,36 +35,36 @@ contract ERC721PartnerSeaDropRandomOffsetUpgradeable is
 
     /**
      * @notice Deploy the token contract with its name, symbol,
-     *         administrator, and allowed SeaDrop addresses.
+     *         administrator, and allowed RaribleDrop addresses.
      */
-    function __ERC721PartnerSeaDropRandomOffset_init(
+    function __ERC721PartnerRaribleDropRandomOffset_init(
         string memory name,
         string memory symbol,
         address administrator,
-        address[] memory allowedSeaDrop
+        address[] memory allowedRaribleDrop
     ) internal onlyInitializing {
         __ERC721A_init_unchained(name, symbol);
         __ConstructorInitializable_init_unchained();
         __TwoStepOwnable_init_unchained();
         __ERC721ContractMetadata_init_unchained(name, symbol);
         __ReentrancyGuard_init_unchained();
-        __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
+        __ERC721RaribleDrop_init_unchained(name, symbol, allowedRaribleDrop);
         __TwoStepAdministered_init_unchained(administrator);
-        __ERC721PartnerSeaDrop_init_unchained(
+        __ERC721PartnerRaribleDrop_init_unchained(
             name,
             symbol,
             administrator,
-            allowedSeaDrop
+            allowedRaribleDrop
         );
-        __ERC721PartnerSeaDropRandomOffset_init_unchained(
+        __ERC721PartnerRaribleDropRandomOffset_init_unchained(
             name,
             symbol,
             administrator,
-            allowedSeaDrop
+            allowedRaribleDrop
         );
     }
 
-    function __ERC721PartnerSeaDropRandomOffset_init_unchained(
+    function __ERC721PartnerRaribleDropRandomOffset_init_unchained(
         string memory,
         string memory,
         address,
@@ -78,7 +78,7 @@ contract ERC721PartnerSeaDropRandomOffsetUpgradeable is
      *         reveal.
      */
     function setRandomOffset() external onlyOwner {
-        if (ERC721PartnerSeaDropRandomOffsetStorage.layout().revealed) {
+        if (ERC721PartnerRaribleDropRandomOffsetStorage.layout().revealed) {
             revert AlreadyRevealed();
         }
 
@@ -90,12 +90,12 @@ contract ERC721PartnerSeaDropRandomOffsetUpgradeable is
         // block.difficulty returns PREVRANDAO on Ethereum post-merge
         // NOTE: do not use this on other chains
         // randomOffset returns between 1 and MAX_SUPPLY
-        ERC721PartnerSeaDropRandomOffsetStorage.layout().randomOffset =
+        ERC721PartnerRaribleDropRandomOffsetStorage.layout().randomOffset =
             (uint256(keccak256(abi.encode(block.difficulty))) %
                 (ERC721ContractMetadataStorage.layout()._maxSupply - 1)) +
             1;
 
-        ERC721PartnerSeaDropRandomOffsetStorage.layout().revealed = true;
+        ERC721PartnerRaribleDropRandomOffsetStorage.layout().revealed = true;
     }
 
     /**
@@ -120,7 +120,7 @@ contract ERC721PartnerSeaDropRandomOffsetUpgradeable is
             // If there is no baseURI set, return an empty string.
             return "";
         } else {
-            if (!ERC721PartnerSeaDropRandomOffsetStorage.layout().revealed) {
+            if (!ERC721PartnerRaribleDropRandomOffsetStorage.layout().revealed) {
                 // If the baseURI is set but the collection is not revealed yet,
                 // return just the baseURI.
                 return base;
@@ -132,7 +132,7 @@ contract ERC721PartnerSeaDropRandomOffsetUpgradeable is
                         base,
                         _toString(
                             ((tokenId +
-                                ERC721PartnerSeaDropRandomOffsetStorage
+                                ERC721PartnerRaribleDropRandomOffsetStorage
                                     .layout()
                                     .randomOffset) %
                                 ERC721ContractMetadataStorage
@@ -145,10 +145,10 @@ contract ERC721PartnerSeaDropRandomOffsetUpgradeable is
     }
 
     function randomOffset() public view returns (uint256) {
-        return ERC721PartnerSeaDropRandomOffsetStorage.layout().randomOffset;
+        return ERC721PartnerRaribleDropRandomOffsetStorage.layout().randomOffset;
     }
 
     function revealed() public view returns (bool) {
-        return ERC721PartnerSeaDropRandomOffsetStorage.layout().revealed;
+        return ERC721PartnerRaribleDropRandomOffsetStorage.layout().revealed;
     }
 }

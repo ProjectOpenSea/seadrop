@@ -8,11 +8,11 @@ import {
     TokenGatedDropStage,
     TokenGatedMintParams,
     SignedMintValidationParams
-} from "../lib/SeaDropStructs.sol";
+} from "../lib/RaribleDropStructs.sol";
 
-import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
+import { RaribleDropErrorsAndEvents } from "../lib/RaribleDropErrorsAndEvents.sol";
 
-interface ISeaDrop is SeaDropErrorsAndEvents {
+interface IRaribleDrop is RaribleDropErrorsAndEvents {
     /**
      * @notice Mint a public drop.
      *
@@ -91,10 +91,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Emits an event to notify update of the drop URI.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param dropURI The new drop URI.
      */
@@ -105,10 +105,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *         and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param publicDrop The public drop data.
      */
@@ -119,10 +119,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *         and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param allowListData The allow list data.
      */
@@ -133,12 +133,12 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      *         and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         Note: If two INonFungibleRaribleDropToken tokens are doing
      *         simultaneous token gated drop promotions for each other,
      *         they can be minted by the same actor until
      *         `maxTokenSupplyForStage` is reached. Please ensure the
@@ -157,10 +157,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the creator payout address and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param payoutAddress The creator payout address.
      */
@@ -170,10 +170,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the allowed fee recipient and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param feeRecipient The fee recipient.
      * @param allowed      If the fee recipient is allowed.
@@ -185,10 +185,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the allowed server-side signers and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
@@ -203,10 +203,10 @@ interface ISeaDrop is SeaDropErrorsAndEvents {
      * @notice Updates the allowed payer and emits an event.
      *
      *         This method assume msg.sender is an nft contract and its
-     *         ERC165 interface id matches INonFungibleSeaDropToken.
+     *         ERC165 interface id matches INonFungibleRaribleDropToken.
      *
      *         Note: Be sure only authorized users can call this from
-     *         token contracts that implement INonFungibleSeaDropToken.
+     *         token contracts that implement INonFungibleRaribleDropToken.
      *
      * @param payer   The payer to add or remove.
      * @param allowed Whether to add or remove the payer.

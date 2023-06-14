@@ -6,7 +6,7 @@ solc_version = '0.8.17'
 remappings = [
     'openzeppelin-contracts/=lib/openzeppelin-contracts/contracts',
     'ds-test/=lib/forge-std/lib/ds-test/src/',
-    'seadrop/=src/',
+    'raribleDrop/=src/',
 ]
 optimizer_runs = 1_000_000
 # via_ir = true

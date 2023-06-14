@@ -3,11 +3,11 @@ pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { SeaDrop } from "seadrop/SeaDrop.sol";
+import { RaribleDrop } from "raribleDrop/RaribleDrop.sol";
 
-import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
+import { ERC721PartnerRaribleDrop } from "raribleDrop/ERC721PartnerRaribleDrop.sol";
 
-import { AllowListData, MintParams } from "seadrop/lib/SeaDropStructs.sol";
+import { AllowListData, MintParams } from "raribleDrop/lib/RaribleDropStructs.sol";
 
 import { Merkle } from "murky/Merkle.sol";
 
@@ -25,16 +25,16 @@ contract ERC721DropTest is TestHelper {
     }
 
     function setUp() public {
-        // Deploy the ERC721PartnerSeaDrop token.
-        address[] memory allowedSeaDrop = new address[](1);
-        allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
+        // Deploy the ERC721PartnerRaribleDrop token.
+        address[] memory allowedRaribleDrop = new address[](1);
+        allowedRaribleDrop[0] = address(raribleDrop);
+        token = new ERC721PartnerRaribleDrop("", "", address(this), allowedRaribleDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
 
         // Set the creator payout address.
-        token.updateCreatorPayoutAddress(address(seadrop), creator);
+        token.updateCreatorPayoutAddress(address(raribleDrop), creator);
     }
 
     function _createMerkleRootAndProof(
@@ -104,13 +104,13 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Set the allow list of the token contract.
-        seadrop.updateAllowList(allowListData);
+        raribleDrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
         // Mint a token to the first address of the allowList.
         hoax(args.allowList[0], 100 ether);
-        seadrop.mintAllowList{ value: mintValue }(
+        raribleDrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.allowList[0],
@@ -167,7 +167,7 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Set the allow list of the token contract.
-        seadrop.updateAllowList(allowListData);
+        raribleDrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
@@ -176,7 +176,7 @@ contract ERC721DropTest is TestHelper {
         vm.expectRevert(abi.encodeWithSelector(InvalidProof.selector));
 
         // Attempt to mint a token to a non-allowlist address.
-        seadrop.mintAllowList{ value: mintValue }(
+        raribleDrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter, // fuzzed minter is not on allowList
@@ -231,12 +231,12 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Set the allow list of the token contract.
-        seadrop.updateAllowList(allowListData);
+        raribleDrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
         // Allow the payer.
-        token.updatePayer(address(seadrop), args.allowList[0], true);
+        token.updatePayer(address(raribleDrop), args.allowList[0], true);
         hoax(args.allowList[0], 100 ether);
 
         // Proof refers to address at allowList[0], so assume
@@ -249,7 +249,7 @@ contract ERC721DropTest is TestHelper {
 
         // Attempt to mint a token to allowList[4]
         // with a proof for allowList[0].
-        seadrop.mintAllowList{ value: mintValue }(
+        raribleDrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.allowList[4], // proof refers to address at allowList[0]
@@ -302,7 +302,7 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Set the allow list of the token contract.
-        seadrop.updateAllowList(allowListData);
+        raribleDrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
@@ -315,7 +315,7 @@ contract ERC721DropTest is TestHelper {
         );
 
         // Attempt to call mintAllowList with the zero address as the fee recipient.
-        seadrop.mintAllowList{ value: mintValue }(
+        raribleDrop.mintAllowList{ value: mintValue }(
             address(token),
             address(0),
             args.allowList[0],
@@ -368,7 +368,7 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Set the allow list of the token contract.
-        seadrop.updateAllowList(allowListData);
+        raribleDrop.updateAllowList(allowListData);
 
         uint256 mintValue = args.numMints * mintParams.mintPrice;
 
@@ -381,7 +381,7 @@ contract ERC721DropTest is TestHelper {
         );
 
         // Attempt to call mintAllowList with an unauthorized fee recipient.
-        seadrop.mintAllowList{ value: mintValue }(
+        raribleDrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.allowList[0],
@@ -434,7 +434,7 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Set the allow list of the token contract.
-        seadrop.updateAllowList(allowListData);
+        raribleDrop.updateAllowList(allowListData);
 
         uint256 mintValue = 100 * mintParams.mintPrice;
 
@@ -451,7 +451,7 @@ contract ERC721DropTest is TestHelper {
         );
 
         // Attempt to mint more than the maxTotalMintableByWallet.
-        seadrop.mintAllowList{ value: mintValue }(
+        raribleDrop.mintAllowList{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.allowList[0],
@@ -506,12 +506,12 @@ contract ERC721DropTest is TestHelper {
         vm.prank(address(token));
 
         // Set the allow list of the token contract.
-        seadrop.updateAllowList(allowListData);
+        raribleDrop.updateAllowList(allowListData);
 
         hoax(args.allowList[0], 100 ether);
 
         // Attempt to mint more than the maxTotalMintableByWallet.
-        seadrop.mintAllowList(
+        raribleDrop.mintAllowList(
             address(token),
             args.feeRecipient,
             args.allowList[0],

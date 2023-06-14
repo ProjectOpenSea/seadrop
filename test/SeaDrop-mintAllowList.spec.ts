@@ -8,8 +8,8 @@ import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 
-import type { INonFungibleSeaDropToken, ISeaDrop } from "../typechain-types";
-import type { MintParamsStruct } from "../typechain-types/src/SeaDrop";
+import type { INonFungibleRaribleDropToken, IRaribleDrop } from "../typechain-types";
+import type { MintParamsStruct } from "../typechain-types/src/RaribleDrop";
 import type { Wallet } from "ethers";
 
 const createMerkleTree = (leaves: Buffer[]) =>
@@ -44,10 +44,10 @@ const allowListElementsBuffer = (
     )
   );
 
-describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
+describe(`RaribleDrop - Mint Allow List (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
-  let token: INonFungibleSeaDropToken;
+  let raribleDrop: IRaribleDrop;
+  let token: INonFungibleRaribleDropToken;
   let creator: Wallet;
   let owner: Wallet;
   let admin: Wallet;
@@ -75,17 +75,17 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy Seadrop.
-    const SeaDrop = await ethers.getContractFactory("SeaDrop");
-    seadrop = await SeaDrop.deploy();
+    // Deploy Raribledrop.
+    const RaribleDrop = await ethers.getContractFactory("RaribleDrop");
+    raribleDrop = await RaribleDrop.deploy();
   });
 
   beforeEach(async () => {
     // Deploy token.
-    const SeaDropToken = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop"
+    const RaribleDropToken = await ethers.getContractFactory(
+      "ERC721PartnerRaribleDrop"
     );
-    token = await SeaDropToken.deploy("", "", admin.address, [seadrop.address]);
+    token = await RaribleDropToken.deploy("", "", admin.address, [raribleDrop.address]);
 
     // Set a random feeBps.
     feeBps = randomInt(1, 10000);
@@ -94,9 +94,9 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     await token.setMaxSupply(1000);
     await token
       .connect(admin)
-      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+      .updateAllowedFeeRecipient(raribleDrop.address, feeRecipient.address, true);
 
-    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await token.updateCreatorPayoutAddress(raribleDrop.address, creator.address);
 
     // Set the allow list mint params.
     mintParams = {
@@ -143,7 +143,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     };
 
     // Update the allow list of the token.
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
@@ -151,7 +151,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Mint the allow list stage to the minter and verify
     // the expected event was emitted.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -163,7 +163,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           { value }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -201,12 +201,12 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
-    expect(await seadrop.getAllowListMerkleRoot(token.address)).to.eq(root);
+    expect(await raribleDrop.getAllowListMerkleRoot(token.address)).to.eq(root);
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -217,7 +217,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           proof
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -252,14 +252,14 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
     // The payer needs to be allowed first.
     await expect(
-      seadrop
+      raribleDrop
         .connect(owner)
         .mintAllowList(
           token.address,
@@ -273,11 +273,11 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ).to.be.revertedWith("PayerNotAllowed");
 
     // Allow the payer.
-    await token.updatePayer(seadrop.address, owner.address, true);
+    await token.updatePayer(raribleDrop.address, owner.address, true);
 
     // Mint an allow list stage with a different payer than minter.
     await expect(
-      seadrop
+      raribleDrop
         .connect(owner)
         .mintAllowList(
           token.address,
@@ -289,7 +289,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           { value }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -324,7 +324,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
@@ -333,7 +333,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     await faucet(nonMinter.address, provider);
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(nonMinter)
         .mintAllowList(
           token.address,
@@ -347,7 +347,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     ).to.be.revertedWith("InvalidProof()");
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(nonMinter)
         .mintAllowList(
           token.address,
@@ -383,7 +383,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
@@ -391,7 +391,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const invalidFeeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -427,32 +427,32 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
-    // Deploy a new ERC721PartnerSeaDrop.
-    const SeaDropToken = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop"
+    // Deploy a new ERC721PartnerRaribleDrop.
+    const RaribleDropToken = await ethers.getContractFactory(
+      "ERC721PartnerRaribleDrop"
     );
-    const differentToken = await SeaDropToken.deploy("", "", owner.address, [
-      seadrop.address,
+    const differentToken = await RaribleDropToken.deploy("", "", owner.address, [
+      raribleDrop.address,
     ]);
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
     await differentToken
       .connect(owner)
-      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+      .updateAllowedFeeRecipient(raribleDrop.address, feeRecipient.address, true);
 
     await differentToken.updateCreatorPayoutAddress(
-      seadrop.address,
+      raribleDrop.address,
       creator.address
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           differentToken.address,
@@ -488,7 +488,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Create different mint params to include in the mint.
     const differentMintParams = {
@@ -500,7 +500,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -542,7 +542,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     };
 
     // Update the allow list of the token.
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
@@ -550,7 +550,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Mint the allow list stage to the minter and verify
     // the expected event was emitted.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -562,7 +562,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           { value }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -580,7 +580,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     // Attempt to mint the maxTotalMintableByWallet to the minter.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -638,7 +638,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     };
 
     // Update the allow list of the token.
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the cost of minting the maxTotalMintableByWalletMintValue.
     const maxTotalMintableByWalletMintValue = ethers.BigNumber.from(
@@ -648,7 +648,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Mint the maxTotalMintableByWallet to the minter and verify
     // the expected event was emitted.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -660,7 +660,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           { value: maxTotalMintableByWalletMintValue }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -675,7 +675,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Attempt to mint the maxTotalMintableByWallet to the minter, exceeding
     // the drop stage supply.
     await expect(
-      seadrop
+      raribleDrop
         .connect(secondMinter)
         .mintAllowList(
           token.address,
@@ -736,7 +736,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     };
 
     // Update the allow list of the token.
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the cost of minting the maxTotalMintableByWalletMintValue.
     const maxTotalMintableByWalletMintValue = ethers.BigNumber.from(
@@ -746,7 +746,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Mint the maxTotalMintableByWallet to the minter and verify
     // the expected event was emitted.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -758,7 +758,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
           { value: maxTotalMintableByWalletMintValue }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -773,7 +773,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Attempt to mint the maxTotalMintableByWallet to the minter, exceeding
     // the drop stage supply.
     await expect(
-      seadrop
+      raribleDrop
         .connect(secondMinter)
         .mintAllowList(
           token.address,
@@ -813,7 +813,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const proof = merkleTree.getHexProof(leaf);
 
     // We are skipping updating the allow list, the root should be zero.
-    expect(await seadrop.getAllowListMerkleRoot(token.address)).to.eq(
+    expect(await raribleDrop.getAllowListMerkleRoot(token.address)).to.eq(
       `0x${"0".repeat(64)}`
     );
 
@@ -822,7 +822,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     // Mint the allow list stage.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -837,7 +837,7 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
     // Try with proof of zero.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,
@@ -882,14 +882,14 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     };
 
     // Update the allow list of the token.
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
     // Mint the allow list stage.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintAllowList(
           token.address,

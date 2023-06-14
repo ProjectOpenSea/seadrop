@@ -5,8 +5,8 @@ import {
   IERC165__factory,
   IERC2981__factory,
   IERC721__factory,
-  INonFungibleSeaDropToken__factory,
-  ISeaDropTokenContractMetadata__factory,
+  INonFungibleRaribleDropToken__factory,
+  IRaribleDropTokenContractMetadata__factory,
 } from "../typechain-types";
 
 import { getInterfaceID, randomHex } from "./utils/encoding";
@@ -14,14 +14,14 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
-import type { PublicDropStruct } from "../typechain-types/src/ERC721PartnerSeaDrop";
+import type { ERC721RaribleDrop, IRaribleDrop } from "../typechain-types";
+import type { PublicDropStruct } from "../typechain-types/src/ERC721PartnerRaribleDrop";
 import type { Wallet } from "ethers";
 
-describe(`ERC721SeaDrop (v${VERSION})`, function () {
+describe(`ERC721RaribleDrop (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
-  let token: ERC721SeaDrop;
+  let raribleDrop: IRaribleDrop;
+  let token: ERC721RaribleDrop;
   let owner: Wallet;
   let creator: Wallet;
   let minter: Wallet;
@@ -44,18 +44,18 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    // Deploy RaribleDrop
+    const RaribleDrop = await ethers.getContractFactory("RaribleDrop", owner);
+    raribleDrop = await RaribleDrop.deploy();
   });
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721RaribleDrop = await ethers.getContractFactory(
+      "ERC721RaribleDrop",
       owner
     );
-    token = await ERC721SeaDrop.deploy("", "", [seadrop.address]);
+    token = await ERC721RaribleDrop.deploy("", "", [raribleDrop.address]);
 
     publicDrop = {
       mintPrice: "100000000000000000", // 0.1 ether
@@ -68,31 +68,31 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   });
 
   it("Should emit an event when the contract is deployed", async () => {
-    const ERC721SeaDrop = await ethers.getContractFactory(
-      "ERC721SeaDrop",
+    const ERC721RaribleDrop = await ethers.getContractFactory(
+      "ERC721RaribleDrop",
       owner
     );
-    const tx = await ERC721SeaDrop.deploy("", "", [seadrop.address]);
+    const tx = await ERC721RaribleDrop.deploy("", "", [raribleDrop.address]);
     const receipt = await tx.deployTransaction.wait();
     const event = (receipt as any).events.filter(
-      ({ event }: any) => event === "SeaDropTokenDeployed"
+      ({ event }: any) => event === "RaribleDropTokenDeployed"
     );
     expect(event).to.not.be.null;
   });
 
   it("Should not be able to mint until the creator address is updated to non-zero", async () => {
-    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
+    await token.connect(owner).updatePublicDrop(raribleDrop.address, publicDrop);
     await token.setMaxSupply(5);
 
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
     await token.updateAllowedFeeRecipient(
-      seadrop.address,
+      raribleDrop.address,
       feeRecipient.address,
       true
     );
 
     await expect(
-      seadrop.mintPublic(
+      raribleDrop.mintPublic(
         token.address,
         feeRecipient.address,
         ethers.constants.AddressZero,
@@ -102,7 +102,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     ).to.be.revertedWith("CreatorPayoutAddressCannotBeZeroAddress");
 
     await token.updateAllowedFeeRecipient(
-      seadrop.address,
+      raribleDrop.address,
       feeRecipient.address,
       false
     );
@@ -110,23 +110,23 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   it("Should only let the token owner update the drop URI", async () => {
     await expect(
-      token.connect(creator).updateDropURI(seadrop.address, "http://test.com")
+      token.connect(creator).updateDropURI(raribleDrop.address, "http://test.com")
     ).to.revertedWith("OnlyOwner");
 
     await expect(
-      token.connect(owner).updateDropURI(seadrop.address, "http://test.com")
+      token.connect(owner).updateDropURI(raribleDrop.address, "http://test.com")
     )
-      .to.emit(seadrop, "DropURIUpdated")
+      .to.emit(raribleDrop, "DropURIUpdated")
       .withArgs(token.address, "http://test.com");
   });
 
   it("Should only let the owner update the allowed fee recipients", async () => {
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
+    expect(await raribleDrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
 
     expect(
-      await seadrop.getFeeRecipientIsAllowed(
+      await raribleDrop.getFeeRecipientIsAllowed(
         token.address,
         feeRecipient.address
       )
@@ -134,7 +134,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     await expect(
       token.updateAllowedFeeRecipient(
-        seadrop.address,
+        raribleDrop.address,
         ethers.constants.AddressZero,
         true
       )
@@ -142,28 +142,28 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     await expect(
       token.updateAllowedFeeRecipient(
-        seadrop.address,
+        raribleDrop.address,
         feeRecipient.address,
         true
       )
     )
-      .to.emit(seadrop, "AllowedFeeRecipientUpdated")
+      .to.emit(raribleDrop, "AllowedFeeRecipientUpdated")
       .withArgs(token.address, feeRecipient.address, true);
 
     await expect(
       token.updateAllowedFeeRecipient(
-        seadrop.address,
+        raribleDrop.address,
         feeRecipient.address,
         true
       )
     ).to.be.revertedWith("DuplicateFeeRecipient");
 
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([
+    expect(await raribleDrop.getAllowedFeeRecipients(token.address)).to.deep.eq([
       feeRecipient.address,
     ]);
 
     expect(
-      await seadrop.getFeeRecipientIsAllowed(
+      await raribleDrop.getFeeRecipientIsAllowed(
         token.address,
         feeRecipient.address
       )
@@ -172,18 +172,18 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     // Now let's disallow the feeRecipient
     await expect(
       token.updateAllowedFeeRecipient(
-        seadrop.address,
+        raribleDrop.address,
         feeRecipient.address,
         false
       )
     )
-      .to.emit(seadrop, "AllowedFeeRecipientUpdated")
+      .to.emit(raribleDrop, "AllowedFeeRecipientUpdated")
       .withArgs(token.address, feeRecipient.address, false);
 
-    expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
+    expect(await raribleDrop.getAllowedFeeRecipients(token.address)).to.deep.eq([]);
 
     expect(
-      await seadrop.getFeeRecipientIsAllowed(
+      await raribleDrop.getFeeRecipientIsAllowed(
         token.address,
         feeRecipient.address
       )
@@ -191,7 +191,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     await expect(
       token.updateAllowedFeeRecipient(
-        seadrop.address,
+        raribleDrop.address,
         feeRecipient.address,
         false
       )
@@ -217,10 +217,10 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     // Provenance hash should not be updatable after the first token has minted.
     // Mint a token.
     await whileImpersonating(
-      seadrop.address,
+      raribleDrop.address,
       provider,
       async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1);
+        await token.connect(impersonatedSigner).mintRaribleDrop(minter.address, 1);
       }
     );
 
@@ -231,40 +231,40 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
   });
 
-  it("Should only let allowed seadrop call seaDropMint", async () => {
+  it("Should only let allowed raribleDrop call seaDropMint", async () => {
     await token.setMaxSupply(1);
 
     await whileImpersonating(
-      seadrop.address,
+      raribleDrop.address,
       provider,
       async (impersonatedSigner) => {
         await expect(
-          token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
+          token.connect(impersonatedSigner).mintRaribleDrop(minter.address, 1)
         )
           .to.emit(token, "Transfer")
           .withArgs(ethers.constants.AddressZero, minter.address, 1);
 
         await expect(
-          token.connect(impersonatedSigner).mintSeaDrop(minter.address, 1)
+          token.connect(impersonatedSigner).mintRaribleDrop(minter.address, 1)
         ).to.be.revertedWith("MintQuantityExceedsMaxSupply(2, 1)");
       }
     );
 
     await expect(
-      token.connect(owner).mintSeaDrop(minter.address, 1)
-    ).to.be.revertedWith("OnlyAllowedSeaDrop");
+      token.connect(owner).mintRaribleDrop(minter.address, 1)
+    ).to.be.revertedWith("OnlyAllowedRaribleDrop");
   });
 
   it("Should return supportsInterface true for supported interfaces", async () => {
-    const supportedInterfacesERC721SeaDrop = [
+    const supportedInterfacesERC721RaribleDrop = [
       [
-        INonFungibleSeaDropToken__factory,
-        ISeaDropTokenContractMetadata__factory,
+        INonFungibleRaribleDropToken__factory,
+        IRaribleDropTokenContractMetadata__factory,
       ],
       [IERC165__factory],
     ];
     const supportedInterfacesERC721ContractMetadata = [
-      [ISeaDropTokenContractMetadata__factory, IERC2981__factory],
+      [IRaribleDropTokenContractMetadata__factory, IERC2981__factory],
       [IERC2981__factory, IERC165__factory],
     ];
     const supportedInterfacesERC721A = [
@@ -273,7 +273,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     ];
 
     for (const factories of [
-      ...supportedInterfacesERC721SeaDrop,
+      ...supportedInterfacesERC721RaribleDrop,
       ...supportedInterfacesERC721ContractMetadata,
       ...supportedInterfacesERC721A,
     ]) {
@@ -284,9 +284,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       expect(await token.supportsInterface(interfaceId)).to.be.true;
     }
 
-    // Ensure the interface that SeaDrop 1.0 strictly checks for
-    // in the modifier `onlyINonFungibleSeaDropToken` returns true,
-    // otherwise the contract will not be able to interact with SeaDrop 1.0.
+    // Ensure the interface that RaribleDrop 1.0 strictly checks for
+    // in the modifier `onlyINonFungibleRaribleDropToken` returns true,
+    // otherwise the contract will not be able to interact with RaribleDrop 1.0.
     expect(await token.supportsInterface("0x1890fe8e")).to.be.true;
 
     // Ensure the interface for ERC-4906 returns true.
@@ -299,45 +299,45 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     }
   });
 
-  it("Should only let the token owner update the allowed SeaDrop addresses", async () => {
+  it("Should only let the token owner update the allowed RaribleDrop addresses", async () => {
     await expect(
-      token.connect(creator).updateAllowedSeaDrop([seadrop.address])
+      token.connect(creator).updateAllowedRaribleDrop([raribleDrop.address])
     ).to.revertedWith("OnlyOwner");
 
     await expect(
-      token.connect(minter).updateAllowedSeaDrop([seadrop.address])
+      token.connect(minter).updateAllowedRaribleDrop([raribleDrop.address])
     ).to.revertedWith("OnlyOwner");
 
-    await expect(token.updateAllowedSeaDrop([seadrop.address]))
-      .to.emit(token, "AllowedSeaDropUpdated")
-      .withArgs([seadrop.address]);
+    await expect(token.updateAllowedRaribleDrop([raribleDrop.address]))
+      .to.emit(token, "AllowedRaribleDropUpdated")
+      .withArgs([raribleDrop.address]);
 
     const address1 = `0x${"1".repeat(40)}`;
     const address2 = `0x${"2".repeat(40)}`;
     const address3 = `0x${"3".repeat(40)}`;
 
-    await expect(token.updateAllowedSeaDrop([seadrop.address, address1]))
-      .to.emit(token, "AllowedSeaDropUpdated")
-      .withArgs([seadrop.address, address1]);
+    await expect(token.updateAllowedRaribleDrop([raribleDrop.address, address1]))
+      .to.emit(token, "AllowedRaribleDropUpdated")
+      .withArgs([raribleDrop.address, address1]);
 
-    await expect(token.updateAllowedSeaDrop([address2]))
-      .to.emit(token, "AllowedSeaDropUpdated")
+    await expect(token.updateAllowedRaribleDrop([address2]))
+      .to.emit(token, "AllowedRaribleDropUpdated")
       .withArgs([address2]);
 
     await expect(
-      token.updateAllowedSeaDrop([
+      token.updateAllowedRaribleDrop([
         address3,
-        seadrop.address,
+        raribleDrop.address,
         address2,
         address1,
       ])
     )
-      .to.emit(token, "AllowedSeaDropUpdated")
-      .withArgs([address3, seadrop.address, address2, address1]);
+      .to.emit(token, "AllowedRaribleDropUpdated")
+      .withArgs([address3, raribleDrop.address, address2, address1]);
 
-    await expect(token.updateAllowedSeaDrop([seadrop.address]))
-      .to.emit(token, "AllowedSeaDropUpdated")
-      .withArgs([seadrop.address]);
+    await expect(token.updateAllowedRaribleDrop([raribleDrop.address]))
+      .to.emit(token, "AllowedRaribleDropUpdated")
+      .withArgs([raribleDrop.address]);
   });
 
   it("Should let the token owner use admin methods", async () => {
@@ -347,10 +347,10 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       publicKeyURIs: [],
       allowListURI: "",
     };
-    await token.updateAllowList(seadrop.address, allowListData);
+    await token.updateAllowList(raribleDrop.address, allowListData);
 
     await expect(
-      token.connect(creator).updateAllowList(seadrop.address, allowListData)
+      token.connect(creator).updateAllowList(raribleDrop.address, allowListData)
     ).to.be.revertedWith("OnlyOwner");
 
     // Test `updateTokenGatedDrop` for coverage.
@@ -365,7 +365,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       restrictFeeRecipients: true,
     };
     await token.updateTokenGatedDrop(
-      seadrop.address,
+      raribleDrop.address,
       `0x${"4".repeat(40)}`,
       dropStage
     );
@@ -373,7 +373,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await expect(
       token
         .connect(creator)
-        .updateTokenGatedDrop(seadrop.address, `0x${"4".repeat(40)}`, dropStage)
+        .updateTokenGatedDrop(raribleDrop.address, `0x${"4".repeat(40)}`, dropStage)
     ).to.be.revertedWith("OnlyOwner");
 
     const signedMintValidationParams = {
@@ -388,7 +388,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     // Test `updateSigner` for coverage.
     await token.updateSignedMintValidationParams(
-      seadrop.address,
+      raribleDrop.address,
       `0x${"5".repeat(40)}`,
       signedMintValidationParams
     );
@@ -397,20 +397,20 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       token
         .connect(creator)
         .updateSignedMintValidationParams(
-          seadrop.address,
+          raribleDrop.address,
           `0x${"5".repeat(40)}`,
           signedMintValidationParams
         )
     ).to.be.revertedWith("OnlyOwner");
 
     // Test `updatePayer` for coverage.
-    await token.updatePayer(seadrop.address, `0x${"6".repeat(40)}`, true);
+    await token.updatePayer(raribleDrop.address, `0x${"6".repeat(40)}`, true);
 
     await expect(
       token
         .connect(creator)
         .updateSignedMintValidationParams(
-          seadrop.address,
+          raribleDrop.address,
           `0x${"6".repeat(40)}`,
           signedMintValidationParams
         )
@@ -424,42 +424,42 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await faucet(payer2.address, provider);
 
     await expect(
-      token.updatePayer(seadrop.address, payer.address, false)
+      token.updatePayer(raribleDrop.address, payer.address, false)
     ).to.be.revertedWith("PayerNotPresent");
 
-    await token.updatePayer(seadrop.address, payer.address, true);
+    await token.updatePayer(raribleDrop.address, payer.address, true);
 
     // Ensure that the same payer cannot be added twice.
     await expect(
-      token.updatePayer(seadrop.address, payer.address, true)
+      token.updatePayer(raribleDrop.address, payer.address, true)
     ).to.be.revertedWith("DuplicatePayer()");
 
     // Ensure that the zero address cannot be added as a payer.
     await expect(
-      token.updatePayer(seadrop.address, ethers.constants.AddressZero, true)
+      token.updatePayer(raribleDrop.address, ethers.constants.AddressZero, true)
     ).to.be.revertedWith("PayerCannotBeZeroAddress()");
 
     // Remove the original payer for branch coverage.
-    await token.updatePayer(seadrop.address, payer.address, false);
-    expect(await seadrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
+    await token.updatePayer(raribleDrop.address, payer.address, false);
+    expect(await raribleDrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
       false
     );
 
     // Add two signers and remove the second for branch coverage.
-    await token.updatePayer(seadrop.address, payer.address, true);
-    await token.updatePayer(seadrop.address, payer2.address, true);
-    await token.updatePayer(seadrop.address, payer2.address, false);
-    expect(await seadrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
+    await token.updatePayer(raribleDrop.address, payer.address, true);
+    await token.updatePayer(raribleDrop.address, payer2.address, true);
+    await token.updatePayer(raribleDrop.address, payer2.address, false);
+    expect(await raribleDrop.getPayerIsAllowed(token.address, payer.address)).to.eq(
       true
     );
     expect(
-      await seadrop.getPayerIsAllowed(token.address, payer2.address)
+      await raribleDrop.getPayerIsAllowed(token.address, payer2.address)
     ).to.eq(false);
   });
 
   it("Should only let the owner call update functions", async () => {
     const onlyOwnerMethods = [
-      "updateAllowedSeaDrop",
+      "updateAllowedRaribleDrop",
       "updatePublicDrop",
       "updateAllowList",
       "updateTokenGatedDrop",
@@ -498,22 +498,22 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     };
 
     const methodParams: any = {
-      updateAllowedSeaDrop: [[seadrop.address]],
-      updatePublicDrop: [seadrop.address, publicDrop],
-      updateAllowList: [seadrop.address, allowListData],
-      updateTokenGatedDrop: [seadrop.address, `0x${"4".repeat(40)}`, dropStage],
-      updateDropURI: [seadrop.address, "http://test.com"],
-      updateCreatorPayoutAddress: [seadrop.address, `0x${"4".repeat(40)}`],
-      updateAllowedFeeRecipient: [seadrop.address, `0x${"4".repeat(40)}`, true],
+      updateAllowedRaribleDrop: [[raribleDrop.address]],
+      updatePublicDrop: [raribleDrop.address, publicDrop],
+      updateAllowList: [raribleDrop.address, allowListData],
+      updateTokenGatedDrop: [raribleDrop.address, `0x${"4".repeat(40)}`, dropStage],
+      updateDropURI: [raribleDrop.address, "http://test.com"],
+      updateCreatorPayoutAddress: [raribleDrop.address, `0x${"4".repeat(40)}`],
+      updateAllowedFeeRecipient: [raribleDrop.address, `0x${"4".repeat(40)}`, true],
       updateSignedMintValidationParams: [
-        seadrop.address,
+        raribleDrop.address,
         `0x${"4".repeat(40)}`,
         signedMintValidationParams,
       ],
-      updatePayer: [seadrop.address, `0x${"4".repeat(40)}`, true],
+      updatePayer: [raribleDrop.address, `0x${"4".repeat(40)}`, true],
     };
 
-    const paramsWithNonSeaDrop = (method: string) => [
+    const paramsWithNonRaribleDrop = (method: string) => [
       creator.address,
       ...methodParams[method].slice(1),
     ];
@@ -525,26 +525,26 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         (token as any).connect(creator)[method](...methodParams[method])
       ).to.be.revertedWith("OnlyOwner()");
 
-      if (method !== "updateAllowedSeaDrop") {
+      if (method !== "updateAllowedRaribleDrop") {
         await expect(
-          (token as any).connect(owner)[method](...paramsWithNonSeaDrop(method))
-        ).to.be.revertedWith("OnlyAllowedSeaDrop()");
+          (token as any).connect(owner)[method](...paramsWithNonRaribleDrop(method))
+        ).to.be.revertedWith("OnlyAllowedRaribleDrop()");
       }
     }
   });
 
   it("Should be able to transfer successfully", async () => {
-    await token.connect(owner).updatePublicDrop(seadrop.address, publicDrop);
+    await token.connect(owner).updatePublicDrop(raribleDrop.address, publicDrop);
     await token.setMaxSupply(5);
 
     const feeRecipient = new ethers.Wallet(randomHex(32), provider);
     await token.updateAllowedFeeRecipient(
-      seadrop.address,
+      raribleDrop.address,
       feeRecipient.address,
       true
     );
-    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
-    await seadrop
+    await token.updateCreatorPayoutAddress(raribleDrop.address, creator.address);
+    await raribleDrop
       .connect(minter)
       .mintPublic(
         token.address,
@@ -608,7 +608,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       maxSupply: 100,
       baseURI: "https://example1.com",
       contractURI: "https://example2.com",
-      seaDropImpl: seadrop.address,
+      seaDropImpl: raribleDrop.address,
       publicDrop,
       dropURI: "https://example3.com",
       allowListData,
@@ -662,14 +662,14 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     ).to.be.revertedWith("SignersMismatch");
 
     await expect(token.connect(owner).multiConfigure(config))
-      .to.emit(seadrop, "DropURIUpdated")
+      .to.emit(raribleDrop, "DropURIUpdated")
       .withArgs(token.address, "https://example3.com");
 
     const checkResults = async () => {
       expect(await token.maxSupply()).to.eq(100);
       expect(await token.baseURI()).to.eq("https://example1.com");
       expect(await token.contractURI()).to.eq("https://example2.com");
-      expect(await seadrop.getPublicDrop(token.address)).to.deep.eq([
+      expect(await raribleDrop.getPublicDrop(token.address)).to.deep.eq([
         ethers.BigNumber.from(publicDrop.mintPrice),
         publicDrop.startTime,
         publicDrop.endTime,
@@ -677,25 +677,25 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         publicDrop.feeBps,
         publicDrop.restrictFeeRecipients,
       ]);
-      expect(await seadrop.getAllowListMerkleRoot(token.address)).to.eq(
+      expect(await raribleDrop.getAllowListMerkleRoot(token.address)).to.eq(
         allowListData.merkleRoot
       );
-      expect(await seadrop.getCreatorPayoutAddress(token.address)).to.eq(
+      expect(await raribleDrop.getCreatorPayoutAddress(token.address)).to.eq(
         creator.address
       );
-      expect(await seadrop.getAllowedFeeRecipients(token.address)).to.deep.eq([
+      expect(await raribleDrop.getAllowedFeeRecipients(token.address)).to.deep.eq([
         feeRecipient.address,
       ]);
-      expect(await seadrop.getPayers(token.address)).to.deep.eq(
+      expect(await raribleDrop.getPayers(token.address)).to.deep.eq(
         config.allowedPayers
       );
       expect(await token.provenanceHash()).to.eq(`0x${"3".repeat(64)}`);
       expect(
-        await seadrop.getTokenGatedAllowedTokens(token.address)
+        await raribleDrop.getTokenGatedAllowedTokens(token.address)
       ).to.deep.eq(config.tokenGatedAllowedNftTokens);
       for (const [i, allowed] of config.tokenGatedAllowedNftTokens.entries()) {
         expect(
-          await seadrop.getTokenGatedDrop(token.address, allowed)
+          await raribleDrop.getTokenGatedDrop(token.address, allowed)
         ).to.deep.eq([
           ethers.BigNumber.from(config.tokenGatedDropStages[i].mintPrice),
           config.tokenGatedDropStages[i].maxTotalMintableByWallet,
@@ -707,12 +707,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
           config.tokenGatedDropStages[i].restrictFeeRecipients,
         ]);
       }
-      expect(await seadrop.getSigners(token.address)).to.deep.eq(
+      expect(await raribleDrop.getSigners(token.address)).to.deep.eq(
         config.signers
       );
       for (const [i, signer] of config.signers.entries()) {
         expect(
-          await seadrop.getSignedMintValidationParams(token.address, signer)
+          await raribleDrop.getSignedMintValidationParams(token.address, signer)
         ).to.deep.eq([
           ethers.BigNumber.from(
             config.signedMintValidationParams[i].minMintPrice
@@ -733,7 +733,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       maxSupply: 0,
       baseURI: "",
       contractURI: "",
-      seaDropImpl: seadrop.address,
+      seaDropImpl: raribleDrop.address,
       publicDrop: {
         mintPrice: 0,
         maxTotalMintableByWallet: 0,
@@ -762,7 +762,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       disallowedSigners: [],
     };
     await expect(token.connect(owner).multiConfigure(zeroedConfig)).to.not.emit(
-      seadrop,
+      raribleDrop,
       "DropURIUpdated"
     );
     await checkResults();
@@ -774,7 +774,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         disallowedFeeRecipients: config.allowedFeeRecipients,
       })
     )
-      .to.emit(seadrop, "AllowedFeeRecipientUpdated")
+      .to.emit(raribleDrop, "AllowedFeeRecipientUpdated")
       .withArgs(token.address, feeRecipient.address, false);
     await expect(
       token.connect(owner).multiConfigure({
@@ -782,7 +782,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         disallowedPayers: config.allowedPayers,
       })
     )
-      .to.emit(seadrop, "PayerUpdated")
+      .to.emit(raribleDrop, "PayerUpdated")
       .withArgs(token.address, config.allowedPayers[0], false);
     await expect(
       token.connect(owner).multiConfigure({
@@ -792,7 +792,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         ],
       })
     )
-      .to.emit(seadrop, "TokenGatedDropStageUpdated")
+      .to.emit(raribleDrop, "TokenGatedDropStageUpdated")
       .withArgs(token.address, config.tokenGatedAllowedNftTokens[0], [
         0,
         0,
@@ -809,7 +809,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         disallowedSigners: [config.signers[0]],
       })
     )
-      .to.emit(seadrop, "SignedMintValidationParamsUpdated")
+      .to.emit(raribleDrop, "SignedMintValidationParamsUpdated")
       .withArgs(token.address, config.signers[0], [0, 0, 0, 0, 0, 0, 0]);
   });
 });

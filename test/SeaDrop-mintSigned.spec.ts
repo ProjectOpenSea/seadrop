@@ -7,15 +7,15 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type { ERC721PartnerSeaDrop, ISeaDrop } from "../typechain-types";
-import type { SignedMintValidationParamsStruct } from "../typechain-types/src/ERC721SeaDrop";
-import type { MintParamsStruct } from "../typechain-types/src/SeaDrop";
+import type { ERC721PartnerRaribleDrop, IRaribleDrop } from "../typechain-types";
+import type { SignedMintValidationParamsStruct } from "../typechain-types/src/ERC721RaribleDrop";
+import type { MintParamsStruct } from "../typechain-types/src/RaribleDrop";
 import type { Wallet } from "ethers";
 
-describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
+describe(`RaribleDrop - Mint Signed (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
-  let token: ERC721PartnerSeaDrop;
+  let raribleDrop: IRaribleDrop;
+  let token: ERC721PartnerRaribleDrop;
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
@@ -51,16 +51,16 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    // Deploy RaribleDrop
+    const RaribleDrop = await ethers.getContractFactory("RaribleDrop", owner);
+    raribleDrop = await RaribleDrop.deploy();
 
     // Configure EIP-712 params
     eip712Domain = {
-      name: "SeaDrop",
+      name: "RaribleDrop",
       version: "1.0",
       chainId: (await provider.getNetwork()).chainId,
-      verifyingContract: seadrop.address,
+      verifyingContract: raribleDrop.address,
     };
     eip712Types = {
       SignedMint: [
@@ -105,20 +105,20 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop",
+    const ERC721PartnerRaribleDrop = await ethers.getContractFactory(
+      "ERC721PartnerRaribleDrop",
       owner
     );
-    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
-      seadrop.address,
+    token = await ERC721PartnerRaribleDrop.deploy("", "", admin.address, [
+      raribleDrop.address,
     ]);
 
     // Configure token
     await token.setMaxSupply(100);
-    await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await token.updateCreatorPayoutAddress(raribleDrop.address, creator.address);
     await token
       .connect(admin)
-      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+      .updateAllowedFeeRecipient(raribleDrop.address, feeRecipient.address, true);
 
     mintParams = {
       mintPrice: "100000000000000000", // 0.1 ether
@@ -135,12 +135,12 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await token
       .connect(admin)
       .updateSignedMintValidationParams(
-        seadrop.address,
+        raribleDrop.address,
         signer.address,
         signedMintValidationParams
       );
     await token.updateSignedMintValidationParams(
-      seadrop.address,
+      raribleDrop.address,
       signer.address,
       signedMintValidationParams
     );
@@ -193,7 +193,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     const value = BigNumber.from(mintParams.mintPrice).mul(3);
     await expect(
-      seadrop
+      raribleDrop
         .connect(payer)
         .mintSigned(
           token.address,
@@ -210,10 +210,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWith("PayerNotAllowed");
 
     // Allow the payer.
-    await token.updatePayer(seadrop.address, payer.address, true);
+    await token.updatePayer(raribleDrop.address, payer.address, true);
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(payer)
         .mintSigned(
           token.address,
@@ -228,7 +228,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -247,7 +247,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     // Ensure a signature can only be used once.
     // Mint again with the same params.
     await expect(
-      seadrop
+      raribleDrop
         .connect(payer)
         .mintSigned(
           token.address,
@@ -275,7 +275,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       signer
     );
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -288,7 +288,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           { value }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -318,7 +318,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     // Test with different minter address
     const value = BigNumber.from(mintParams.mintPrice).mul(3);
     await expect(
-      seadrop.connect(payer).mintSigned(
+      raribleDrop.connect(payer).mintSigned(
         token.address,
         feeRecipient.address,
         payer.address, // payer different than minter
@@ -335,10 +335,10 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     // Test with different fee recipient
     await token
       .connect(admin)
-      .updateAllowedFeeRecipient(seadrop.address, payer.address, true);
-    await token.updatePayer(seadrop.address, payer.address, true);
+      .updateAllowedFeeRecipient(raribleDrop.address, payer.address, true);
+    await token.updatePayer(raribleDrop.address, payer.address, true);
     await expect(
-      seadrop.connect(payer).mintSigned(
+      raribleDrop.connect(payer).mintSigned(
         token.address,
         payer.address, // payer instead of feeRecipient
         minter.address,
@@ -353,18 +353,18 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWith("InvalidSignature");
 
     // Test with different token contract
-    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop",
+    const ERC721PartnerRaribleDrop = await ethers.getContractFactory(
+      "ERC721PartnerRaribleDrop",
       owner
     );
-    const token2 = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
-      seadrop.address,
+    const token2 = await ERC721PartnerRaribleDrop.deploy("", "", admin.address, [
+      raribleDrop.address,
     ]);
     await token2.setMaxSupply(100);
-    await token2.updateCreatorPayoutAddress(seadrop.address, creator.address);
+    await token2.updateCreatorPayoutAddress(raribleDrop.address, creator.address);
     await token2
       .connect(admin)
-      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+      .updateAllowedFeeRecipient(raribleDrop.address, feeRecipient.address, true);
 
     // Test coverage for error SignerNotPresent()
     await whileImpersonating(
@@ -372,7 +372,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       provider,
       async (impersonatedSigner) => {
         await expect(
-          seadrop
+          raribleDrop
             .connect(impersonatedSigner)
             .updateSignedMintValidationParams(
               `0x${"8".repeat(40)}`,
@@ -385,17 +385,17 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await token2
       .connect(admin)
       .updateSignedMintValidationParams(
-        seadrop.address,
+        raribleDrop.address,
         signer.address,
         signedMintValidationParams
       );
     await token2.updateSignedMintValidationParams(
-      seadrop.address,
+      raribleDrop.address,
       signer.address,
       signedMintValidationParams
     );
     await expect(
-      seadrop.connect(payer).mintSigned(
+      raribleDrop.connect(payer).mintSigned(
         token2.address, // different token contract
         feeRecipient.address,
         ethers.constants.AddressZero,
@@ -414,22 +414,22 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await token
       .connect(admin)
       .updateSignedMintValidationParams(
-        seadrop.address,
+        raribleDrop.address,
         signer2.address,
         signedMintValidationParams
       );
     await token.updateSignedMintValidationParams(
-      seadrop.address,
+      raribleDrop.address,
       signer2.address,
       emptySignedMintValidationParams
     );
     expect(
-      await seadrop.getSignedMintValidationParams(
+      await raribleDrop.getSignedMintValidationParams(
         token.address,
         signer2.address
       )
     ).to.deep.eq([BigNumber.from(0), 0, 0, 0, 0, 0, 0]);
-    expect(await seadrop.getSigners(token.address)).to.deep.eq([
+    expect(await raribleDrop.getSigners(token.address)).to.deep.eq([
       signer.address,
     ]);
     const signature2 = await signMint(
@@ -441,7 +441,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       signer2
     );
     await expect(
-      seadrop.connect(payer).mintSigned(
+      raribleDrop.connect(payer).mintSigned(
         token.address,
         feeRecipient.address,
         ethers.constants.AddressZero,
@@ -461,7 +461,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       maxTokenSupplyForStage: 10000,
     };
     await expect(
-      seadrop.connect(minter).mintSigned(
+      raribleDrop.connect(minter).mintSigned(
         token.address, // different token contract
         feeRecipient.address,
         minter.address,
@@ -477,7 +477,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Test with different salt
     await expect(
-      seadrop.connect(minter).mintSigned(
+      raribleDrop.connect(minter).mintSigned(
         token.address, // different token contract
         feeRecipient.address,
         minter.address,
@@ -496,7 +496,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
       token
         .connect(admin)
         .updateSignedMintValidationParams(
-          seadrop.address,
+          raribleDrop.address,
           ethers.constants.AddressZero,
           signedMintValidationParams
         )
@@ -504,18 +504,18 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Remove the original signer for branch coverage.
     await token.updateSignedMintValidationParams(
-      seadrop.address,
+      raribleDrop.address,
       signer.address,
       emptySignedMintValidationParams
     );
     expect(
-      await seadrop.getSignedMintValidationParams(token.address, signer.address)
+      await raribleDrop.getSignedMintValidationParams(token.address, signer.address)
     ).to.deep.eq([BigNumber.from(0), 0, 0, 0, 0, 0, 0]);
 
     // Add two signers and remove the second for branch coverage.
     await expect(
       token.updateSignedMintValidationParams(
-        seadrop.address,
+        raribleDrop.address,
         signer.address,
         signedMintValidationParams
       )
@@ -523,27 +523,27 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await token
       .connect(admin)
       .updateSignedMintValidationParams(
-        seadrop.address,
+        raribleDrop.address,
         signer.address,
         signedMintValidationParams
       );
     await token
       .connect(admin)
       .updateSignedMintValidationParams(
-        seadrop.address,
+        raribleDrop.address,
         signer2.address,
         signedMintValidationParams
       );
     await token.updateSignedMintValidationParams(
-      seadrop.address,
+      raribleDrop.address,
       signer2.address,
       emptySignedMintValidationParams
     );
     expect(
-      await seadrop.getSignedMintValidationParams(token.address, signer.address)
+      await raribleDrop.getSignedMintValidationParams(token.address, signer.address)
     ).to.deep.eq([BigNumber.from(0), 1, 0, 0, 0, 1, 9000]);
     expect(
-      await seadrop.getSignedMintValidationParams(
+      await raribleDrop.getSignedMintValidationParams(
         token.address,
         signer2.address
       )
@@ -562,7 +562,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Max mints per wallet is 10. Mint 10
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -577,7 +577,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -591,7 +591,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Try to mint one more.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -607,7 +607,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Try to mint one more with manipulated mintParams.
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -635,7 +635,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -650,7 +650,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
           }
         )
     )
-      .to.emit(seadrop, "SeaDropMint")
+      .to.emit(raribleDrop, "RaribleDropMint")
       .withArgs(
         token.address,
         minter.address,
@@ -681,7 +681,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     const value = BigNumber.from(mintParams.mintPrice);
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -711,7 +711,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -744,7 +744,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     const value = BigNumber.from(newMintParams.mintPrice).mul(mintQuantity);
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -772,7 +772,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -803,7 +803,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -834,7 +834,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -865,7 +865,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -896,7 +896,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -927,7 +927,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
 
     await expect(
-      seadrop
+      raribleDrop
         .connect(minter)
         .mintSigned(
           token.address,
@@ -948,7 +948,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await expect(
       token
         .connect(admin)
-        .updateSignedMintValidationParams(seadrop.address, signer.address, {
+        .updateSignedMintValidationParams(raribleDrop.address, signer.address, {
           ...signedMintValidationParams,
           minFeeBps: 11_000,
         })
@@ -957,7 +957,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     await expect(
       token
         .connect(admin)
-        .updateSignedMintValidationParams(seadrop.address, signer.address, {
+        .updateSignedMintValidationParams(raribleDrop.address, signer.address, {
           ...signedMintValidationParams,
           maxFeeBps: 12_000,
         })

@@ -3,25 +3,25 @@ pragma solidity 0.8.17;
 
 import {
     ERC721ContractMetadata,
-    ISeaDropTokenContractMetadata
+    IRaribleDropTokenContractMetadata
 } from "./ERC721ContractMetadata.sol";
 
 import {
-    INonFungibleSeaDropToken
-} from "./interfaces/INonFungibleSeaDropToken.sol";
+    INonFungibleRaribleDropToken
+} from "./interfaces/INonFungibleRaribleDropToken.sol";
 
-import { ISeaDrop } from "./interfaces/ISeaDrop.sol";
+import { IRaribleDrop } from "./interfaces/IRaribleDrop.sol";
 
 import {
     AllowListData,
     PublicDrop,
     TokenGatedDropStage,
     SignedMintValidationParams
-} from "./lib/SeaDropStructs.sol";
+} from "./lib/RaribleDropStructs.sol";
 
 import {
-    ERC721SeaDropStructsErrorsAndEvents
-} from "./lib/ERC721SeaDropStructsErrorsAndEvents.sol";
+    ERC721RaribleDropStructsErrorsAndEvents
+} from "./lib/ERC721RaribleDropStructsErrorsAndEvents.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
@@ -36,114 +36,114 @@ import {
 } from "operator-filter-registry/DefaultOperatorFilterer.sol";
 
 /**
- * @title  ERC721SeaDrop
+ * @title  ERC721RaribleDrop
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice ERC721SeaDrop is a token contract that contains methods
- *         to properly interact with SeaDrop.
+ * @notice ERC721RaribleDrop is a token contract that contains methods
+ *         to properly interact with RaribleDrop.
  */
-contract ERC721SeaDrop is
+contract ERC721RaribleDrop is
     ERC721ContractMetadata,
-    INonFungibleSeaDropToken,
-    ERC721SeaDropStructsErrorsAndEvents,
+    INonFungibleRaribleDropToken,
+    ERC721RaribleDropStructsErrorsAndEvents,
     ReentrancyGuard,
     DefaultOperatorFilterer
 {
-    /// @notice Track the allowed SeaDrop addresses.
-    mapping(address => bool) internal _allowedSeaDrop;
+    /// @notice Track the allowed RaribleDrop addresses.
+    mapping(address => bool) internal _allowedRaribleDrop;
 
-    /// @notice Track the enumerated allowed SeaDrop addresses.
-    address[] internal _enumeratedAllowedSeaDrop;
+    /// @notice Track the enumerated allowed RaribleDrop addresses.
+    address[] internal _enumeratedAllowedRaribleDrop;
 
     /**
-     * @dev Reverts if not an allowed SeaDrop contract.
+     * @dev Reverts if not an allowed RaribleDrop contract.
      *      This function is inlined instead of being a modifier
      *      to save contract space from being inlined N times.
      *
-     * @param seaDrop The SeaDrop address to check if allowed.
+     * @param seaDrop The RaribleDrop address to check if allowed.
      */
-    function _onlyAllowedSeaDrop(address seaDrop) internal view {
-        if (_allowedSeaDrop[seaDrop] != true) {
-            revert OnlyAllowedSeaDrop();
+    function _onlyAllowedRaribleDrop(address seaDrop) internal view {
+        if (_allowedRaribleDrop[seaDrop] != true) {
+            revert OnlyAllowedRaribleDrop();
         }
     }
 
     /**
      * @notice Deploy the token contract with its name, symbol,
-     *         and allowed SeaDrop addresses.
+     *         and allowed RaribleDrop addresses.
      */
     constructor(
         string memory name,
         string memory symbol,
-        address[] memory allowedSeaDrop
+        address[] memory allowedRaribleDrop
     ) ERC721ContractMetadata(name, symbol) {
         // Put the length on the stack for more efficient access.
-        uint256 allowedSeaDropLength = allowedSeaDrop.length;
+        uint256 allowedRaribleDropLength = allowedRaribleDrop.length;
 
-        // Set the mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            _allowedSeaDrop[allowedSeaDrop[i]] = true;
+        // Set the mapping for allowed RaribleDrop contracts.
+        for (uint256 i = 0; i < allowedRaribleDropLength; ) {
+            _allowedRaribleDrop[allowedRaribleDrop[i]] = true;
             unchecked {
                 ++i;
             }
         }
 
         // Set the enumeration.
-        _enumeratedAllowedSeaDrop = allowedSeaDrop;
+        _enumeratedAllowedRaribleDrop = allowedRaribleDrop;
 
         // Emit an event noting the contract deployment.
-        emit SeaDropTokenDeployed();
+        emit RaribleDropTokenDeployed();
     }
 
     /**
-     * @notice Update the allowed SeaDrop contracts.
+     * @notice Update the allowed RaribleDrop contracts.
      *         Only the owner or administrator can use this function.
      *
-     * @param allowedSeaDrop The allowed SeaDrop addresses.
+     * @param allowedRaribleDrop The allowed RaribleDrop addresses.
      */
-    function updateAllowedSeaDrop(address[] calldata allowedSeaDrop)
+    function updateAllowedRaribleDrop(address[] calldata allowedRaribleDrop)
         external
         virtual
         override
         onlyOwner
     {
-        _updateAllowedSeaDrop(allowedSeaDrop);
+        _updateAllowedRaribleDrop(allowedRaribleDrop);
     }
 
     /**
-     * @notice Internal function to update the allowed SeaDrop contracts.
+     * @notice Internal function to update the allowed RaribleDrop contracts.
      *
-     * @param allowedSeaDrop The allowed SeaDrop addresses.
+     * @param allowedRaribleDrop The allowed RaribleDrop addresses.
      */
-    function _updateAllowedSeaDrop(address[] calldata allowedSeaDrop) internal {
+    function _updateAllowedRaribleDrop(address[] calldata allowedRaribleDrop) internal {
         // Put the length on the stack for more efficient access.
-        uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
+        uint256 enumeratedAllowedRaribleDropLength = _enumeratedAllowedRaribleDrop
             .length;
-        uint256 allowedSeaDropLength = allowedSeaDrop.length;
+        uint256 allowedRaribleDropLength = allowedRaribleDrop.length;
 
         // Reset the old mapping.
-        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength; ) {
-            _allowedSeaDrop[_enumeratedAllowedSeaDrop[i]] = false;
+        for (uint256 i = 0; i < enumeratedAllowedRaribleDropLength; ) {
+            _allowedRaribleDrop[_enumeratedAllowedRaribleDrop[i]] = false;
             unchecked {
                 ++i;
             }
         }
 
-        // Set the new mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            _allowedSeaDrop[allowedSeaDrop[i]] = true;
+        // Set the new mapping for allowed RaribleDrop contracts.
+        for (uint256 i = 0; i < allowedRaribleDropLength; ) {
+            _allowedRaribleDrop[allowedRaribleDrop[i]] = true;
             unchecked {
                 ++i;
             }
         }
 
         // Set the enumeration.
-        _enumeratedAllowedSeaDrop = allowedSeaDrop;
+        _enumeratedAllowedRaribleDrop = allowedRaribleDrop;
 
         // Emit an event for the update.
-        emit AllowedSeaDropUpdated(allowedSeaDrop);
+        emit AllowedRaribleDropUpdated(allowedRaribleDrop);
     }
 
     /**
@@ -189,18 +189,18 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Mint tokens, restricted to the SeaDrop contract.
+     * @notice Mint tokens, restricted to the RaribleDrop contract.
      *
-     * @dev    NOTE: If a token registers itself with multiple SeaDrop
+     * @dev    NOTE: If a token registers itself with multiple RaribleDrop
      *         contracts, the implementation of this function should guard
      *         against reentrancy. If the implementing token uses
      *         _safeMint(), or a feeRecipient with a malicious receive() hook
      *         is specified, the token or fee recipients may be able to execute
-     *         another mint in the same transaction via a separate SeaDrop
+     *         another mint in the same transaction via a separate RaribleDrop
      *         contract.
      *         This is dangerous if an implementing token does not correctly
      *         update the minterNumMinted and currentTotalSupply values before
-     *         transferring minted tokens, as SeaDrop references these values
+     *         transferring minted tokens, as RaribleDrop references these values
      *         to enforce token limits on a per-wallet and per-stage basis.
      *
      *         ERC721A tracks these values automatically, but this note and
@@ -210,14 +210,14 @@ contract ERC721SeaDrop is
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
      */
-    function mintSeaDrop(address minter, uint256 quantity)
+    function mintRaribleDrop(address minter, uint256 quantity)
         external
         virtual
         override
         nonReentrant
     {
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(msg.sender);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(msg.sender);
 
         // Extra safety check to ensure the max supply is not exceeded.
         if (_totalMinted() + quantity > maxSupply()) {
@@ -232,10 +232,10 @@ contract ERC721SeaDrop is
     }
 
     /**
-     * @notice Update the public drop data for this nft contract on SeaDrop.
+     * @notice Update the public drop data for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl The allowed RaribleDrop contract.
      * @param publicDrop  The public drop data.
      */
     function updatePublicDrop(
@@ -245,18 +245,18 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
-        // Update the public drop data on SeaDrop.
-        ISeaDrop(seaDropImpl).updatePublicDrop(publicDrop);
+        // Update the public drop data on RaribleDrop.
+        IRaribleDrop(seaDropImpl).updatePublicDrop(publicDrop);
     }
 
     /**
-     * @notice Update the allow list data for this nft contract on SeaDrop.
+     * @notice Update the allow list data for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl   The allowed SeaDrop contract.
+     * @param seaDropImpl   The allowed RaribleDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
@@ -266,26 +266,26 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
-        // Update the allow list on SeaDrop.
-        ISeaDrop(seaDropImpl).updateAllowList(allowListData);
+        // Update the allow list on RaribleDrop.
+        IRaribleDrop(seaDropImpl).updateAllowList(allowListData);
     }
 
     /**
      * @notice Update the token gated drop stage data for this nft contract
-     *         on SeaDrop.
+     *         on RaribleDrop.
      *         Only the owner can use this function.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         Note: If two INonFungibleRaribleDropToken tokens are doing
      *         simultaneous token gated drop promotions for each other,
      *         they can be minted by the same actor until
      *         `maxTokenSupplyForStage` is reached. Please ensure the
      *         `allowedNftToken` is not running an active drop during the
      *         `dropStage` time period.
      *
-     * @param seaDropImpl     The allowed SeaDrop contract.
+     * @param seaDropImpl     The allowed RaribleDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
@@ -297,18 +297,18 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
         // Update the token gated drop stage.
-        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
+        IRaribleDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
     }
 
     /**
-     * @notice Update the drop URI for this nft contract on SeaDrop.
+     * @notice Update the drop URI for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl The allowed RaribleDrop contract.
      * @param dropURI     The new drop URI.
      */
     function updateDropURI(address seaDropImpl, string calldata dropURI)
@@ -319,19 +319,19 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
         // Update the drop URI.
-        ISeaDrop(seaDropImpl).updateDropURI(dropURI);
+        IRaribleDrop(seaDropImpl).updateDropURI(dropURI);
     }
 
     /**
      * @notice Update the creator payout address for this nft contract on
-     *         SeaDrop.
+     *         RaribleDrop.
      *         Only the owner can set the creator payout address.
      *
-     * @param seaDropImpl   The allowed SeaDrop contract.
+     * @param seaDropImpl   The allowed RaribleDrop contract.
      * @param payoutAddress The new payout address.
      */
     function updateCreatorPayoutAddress(
@@ -341,19 +341,19 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
         // Update the creator payout address.
-        ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
+        IRaribleDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
     }
 
     /**
      * @notice Update the allowed fee recipient for this nft contract
-     *         on SeaDrop.
+     *         on RaribleDrop.
      *         Only the owner can set the allowed fee recipient.
      *
-     * @param seaDropImpl  The allowed SeaDrop contract.
+     * @param seaDropImpl  The allowed RaribleDrop contract.
      * @param feeRecipient The new fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
@@ -365,19 +365,19 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
         // Update the allowed fee recipient.
-        ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
+        IRaribleDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
 
     /**
      * @notice Update the server-side signers for this nft contract
-     *         on SeaDrop.
+     *         on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl                The allowed SeaDrop contract.
+     * @param seaDropImpl                The allowed RaribleDrop contract.
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters to
      *                                   enforce for signed mints.
@@ -390,21 +390,21 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
         // Update the signer.
-        ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
+        IRaribleDrop(seaDropImpl).updateSignedMintValidationParams(
             signer,
             signedMintValidationParams
         );
     }
 
     /**
-     * @notice Update the allowed payers for this nft contract on SeaDrop.
+     * @notice Update the allowed payers for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl The allowed RaribleDrop contract.
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
@@ -416,16 +416,16 @@ contract ERC721SeaDrop is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Ensure the SeaDrop is allowed.
-        _onlyAllowedSeaDrop(seaDropImpl);
+        // Ensure the RaribleDrop is allowed.
+        _onlyAllowedRaribleDrop(seaDropImpl);
 
         // Update the payer.
-        ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
+        IRaribleDrop(seaDropImpl).updatePayer(payer, allowed);
     }
 
     /**
      * @notice Returns a set of mint stats for the address.
-     *         This assists SeaDrop in enforcing maxSupply,
+     *         This assists RaribleDrop in enforcing maxSupply,
      *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
      *
      * @dev    NOTE: Implementing contracts should always update these numbers
@@ -462,8 +462,8 @@ contract ERC721SeaDrop is
         returns (bool)
     {
         return
-            interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
-            interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
+            interfaceId == type(INonFungibleRaribleDropToken).interfaceId ||
+            interfaceId == type(IRaribleDropTokenContractMetadata).interfaceId ||
             // ERC721ContractMetadata returns supportsInterface true for
             //     EIP-2981
             // ERC721A returns supportsInterface true for

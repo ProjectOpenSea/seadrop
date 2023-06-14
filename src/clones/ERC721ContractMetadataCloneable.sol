@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 import {
-    ISeaDropTokenContractMetadata
-} from "../interfaces/ISeaDropTokenContractMetadata.sol";
+    IRaribleDropTokenContractMetadata
+} from "../interfaces/IRaribleDropTokenContractMetadata.sol";
 
 import { ERC721ACloneable } from "./ERC721ACloneable.sol";
 
@@ -26,7 +26,7 @@ import {
 contract ERC721ContractMetadataCloneable is
     ERC721ACloneable,
     TwoStepOwnable,
-    ISeaDropTokenContractMetadata
+    IRaribleDropTokenContractMetadata
 {
     /// @notice Track the max supply.
     uint256 _maxSupply;

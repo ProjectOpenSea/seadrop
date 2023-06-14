@@ -3,17 +3,17 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 
-import { MintParams } from "seadrop/lib/SeaDropStructs.sol";
+import { MintParams } from "raribleDrop/lib/RaribleDropStructs.sol";
 
-import { SeaDrop } from "seadrop/SeaDrop.sol";
+import { RaribleDrop } from "raribleDrop/RaribleDrop.sol";
 
-import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
+import { ERC721PartnerRaribleDrop } from "raribleDrop/ERC721PartnerRaribleDrop.sol";
 
-import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
+import { RaribleDropErrorsAndEvents } from "raribleDrop/lib/RaribleDropErrorsAndEvents.sol";
 
-contract TestHelper is Test, SeaDropErrorsAndEvents {
-    SeaDrop seadrop = new SeaDrop();
-    ERC721PartnerSeaDrop token;
+contract TestHelper is Test, RaribleDropErrorsAndEvents {
+    RaribleDrop raribleDrop = new RaribleDrop();
+    ERC721PartnerRaribleDrop token;
 
     address creator = makeAddr("creator");
 
@@ -64,7 +64,7 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
                 "address verifyingContract"
             ")"
         );
-    bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
+    bytes32 internal constant _NAME_HASH = keccak256("RaribleDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("1.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
     bytes32 internal immutable _DOMAIN_SEPARATOR = _deriveDomainSeparator();
@@ -177,7 +177,7 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
                 _NAME_HASH,
                 _VERSION_HASH,
                 block.chainid,
-                address(seadrop)
+                address(raribleDrop)
             )
         );
     }

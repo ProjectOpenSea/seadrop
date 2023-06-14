@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { PublicDrop, TokenGatedDropStage, SignedMintValidationParams } from "./SeaDropStructsUpgradeable.sol";
+import { PublicDrop, TokenGatedDropStage, SignedMintValidationParams } from "./RaribleDropStructsUpgradeable.sol";
 
-interface SeaDropErrorsAndEventsUpgradeable {
+interface RaribleDropErrorsAndEventsUpgradeable {
     /**
      * @dev Revert with an error if the drop stage is not active.
      */
@@ -124,9 +124,9 @@ interface SeaDropErrorsAndEventsUpgradeable {
 
     /**
      * @dev Revert with an error if the sender does not
-     *      match the INonFungibleSeaDropToken interface.
+     *      match the INonFungibleRaribleDropToken interface.
      */
-    error OnlyINonFungibleSeaDropToken(address sender);
+    error OnlyINonFungibleRaribleDropToken(address sender);
 
     /**
      * @dev Revert with an error if the sender of a token gated supplied
@@ -216,7 +216,7 @@ interface SeaDropErrorsAndEventsUpgradeable {
     error SignatureAlreadyUsed();
 
     /**
-     * @dev An event with details of a SeaDrop mint, for analytical purposes.
+     * @dev An event with details of a RaribleDrop mint, for analytical purposes.
      * 
      * @param nftContract    The nft contract.
      * @param minter         The mint recipient.
@@ -229,7 +229,7 @@ interface SeaDropErrorsAndEventsUpgradeable {
      *                       through mintPublic() have
      *                       dropStageIndex of 0.
      */
-    event SeaDropMint(
+    event RaribleDropMint(
         address indexed nftContract,
         address indexed minter,
         address indexed feeRecipient,

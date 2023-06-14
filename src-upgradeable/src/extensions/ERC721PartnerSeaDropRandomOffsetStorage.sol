@@ -2,14 +2,14 @@
 pragma solidity 0.8.17;
 
 import {
-    ERC721PartnerSeaDropRandomOffsetUpgradeable
-} from "./ERC721PartnerSeaDropRandomOffsetUpgradeable.sol";
+    ERC721PartnerRaribleDropRandomOffsetUpgradeable
+} from "./ERC721PartnerRaribleDropRandomOffsetUpgradeable.sol";
 
 import {
     ERC721ContractMetadataUpgradeable
 } from "../ERC721ContractMetadataUpgradeable.sol";
 
-library ERC721PartnerSeaDropRandomOffsetStorage {
+library ERC721PartnerRaribleDropRandomOffsetStorage {
     struct Layout {
         /// @notice The random offset, between 1 and the MAX_SUPPLY at the time of
         ///         being set.
@@ -21,7 +21,7 @@ library ERC721PartnerSeaDropRandomOffsetStorage {
 
     bytes32 internal constant STORAGE_SLOT =
         keccak256(
-            "openzepplin.contracts.storage.ERC721PartnerSeaDropRandomOffset"
+            "openzepplin.contracts.storage.ERC721PartnerRaribleDropRandomOffset"
         );
 
     function layout() internal pure returns (Layout storage l) {

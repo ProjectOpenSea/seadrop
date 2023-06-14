@@ -2,14 +2,14 @@
 
 An example script to deploy a token contract is located at [DeployAndConfigureExampleToken.s.sol](../script/DeployAndConfigureExampleToken.s.sol). It can be run with `forge script script/DeployAndConfigureExampleToken.s.sol --rpc-url ${RPC_URL} --broadcast -vvvv --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify --retries 10`
 
-### ERC721SeaDrop
+### ERC721RaribleDrop
 
-`ERC721SeaDrop` contains only an Owner role (assigned to the deployer of the contract) that has authorization for all methods.
+`ERC721RaribleDrop` contains only an Owner role (assigned to the deployer of the contract) that has authorization for all methods.
 
-To split responsibilities with an Administrator role who can set fee parameters, use [`ERC721PartnerSeaDrop`](#erc721partnerseadrop).
+To split responsibilities with an Administrator role who can set fee parameters, use [`ERC721PartnerRaribleDrop`](#erc721partnerraribleDrop).
 
-1. Deploy `src/ERC721SeaDrop.sol` with constructor args `string name, string symbol, address[] allowedSeaDrop`
-   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
+1. Deploy `src/ERC721RaribleDrop.sol` with constructor args `string name, string symbol, address[] allowedRaribleDrop`
+   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721RaribleDrop.sol:ERC721RaribleDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Set the token max supply with `token.setMaxSupply()`
 1. Set the creator payout address with `token.updateCreatorPayoutAddress()`
 1. Set the contract URI with `token.setContractURI()`
@@ -24,12 +24,12 @@ To split responsibilities with an Administrator role who can set fee parameters,
 1. Set the drop URI with `token.setDropURI()`
    1. See [Format of Drop URI](#format-of-drop-uri)
 
-### ERC721PartnerSeaDrop
+### ERC721PartnerRaribleDrop
 
-`ERC721PartnerSeaDrop` is a token contract designed to split responsibilities between an Owner and Administrator.
+`ERC721PartnerRaribleDrop` is a token contract designed to split responsibilities between an Owner and Administrator.
 
-1. Deploy `src/ERC721PartnerSeaDrop.sol` with constructor args `string name, string symbol, address administrator, address[] allowedSeaDrop`
-   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721PartnerSeaDrop.sol:ERC721PartnerSeaDrop --constructor-args "TokenTest1" "TEST1" ${ADMIN_ADDRESS} \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
+1. Deploy `src/ERC721PartnerRaribleDrop.sol` with constructor args `string name, string symbol, address administrator, address[] allowedRaribleDrop`
+   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721PartnerRaribleDrop.sol:ERC721PartnerRaribleDrop --constructor-args "TokenTest1" "TEST1" ${ADMIN_ADDRESS} \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Required to be sent by token Owner:
    1. Set the token max supply with `token.setMaxSupply()`
    1. Set the creator payout address with `token.updateCreatorPayoutAddress()`

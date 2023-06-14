@@ -5,7 +5,7 @@ import {
     IERC2981Upgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC2981Upgradeable.sol";
 
-interface ISeaDropTokenContractMetadataUpgradeable is IERC2981Upgradeable {
+interface IRaribleDropTokenContractMetadataUpgradeable is IERC2981Upgradeable {
     /**
      * @notice Throw if the max supply exceeds uint64, a limit
      *         due to the storage of bit-packed variables in ERC721A.

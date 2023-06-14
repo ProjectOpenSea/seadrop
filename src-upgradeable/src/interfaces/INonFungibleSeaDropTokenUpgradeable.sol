@@ -2,61 +2,61 @@
 pragma solidity 0.8.17;
 
 import {
-    ISeaDropTokenContractMetadataUpgradeable
-} from "./ISeaDropTokenContractMetadataUpgradeable.sol";
+    IRaribleDropTokenContractMetadataUpgradeable
+} from "./IRaribleDropTokenContractMetadataUpgradeable.sol";
 
 import {
     AllowListData,
     PublicDrop,
     TokenGatedDropStage,
     SignedMintValidationParams
-} from "../lib/SeaDropStructsUpgradeable.sol";
+} from "../lib/RaribleDropStructsUpgradeable.sol";
 
-interface INonFungibleSeaDropTokenUpgradeable is
-    ISeaDropTokenContractMetadataUpgradeable
+interface INonFungibleRaribleDropTokenUpgradeable is
+    IRaribleDropTokenContractMetadataUpgradeable
 {
     /**
      * @dev Revert with an error if a contract is not an allowed
-     *      SeaDrop address.
+     *      RaribleDrop address.
      */
-    error OnlyAllowedSeaDrop();
+    error OnlyAllowedRaribleDrop();
 
     /**
-     * @dev Emit an event when allowed SeaDrop contracts are updated.
+     * @dev Emit an event when allowed RaribleDrop contracts are updated.
      */
-    event AllowedSeaDropUpdated(address[] allowedSeaDrop);
+    event AllowedRaribleDropUpdated(address[] allowedRaribleDrop);
 
     /**
-     * @notice Update the allowed SeaDrop contracts.
+     * @notice Update the allowed RaribleDrop contracts.
      *         Only the owner or administrator can use this function.
      *
-     * @param allowedSeaDrop The allowed SeaDrop addresses.
+     * @param allowedRaribleDrop The allowed RaribleDrop addresses.
      */
-    function updateAllowedSeaDrop(address[] calldata allowedSeaDrop) external;
+    function updateAllowedRaribleDrop(address[] calldata allowedRaribleDrop) external;
 
     /**
-     * @notice Mint tokens, restricted to the SeaDrop contract.
+     * @notice Mint tokens, restricted to the RaribleDrop contract.
      *
-     * @dev    NOTE: If a token registers itself with multiple SeaDrop
+     * @dev    NOTE: If a token registers itself with multiple RaribleDrop
      *         contracts, the implementation of this function should guard
      *         against reentrancy. If the implementing token uses
      *         _safeMint(), or a feeRecipient with a malicious receive() hook
      *         is specified, the token or fee recipients may be able to execute
-     *         another mint in the same transaction via a separate SeaDrop
+     *         another mint in the same transaction via a separate RaribleDrop
      *         contract.
      *         This is dangerous if an implementing token does not correctly
      *         update the minterNumMinted and currentTotalSupply values before
-     *         transferring minted tokens, as SeaDrop references these values
+     *         transferring minted tokens, as RaribleDrop references these values
      *         to enforce token limits on a per-wallet and per-stage basis.
      *
      * @param minter   The address to mint to.
      * @param quantity The number of tokens to mint.
      */
-    function mintSeaDrop(address minter, uint256 quantity) external;
+    function mintRaribleDrop(address minter, uint256 quantity) external;
 
     /**
      * @notice Returns a set of mint stats for the address.
-     *         This assists SeaDrop in enforcing maxSupply,
+     *         This assists RaribleDrop in enforcing maxSupply,
      *         maxTotalMintableByWallet, and maxTokenSupplyForStage checks.
      *
      * @dev    NOTE: Implementing contracts should always update these numbers
@@ -76,12 +76,12 @@ interface INonFungibleSeaDropTokenUpgradeable is
 
     /**
      * @notice Update the public drop data for this nft contract on
-     *         SeaDrop.
+     *         RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
      *         The administrator can only update `feeBps`.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl The allowed RaribleDrop contract.
      * @param publicDrop  The public drop data.
      */
     function updatePublicDrop(
@@ -90,10 +90,10 @@ interface INonFungibleSeaDropTokenUpgradeable is
     ) external;
 
     /**
-     * @notice Update the allow list data for this nft contract on SeaDrop.
+     * @notice Update the allow list data for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl   The allowed SeaDrop contract.
+     * @param seaDropImpl   The allowed RaribleDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
@@ -103,12 +103,12 @@ interface INonFungibleSeaDropTokenUpgradeable is
 
     /**
      * @notice Update the token gated drop stage data for this nft contract
-     *         on SeaDrop.
+     *         on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
      *         The administrator, when present, must first set `feeBps`.
      *
-     *         Note: If two INonFungibleSeaDropToken tokens are doing
+     *         Note: If two INonFungibleRaribleDropToken tokens are doing
      *         simultaneous token gated drop promotions for each other,
      *         they can be minted by the same actor until
      *         `maxTokenSupplyForStage` is reached. Please ensure the
@@ -116,7 +116,7 @@ interface INonFungibleSeaDropTokenUpgradeable is
      *         `dropStage` time period.
      *
      *
-     * @param seaDropImpl     The allowed SeaDrop contract.
+     * @param seaDropImpl     The allowed RaribleDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
@@ -127,20 +127,20 @@ interface INonFungibleSeaDropTokenUpgradeable is
     ) external;
 
     /**
-     * @notice Update the drop URI for this nft contract on SeaDrop.
+     * @notice Update the drop URI for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl The allowed RaribleDrop contract.
      * @param dropURI     The new drop URI.
      */
     function updateDropURI(address seaDropImpl, string calldata dropURI)
         external;
 
     /**
-     * @notice Update the creator payout address for this nft contract on SeaDrop.
+     * @notice Update the creator payout address for this nft contract on RaribleDrop.
      *         Only the owner can set the creator payout address.
      *
-     * @param seaDropImpl   The allowed SeaDrop contract.
+     * @param seaDropImpl   The allowed RaribleDrop contract.
      * @param payoutAddress The new payout address.
      */
     function updateCreatorPayoutAddress(
@@ -150,10 +150,10 @@ interface INonFungibleSeaDropTokenUpgradeable is
 
     /**
      * @notice Update the allowed fee recipient for this nft contract
-     *         on SeaDrop.
+     *         on RaribleDrop.
      *         Only the administrator can set the allowed fee recipient.
      *
-     * @param seaDropImpl  The allowed SeaDrop contract.
+     * @param seaDropImpl  The allowed RaribleDrop contract.
      * @param feeRecipient The new fee recipient.
      */
     function updateAllowedFeeRecipient(
@@ -164,10 +164,10 @@ interface INonFungibleSeaDropTokenUpgradeable is
 
     /**
      * @notice Update the server-side signers for this nft contract
-     *         on SeaDrop.
+     *         on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl                The allowed SeaDrop contract.
+     * @param seaDropImpl                The allowed RaribleDrop contract.
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
      *                                   to enforce for signed mints.
@@ -179,10 +179,10 @@ interface INonFungibleSeaDropTokenUpgradeable is
     ) external;
 
     /**
-     * @notice Update the allowed payers for this nft contract on SeaDrop.
+     * @notice Update the allowed payers for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl The allowed SeaDrop contract.
+     * @param seaDropImpl The allowed RaribleDrop contract.
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */

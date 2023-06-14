@@ -7,7 +7,7 @@ Since ERC721A v4, the upgradeable variant uses the Diamond storage pattern as de
 
 ## Usage
 
-The package shares the same directory layout as the main SeaDrop package, but every file and contract has the suffix `Upgradeable`.
+The package shares the same directory layout as the main RaribleDrop package, but every file and contract has the suffix `Upgradeable`.
 
 Constructors are replaced by internal initializer functions following the naming convention `__{ContractName}_init`. 
 

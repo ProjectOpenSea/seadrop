@@ -6,9 +6,9 @@ import {
   PublicDrop,
   SignedMintValidationParams,
   TokenGatedDropStage
-} from "./SeaDropStructsUpgradeable.sol";
+} from "./RaribleDropStructsUpgradeable.sol";
 
-interface ERC721SeaDropStructsErrorsAndEventsUpgradeable {
+interface ERC721RaribleDropStructsErrorsAndEventsUpgradeable {
   /**
    * @notice Revert with an error if mint exceeds the max supply.
    */
@@ -28,9 +28,9 @@ interface ERC721SeaDropStructsErrorsAndEventsUpgradeable {
   error SignersMismatch();
 
   /**
-   * @notice An event to signify that a SeaDrop token contract was deployed.
+   * @notice An event to signify that a RaribleDrop token contract was deployed.
    */
-  event SeaDropTokenDeployed();
+  event RaribleDropTokenDeployed();
 
   /**
    * @notice A struct to configure multiple contract options at a time.

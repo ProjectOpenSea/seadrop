@@ -3,33 +3,33 @@ pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { SeaDrop } from "seadrop/SeaDrop.sol";
+import { RaribleDrop } from "raribleDrop/RaribleDrop.sol";
 
-import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
+import { ERC721PartnerRaribleDrop } from "raribleDrop/ERC721PartnerRaribleDrop.sol";
 
 import {
-    INonFungibleSeaDropToken
-} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
+    INonFungibleRaribleDropToken
+} from "raribleDrop/interfaces/INonFungibleRaribleDropToken.sol";
 
-import { PublicDrop } from "seadrop/lib/SeaDropStructs.sol";
+import { PublicDrop } from "raribleDrop/lib/RaribleDropStructs.sol";
 
-import { MaliciousRecipient } from "seadrop/test/MaliciousRecipient.sol";
+import { MaliciousRecipient } from "raribleDrop/test/MaliciousRecipient.sol";
 
-contract ERC721SeaDropMintPublicTest is TestHelper {
+contract ERC721RaribleDropMintPublicTest is TestHelper {
     MaliciousRecipient attacker;
 
     function setUp() public {
         attacker = new MaliciousRecipient();
-        // Deploy the ERC721PartnerSeaDrop token.
-        address[] memory allowedSeaDrop = new address[](1);
-        allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
+        // Deploy the ERC721PartnerRaribleDrop token.
+        address[] memory allowedRaribleDrop = new address[](1);
+        allowedRaribleDrop[0] = address(raribleDrop);
+        token = new ERC721PartnerRaribleDrop("", "", address(this), allowedRaribleDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
 
         // Set the creator payout address.
-        token.updateCreatorPayoutAddress(address(seadrop), creator);
+        token.updateCreatorPayoutAddress(address(raribleDrop), creator);
 
         // Create the public drop stage.
         PublicDrop memory publicDrop = PublicDrop(
@@ -45,7 +45,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         vm.prank(address(token));
 
         // Set the public drop for the token contract.
-        seadrop.updatePublicDrop(publicDrop);
+        raribleDrop.updatePublicDrop(publicDrop);
     }
 
     function testMintPublicReenter() public payable {
@@ -60,7 +60,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
             // If true, then only the fee recipient can perform the attack
         );
         vm.prank(address(token));
-        seadrop.updatePublicDrop(publicDrop);
+        raribleDrop.updatePublicDrop(publicDrop);
 
         assert(!attacker.startAttack());
         // send some eth and set startAttack
@@ -70,18 +70,18 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         assertEq(token.balanceOf(address(attacker)), 0);
         assertEq(
             uint256(
-                seadrop.getPublicDrop(address(token)).maxTotalMintableByWallet
+                raribleDrop.getPublicDrop(address(token)).maxTotalMintableByWallet
             ),
             1
         );
 
         // expect fail on reentrancy
         vm.expectRevert("ETH_TRANSFER_FAILED");
-        attacker.attack(seadrop, address(token));
+        attacker.attack(raribleDrop, address(token));
     }
 
     function testMintPublic(FuzzInputs memory args) public validateArgs(args) {
-        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(token));
+        PublicDrop memory publicDrop = raribleDrop.getPublicDrop(address(token));
 
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
@@ -91,7 +91,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         uint256 preFeeRecipientBalance = args.feeRecipient.balance;
         uint256 preCreatorBalance = creator.balance;
 
-        seadrop.mintPublic{ value: mintValue }(
+        raribleDrop.mintPublic{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -117,7 +117,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         public
         validateArgs(args)
     {
-        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(token));
+        PublicDrop memory publicDrop = raribleDrop.getPublicDrop(address(token));
         uint256 mintValue = args.numMints * publicDrop.mintPrice;
 
         vm.expectRevert(
@@ -126,7 +126,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
 
         hoax(args.minter, 100 ether);
 
-        seadrop.mintPublic{ value: 1 wei }(
+        raribleDrop.mintPublic{ value: 1 wei }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -150,11 +150,11 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
 
         vm.prank(address(token));
         // Set the public drop for the erc721 contract.
-        seadrop.updatePublicDrop(publicDrop);
+        raribleDrop.updatePublicDrop(publicDrop);
 
         vm.prank(args.minter);
 
-        seadrop.mintPublic(
+        raribleDrop.mintPublic(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -169,12 +169,12 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         public
         validateArgs(args)
     {
-        PublicDrop memory publicDrop = seadrop.getPublicDrop(address(token));
+        PublicDrop memory publicDrop = raribleDrop.getPublicDrop(address(token));
 
         address payer = makeAddr("payer");
 
         // Allow the payer.
-        token.updatePayer(address(seadrop), payer, true);
+        token.updatePayer(address(raribleDrop), payer, true);
 
         vm.assume(
             payer != creator &&
@@ -190,7 +190,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         uint256 preFeeRecipientBalance = args.feeRecipient.balance;
         uint256 preCreatorBalance = creator.balance;
 
-        seadrop.mintPublic{ value: mintValue }(
+        raribleDrop.mintPublic{ value: mintValue }(
             address(token),
             args.feeRecipient,
             args.minter,
@@ -212,11 +212,11 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         assertEq(preCreatorBalance + payoutAmount, creator.balance);
     }
 
-    function testMintSeaDrop_revertNonSeaDrop(FuzzInputs memory args)
+    function testMintRaribleDrop_revertNonRaribleDrop(FuzzInputs memory args)
         public
         validateArgs(args)
     {
-        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
-        token.mintSeaDrop(args.minter, args.numMints);
+        vm.expectRevert(INonFungibleRaribleDropToken.OnlyAllowedRaribleDrop.selector);
+        token.mintRaribleDrop(args.minter, args.numMints);
     }
 }

@@ -7,15 +7,15 @@ import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type {
-  ERC721PartnerSeaDropRandomOffset,
-  ISeaDrop,
+  ERC721PartnerRaribleDropRandomOffset,
+  IRaribleDrop,
 } from "../typechain-types";
 import type { Wallet } from "ethers";
 
-describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
+describe(`ERC721PartnerRaribleDropRandomOffset (v${VERSION})`, function () {
   const { provider } = ethers;
-  let seadrop: ISeaDrop;
-  let token: ERC721PartnerSeaDropRandomOffset;
+  let raribleDrop: IRaribleDrop;
+  let token: ERC721PartnerRaribleDropRandomOffset;
   let owner: Wallet;
   let admin: Wallet;
   let creator: Wallet;
@@ -39,22 +39,22 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    // Deploy SeaDrop
-    const SeaDrop = await ethers.getContractFactory("SeaDrop", owner);
-    seadrop = await SeaDrop.deploy();
+    // Deploy RaribleDrop
+    const RaribleDrop = await ethers.getContractFactory("RaribleDrop", owner);
+    raribleDrop = await RaribleDrop.deploy();
   });
 
   beforeEach(async () => {
     // Deploy token
-    const ERC721PartnerSeaDropRandomOffset = await ethers.getContractFactory(
-      "ERC721PartnerSeaDropRandomOffset",
+    const ERC721PartnerRaribleDropRandomOffset = await ethers.getContractFactory(
+      "ERC721PartnerRaribleDropRandomOffset",
       owner
     );
-    token = await ERC721PartnerSeaDropRandomOffset.deploy(
+    token = await ERC721PartnerRaribleDropRandomOffset.deploy(
       "",
       "",
       admin.address,
-      [seadrop.address]
+      [raribleDrop.address]
     );
   });
 
@@ -71,12 +71,12 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
 
     // Mint to the max supply.
     await whileImpersonating(
-      seadrop.address,
+      raribleDrop.address,
       provider,
       async (impersonatedSigner) => {
         await token
           .connect(impersonatedSigner)
-          .mintSeaDrop(minter.address, 100);
+          .mintRaribleDrop(minter.address, 100);
       }
     );
 
@@ -104,12 +104,12 @@ describe(`ERC721PartnerSeaDropRandomOffset (v${VERSION})`, function () {
 
     // Mint to the max supply.
     await whileImpersonating(
-      seadrop.address,
+      raribleDrop.address,
       provider,
       async (impersonatedSigner) => {
         await token
           .connect(impersonatedSigner)
-          .mintSeaDrop(minter.address, 100);
+          .mintRaribleDrop(minter.address, 100);
       }
     );
 

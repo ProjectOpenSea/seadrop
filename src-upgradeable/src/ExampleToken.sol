@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 import {
-    ERC721PartnerSeaDropUpgradeable
-} from "./ERC721PartnerSeaDropUpgradeable.sol";
+    ERC721PartnerRaribleDropUpgradeable
+} from "./ERC721PartnerRaribleDropUpgradeable.sol";
 
 library ExampleTokenStorage {
     struct Layout {
@@ -23,11 +23,11 @@ library ExampleTokenStorage {
 }
 
 /*
- * @notice This contract uses ERC721PartnerSeaDrop,
- *         an ERC721A token contract that is compatible with SeaDrop.
+ * @notice This contract uses ERC721PartnerRaribleDrop,
+ *         an ERC721A token contract that is compatible with RaribleDrop.
  *         The set burn address is the only sender that can burn tokens.
  */
-contract ExampleToken is ERC721PartnerSeaDropUpgradeable {
+contract ExampleToken is ERC721PartnerRaribleDropUpgradeable {
     using ExampleTokenStorage for ExampleTokenStorage.Layout;
 
     /**
@@ -37,19 +37,19 @@ contract ExampleToken is ERC721PartnerSeaDropUpgradeable {
 
     /**
      * @notice Initialize the token contract with its name, symbol,
-     *         administrator, and allowed SeaDrop addresses.
+     *         administrator, and allowed RaribleDrop addresses.
      */
     function initialize(
         string memory name,
         string memory symbol,
         address administrator,
-        address[] memory allowedSeaDrop
+        address[] memory allowedRaribleDrop
     ) external initializer initializerERC721A {
-        ERC721PartnerSeaDropUpgradeable.__ERC721PartnerSeaDrop_init(
+        ERC721PartnerRaribleDropUpgradeable.__ERC721PartnerRaribleDrop_init(
             name,
             symbol,
             administrator,
-            allowedSeaDrop
+            allowedRaribleDrop
         );
     }
 
