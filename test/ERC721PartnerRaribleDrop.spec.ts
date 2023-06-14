@@ -353,7 +353,7 @@ describe(`ERC721PartnerRaribleDrop (v${VERSION})`, function () {
       .withArgs([raribleDrop.address]);
   });
 
-  it("Should only let allowed raribleDrop call seaDropMint", async () => {
+  it("Should only let allowed raribleDrop call raribleDropMint", async () => {
     await token.setMaxSupply(1);
 
     await whileImpersonating(

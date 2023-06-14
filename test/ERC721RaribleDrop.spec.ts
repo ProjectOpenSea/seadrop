@@ -231,7 +231,7 @@ describe(`ERC721RaribleDrop (v${VERSION})`, function () {
     expect(await token.provenanceHash()).to.equal(firstProvenanceHash);
   });
 
-  it("Should only let allowed raribleDrop call seaDropMint", async () => {
+  it("Should only let allowed raribleDrop call raribleDropMint", async () => {
     await token.setMaxSupply(1);
 
     await whileImpersonating(
@@ -287,10 +287,10 @@ describe(`ERC721RaribleDrop (v${VERSION})`, function () {
     // Ensure the interface that RaribleDrop 1.0 strictly checks for
     // in the modifier `onlyINonFungibleRaribleDropToken` returns true,
     // otherwise the contract will not be able to interact with RaribleDrop 1.0.
-    expect(await token.supportsInterface("0x1890fe8e")).to.be.true;
+    expect(await token.supportsInterface("0x47cca7ae")).to.be.true;
 
     // Ensure the interface for ERC-4906 returns true.
-    expect(await token.supportsInterface("0x49064906")).to.be.true;
+    expect(await token.supportsInterface("0x9c154415")).to.be.true;
 
     // Ensure invalid interfaces return false.
     const invalidInterfaceIds = ["0x00000000", "0x10000000", "0x00000001"];
@@ -608,7 +608,7 @@ describe(`ERC721RaribleDrop (v${VERSION})`, function () {
       maxSupply: 100,
       baseURI: "https://example1.com",
       contractURI: "https://example2.com",
-      seaDropImpl: raribleDrop.address,
+      raribleDropImpl: raribleDrop.address,
       publicDrop,
       dropURI: "https://example3.com",
       allowListData,
@@ -733,7 +733,7 @@ describe(`ERC721RaribleDrop (v${VERSION})`, function () {
       maxSupply: 0,
       baseURI: "",
       contractURI: "",
-      seaDropImpl: raribleDrop.address,
+      raribleDropImpl: raribleDrop.address,
       publicDrop: {
         mintPrice: 0,
         maxTotalMintableByWallet: 0,

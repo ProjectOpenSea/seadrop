@@ -11,6 +11,8 @@
 
 RaribleDrop is a contract for conducting primary NFT drops on evm-compatible blockchains.
 
+Forked from the [SeaDrop by OpenSea](https://github.com/ProjectOpenSea/seadrop)
+
 ## Table of Contents
 
 - [RaribleDrop](#raribleDrop)
@@ -32,51 +34,7 @@ RaribleDrop is a contract to perform primary drops on evm-compatible blockchains
 
 Future RaribleDrop contracts are envisioned to contain additional functionality like descending dutch auction mechanisms and payment in ERC20 tokens.
 
-## Deployments
-
-<table>
-<tr>
-<th>Network</th>
-<th>RaribleDrop 1.0</th>
-</tr>
-
-<tr><td>Ethereum</td><td rowspan="17">
-
-[0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
-
-</td></tr>
-<tr><td>Goerli</td></tr>
-<tr><td>Sepolia</td></tr>
-<tr><td>Polygon</td></tr>
-<tr><td>Polygon Mumbai</td></tr>
-<tr><td>Klaytn</td></tr>
-<tr><td>Klaytn Baobab</td></tr>
-<tr><td>Optimism</td></tr>
-<tr><td>Optimism Goerli</td></tr>
-<tr><td>Arbitrum One</td></tr>
-<tr><td>Arbitrum Nova</td></tr>
-<tr><td>Arbitrum Goerli</td></tr>
-<tr><td>Avalanche C-Chain</td></tr>
-<tr><td>Avalanche Fuji</td></tr>
-<tr><td>BSC</td></tr>
-<tr><td>BSC Testnet</td></tr>
-<tr><td>Gnosis Chain</td></tr>
-</table>
-
-To be deployed on other EVM chains:
-
-- Skale
-- Celo
-- Fantom
-- RSK
-
 To deploy to a new EVM chain, follow the [steps outlined here](docs/RaribleDropDeployment.md).
-
-## Diagram
-
-![RaribleDrop Diagram](img/raribleDrop-diagram.png)
-
-This diagram shows the logic flow in the case that a drop is hosted on OpenSea, with an optional mint hosted elsewhere. Note that a fee recipient is not required to integrate with RaribleDrop, and a fee recipient may be any address.
 
 ## Docs
 
@@ -90,7 +48,7 @@ This diagram shows the logic flow in the case that a drop is hosted on OpenSea, 
 To install dependencies and compile contracts:
 
 ```bash
-git clone --recurse-submodules https://github.com/ProjectOpenSea/raribleDrop && cd raribleDrop
+git clone --recurse-submodules https://github.com/rarible/open-edition-contracts && cd raribleDrop
 yarn install
 yarn build
 ```
@@ -196,15 +154,15 @@ When making a pull request, ensure that:
 
 [MIT](LICENSE) Copyright 2022 Ozone Networks, Inc.
 
-[version-badge]: https://img.shields.io/github/package-json/v/ProjectOpenSea/raribleDrop
-[version-link]: https://github.com/ProjectOpenSea/raribleDrop/blob/main/package.json
-[ci-badge]: https://github.com/ProjectOpenSea/raribleDrop/actions/workflows/test.yml/badge.svg
-[ci-link]: https://github.com/ProjectOpenSea/raribleDrop/actions/workflows/test.yml
-[coverage-badge]: https://coveralls.io/repos/github/ProjectOpenSea/raribleDrop/badge.svg?branch=main
-[coverage-link]: https://coveralls.io/github/ProjectOpenSea/raribleDrop?branch=main
-[license-badge]: https://img.shields.io/github/license/ProjectOpenSea/raribleDrop
-[license-link]: https://github.com/ProjectOpenSea/raribleDrop/blob/main/LICENSE
+[version-badge]: https://img.shields.io/github/package-json/v/rarible/open-edition-contracts
+[version-link]: https://github.com/rarible/open-edition-contracts/blob/main/package.json
+[ci-badge]: https://github.com/rarible/open-edition-contracts/actions/workflows/test.yml/badge.svg
+[ci-link]: https://github.com/rarible/open-edition-contracts/actions/workflows/test.yml
+[coverage-badge]: https://coveralls.io/repos/github/rarible/open-edition-contracts/badge.svg?branch=main
+[coverage-link]: https://coveralls.io/github/rarible/open-edition-contracts?branch=main
+[license-badge]: https://img.shields.io/github/license/rarible/open-edition-contracts
+[license-link]: https://github.com/rarible/open-edition-contracts/blob/main/LICENSE
 [docs-badge]: https://img.shields.io/badge/RaribleDrop-documentation-informational
-[docs-link]: https://github.com/ProjectOpenSea/raribleDrop/tree/main/docs
+[docs-link]: https://github.com/rarible/open-edition-contracts/tree/main/docs
 [discussions-badge]: https://img.shields.io/badge/RaribleDrop-discussions-blueviolet
-[discussions-link]: https://github.com/ProjectOpenSea/raribleDrop/discussions
+[discussions-link]: https://github.com/rarible/open-edition-contracts/discussions

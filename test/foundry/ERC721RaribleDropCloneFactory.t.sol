@@ -36,19 +36,19 @@ contract ERC721RaribleDropCloneFactoryTest is Test {
         assertEq(token.symbol(), "symbol", "symbol should be set");
         assertEq(token.owner(), address(this), "owner should be set");
         token.updateCreatorPayoutAddress(
-            factory.DEFAULT_SEADROP(),
+            factory.DEFAULT_RARIBLEDROP(),
             address(1234)
         );
-        RaribleDrop seaDrop = RaribleDrop(factory.DEFAULT_SEADROP());
+        RaribleDrop raribleDrop = RaribleDrop(factory.DEFAULT_RARIBLEDROP());
         assertEq(
-            seaDrop.getCreatorPayoutAddress(address(token)),
+            raribleDrop.getCreatorPayoutAddress(address(token)),
             address(1234)
         );
 
         assertEq(token.totalSupply(), 0);
 
         token.updatePublicDrop(
-            factory.DEFAULT_SEADROP(),
+            factory.DEFAULT_RARIBLEDROP(),
             PublicDrop({
                 mintPrice: 1 ether,
                 startTime: uint48(block.timestamp),
@@ -60,7 +60,7 @@ contract ERC721RaribleDropCloneFactoryTest is Test {
         );
         token.setMaxSupply(100);
 
-        seaDrop.mintPublic{ value: 1 ether }(
+        raribleDrop.mintPublic{ value: 1 ether }(
             address(token),
             address(1),
             address(0),

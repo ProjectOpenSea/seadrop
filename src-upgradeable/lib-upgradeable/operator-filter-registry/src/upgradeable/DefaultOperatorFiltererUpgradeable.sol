@@ -6,7 +6,7 @@ import { CANONICAL_CORI_SUBSCRIPTION } from "../lib/Constants.sol";
 
 /**
  * @title  DefaultOperatorFiltererUpgradeable
- * @notice Inherits from OperatorFiltererUpgradeable and automatically subscribes to the default OpenSea subscription
+ * @notice Inherits from OperatorFiltererUpgradeable and automatically subscribes to the default Rarible subscription
  *         when the init function is called.
  */
 abstract contract DefaultOperatorFiltererUpgradeable is

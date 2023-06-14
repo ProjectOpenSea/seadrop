@@ -9,7 +9,7 @@ An example script to deploy a token contract is located at [DeployAndConfigureEx
 To split responsibilities with an Administrator role who can set fee parameters, use [`ERC721PartnerRaribleDrop`](#erc721partnerraribleDrop).
 
 1. Deploy `src/ERC721RaribleDrop.sol` with constructor args `string name, string symbol, address[] allowedRaribleDrop`
-   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721RaribleDrop.sol:ERC721RaribleDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
+   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721RaribleDrop.sol:ERC721RaribleDrop --constructor-args "TokenTest1" "TEST1" \[${RARIBLEDROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Set the token max supply with `token.setMaxSupply()`
 1. Set the creator payout address with `token.updateCreatorPayoutAddress()`
 1. Set the contract URI with `token.setContractURI()`
@@ -29,7 +29,7 @@ To split responsibilities with an Administrator role who can set fee parameters,
 `ERC721PartnerRaribleDrop` is a token contract designed to split responsibilities between an Owner and Administrator.
 
 1. Deploy `src/ERC721PartnerRaribleDrop.sol` with constructor args `string name, string symbol, address administrator, address[] allowedRaribleDrop`
-   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721PartnerRaribleDrop.sol:ERC721PartnerRaribleDrop --constructor-args "TokenTest1" "TEST1" ${ADMIN_ADDRESS} \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
+   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721PartnerRaribleDrop.sol:ERC721PartnerRaribleDrop --constructor-args "TokenTest1" "TEST1" ${ADMIN_ADDRESS} \[${RARIBLEDROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Required to be sent by token Owner:
    1. Set the token max supply with `token.setMaxSupply()`
    1. Set the creator payout address with `token.updateCreatorPayoutAddress()`
@@ -154,10 +154,6 @@ Follows the pattern of `tokenURI` — could be either on-chain data blob or exte
   }
 }
 ```
-
-### Format of Allow List URI
-
-The allow list may be optionally encrypted with PGP when emitted with `updateAllowList()` to retain privacy. The OpenSea public key is available [here](https://opensea.io/.well-known/allowlist-pubkeys/mainnet/ALLOWLIST_ENCRYPTION_KEY_0.txt), although it may be rotated in the future, so please ask an OpenSea team member if it is the right key to use at the time of update.
 
 #### Example
 

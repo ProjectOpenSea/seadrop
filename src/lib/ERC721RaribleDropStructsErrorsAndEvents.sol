@@ -6,9 +6,9 @@ import {
   PublicDrop,
   SignedMintValidationParams,
   TokenGatedDropStage
-} from "./RaribleDropStructsUpgradeable.sol";
+} from "./RaribleDropStructs.sol";
 
-interface ERC721RaribleDropStructsErrorsAndEventsUpgradeable {
+interface ERC721RaribleDropStructsErrorsAndEvents {
   /**
    * @notice Revert with an error if mint exceeds the max supply.
    */
@@ -39,7 +39,7 @@ interface ERC721RaribleDropStructsErrorsAndEventsUpgradeable {
     uint256 maxSupply;
     string baseURI;
     string contractURI;
-    address seaDropImpl;
+    address raribleDropImpl;
     PublicDrop publicDrop;
     string dropURI;
     AllowListData allowListData;

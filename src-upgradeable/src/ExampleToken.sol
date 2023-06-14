@@ -12,7 +12,7 @@ library ExampleTokenStorage {
     }
 
     bytes32 internal constant STORAGE_SLOT =
-        keccak256("seaDrop.contracts.storage.exampleToken");
+        keccak256("raribleDrop.contracts.storage.exampleToken");
 
     function layout() internal pure returns (Layout storage l) {
         bytes32 slot = STORAGE_SLOT;

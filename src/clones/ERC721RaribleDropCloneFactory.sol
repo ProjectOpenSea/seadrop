@@ -6,14 +6,14 @@ import { ERC721RaribleDropCloneable } from "./ERC721RaribleDropCloneable.sol";
 import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 
 contract ERC721RaribleDropCloneFactory {
-    address public immutable seaDropCloneableUpgradeableImplementation;
-    address public constant DEFAULT_SEADROP =
+    address public immutable raribleDropCloneableUpgradeableImplementation;
+    address public constant DEFAULT_RARIBLEDROP =
         0x00005EA00Ac477B1030CE78506496e8C2dE24bf5;
 
     constructor() {
         ERC721RaribleDropCloneable impl = new ERC721RaribleDropCloneable();
         impl.initialize("", "", new address[](0), address(this));
-        seaDropCloneableUpgradeableImplementation = address(impl);
+        raribleDropCloneableUpgradeableImplementation = address(impl);
     }
 
     function createClone(
@@ -28,11 +28,11 @@ contract ERC721RaribleDropCloneFactory {
         );
 
         address instance = Clones.cloneDeterministic(
-            seaDropCloneableUpgradeableImplementation,
+            raribleDropCloneableUpgradeableImplementation,
             cloneSalt
         );
         address[] memory allowedRaribleDrop = new address[](1);
-        allowedRaribleDrop[0] = DEFAULT_SEADROP;
+        allowedRaribleDrop[0] = DEFAULT_RARIBLEDROP;
         ERC721RaribleDropCloneable(instance).initialize(
             name,
             symbol,

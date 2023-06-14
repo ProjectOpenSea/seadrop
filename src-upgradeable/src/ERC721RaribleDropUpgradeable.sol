@@ -2,70 +2,72 @@
 pragma solidity 0.8.17;
 
 import {
-    ERC721ContractMetadata,
-    IRaribleDropTokenContractMetadata
-} from "./ERC721ContractMetadata.sol";
+    ERC721ContractMetadataUpgradeable,
+    IRaribleDropTokenContractMetadataUpgradeable
+} from "./ERC721ContractMetadataUpgradeable.sol";
 
 import {
-    INonFungibleRaribleDropToken
-} from "./interfaces/INonFungibleRaribleDropToken.sol";
+    INonFungibleRaribleDropTokenUpgradeable
+} from "./interfaces/INonFungibleRaribleDropTokenUpgradeable.sol";
 
-import { IRaribleDrop } from "./interfaces/IRaribleDrop.sol";
+import { IRaribleDropUpgradeable } from "./interfaces/IRaribleDropUpgradeable.sol";
 
 import {
     AllowListData,
     PublicDrop,
     TokenGatedDropStage,
     SignedMintValidationParams
-} from "./lib/RaribleDropStructs.sol";
+} from "./lib/RaribleDropStructsUpgradeable.sol";
 
 import {
-    ERC721RaribleDropStructsErrorsAndEvents
-} from "./lib/ERC721RaribleDropStructsErrorsAndEvents.sol";
-
-import { ERC721A } from "ERC721A/ERC721A.sol";
-
-import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
+    ERC721RaribleDropStructsErrorsAndEventsUpgradeable
+} from "./lib/ERC721RaribleDropStructsErrorsAndEventsUpgradeable.sol";
 
 import {
-    IERC165
-} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
+    ReentrancyGuardUpgradeable
+} from "../lib-upgradeable/solmate/src/utils/ReentrancyGuardUpgradeable.sol";
 
 import {
-    DefaultOperatorFilterer
-} from "operator-filter-registry/DefaultOperatorFilterer.sol";
+    IERC165Upgradeable
+} from "../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+
+import {
+    DefaultOperatorFiltererUpgradeable
+} from "../lib-upgradeable/operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
+
+import { ERC721RaribleDropStorage } from "./ERC721RaribleDropStorage.sol";
+
+import {
+    ERC721ContractMetadataStorage
+} from "./ERC721ContractMetadataStorage.sol";
 
 /**
- * @title  ERC721RaribleDrop
+ * @title  ERC721RaribleDropUpgradeable
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
- * @author Michael Cohen (notmichael.eth)
  * @notice ERC721RaribleDrop is a token contract that contains methods
  *         to properly interact with RaribleDrop.
  */
-contract ERC721RaribleDrop is
-    ERC721ContractMetadata,
-    INonFungibleRaribleDropToken,
-    ERC721RaribleDropStructsErrorsAndEvents,
-    ReentrancyGuard,
-    DefaultOperatorFilterer
+contract ERC721RaribleDropUpgradeable is
+    ERC721ContractMetadataUpgradeable,
+    INonFungibleRaribleDropTokenUpgradeable,
+    ERC721RaribleDropStructsErrorsAndEventsUpgradeable,
+    ReentrancyGuardUpgradeable,
+    DefaultOperatorFiltererUpgradeable
 {
-    /// @notice Track the allowed RaribleDrop addresses.
-    mapping(address => bool) internal _allowedRaribleDrop;
-
-    /// @notice Track the enumerated allowed RaribleDrop addresses.
-    address[] internal _enumeratedAllowedRaribleDrop;
+    using ERC721RaribleDropStorage for ERC721RaribleDropStorage.Layout;
+    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
 
     /**
      * @dev Reverts if not an allowed RaribleDrop contract.
      *      This function is inlined instead of being a modifier
      *      to save contract space from being inlined N times.
      *
-     * @param seaDrop The RaribleDrop address to check if allowed.
+     * @param raribleDrop The RaribleDrop address to check if allowed.
      */
-    function _onlyAllowedRaribleDrop(address seaDrop) internal view {
-        if (_allowedRaribleDrop[seaDrop] != true) {
+    function _onlyAllowedRaribleDrop(address raribleDrop) internal view {
+        if (ERC721RaribleDropStorage.layout()._allowedRaribleDrop[raribleDrop] != true) {
             revert OnlyAllowedRaribleDrop();
         }
     }
@@ -74,24 +76,43 @@ contract ERC721RaribleDrop is
      * @notice Deploy the token contract with its name, symbol,
      *         and allowed RaribleDrop addresses.
      */
-    constructor(
+    function __ERC721RaribleDrop_init(
         string memory name,
         string memory symbol,
         address[] memory allowedRaribleDrop
-    ) ERC721ContractMetadata(name, symbol) {
+    ) internal onlyInitializing {
+        __ERC721A_init_unchained(name, symbol);
+        __ConstructorInitializable_init_unchained();
+        __TwoStepOwnable_init_unchained();
+        __ERC721ContractMetadata_init_unchained(name, symbol);
+        __ReentrancyGuard_init_unchained();
+        __DefaultOperatorFilterer_init();
+        __ERC721RaribleDrop_init_unchained(name, symbol, allowedRaribleDrop);
+    }
+
+    function __ERC721RaribleDrop_init_unchained(
+        string memory,
+        string memory,
+        address[] memory allowedRaribleDrop
+    ) internal onlyInitializing {
         // Put the length on the stack for more efficient access.
         uint256 allowedRaribleDropLength = allowedRaribleDrop.length;
 
         // Set the mapping for allowed RaribleDrop contracts.
         for (uint256 i = 0; i < allowedRaribleDropLength; ) {
-            _allowedRaribleDrop[allowedRaribleDrop[i]] = true;
+            ERC721RaribleDropStorage.layout()._allowedRaribleDrop[
+                allowedRaribleDrop[i]
+            ] = true;
+
             unchecked {
                 ++i;
             }
         }
 
         // Set the enumeration.
-        _enumeratedAllowedRaribleDrop = allowedRaribleDrop;
+        ERC721RaribleDropStorage
+            .layout()
+            ._enumeratedAllowedRaribleDrop = allowedRaribleDrop;
 
         // Emit an event noting the contract deployment.
         emit RaribleDropTokenDeployed();
@@ -119,13 +140,19 @@ contract ERC721RaribleDrop is
      */
     function _updateAllowedRaribleDrop(address[] calldata allowedRaribleDrop) internal {
         // Put the length on the stack for more efficient access.
-        uint256 enumeratedAllowedRaribleDropLength = _enumeratedAllowedRaribleDrop
+        uint256 enumeratedAllowedRaribleDropLength = ERC721RaribleDropStorage
+            .layout()
+            ._enumeratedAllowedRaribleDrop
             .length;
+
         uint256 allowedRaribleDropLength = allowedRaribleDrop.length;
 
         // Reset the old mapping.
         for (uint256 i = 0; i < enumeratedAllowedRaribleDropLength; ) {
-            _allowedRaribleDrop[_enumeratedAllowedRaribleDrop[i]] = false;
+            ERC721RaribleDropStorage.layout()._allowedRaribleDrop[
+                ERC721RaribleDropStorage.layout()._enumeratedAllowedRaribleDrop[i]
+            ] = false;
+
             unchecked {
                 ++i;
             }
@@ -133,14 +160,19 @@ contract ERC721RaribleDrop is
 
         // Set the new mapping for allowed RaribleDrop contracts.
         for (uint256 i = 0; i < allowedRaribleDropLength; ) {
-            _allowedRaribleDrop[allowedRaribleDrop[i]] = true;
+            ERC721RaribleDropStorage.layout()._allowedRaribleDrop[
+                allowedRaribleDrop[i]
+            ] = true;
+
             unchecked {
                 ++i;
             }
         }
 
         // Set the enumeration.
-        _enumeratedAllowedRaribleDrop = allowedRaribleDrop;
+        ERC721RaribleDropStorage
+            .layout()
+            ._enumeratedAllowedRaribleDrop = allowedRaribleDrop;
 
         // Emit an event for the update.
         emit AllowedRaribleDropUpdated(allowedRaribleDrop);
@@ -235,42 +267,42 @@ contract ERC721RaribleDrop is
      * @notice Update the public drop data for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param publicDrop  The public drop data.
      */
     function updatePublicDrop(
-        address seaDropImpl,
+        address raribleDropImpl,
         PublicDrop calldata publicDrop
     ) external virtual override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the public drop data on RaribleDrop.
-        IRaribleDrop(seaDropImpl).updatePublicDrop(publicDrop);
+        IRaribleDropUpgradeable(raribleDropImpl).updatePublicDrop(publicDrop);
     }
 
     /**
      * @notice Update the allow list data for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl   The allowed RaribleDrop contract.
+     * @param raribleDropImpl   The allowed RaribleDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
-        address seaDropImpl,
+        address raribleDropImpl,
         AllowListData calldata allowListData
     ) external virtual override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the allow list on RaribleDrop.
-        IRaribleDrop(seaDropImpl).updateAllowList(allowListData);
+        IRaribleDropUpgradeable(raribleDropImpl).updateAllowList(allowListData);
     }
 
     /**
@@ -285,12 +317,12 @@ contract ERC721RaribleDrop is
      *         `allowedNftToken` is not running an active drop during the
      *         `dropStage` time period.
      *
-     * @param seaDropImpl     The allowed RaribleDrop contract.
+     * @param raribleDropImpl     The allowed RaribleDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
-        address seaDropImpl,
+        address raribleDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external virtual override {
@@ -298,20 +330,23 @@ contract ERC721RaribleDrop is
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the token gated drop stage.
-        IRaribleDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
+        IRaribleDropUpgradeable(raribleDropImpl).updateTokenGatedDrop(
+            allowedNftToken,
+            dropStage
+        );
     }
 
     /**
      * @notice Update the drop URI for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param dropURI     The new drop URI.
      */
-    function updateDropURI(address seaDropImpl, string calldata dropURI)
+    function updateDropURI(address raribleDropImpl, string calldata dropURI)
         external
         virtual
         override
@@ -320,32 +355,33 @@ contract ERC721RaribleDrop is
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the drop URI.
-        IRaribleDrop(seaDropImpl).updateDropURI(dropURI);
+        IRaribleDropUpgradeable(raribleDropImpl).updateDropURI(dropURI);
     }
 
     /**
-     * @notice Update the creator payout address for this nft contract on
-     *         RaribleDrop.
+     * @notice Update the creator payout address for this nft contract on RaribleDrop.
      *         Only the owner can set the creator payout address.
      *
-     * @param seaDropImpl   The allowed RaribleDrop contract.
+     * @param raribleDropImpl   The allowed RaribleDrop contract.
      * @param payoutAddress The new payout address.
      */
     function updateCreatorPayoutAddress(
-        address seaDropImpl,
+        address raribleDropImpl,
         address payoutAddress
     ) external {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the creator payout address.
-        IRaribleDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
+        IRaribleDropUpgradeable(raribleDropImpl).updateCreatorPayoutAddress(
+            payoutAddress
+        );
     }
 
     /**
@@ -353,12 +389,12 @@ contract ERC721RaribleDrop is
      *         on RaribleDrop.
      *         Only the owner can set the allowed fee recipient.
      *
-     * @param seaDropImpl  The allowed RaribleDrop contract.
+     * @param raribleDropImpl  The allowed RaribleDrop contract.
      * @param feeRecipient The new fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(
-        address seaDropImpl,
+        address raribleDropImpl,
         address feeRecipient,
         bool allowed
     ) external virtual {
@@ -366,10 +402,13 @@ contract ERC721RaribleDrop is
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the allowed fee recipient.
-        IRaribleDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
+        IRaribleDropUpgradeable(raribleDropImpl).updateAllowedFeeRecipient(
+            feeRecipient,
+            allowed
+        );
     }
 
     /**
@@ -377,13 +416,13 @@ contract ERC721RaribleDrop is
      *         on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl                The allowed RaribleDrop contract.
+     * @param raribleDropImpl                The allowed RaribleDrop contract.
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters to
      *                                   enforce for signed mints.
      */
     function updateSignedMintValidationParams(
-        address seaDropImpl,
+        address raribleDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
     ) external virtual override {
@@ -391,10 +430,10 @@ contract ERC721RaribleDrop is
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the signer.
-        IRaribleDrop(seaDropImpl).updateSignedMintValidationParams(
+        IRaribleDropUpgradeable(raribleDropImpl).updateSignedMintValidationParams(
             signer,
             signedMintValidationParams
         );
@@ -404,12 +443,12 @@ contract ERC721RaribleDrop is
      * @notice Update the allowed payers for this nft contract on RaribleDrop.
      *         Only the owner can use this function.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
     function updatePayer(
-        address seaDropImpl,
+        address raribleDropImpl,
         address payer,
         bool allowed
     ) external virtual override {
@@ -417,10 +456,10 @@ contract ERC721RaribleDrop is
         _onlyOwnerOrSelf();
 
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the payer.
-        IRaribleDrop(seaDropImpl).updatePayer(payer, allowed);
+        IRaribleDropUpgradeable(raribleDropImpl).updatePayer(payer, allowed);
     }
 
     /**
@@ -446,7 +485,7 @@ contract ERC721RaribleDrop is
     {
         minterNumMinted = _numberMinted(minter);
         currentTotalSupply = _totalMinted();
-        maxSupply = _maxSupply;
+        maxSupply = ERC721ContractMetadataStorage.layout()._maxSupply;
     }
 
     /**
@@ -458,12 +497,14 @@ contract ERC721RaribleDrop is
         public
         view
         virtual
-        override(IERC165, ERC721ContractMetadata)
+        override(IERC165Upgradeable, ERC721ContractMetadataUpgradeable)
         returns (bool)
     {
         return
-            interfaceId == type(INonFungibleRaribleDropToken).interfaceId ||
-            interfaceId == type(IRaribleDropTokenContractMetadata).interfaceId ||
+            interfaceId ==
+            type(INonFungibleRaribleDropTokenUpgradeable).interfaceId ||
+            interfaceId ==
+            type(IRaribleDropTokenContractMetadataUpgradeable).interfaceId ||
             // ERC721ContractMetadata returns supportsInterface true for
             //     EIP-2981
             // ERC721A returns supportsInterface true for
@@ -599,17 +640,17 @@ contract ERC721RaribleDrop is
                 _cast(config.publicDrop.endTime != 0) ==
             1
         ) {
-            this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
+            this.updatePublicDrop(config.raribleDropImpl, config.publicDrop);
         }
         if (bytes(config.dropURI).length != 0) {
-            this.updateDropURI(config.seaDropImpl, config.dropURI);
+            this.updateDropURI(config.raribleDropImpl, config.dropURI);
         }
         if (config.allowListData.merkleRoot != bytes32(0)) {
-            this.updateAllowList(config.seaDropImpl, config.allowListData);
+            this.updateAllowList(config.raribleDropImpl, config.allowListData);
         }
         if (config.creatorPayoutAddress != address(0)) {
             this.updateCreatorPayoutAddress(
-                config.seaDropImpl,
+                config.raribleDropImpl,
                 config.creatorPayoutAddress
             );
         }
@@ -619,7 +660,7 @@ contract ERC721RaribleDrop is
         if (config.allowedFeeRecipients.length > 0) {
             for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
                 this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.allowedFeeRecipients[i],
                     true
                 );
@@ -631,7 +672,7 @@ contract ERC721RaribleDrop is
         if (config.disallowedFeeRecipients.length > 0) {
             for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
                 this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.disallowedFeeRecipients[i],
                     false
                 );
@@ -643,7 +684,7 @@ contract ERC721RaribleDrop is
         if (config.allowedPayers.length > 0) {
             for (uint256 i = 0; i < config.allowedPayers.length; ) {
                 this.updatePayer(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.allowedPayers[i],
                     true
                 );
@@ -655,7 +696,7 @@ contract ERC721RaribleDrop is
         if (config.disallowedPayers.length > 0) {
             for (uint256 i = 0; i < config.disallowedPayers.length; ) {
                 this.updatePayer(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.disallowedPayers[i],
                     false
                 );
@@ -673,7 +714,7 @@ contract ERC721RaribleDrop is
             }
             for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
                 this.updateTokenGatedDrop(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.tokenGatedAllowedNftTokens[i],
                     config.tokenGatedDropStages[i]
                 );
@@ -690,7 +731,7 @@ contract ERC721RaribleDrop is
             ) {
                 TokenGatedDropStage memory emptyStage;
                 this.updateTokenGatedDrop(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.disallowedTokenGatedAllowedNftTokens[i],
                     emptyStage
                 );
@@ -712,7 +753,7 @@ contract ERC721RaribleDrop is
 
             ) {
                 this.updateSignedMintValidationParams(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.signers[i],
                     config.signedMintValidationParams[i]
                 );
@@ -725,7 +766,7 @@ contract ERC721RaribleDrop is
             for (uint256 i = 0; i < config.disallowedSigners.length; ) {
                 SignedMintValidationParams memory emptyParams;
                 this.updateSignedMintValidationParams(
-                    config.seaDropImpl,
+                    config.raribleDropImpl,
                     config.disallowedSigners[i],
                     emptyParams
                 );

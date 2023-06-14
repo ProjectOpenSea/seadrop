@@ -99,25 +99,25 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
      *
      *         The administrator can only update `feeBps`.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param publicDrop  The public drop data.
      */
     function updatePublicDrop(
-        address seaDropImpl,
+        address raribleDropImpl,
         PublicDrop calldata publicDrop
     ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Track the previous public drop data.
-        PublicDrop memory retrieved = IRaribleDrop(seaDropImpl).getPublicDrop(
+        PublicDrop memory retrieved = IRaribleDrop(raribleDropImpl).getPublicDrop(
             address(this)
         );
 
         // Track the newly supplied drop data.
         PublicDrop memory supplied = publicDrop;
 
-        // Only the administrator (OpenSea) can set feeBps.
+        // Only the administrator (Rarible) can set feeBps.
         if (msg.sender != administrator) {
             // Administrator must first set fee.
             if (retrieved.maxTotalMintableByWallet == 0) {
@@ -140,25 +140,25 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
         }
 
         // Update the public drop data on RaribleDrop.
-        IRaribleDrop(seaDropImpl).updatePublicDrop(supplied);
+        IRaribleDrop(raribleDropImpl).updatePublicDrop(supplied);
     }
 
     /**
      * @notice Update the allow list data for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl   The allowed RaribleDrop contract.
+     * @param raribleDropImpl   The allowed RaribleDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
-        address seaDropImpl,
+        address raribleDropImpl,
         AllowListData calldata allowListData
     ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the allow list on RaribleDrop.
-        IRaribleDrop(seaDropImpl).updateAllowList(allowListData);
+        IRaribleDrop(raribleDropImpl).updateAllowList(allowListData);
     }
 
     /**
@@ -175,26 +175,26 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
      *         `allowedNftToken` is not running an active drop during the
      *         `dropStage` time period.
      *
-     * @param seaDropImpl     The allowed RaribleDrop contract.
+     * @param raribleDropImpl     The allowed RaribleDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
-        address seaDropImpl,
+        address raribleDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Track the previous drop stage data.
-        TokenGatedDropStage memory retrieved = IRaribleDrop(seaDropImpl)
+        TokenGatedDropStage memory retrieved = IRaribleDrop(raribleDropImpl)
             .getTokenGatedDrop(address(this), allowedNftToken);
 
         // Track the newly supplied drop data.
         TokenGatedDropStage memory supplied = dropStage;
 
-        // Only the administrator (OpenSea) can set feeBps on Partner
+        // Only the administrator (Rarible) can set feeBps on Partner
         // contracts.
         if (msg.sender != administrator) {
             // Administrator must first set fee.
@@ -218,27 +218,27 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
         }
 
         // Update the token gated drop stage.
-        IRaribleDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, supplied);
+        IRaribleDrop(raribleDropImpl).updateTokenGatedDrop(allowedNftToken, supplied);
     }
 
     /**
      * @notice Update the drop URI for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param dropURI     The new drop URI.
      */
-    function updateDropURI(address seaDropImpl, string calldata dropURI)
+    function updateDropURI(address raribleDropImpl, string calldata dropURI)
         external
         virtual
         override
         onlyOwnerOrAdministrator
     {
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the drop URI.
-        IRaribleDrop(seaDropImpl).updateDropURI(dropURI);
+        IRaribleDrop(raribleDropImpl).updateDropURI(dropURI);
     }
 
     /**
@@ -246,20 +246,20 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
      *         on RaribleDrop.
      *         Only the administrator can set the allowed fee recipient.
      *
-     * @param seaDropImpl  The allowed RaribleDrop contract.
+     * @param raribleDropImpl  The allowed RaribleDrop contract.
      * @param feeRecipient The new fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
     function updateAllowedFeeRecipient(
-        address seaDropImpl,
+        address raribleDropImpl,
         address feeRecipient,
         bool allowed
     ) external override onlyAdministrator {
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the allowed fee recipient.
-        IRaribleDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
+        IRaribleDrop(raribleDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
 
     /**
@@ -267,27 +267,27 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
      *         on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl                The allowed RaribleDrop contract.
+     * @param raribleDropImpl                The allowed RaribleDrop contract.
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters to
      *                                   enforce for signed mints.
      */
     function updateSignedMintValidationParams(
-        address seaDropImpl,
+        address raribleDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
     ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Track the previous signed mint validation params.
-        SignedMintValidationParams memory retrieved = IRaribleDrop(seaDropImpl)
+        SignedMintValidationParams memory retrieved = IRaribleDrop(raribleDropImpl)
             .getSignedMintValidationParams(address(this), signer);
 
         // Track the newly supplied params.
         SignedMintValidationParams memory supplied = signedMintValidationParams;
 
-        // Only the administrator (OpenSea) can set feeBps on Partner
+        // Only the administrator (Rarible) can set feeBps on Partner
         // contracts.
         if (msg.sender != administrator) {
             // Administrator must first set fee.
@@ -312,7 +312,7 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
         }
 
         // Update the signed mint validation params.
-        IRaribleDrop(seaDropImpl).updateSignedMintValidationParams(
+        IRaribleDrop(raribleDropImpl).updateSignedMintValidationParams(
             signer,
             supplied
         );
@@ -322,19 +322,19 @@ contract ERC721PartnerRaribleDrop is ERC721RaribleDrop, TwoStepAdministered {
      * @notice Update the allowed payers for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
     function updatePayer(
-        address seaDropImpl,
+        address raribleDropImpl,
         address payer,
         bool allowed
     ) external virtual override onlyOwnerOrAdministrator {
         // Ensure the RaribleDrop is allowed.
-        _onlyAllowedRaribleDrop(seaDropImpl);
+        _onlyAllowedRaribleDrop(raribleDropImpl);
 
         // Update the payer.
-        IRaribleDrop(seaDropImpl).updatePayer(payer, allowed);
+        IRaribleDrop(raribleDropImpl).updatePayer(payer, allowed);
     }
 }

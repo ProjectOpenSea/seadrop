@@ -78,11 +78,11 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      *
      *         The administrator can only update `feeBps`.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param publicDrop  The public drop data.
      */
     function updatePublicDrop(
-        address seaDropImpl,
+        address raribleDropImpl,
         PublicDrop calldata publicDrop
     ) external;
 
@@ -90,11 +90,11 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      * @notice Update the allow list data for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl   The allowed RaribleDrop contract.
+     * @param raribleDropImpl   The allowed RaribleDrop contract.
      * @param allowListData The allow list data.
      */
     function updateAllowList(
-        address seaDropImpl,
+        address raribleDropImpl,
         AllowListData calldata allowListData
     ) external;
 
@@ -113,12 +113,12 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      *         `dropStage` time period.
      *
      *
-     * @param seaDropImpl     The allowed RaribleDrop contract.
+     * @param raribleDropImpl     The allowed RaribleDrop contract.
      * @param allowedNftToken The allowed nft token.
      * @param dropStage       The token gated drop stage data.
      */
     function updateTokenGatedDrop(
-        address seaDropImpl,
+        address raribleDropImpl,
         address allowedNftToken,
         TokenGatedDropStage calldata dropStage
     ) external;
@@ -127,10 +127,10 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      * @notice Update the drop URI for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param dropURI     The new drop URI.
      */
-    function updateDropURI(address seaDropImpl, string calldata dropURI)
+    function updateDropURI(address raribleDropImpl, string calldata dropURI)
         external;
 
     /**
@@ -138,11 +138,11 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      *         RaribleDrop.
      *         Only the owner can set the creator payout address.
      *
-     * @param seaDropImpl   The allowed RaribleDrop contract.
+     * @param raribleDropImpl   The allowed RaribleDrop contract.
      * @param payoutAddress The new payout address.
      */
     function updateCreatorPayoutAddress(
-        address seaDropImpl,
+        address raribleDropImpl,
         address payoutAddress
     ) external;
 
@@ -151,11 +151,11 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      *         on RaribleDrop.
      *         Only the administrator can set the allowed fee recipient.
      *
-     * @param seaDropImpl  The allowed RaribleDrop contract.
+     * @param raribleDropImpl  The allowed RaribleDrop contract.
      * @param feeRecipient The new fee recipient.
      */
     function updateAllowedFeeRecipient(
-        address seaDropImpl,
+        address raribleDropImpl,
         address feeRecipient,
         bool allowed
     ) external;
@@ -165,13 +165,13 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      *         on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl                The allowed RaribleDrop contract.
+     * @param raribleDropImpl                The allowed RaribleDrop contract.
      * @param signer                     The signer to update.
      * @param signedMintValidationParams Minimum and maximum parameters
      *                                   to enforce for signed mints.
      */
     function updateSignedMintValidationParams(
-        address seaDropImpl,
+        address raribleDropImpl,
         address signer,
         SignedMintValidationParams memory signedMintValidationParams
     ) external;
@@ -180,12 +180,12 @@ interface INonFungibleRaribleDropToken is IRaribleDropTokenContractMetadata {
      * @notice Update the allowed payers for this nft contract on RaribleDrop.
      *         Only the owner or administrator can use this function.
      *
-     * @param seaDropImpl The allowed RaribleDrop contract.
+     * @param raribleDropImpl The allowed RaribleDrop contract.
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
     function updatePayer(
-        address seaDropImpl,
+        address raribleDropImpl,
         address payer,
         bool allowed
     ) external;
