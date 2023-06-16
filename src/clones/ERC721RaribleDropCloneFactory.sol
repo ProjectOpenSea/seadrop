@@ -8,7 +8,7 @@ import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 contract ERC721RaribleDropCloneFactory {
     address public immutable raribleDropCloneableUpgradeableImplementation;
     address public constant DEFAULT_RARIBLEDROP =
-        0x00005EA00Ac477B1030CE78506496e8C2dE24bf5;
+        0x4FB8F577fF999BC29e5d99D758428D824664D663;
 
     constructor() {
         ERC721RaribleDropCloneable impl = new ERC721RaribleDropCloneable();

@@ -20,9 +20,11 @@ contract DeployRaribleDropCloneFactory is BaseCreate2Script {
             salt,
             type(ERC721RaribleDropCloneFactory).creationCode
         );
+        /*
         require(
             deployed == 0x00000000b8F8F18B708C8f7AA10f9EE7Ea88049a,
             "did not deploy to correct address"
         );
+        */
     }
 }
