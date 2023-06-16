@@ -545,6 +545,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             dropStage.maxTotalMintableByWallet,
             dropStage.maxTokenSupplyForStage
         );
+        
+        // Cache the storage pointer for cheaper access.
+        mapping(uint256 => bool)
+                storage redeemedTokenIds = _tokenGatedRedeemed[nftContract][
+                    allowedNftToken
+                ];
 
         // Iterate through each allowedNftTokenId
         // to ensure it is not already redeemed.
@@ -560,12 +566,6 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
                     tokenId
                 );
             }
-
-            // Cache the storage pointer for cheaper access.
-            mapping(uint256 => bool)
-                storage redeemedTokenIds = _tokenGatedRedeemed[nftContract][
-                    allowedNftToken
-                ];
 
             // Check that the token id has not already been redeemed.
             if (redeemedTokenIds[tokenId]) {
