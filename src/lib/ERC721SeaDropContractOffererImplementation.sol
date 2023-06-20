@@ -927,16 +927,11 @@ contract ERC721SeaDropContractOffererImplementation is
         uint256 maxTokenSupplyForStage
     ) internal view {
         // Get the mint stats from the token contract.
-        (bool success, bytes memory data) = address(this).staticcall(
-            abi.encodeWithSelector(IERC721SeaDrop.getMintStats.selector, minter)
-        );
-
-        // Require that the call was successful.
-        if (!success) _revertWithReason(data);
-
-        // Decode the returned mint stats.
-        (uint256 minterNumMinted, uint256 totalMinted, uint256 maxSupply) = abi
-            .decode(data, (uint256, uint256, uint256));
+        (
+            uint256 minterNumMinted,
+            uint256 totalMinted,
+            uint256 maxSupply
+        ) = IERC721SeaDrop(address(this)).getMintStats(minter);
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
         if (quantity + minterNumMinted > maxTotalMintableByWallet) {

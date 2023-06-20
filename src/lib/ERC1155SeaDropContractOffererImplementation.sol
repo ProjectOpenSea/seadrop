@@ -1165,24 +1165,12 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 maxTokenSupplyForStage
     ) internal view {
         // Get the mint stats from the token contract.
-        (bool success, bytes memory data) = address(this).staticcall(
-            abi.encodeWithSelector(
-                IERC1155SeaDrop.getMintStats.selector,
-                minter,
-                tokenId
-            )
-        );
-
-        // Require that the call was successful.
-        if (!success) _revertWithReason(data);
-
-        // Decode the returned mint stats.
         (
             uint256 minterNumMinted,
             uint256 minterNumMintedForTokenId,
             uint256 totalMintedForTokenId,
             uint256 maxSupply
-        ) = abi.decode(data, (uint256, uint256, uint256, uint256));
+        ) = IERC1155SeaDrop(address(this)).getMintStats(minter, tokenId);
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWalletPerToken.
         if (
