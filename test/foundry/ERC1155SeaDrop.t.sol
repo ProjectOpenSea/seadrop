@@ -356,4 +356,66 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
             recipient: address(0)
         });
     }
+
+    function testPOCEmptyMinimumReceived() public {
+        // This test ensures that an empty minimumReceived is not allowed.
+        address feeRecipient = address(0xfee);
+        address creator = address(0xc1ea101);
+        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
+            feeRecipient,
+            true
+        );
+        token.setMaxSupply(1, 10);
+        token.setMaxSupply(3, 10);
+        setSingleCreatorPayout(creator);
+
+        // A free mint
+        PublicDrop memory publicDrop = PublicDrop({
+            startPrice: 0 ether,
+            endPrice: 0 ether,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp + 500),
+            paymentToken: address(0),
+            fromTokenId: 1,
+            toTokenId: 3,
+            maxTotalMintableByWallet: 6,
+            maxTotalMintableByWalletPerToken: 5,
+            feeBps: uint16(feeBps),
+            restrictFeeRecipients: true
+        });
+        IERC1155SeaDrop(address(token)).updatePublicDrop(publicDrop, 0);
+
+        configureSeaDropOrderParameters();
+
+        address minter = address(this);
+        bytes memory extraData = bytes.concat(
+            bytes1(0x00), // SIP-6 version byte
+            bytes1(0x00), // substandard version byte: public mint
+            bytes20(feeRecipient),
+            bytes20(minter),
+            bytes1(0x00) // public drop index 0
+        );
+
+        AdvancedOrder memory order = AdvancedOrder({
+            parameters: baseOrderParameters,
+            numerator: 1,
+            denominator: 1,
+            signature: "",
+            extraData: extraData
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidContractOrder.selector,
+                (uint256(uint160(address(token))) << 96) +
+                    consideration.getContractOffererNonce(address(token))
+            )
+        );
+        consideration.fulfillAdvancedOrder{ value: 0 ether }({
+            advancedOrder: order,
+            criteriaResolvers: criteriaResolvers,
+            fulfillerConduitKey: bytes32(0),
+            recipient: address(0)
+        });
+    }
 }
