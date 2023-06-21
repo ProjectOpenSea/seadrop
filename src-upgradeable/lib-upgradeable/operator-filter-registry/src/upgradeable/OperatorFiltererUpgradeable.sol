@@ -19,7 +19,7 @@ abstract contract OperatorFiltererUpgradeable is Initializable {
     error OperatorNotAllowed(address operator);
 
     IOperatorFilterRegistry constant OPERATOR_FILTER_REGISTRY =
-        IOperatorFilterRegistry(0x000000000000AAeB6D7670E522A718067333cd4E);
+        IOperatorFilterRegistry(0x044Ae8A69a6d009b7B74a4d85273b4373C0CAaE0);
 
     /// @dev The upgradeable initialize function that should be called when the contract is being upgraded.
     function __OperatorFilterer_init(
