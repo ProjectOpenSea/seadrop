@@ -127,17 +127,19 @@ export const createMintOrder = async ({
   }
 
   const creatorPayouts = await tokenSeaDropInterface.getCreatorPayouts();
-  for (const creatorPayout of creatorPayouts) {
-    const amount = creatorAmount.mul(creatorPayout.basisPoints).div(10_000);
-    const considerationItem = {
-      itemType,
-      token: paymentTokenAddress,
-      identifierOrCriteria: toBN(0),
-      startAmount: amount,
-      endAmount: amount,
-      recipient: creatorPayout.payoutAddress,
-    };
-    consideration.push(considerationItem);
+  if (creatorAmount.gt(0)) {
+    for (const creatorPayout of creatorPayouts) {
+      const amount = creatorAmount.mul(creatorPayout.basisPoints).div(10_000);
+      const considerationItem = {
+        itemType,
+        token: paymentTokenAddress,
+        identifierOrCriteria: toBN(0),
+        startAmount: amount,
+        endAmount: amount,
+        recipient: creatorPayout.payoutAddress,
+      };
+      consideration.push(considerationItem);
+    }
   }
 
   const parameters: OrderParameters = {

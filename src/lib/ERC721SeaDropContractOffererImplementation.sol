@@ -1024,7 +1024,7 @@ contract ERC721SeaDropContractOffererImplementation is
 
         // Initialize the returned array with the correct length.
         receivedItems = new ReceivedItem[](
-            startIndexWithFee + creatorPayoutsLength
+            startIndexWithFee + (payoutAmount != 0 ? creatorPayoutsLength : 0)
         );
 
         // Add a consideration item for the fee recipient.
@@ -1039,25 +1039,27 @@ contract ERC721SeaDropContractOffererImplementation is
         }
 
         // Add a consideration item for each creator payout.
-        for (uint256 i = 0; i < creatorPayoutsLength; ) {
-            // Put the creator payout on the stack.
-            CreatorPayout memory creatorPayout = creatorPayouts[i];
+        if (payoutAmount != 0) {
+            for (uint256 i = 0; i < creatorPayoutsLength; ) {
+                // Put the creator payout on the stack.
+                CreatorPayout memory creatorPayout = creatorPayouts[i];
 
-            // Get the creator payout amount.
-            // Note that the payout amount is rounded down.
-            uint256 creatorPayoutAmount = (payoutAmount *
-                creatorPayout.basisPoints) / 10_000;
+                // Get the creator payout amount.
+                // Note that the payout amount is rounded down.
+                uint256 creatorPayoutAmount = (payoutAmount *
+                    creatorPayout.basisPoints) / 10_000;
 
-            receivedItems[startIndexWithFee + i] = ReceivedItem({
-                itemType: itemType,
-                token: paymentToken,
-                identifier: uint256(0),
-                amount: creatorPayoutAmount,
-                recipient: payable(creatorPayout.payoutAddress)
-            });
+                receivedItems[startIndexWithFee + i] = ReceivedItem({
+                    itemType: itemType,
+                    token: paymentToken,
+                    identifier: uint256(0),
+                    amount: creatorPayoutAmount,
+                    recipient: payable(creatorPayout.payoutAddress)
+                });
 
-            unchecked {
-                ++i;
+                unchecked {
+                    ++i;
+                }
             }
         }
     }

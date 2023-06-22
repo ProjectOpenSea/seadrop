@@ -269,19 +269,22 @@ contract SeaDrop721Test is
         );
 
         // Add consideration items for creator payouts.
-        CreatorPayout[] memory creatorPayouts = IERC721SeaDrop(address(token))
-            .getCreatorPayouts();
-        for (uint256 i = 0; i < creatorPayouts.length; i++) {
-            uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /
-                10_000;
-            addConsiderationItem(
-                payable(creatorPayouts[i].payoutAddress),
-                ItemType.NATIVE,
-                address(0),
-                0,
-                amount,
-                amount
-            );
+        if (creatorAmount != 0) {
+            CreatorPayout[] memory creatorPayouts = IERC721SeaDrop(
+                address(token)
+            ).getCreatorPayouts();
+            for (uint256 i = 0; i < creatorPayouts.length; i++) {
+                uint256 amount = (creatorAmount *
+                    creatorPayouts[i].basisPoints) / 10_000;
+                addConsiderationItem(
+                    payable(creatorPayouts[i].payoutAddress),
+                    ItemType.NATIVE,
+                    address(0),
+                    0,
+                    amount,
+                    amount
+                );
+            }
         }
     }
 

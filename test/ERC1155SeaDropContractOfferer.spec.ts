@@ -1379,6 +1379,42 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     });
   });
 
+  it("Should be able to mint with 100% fee bps", async () => {
+    await tokenSeaDropInterface.updatePublicDrop(
+      { 
+        ...publicDrop,
+        feeBps: 10_000, // 100%
+       },
+      0
+    );
+
+    const { order, value } = await createMintOrder({
+      token,
+      tokenSeaDropInterface,
+      tokenIds: [0],
+      quantities: [1],
+      publicDropIndex: 0,
+      feeRecipient,
+      feeBps: 10_000, 
+      price: publicDrop.startPrice,
+      minter,
+      mintType: MintType.PUBLIC,
+    });
+
+    await expect(
+      marketplaceContract
+        .connect(minter)
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+    )
+      .to.emit(token, "SeaDropMint")
+      .withArgs(
+        minter.address, // payer
+        0
+      );
+
+    expect(await token.balanceOf(minter.address, 0)).to.eq(1);
+  });
+
   it("Should return errors for invalid encodings", async () => {
     const { order, value } = await createMintOrder({
       token,
