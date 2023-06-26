@@ -7,16 +7,17 @@ import {
 } from "../src/clones/ERC721RaribleDropCloneFactory.sol";
 import {ScriptBase, console2} from "./ScriptBase.sol";
 
-contract DeployRaribleDropCloneFactory is ScriptBase {
+contract DeployCollectionWithFactory is ScriptBase {
+    ERC721RaribleDropCloneFactory constant factory =
+        ERC721RaribleDropCloneFactory(0x4a6f0452f21dB81Da87bCB6a940a73D523E4218E);
+
     function run() public {
         setUp();
-        bytes memory creationCode = type(ERC721RaribleDropCloneFactory).creationCode;
-        console2.logBytes32(keccak256(creationCode));
         bytes32 salt = bytes32(0x0000000000000000000000000000000000000000d40ba0de8b5adb1cc4070000);
-        // bytes32 salt = bytes32(0);
-
+        string memory name = "Test Token";
+        string memory symbol = "TT";
         vm.broadcast(deployer);
-        address operatorFilterRegistry = IMMUTABLE_CREATE2_FACTORY.safeCreate2(salt, creationCode);
-        console2.logAddress(operatorFilterRegistry);
+        address res = factory.createClone(name, symbol, salt);
+        console2.logAddress(res);
     }
 }

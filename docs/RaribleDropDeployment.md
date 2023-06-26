@@ -6,6 +6,8 @@ If you would like to deploy your own `RaribleDrop` instance, you can do so with:
 
 `forge create --rpc-url ${RPC_URL} src/RaribleDrop.sol:RaribleDrop --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 
+`forge create --rpc-url ${RPC_URL} src/clones/ERC721RaribleDropCloneFactory.sol:ERC721RaribleDropCloneFactory --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
+
 To deploy at the cross-chain address of `0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`, send:
 
 ```

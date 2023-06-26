@@ -12,8 +12,8 @@ import { PublicDrop } from "../src/lib/RaribleDropStructs.sol";
 contract DeployAndConfigureExampleToken is Script {
     // Addresses
     address raribleDrop = 0x00005EA00Ac477B1030CE78506496e8C2dE24bf5;
-    address creator = 0x26faf8AE18d15Ed1CA0563727Ad6D4Aa02fb2F80;
-    address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
+    address creator = 0x5b04Bd4CF6ac8F976a1d578b7156206b781ca861;
+    address feeRecipient = 0x5b04Bd4CF6ac8F976a1d578b7156206b781ca861;
 
     // Token config
     uint256 maxSupply = 100;
