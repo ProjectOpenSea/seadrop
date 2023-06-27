@@ -180,7 +180,10 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(payer)
-        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, {
+          value,
+          gasLimit: 100_000,
+        })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -232,7 +235,10 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(payer)
-        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, {
+          value,
+          gasLimit: 100_000,
+        })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
@@ -242,7 +248,10 @@ describe(`ERC721SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, {
+          value,
+          gasLimit: 100_000,
+        })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
