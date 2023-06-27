@@ -8,7 +8,6 @@ import {
   IERC2981__factory,
   IERC721ContractMetadata__factory,
   IERC721SeaDrop__factory,
-  IERC721__factory,
   ISeaDropTokenContractMetadata__factory,
   ISeaDropToken__factory,
 } from "../typechain-types";
@@ -613,10 +612,6 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       ],
       [IERC2981__factory, IERC165__factory],
     ];
-    const supportedInterfacesERC721A = [
-      [IERC721__factory, IERC165__factory],
-      [IERC165__factory],
-    ];
     const supportedInterfacesContractOffererInterface = [
       [ContractOffererInterface__factory],
     ];
@@ -624,7 +619,6 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     for (const factories of [
       ...supportedInterfacesERC721SeaDrop,
       ...supportedInterfacesERC721ContractMetadata,
-      ...supportedInterfacesERC721A,
       ...supportedInterfacesContractOffererInterface,
     ]) {
       const interfaceId = factories

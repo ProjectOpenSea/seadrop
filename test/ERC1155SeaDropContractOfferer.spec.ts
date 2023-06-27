@@ -526,7 +526,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       ],
       [IERC2981__factory, IERC165__factory],
     ];
-    const supportedInterfacesERC1155 = [[IERC165__factory]];
     const supportedInterfacesContractOffererInterface = [
       [ContractOffererInterface__factory],
     ];
@@ -534,7 +533,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     for (const factories of [
       ...supportedInterfacesERC1155SeaDrop,
       ...supportedInterfacesERC1155ContractMetadata,
-      ...supportedInterfacesERC1155,
       ...supportedInterfacesContractOffererInterface,
     ]) {
       const interfaceId = factories
