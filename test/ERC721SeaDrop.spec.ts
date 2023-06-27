@@ -144,7 +144,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "TransferCallerNotOwnerNorApproved");
   });
 
-  it("Should only let the token owner burn their own token", async () => {
+  it("Should only let the token owner or approved burn their token", async () => {
     // Mint 3 tokens to the minter.
     await token.setMaxSupply(3);
     await mintTokens({
@@ -257,9 +257,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     expect(contractBalance).to.equal(0);
 
     // Set the owner to a contract without a payable fallback function to get coverage for a failed withdrawal.
-    // Note: If the below owner storage slot changes, the updated value can be found
+    // NOTE: If the below owner storage slot changes, the updated value can be found
     // with `forge inspect ERC721SeaDrop storage-layout`
-    const ownerStorageSlot = "0xa";
+    const ownerStorageSlot = "0x8";
 
     const revertedRecipientFactory = await ethers.getContractFactory(
       "RevertedRecipient"
@@ -275,7 +275,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
         ownerStorageSlot,
         ownerStorageValue,
       ]);
-      expect(await token.owner()).to.equal(ownerAddress);
+      expect(await token.owner()).to.equal(ownerAddress); // If this starts failing, see NOTE above.
       await token.connect(minter).approve(owner.address, 1, { value: 100 });
       await whileImpersonating(
         ownerAddress,

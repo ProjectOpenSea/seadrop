@@ -29,7 +29,7 @@ import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import { ERC1155 } from "./ERC1155.sol";
+import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 /**
  * @title  ERC1155SeaDropContractOfferer
@@ -279,7 +279,7 @@ contract ERC1155SeaDropContractOfferer is
             return;
         }
 
-        ERC1155.safeTransferFrom(from, to, id, amount, data);
+        ERC1155._safeTransfer(msg.sender, from, to, id, amount, data);
     }
 
     /**

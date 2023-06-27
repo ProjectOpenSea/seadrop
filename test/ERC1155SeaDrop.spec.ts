@@ -116,7 +116,7 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
       token
         .connect(owner)
         .safeTransferFrom(minter.address, creator.address, 0, 1, "0x")
-    ).to.be.revertedWith("NOT_AUTHORIZED");
+    ).to.be.revertedWithCustomError(token, "NotOwnerNorApproved");
     await expect(
       token
         .connect(owner)
@@ -127,10 +127,10 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
           [1],
           Buffer.from("dadb0d", "hex")
         )
-    ).to.be.revertedWith("NOT_AUTHORIZED");
+    ).to.be.revertedWithCustomError(token, "NotOwnerNorApproved");
   });
 
-  it("Should only let the token owner burn their own token", async () => {
+  it("Should only let the token owner or approved burn their token", async () => {
     const tokenId = 2;
     expect(await token.balanceOf(minter.address, tokenId)).to.equal(0);
     expect(await token.totalSupply(tokenId)).to.equal(0);
@@ -154,10 +154,10 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
     // Only the owner or approved of the minted token should be able to burn it.
     await expect(
       token.connect(owner).burn(minter.address, tokenId, 1)
-    ).to.be.revertedWithCustomError(token, "NotAuthorized");
+    ).to.be.revertedWithCustomError(token, "NotOwnerNorApproved");
     await expect(
       token.connect(creator).batchBurn(minter.address, [tokenId], [2])
-    ).to.be.revertedWithCustomError(token, "NotAuthorized");
+    ).to.be.revertedWithCustomError(token, "NotOwnerNorApproved");
 
     expect(await token.balanceOf(minter.address, tokenId)).to.equal(6);
     expect(await token.totalSupply(tokenId)).to.equal(6);
@@ -174,26 +174,24 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
     await token.connect(minter).setApprovalForAll(creator.address, false);
     await expect(
       token.connect(creator).burn(minter.address, tokenId, 1)
-    ).to.be.revertedWithCustomError(token, "NotAuthorized");
+    ).to.be.revertedWithCustomError(token, "NotOwnerNorApproved");
 
     await token.connect(minter).burn(minter.address, tokenId, 1);
     expect(await token.balanceOf(minter.address, tokenId)).to.eq(3);
     expect(await token.totalSupply(tokenId)).to.equal(3);
 
-    await expect(token.connect(minter).burn(minter.address, tokenId, 4))
-      .to.be.revertedWithCustomError(token, "InsufficientBalance")
-      .withArgs(minter.address, tokenId);
+    await expect(
+      token.connect(minter).burn(minter.address, tokenId, 4)
+    ).to.be.revertedWithCustomError(token, "InsufficientBalance");
 
     // Should not be able to burn a nonexistent token.
     for (const tokenId of [20, 15, 29, 31]) {
-      await expect(token.connect(minter).burn(minter.address, tokenId, 1))
-        .to.be.revertedWithCustomError(token, "InsufficientBalance")
-        .withArgs(minter.address, tokenId);
+      await expect(
+        token.connect(minter).burn(minter.address, tokenId, 1)
+      ).to.be.revertedWithCustomError(token, "InsufficientBalance");
       await expect(
         token.connect(minter).batchBurn(minter.address, [tokenId], [1])
-      )
-        .to.be.revertedWithCustomError(token, "InsufficientBalance")
-        .withArgs(minter.address, tokenId);
+      ).to.be.revertedWithCustomError(token, "InsufficientBalance");
     }
 
     // Should revert if trying to burn more than the balance.

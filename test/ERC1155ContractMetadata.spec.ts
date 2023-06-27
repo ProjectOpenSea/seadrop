@@ -152,10 +152,10 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
 
     await expect(
       token.setDefaultRoyalty(owner.address, 10_001)
-    ).to.be.revertedWith("ERC2981: royalty fee will exceed salePrice");
-    await expect(token.setDefaultRoyalty(AddressZero, 200)).to.be.revertedWith(
-      "ERC2981: invalid receiver"
-    );
+    ).to.be.revertedWithCustomError(token, "RoyaltyOverflow");
+    await expect(
+      token.setDefaultRoyalty(AddressZero, 200)
+    ).to.be.revertedWithCustomError(token, "RoyaltyReceiverIsZeroAddress");
 
     await expect(token.setDefaultRoyalty(bob.address, 100))
       .to.emit(token, "RoyaltyInfoUpdated")

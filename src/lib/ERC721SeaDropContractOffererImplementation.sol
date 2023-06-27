@@ -31,7 +31,7 @@ import {
     Schema
 } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ECDSA } from "solady/src/utils/ECDSA.sol";
 
 /**
  * @title  ERC721SeaDropContractOffererImplementation
@@ -47,7 +47,6 @@ contract ERC721SeaDropContractOffererImplementation is
     ERC721SeaDropErrorsAndEvents
 {
     using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
-    using ECDSA for bytes32;
 
     /// @notice The delegation registry.
     IDelegationRegistry public constant DELEGATION_REGISTRY =
@@ -704,13 +703,17 @@ contract ERC721SeaDropContractOffererImplementation is
         // the signature on this data.
         // Note that if the digest doesn't exactly match what was signed we'll
         // get a random recovered address.
-        address recoveredAddress = digest.recover(signatureR, signatureVS);
+        address recoveredAddress = ECDSA.recover(
+            digest,
+            signatureR,
+            signatureVS
+        );
         if (
             !ERC721SeaDropContractOffererStorage.layout()._allowedSigners[
                 recoveredAddress
             ]
         ) {
-            revert InvalidSignature(recoveredAddress);
+            revert ECDSA.InvalidSignature();
         }
     }
 

@@ -9,11 +9,7 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
-import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-
-import {
-    IERC165
-} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
 /**
  * @title  ERC721ContractMetadata
@@ -278,7 +274,7 @@ contract ERC721ContractMetadata is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC721A, ERC2981) returns (bool) {
+    ) public view virtual override(ERC721A, ERC2981) returns (bool) {
         return
             interfaceId == type(IERC721ContractMetadata).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)

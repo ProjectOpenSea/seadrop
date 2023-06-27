@@ -123,11 +123,6 @@ interface SeaDropErrorsAndEvents {
     error SignerCannotBeZeroAddress();
 
     /**
-     * @dev Revert with an error if signer's signature is invalid.
-     */
-    error InvalidSignature(address recoveredSigner);
-
-    /**
      * @dev Revert with an error if a signer is not included in
      *      the enumeration when removing.
      */

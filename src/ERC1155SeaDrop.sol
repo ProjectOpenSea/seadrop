@@ -9,7 +9,7 @@ import {
     DefaultOperatorFilterer
 } from "operator-filter-registry/DefaultOperatorFilterer.sol";
 
-import { ERC1155 } from "./lib/ERC1155.sol";
+import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 /**
  * @title  ERC1155SeaDrop
@@ -101,49 +101,64 @@ contract ERC1155SeaDrop is
         uint256[] calldata amounts,
         bytes calldata data
     ) public virtual override onlyAllowedOperator(from) {
-        ERC1155.safeBatchTransferFrom(from, to, ids, amounts, data);
+        ERC1155._safeBatchTransfer(msg.sender, from, to, ids, amounts, data);
     }
 
     /**
-     * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
-     *      Always returns true for the conduit.
-     */
-    function isApprovedForAll(
-        address owner,
-        address operator
-    ) public view virtual override returns (bool) {
-        if (operator == _CONDUIT) {
-            return true;
-        }
-        return ERC1155.isApprovedForAll(owner, operator);
-    }
-
-    /**
-     * @notice Burns a token, restricted to the owner or approved operator.
+     * @dev Auto-approve the conduit after mint or transfer.
      *
-     * @param id The token id to burn.
+     * @custom:param from    The address to transfer from.
+     * @param        to      The address to transfer to.
+     * @custom:param ids     The token ids to transfer.
+     * @custom:param amounts The quantities to transfer.
+     * @custom:param data    The data to pass if receiver is a contract.
+     */
+    function _afterTokenTransfer(
+        address /* from */,
+        address to,
+        uint256[] memory /* ids */,
+        uint256[] memory /* amounts */,
+        bytes memory /* data */
+    ) internal virtual override {
+        // Auto-approve the conduit.
+        if (to != address(0) && !isApprovedForAll(to, _CONDUIT)) {
+            _setApprovalForAll(to, _CONDUIT, true);
+        }
+    }
+
+    /**
+     * @dev Override this function to return true if `_afterTokenTransfer` is
+     *      used. The is to help the compiler avoid producing dead bytecode.
+     */
+    function _useAfterTokenTransfer()
+        internal
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return true;
+    }
+
+    /**
+     * @notice Burns a token, restricted to the owner or approved operator,
+     *         and must have sufficient balance.
+     *
+     * @param from   The address to burn from.
+     * @param id     The token id to burn.
+     * @param amount The amount to burn.
      */
     function burn(address from, uint256 id, uint256 amount) external {
-        // Require that only the owner or approved operator can call.
-        if (msg.sender != from && !_isApprovedForAll[from][msg.sender]) {
-            revert NotAuthorized();
-        }
-
-        // Ensure the balance is sufficient.
-        if (amount > balanceOf[from][id]) {
-            revert InsufficientBalance(from, id);
-        }
-
         // Burn the token.
-        _burn(from, id, amount);
+        _burn(msg.sender, from, id, amount);
     }
 
     /**
      * @notice Burns a batch of tokens, restricted to the owner or
-     *         approved operator.
+     *         approved operator, and must have sufficient balance.
      *
-     * @param from The address to burn from.
-     * @param ids  The token ids to burn.
+     * @param from    The address to burn from.
+     * @param ids     The token ids to burn.
      * @param amounts The amounts to burn per token id.
      */
     function batchBurn(
@@ -151,24 +166,7 @@ contract ERC1155SeaDrop is
         uint256[] calldata ids,
         uint256[] calldata amounts
     ) external {
-        // Require that only the owner or approved operator can call.
-        if (msg.sender != from && !_isApprovedForAll[from][msg.sender]) {
-            revert NotAuthorized();
-        }
-
-        uint256 idsLength = ids.length;
-        for (uint256 i = 0; i < idsLength; ) {
-            // Ensure the balances are sufficient.
-            if (amounts[i] > balanceOf[from][ids[i]]) {
-                revert InsufficientBalance(from, ids[i]);
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
         // Burn the tokens.
-        _batchBurn(from, ids, amounts);
+        _batchBurn(msg.sender, from, ids, amounts);
     }
 }

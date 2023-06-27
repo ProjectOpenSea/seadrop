@@ -5,15 +5,11 @@ import {
     IERC1155ContractMetadata
 } from "../interfaces/IERC1155ContractMetadata.sol";
 
-import { ERC1155 } from "./ERC1155.sol";
+import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
+
+import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
-
-import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-
-import {
-    IERC165
-} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title  ERC1155ContractMetadata
@@ -308,7 +304,7 @@ contract ERC1155ContractMetadata is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC1155, ERC2981) returns (bool) {
+    ) public view virtual override(ERC1155, ERC2981) returns (bool) {
         return
             interfaceId == type(IERC1155ContractMetadata).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
@@ -370,11 +366,13 @@ contract ERC1155ContractMetadata is
     /**
      * @dev Subtracts from the internal counters for a burn.
      *
+     * @param by     The address calling the burn.
      * @param from   The address to burn from.
      * @param id     The token id to burn.
      * @param amount The amount to burn.
      */
     function _burn(
+        address by,
         address from,
         uint256 id,
         uint256 amount
@@ -382,17 +380,19 @@ contract ERC1155ContractMetadata is
         // Reduce the supply.
         _reduceSupplyOnBurn(id, amount);
 
-        ERC1155._burn(from, id, amount);
+        ERC1155._burn(by, from, id, amount);
     }
 
     /**
      * @dev Subtracts from the internal counters for a batch burn.
      *
+     * @param by      The address calling the burn.
      * @param from    The address to burn from.
      * @param ids     The token ids to burn.
      * @param amounts The amounts to burn.
      */
     function _batchBurn(
+        address by,
         address from,
         uint256[] memory ids,
         uint256[] memory amounts
@@ -409,7 +409,7 @@ contract ERC1155ContractMetadata is
             }
         }
 
-        ERC1155._batchBurn(from, ids, amounts);
+        ERC1155._batchBurn(by, from, ids, amounts);
     }
 
     function _reduceSupplyOnBurn(uint256 id, uint256 amount) internal {

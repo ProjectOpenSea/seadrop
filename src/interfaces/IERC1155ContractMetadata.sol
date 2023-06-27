@@ -33,20 +33,6 @@ interface IERC1155ContractMetadata is ISeaDropTokenContractMetadata {
     error MintExceedsMaxSupply(uint256 total, uint256 maxSupply);
 
     /**
-     * @dev Emit an event if the user has insufficient balance for a token id.
-     *
-     * @param from    The user that has insufficient balance.
-     * @param tokenId The token id that has insufficient balance.
-     */
-    error InsufficientBalance(address from, uint256 tokenId);
-
-    /**
-     * @dev Emit an event if the user is not authorized to interact with
-     *      an addresses' tokens.
-     */
-    error NotAuthorized();
-
-    /**
      * @notice Sets the max supply for a token id and emits an event.
      *
      * @param tokenId      The token id to set the max supply for.
