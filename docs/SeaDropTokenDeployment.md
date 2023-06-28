@@ -21,7 +21,7 @@ To split responsibilities with an Administrator role who can set fee parameters,
    1. Set a token gated drop stage with `token.updateTokenGatedDrop()`
    1. Add server-side signers with `token.updateSignedMintValidationParams()`
 1. Set a public drop stage with `token.updatePublicDrop()`
-1. Set the drop URI with `token.setDropURI()`
+1. Set the drop URI with `token.updateDropURI()`
    1. See [Format of Drop URI](#format-of-drop-uri)
 
 ### ERC721PartnerSeaDrop
@@ -47,7 +47,7 @@ To split responsibilities with an Administrator role who can set fee parameters,
       1. Set a public drop stage with `token.updatePublicDrop()`
          1. Administrator must first initialize with feeBps with `token.updatePublicDrop()`
          1. If `restrictFeeRecipients` is set to true, Administrator must set allowed fee recipients with `token.updateAllowedFeeRecipient()`
-   1. Set the drop URI with `token.setDropURI()`
+   1. Set the drop URI with `token.updateDropURI()`
       1. See [Format of Drop URI](#format-of-drop-uri)
 
 ## Specifications
