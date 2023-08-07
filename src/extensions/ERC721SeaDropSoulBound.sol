@@ -9,13 +9,13 @@ import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice ERC721SeaDropSoulBound is a token contract that extends
+ * @notice ERC721SeaDropSoulbound is a token contract that extends
  *         ERC721SeaDrop to prevent minted tokens from being transferred after mint.
  */
  
 error SoulboundTransferNotAllowed() 
 
-contract ERC721SeaDropSoulBound is ERC721SeaDrop {
+contract ERC721SeaDropSoulbound is ERC721SeaDrop {
     /**
      * @notice Deploy the token contract with its name, symbol,
      *         and allowed SeaDrop addresses.
