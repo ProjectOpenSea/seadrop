@@ -11,7 +11,7 @@ import {
 
 import { IERC1155SeaDrop } from "../src/interfaces/IERC1155SeaDrop.sol";
 
-import { CreatorPayout } from "../src/lib/SeaDropStructs.sol";
+import { AllowListData, CreatorPayout } from "../src/lib/SeaDropStructs.sol";
 
 import { PublicDrop } from "../src/lib/ERC1155SeaDropStructs.sol";
 
@@ -38,50 +38,52 @@ contract DeployAndConfigure1155ExampleToken is Script {
     address conduit = 0x1E0049783F008A0085193E00003D00cd54003c71;
 
     // Addresses: SeaDrop
-    address creator = 0x1108f964b384f1dCDa03658B24310ccBc48E226F;
+    address creator = 0x82C21dc207C1F934dFDCa7Ab95eB139Df75DA0B2;
     address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
+    
+    // We already deployed a configurer that any 1155 NFT contract can rely. Similar concept for proxy / factory contracts where most of the logic lives inside configurer.
+    address configurer = 0x00CDa53500210086ea24006a70009400B81d8437;
 
+    address tokenAddress = 0x5b0cEc618Eb2A04907b7dB7613D30118E0d9D14d;
+    
     // Token config
-    uint256 maxSupply = 100;
+    uint256 maxSupply = 160;
 
     // Drop config
-    uint16 feeBps = 500; // 5%
-    uint80 mintPrice = 0.0001 ether;
-    uint16 maxTotalMintableByWallet = 25;
+    uint16 feeBps = 1000; // 5%
+    uint80 mintPrice = 0 ether;
+    uint16 maxTotalMintableByWallet = 10;
 
     function run() external {
         vm.startBroadcast();
 
-        ERC1155SeaDropConfigurer configurer = new ERC1155SeaDropConfigurer();
-
+        
         ERC1155SeaDrop token = new ERC1155SeaDrop(
-            address(configurer),
+            configurer,
             conduit,
             seaport,
-            "My 1155 Example Token",
-            "ExTKN1155"
+            "One Token 1155",
+            "OT"
         );
-
+        tokenAddress = address(token);
         // Configure the token.
         token.setMaxSupply(1, maxSupply);
-        token.setMaxSupply(2, maxSupply);
-        token.setMaxSupply(3, maxSupply);
-
+        
         // Configure the drop parameters.
         setSingleCreatorPayout(token);
         IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         );
-        IERC1155SeaDrop(address(token)).updatePublicDrop(
+        IERC1155SeaDrop(tokenAddress).updatePublicDrop(
             PublicDrop({
                 startPrice: mintPrice,
                 endPrice: mintPrice,
-                startTime: uint40(block.timestamp),
-                endTime: uint40(block.timestamp) + 1_000_000,
+                startTime: 1691856000,
+                endTime: 1691856001,
                 paymentToken: address(0),
                 fromTokenId: 1,
-                toTokenId: 3,
+                toTokenId: 4,
                 maxTotalMintableByWallet: maxTotalMintableByWallet,
                 maxTotalMintableByWalletPerToken: maxTotalMintableByWallet,
                 feeBps: feeBps,
@@ -90,15 +92,30 @@ contract DeployAndConfigure1155ExampleToken is Script {
             0
         );
 
-        // We are ready, let's mint the first 3 tokens!
-        ConsiderationInterface(seaport).fulfillAdvancedOrder{
-            value: mintPrice * 3
-        }({
-            advancedOrder: deriveOrder(address(token), 3),
-            criteriaResolvers: new CriteriaResolver[](0),
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        // Will only need these if you want to set up a presale 
+        // IERC1155SeaDrop(tokenAddress).updateDropURI("https://opensea-partners.mypinata.cloud/ipfs/bafkreib74cukyky5lnhnt7vxj52oh6wam2mkyrfx252ct33cfrpn44437u");
+        // string[] memory pubkeys = new string[](1);
+        // pubkeys[0] = "https://opensea.io/.well-known/allowlist-pubkeys/mainnet/ALLOWLIST_ENCRYPTION_KEY_0.txt";
+        // IERC1155SeaDrop(tokenAddress).updateAllowList(
+        //     AllowListData(
+        //         0x6d9894bca0dfdc416f8c241afe3591d7989bdaae4c16e517d6bd7abf29bf8d10,
+        //         pubkeys,
+        //         "https://opensea-partners.mypinata.cloud/ipfs/bafkreifuxgr4n6z42bawrz56vtqu76ra723l7b5wiemrxgqnx4y5st4e6q"
+        //     )
+        // );
+
+        // Some IPFS baseURI where there is a single token metadata file w/ traits set up on it (for the selector)
+        IERC1155SeaDrop(tokenAddress).setBaseURI("ipfs://Qmf43FYfjAYxxbymiMAGfNzicA5xC69x4ia8sf3FPmFuC9/{id}");
+
+        // If you want to manually mint some tookens
+        // ConsiderationInterface(seaport).fulfillAdvancedOrder{
+        //     value: mintPrice * 3
+        // }({
+        //     advancedOrder: deriveOrder(address(token), 3),
+        //     criteriaResolvers: new CriteriaResolver[](0),
+        //     fulfillerConduitKey: bytes32(0),
+        //     recipient: address(0)
+        // });
     }
 
     function setSingleCreatorPayout(ERC1155SeaDrop token) internal {
@@ -108,84 +125,5 @@ contract DeployAndConfigure1155ExampleToken is Script {
             basisPoints: 10_000
         });
         IERC1155SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
-    }
-
-    function deriveOrder(
-        address token,
-        uint256 quantity
-    ) internal view returns (AdvancedOrder memory order) {
-        address minter = msg.sender;
-        uint256 totalValue = mintPrice * quantity;
-
-        OfferItem[] memory offerItems = new OfferItem[](1);
-        offerItems[0] = OfferItem({
-            itemType: ItemType.ERC1155,
-            token: token,
-            identifierOrCriteria: 1,
-            startAmount: quantity,
-            endAmount: quantity
-        });
-
-        CreatorPayout[] memory creatorPayouts = IERC1155SeaDrop(token)
-            .getCreatorPayouts();
-        ConsiderationItem[] memory considerationItems = new ConsiderationItem[](
-            creatorPayouts.length + 1
-        );
-
-        // Add consideration item for fee recipient.
-        uint256 feeAmount = (totalValue * feeBps) / 10_000;
-        uint256 creatorAmount = totalValue - feeAmount;
-        considerationItems[0] = ConsiderationItem({
-            itemType: ItemType.NATIVE,
-            token: address(0),
-            identifierOrCriteria: 0,
-            startAmount: feeAmount,
-            endAmount: feeAmount,
-            recipient: payable(feeRecipient)
-        });
-
-        // Add consideration items for creator payouts.
-        for (uint256 i = 0; i < creatorPayouts.length; i++) {
-            uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /
-                10_000;
-            considerationItems[i + 1] = ConsiderationItem({
-                itemType: ItemType.NATIVE,
-                token: address(0),
-                identifierOrCriteria: 0,
-                startAmount: amount,
-                endAmount: amount,
-                recipient: payable(creatorPayouts[i].payoutAddress)
-            });
-        }
-
-        OrderParameters memory orderParameters = OrderParameters({
-            orderType: OrderType.CONTRACT,
-            offerer: token,
-            offer: offerItems,
-            consideration: considerationItems,
-            startTime: block.timestamp,
-            endTime: block.timestamp + 10_000_000,
-            salt: 0,
-            zone: address(0),
-            zoneHash: bytes32(0),
-            conduitKey: bytes32(0),
-            totalOriginalConsiderationItems: considerationItems.length
-        });
-
-        bytes memory extraData = bytes.concat(
-            bytes1(0x00), // SIP-6 version byte
-            bytes1(0x00), // substandard version byte: public mint
-            bytes20(feeRecipient),
-            bytes20(minter),
-            bytes20(0) // public drop index
-        );
-
-        order = AdvancedOrder({
-            parameters: orderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: extraData
-        });
     }
 }
