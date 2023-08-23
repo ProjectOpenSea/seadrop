@@ -87,13 +87,13 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
         public
         view
         override
-        returns (string memory)
+        returns (string memory base)
     {
         if (!_exists(tokenId)) {
             revert URIQueryForNonexistentToken();
         }
 
-        string memory base = _baseURI();
+        base = _baseURI();
         if (bytes(base).length == 0) {
             // If there is no baseURI set, return an empty string.
             return "";
