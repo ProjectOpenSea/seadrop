@@ -207,6 +207,12 @@ contract ERC1155SeaDropContractOfferer is
                 mstore(0, 0xf4dd92ce)
                 return(0x1c, 32)
             }
+        } else if (selector == IERC1155SeaDrop.multiConfigureMint.selector) {
+            // Ensure only the owner or configurer can call this function.
+            _onlyOwnerOrConfigurer();
+
+            // Mint the tokens.
+            _multiConfigureMint(data);
         } else {
             // Revert if the function selector is not supported.
             revert UnsupportedFunctionSelector(selector);
@@ -342,5 +348,22 @@ contract ERC1155SeaDropContractOfferer is
 
         // Mint the tokens.
         _batchMint(minter, tokenIds, quantities, "");
+    }
+
+    /**
+     * @dev Internal function to mint tokens during a multiConfigureMint call
+     *      from the configurer contract.
+     *
+     * @param data The original transaction calldata, without the selector.
+     */
+    function _multiConfigureMint(bytes calldata data) internal {
+        // Decode the calldata.
+        (
+            address recipient,
+            uint256[] memory tokenIds,
+            uint256[] memory amounts
+        ) = abi.decode(data, (address, uint256[], uint256[]));
+
+        _batchMint(recipient, tokenIds, amounts, "");
     }
 }

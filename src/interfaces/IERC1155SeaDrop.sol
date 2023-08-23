@@ -61,4 +61,18 @@ interface IERC1155SeaDrop is ISeaDropToken {
             uint256 totalMintedForTokenId,
             uint256 maxSupply
         );
+
+    /**
+     * @notice This function is only allowed to be called by the configurer
+     *         contract as a way to batch mints and configuration in one tx.
+     *
+     * @param recipient The address to receive the mints.
+     * @param tokenIds  The tokenIds to mint.
+     * @param amounts   The amounts to mint.
+     */
+    function multiConfigureMint(
+        address recipient,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts
+    ) external;
 }

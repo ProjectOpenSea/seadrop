@@ -141,4 +141,8 @@ struct MultiConfigureStruct {
     // ERC-2981
     address royaltyReceiver;
     uint96 royaltyBps;
+    // Mint
+    address mintRecipient;
+    uint256[] mintTokenIds;
+    uint256[] mintAmounts;
 }

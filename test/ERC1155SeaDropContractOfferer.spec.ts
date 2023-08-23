@@ -754,14 +754,14 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     for (const method of onlyOwnerMethods) {
       await (tokenSeaDropInterface as any)
         .connect(owner)
-        [method](...methodParams[method]);
+      [method](...methodParams[method]);
 
       await expect(
         (tokenSeaDropInterface as any)
           .connect(creator)
-          [method](...methodParams[method], {
-            gasLimit: 100_000,
-          })
+        [method](...methodParams[method], {
+          gasLimit: 100_000,
+        })
       ).to.be.revertedWithCustomError(token, "OnlyOwner");
     }
   });
@@ -792,6 +792,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       disallowedSigners: [],
       royaltyReceiver: `0x${"12".repeat(20)}`,
       royaltyBps: 1_000,
+      mintRecipient: AddressZero,
+      mintTokenIds: [],
+      mintAmounts: []
     };
 
     await expect(
@@ -884,6 +887,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       disallowedSigners: [],
       royaltyReceiver: AddressZero,
       royaltyBps: 0,
+      mintRecipient: AddressZero,
+      mintTokenIds: [],
+      mintAmounts: []
     };
     await expect(
       configurer.multiConfigure(token.address, zeroedConfig)
@@ -927,6 +933,34 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         .withArgs(signer, false);
     }
     expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([]);
+
+    // Should be able to use the multiConfigure method to mint
+    const configWithMint = {
+      ...zeroedConfig,
+      mintRecipient: minter.address,
+      mintTokenIds: [0],
+      mintAmounts: [1],
+    };
+    await expect(configurer.multiConfigure(token.address, configWithMint))
+      .to.emit(token, "TransferBatch")
+      .withArgs(configurer.address, AddressZero, minter.address, [0], [1]);
+
+    // Should revert if mintAmounts.length != mintAmounts.length
+    await expect(
+      configurer.multiConfigure(token.address, {
+        ...configWithMint,
+        mintAmounts: configWithMint.mintAmounts.slice(1),
+      })
+    ).to.be.revertedWithCustomError(token, "MintAmountsMismatch");
+
+    // Ensure mutliConfigure mint can only be used by the owner and configurer.
+    await expect(
+      tokenSeaDropInterface
+        .connect(minter)
+        .multiConfigureMint(minter.address, [0], [1], {
+          gasLimit: 100_000,
+        })
+    ).to.revertedWithCustomError(token, "OnlyOwner");
   });
 
   it("Should not allow reentrancy during mint", async () => {

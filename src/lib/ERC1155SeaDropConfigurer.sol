@@ -197,5 +197,15 @@ contract ERC1155SeaDropConfigurer is
                 }
             }
         }
+        if (config.mintTokenIds.length != 0) {
+            if (config.mintTokenIds.length != config.mintAmounts.length) {
+                revert MintAmountsMismatch();
+            }
+            IERC1155SeaDrop(token).multiConfigureMint(
+                config.mintRecipient,
+                config.mintTokenIds,
+                config.mintAmounts
+            );
+        }
     }
 }
