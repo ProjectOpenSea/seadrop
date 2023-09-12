@@ -5,10 +5,6 @@ import {
     ERC1155SeaDropContractOfferer
 } from "./lib/ERC1155SeaDropContractOfferer.sol";
 
-import {
-    DefaultOperatorFilterer
-} from "operator-filter-registry/DefaultOperatorFilterer.sol";
-
 import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 /**
@@ -20,10 +16,7 @@ import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
  * @notice An ERC1155 token contract that can mint as a
  *         Seaport contract offerer.
  */
-contract ERC1155SeaDrop is
-    ERC1155SeaDropContractOfferer,
-    DefaultOperatorFilterer
-{
+contract ERC1155SeaDrop is ERC1155SeaDropContractOfferer {
     /**
      * @notice Deploy the token contract.
      *
@@ -52,57 +45,6 @@ contract ERC1155SeaDrop is
             symbol_
         )
     {}
-
-    /**
-     * @dev See {IERC1155-setApprovalForAll}.
-     *
-     *      The added modifier ensures that the operator is allowed
-     *      by the OperatorFilterRegistry.
-     */
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) public override onlyAllowedOperatorApproval(operator) {
-        ERC1155.setApprovalForAll(operator, approved);
-    }
-
-    /**
-     * @dev See {IERC1155-safeTransferFrom}.
-     *
-     *      The added modifier ensures that the operator is allowed
-     *      by the OperatorFilterRegistry.
-     */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 amount,
-        bytes calldata data
-    ) public override onlyAllowedOperator(from) {
-        ERC1155SeaDropContractOfferer.safeTransferFrom(
-            from,
-            to,
-            tokenId,
-            amount,
-            data
-        );
-    }
-
-    /**
-     * @dev See {IERC1155-safeBatchTransferFrom}.
-     *
-     *      The added modifier ensures that the operator is allowed
-     *      by the OperatorFilterRegistry.
-     */
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata amounts,
-        bytes calldata data
-    ) public virtual override onlyAllowedOperator(from) {
-        ERC1155._safeBatchTransfer(msg.sender, from, to, ids, amounts, data);
-    }
 
     /**
      * @dev Auto-approve the conduit after mint or transfer.

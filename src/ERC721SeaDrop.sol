@@ -5,10 +5,6 @@ import {
     ERC721SeaDropContractOfferer
 } from "./lib/ERC721SeaDropContractOfferer.sol";
 
-import {
-    DefaultOperatorFilterer
-} from "operator-filter-registry/DefaultOperatorFilterer.sol";
-
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
 /**
@@ -20,10 +16,7 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
  * @notice An ERC721 token contract based on ERC721A that can mint as a
  *         Seaport contract offerer.
  */
-contract ERC721SeaDrop is
-    ERC721SeaDropContractOfferer,
-    DefaultOperatorFilterer
-{
+contract ERC721SeaDrop is ERC721SeaDropContractOfferer {
     /**
      * @notice Deploy the token contract.
      *
@@ -52,105 +45,6 @@ contract ERC721SeaDrop is
             symbol
         )
     {}
-
-    /**
-     * @dev Approve or remove `operator` as an operator for the caller.
-     * Operators can call {transferFrom} or {safeTransferFrom}
-     * for any token owned by the caller.
-     *
-     * Requirements:
-     *
-     * - The `operator` cannot be the caller.
-     * - The `operator` must be allowed.
-     *
-     * Emits an {ApprovalForAll} event.
-     */
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) public override onlyAllowedOperatorApproval(operator) {
-        ERC721A.setApprovalForAll(operator, approved);
-    }
-
-    /**
-     * @dev Gives permission to `to` to transfer `tokenId` token to another account.
-     * The approval is cleared when the token is transferred.
-     *
-     * Only a single account can be approved at a time, so approving the
-     * zero address clears previous approvals.
-     *
-     * Requirements:
-     *
-     * - The caller must own the token or be an approved operator.
-     * - `tokenId` must exist.
-     * - The `operator` mut be allowed.
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(
-        address operator,
-        uint256 tokenId
-    ) public payable override onlyAllowedOperatorApproval(operator) {
-        ERC721A.approve(operator, tokenId);
-    }
-
-    /**
-     * @dev Transfers `tokenId` from `from` to `to`.
-     *
-     * Requirements:
-     *
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
-     * - `tokenId` token must be owned by `from`.
-     * - If the caller is not `from`, it must be approved to move this token
-     * by either {approve} or {setApprovalForAll}.
-     * - The operator must be allowed.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public payable override onlyAllowedOperator(from) {
-        ERC721A.transferFrom(from, to, tokenId);
-    }
-
-    /**
-     * @dev Equivalent to `safeTransferFrom(from, to, tokenId, '')`.
-     */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public payable override onlyAllowedOperator(from) {
-        ERC721A.safeTransferFrom(from, to, tokenId);
-    }
-
-    /**
-     * @dev Safely transfers `tokenId` token from `from` to `to`.
-     *
-     * Requirements:
-     *
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
-     * - `tokenId` token must exist and be owned by `from`.
-     * - If the caller is not `from`, it must be approved to move this token
-     * by either {approve} or {setApprovalForAll}.
-     * - If `to` refers to a smart contract, it must implement
-     * {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-     * - The operator must be allowed.
-     *
-     * Emits a {Transfer} event.
-     */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) public payable override onlyAllowedOperator(from) {
-        ERC721A.safeTransferFrom(from, to, tokenId, data);
-    }
 
     /**
      * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.

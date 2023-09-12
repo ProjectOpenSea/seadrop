@@ -8,7 +8,6 @@ ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/contracts/
 murky/=lib/murky/src/
 utility-contracts/=lib/utility-contracts/src/
 create2-scripts/=lib/create2-helpers/script/
-operator-filter-registry/=lib/operator-filter-registry/src/
 seadrop/=src/
 seaport-sol/=lib/seaport/lib/seaport-sol/
 seaport-types/=lib/seaport/lib/seaport-types/
