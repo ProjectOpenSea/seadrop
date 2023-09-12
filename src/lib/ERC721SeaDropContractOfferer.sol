@@ -208,6 +208,9 @@ contract ERC721SeaDropContractOfferer is
                 mstore(0, 0xf4dd92ce)
                 return(0x1c, 32)
             }
+        } else if (selector == ISeaDropToken.configurer.selector) {
+            // Return the configurer contract.
+            return abi.encode(_CONFIGURER);
         } else {
             // Revert if the function selector is not supported.
             revert UnsupportedFunctionSelector(selector);

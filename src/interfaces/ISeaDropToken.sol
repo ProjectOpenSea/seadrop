@@ -115,4 +115,9 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
      * @notice Returns the SeaDrop allowed payers.
      */
     function getPayers() external view returns (address[] memory);
+
+    /**
+     * @notice Returns the configurer contract.
+     */
+    function configurer() external view returns (address);
 }

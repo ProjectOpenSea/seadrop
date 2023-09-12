@@ -207,6 +207,9 @@ contract ERC1155SeaDropContractOfferer is
                 mstore(0, 0xf4dd92ce)
                 return(0x1c, 32)
             }
+        } else if (selector == ISeaDropToken.configurer.selector) {
+            // Return the configurer contract.
+            return abi.encode(_CONFIGURER);
         } else if (selector == IERC1155SeaDrop.multiConfigureMint.selector) {
             // Ensure only the owner or configurer can call this function.
             _onlyOwnerOrConfigurer();

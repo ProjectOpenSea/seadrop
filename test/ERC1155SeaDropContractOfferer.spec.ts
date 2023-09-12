@@ -144,6 +144,10 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(token, "AllowedSeaportCannotBeZeroAddress");
   });
 
+  it("Should return the configurer contact", async () => {
+    expect(await tokenSeaDropInterface.configurer()).to.eq(configurer.address);
+  })
+
   it("Should not be able to call into the implementation contract without delegatecall", async () => {
     // Fallback
     await expect(
