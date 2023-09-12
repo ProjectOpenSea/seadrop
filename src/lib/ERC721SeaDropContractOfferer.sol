@@ -211,6 +211,12 @@ contract ERC721SeaDropContractOfferer is
         } else if (selector == ISeaDropToken.configurer.selector) {
             // Return the configurer contract.
             return abi.encode(_CONFIGURER);
+        } else if (selector == IERC721SeaDrop.multiConfigureMint.selector) {
+            // Ensure only the owner or configurer can call this function.
+            _onlyOwnerOrConfigurer();
+
+            // Mint the tokens.
+            _multiConfigureMint(data);
         } else {
             // Revert if the function selector is not supported.
             revert UnsupportedFunctionSelector(selector);
@@ -326,5 +332,21 @@ contract ERC721SeaDropContractOfferer is
 
         // Mint the tokens.
         _mint(minter, quantity);
+    }
+
+    /**
+     * @dev Internal function to mint tokens during a multiConfigureMint call
+     *      from the configurer contract.
+     *
+     * @param data The original transaction calldata, without the selector.
+     */
+    function _multiConfigureMint(bytes calldata data) internal {
+        // Decode the calldata.
+        (address recipient, uint256 quantity) = abi.decode(
+            data,
+            (address, uint256)
+        );
+
+        _mint(recipient, quantity);
     }
 }

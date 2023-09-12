@@ -174,5 +174,11 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
                 }
             }
         }
+        if (config.mintQuantity != 0) {
+            IERC721SeaDrop(token).multiConfigureMint(
+                config.mintRecipient,
+                config.mintQuantity
+            );
+        }
     }
 }

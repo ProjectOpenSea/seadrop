@@ -880,6 +880,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       disallowedSigners: [],
       royaltyReceiver: `0x${"12".repeat(20)}`,
       royaltyBps: 1_000,
+      mintRecipient: AddressZero,
+      mintQuantity: 0,
     };
 
     await expect(
@@ -960,6 +962,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       disallowedSigners: [],
       royaltyReceiver: AddressZero,
       royaltyBps: 0,
+      mintRecipient: AddressZero,
+      mintQuantity: 0,
     };
     await expect(
       configurer.multiConfigure(token.address, zeroedConfig)
@@ -1003,6 +1007,25 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         .withArgs(signer, false);
     }
     expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([]);
+
+    // Should be able to use the multiConfigure method to mint
+    const configWithMint = {
+      ...zeroedConfig,
+      mintRecipient: minter.address,
+      mintQuantity: 1,
+    };
+    await expect(configurer.multiConfigure(token.address, configWithMint))
+      .to.emit(token, "Transfer")
+      .withArgs(AddressZero, minter.address, 1);
+
+    // Ensure multiConfigureMint can only be used by the owner and configurer.
+    await expect(
+      tokenSeaDropInterface
+        .connect(minter)
+        .multiConfigureMint(minter.address, 1, {
+          gasLimit: 100_000,
+        })
+    ).to.revertedWithCustomError(token, "OnlyOwner");
   });
 
   it("Should not allow reentrancy during mint", async () => {

@@ -957,7 +957,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       })
     ).to.be.revertedWithCustomError(token, "MintAmountsMismatch");
 
-    // Ensure mutliConfigure mint can only be used by the owner and configurer.
+    // Ensure multiConfigureMint can only be used by the owner and configurer.
     await expect(
       tokenSeaDropInterface
         .connect(minter)

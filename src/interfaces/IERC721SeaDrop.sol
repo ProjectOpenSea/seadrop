@@ -44,4 +44,13 @@ interface IERC721SeaDrop is ISeaDropToken {
             uint256 totalMinted,
             uint256 maxSupply
         );
+
+    /**
+     * @notice This function is only allowed to be called by the configurer
+     *         contract as a way to batch mints and configuration in one tx.
+     *
+     * @param recipient The address to receive the mints.
+     * @param quantity  The quantity of tokens to mint.
+     */
+    function multiConfigureMint(address recipient, uint256 quantity) external;
 }
