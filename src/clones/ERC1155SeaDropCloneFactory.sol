@@ -2,10 +2,20 @@
 pragma solidity ^0.8.19;
 
 import { ERC1155SeaDropCloneable } from "./ERC1155SeaDropCloneable.sol";
+
 import { ERC1155SeaDropConfigurer } from "../lib/ERC1155SeaDropConfigurer.sol";
 
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 
+/**
+ * @title  ERC1155SeaDropCloneFactory
+ * @author James Wenzel (emo.eth)
+ * @author Ryan Ghods (ralxz.eth)
+ * @author Stephan Min (stephanm.eth)
+ * @author Michael Cohen (notmichael.eth)
+ * @notice A factory contract that deploys ERC1155 token contracts
+ *         that can mint as Seaport contract offerers.
+ */
 contract ERC1155SeaDropCloneFactory {
     address public immutable seaport;
     address public immutable conduit;
@@ -28,14 +38,14 @@ contract ERC1155SeaDropCloneFactory {
         string memory name,
         string memory symbol,
         bytes32 salt
-    ) external returns (address) {
+    ) external returns (address instance) {
         // Derive a pseudo-random salt, so clone addresses don't collide
         // across chains.
         bytes32 cloneSalt = keccak256(
             abi.encodePacked(salt, blockhash(block.number))
         );
 
-        address instance = Clones.cloneDeterministic(
+        instance = Clones.cloneDeterministic(
             cloneableImplementation,
             cloneSalt
         );
@@ -47,6 +57,5 @@ contract ERC1155SeaDropCloneFactory {
             symbol,
             msg.sender
         );
-        return instance;
     }
 }

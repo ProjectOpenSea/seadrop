@@ -2,14 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {
-    ERC1155SeaDropContractOfferer
-} from "../lib/ERC1155SeaDropContractOfferer.sol";
-
-import {
-    DefaultOperatorFilterer
-} from "operator-filter-registry/DefaultOperatorFilterer.sol";
-
-import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
+    ERC1155SeaDropContractOffererCloneable
+} from "./ERC1155SeaDropContractOffererCloneable.sol";
 
 /**
  * @title  ERC1155SeaDropCloneable
@@ -17,13 +11,10 @@ import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice An ERC1155 token contract that can mint as a
+ * @notice A cloneable ERC1155 token contract that can mint as a
  *         Seaport contract offerer.
  */
-contract ERC1155SeaDropCloneable is
-    ERC1155SeaDropContractOfferer,
-    DefaultOperatorFilterer
-{
+contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
     /**
      * @notice Initialize the token contract.
      *
@@ -45,66 +36,17 @@ contract ERC1155SeaDropCloneable is
         string memory symbol_,
         address initialOwner
     ) public initializer {
-        /*
-        ERC1155SeaDropContractOfferer(
+        // Initialize ownership.
+        _transferOwnership(initialOwner);
+
+        // Initialize ERC1155SeaDropContractOffererCloneable.
+        __ERC1155SeaDropContractOffererCloneable_init(
             allowedConfigurer,
             allowedConduit,
             allowedSeaport,
             name_,
             symbol_
         );
-      */
-    }
-
-    /**
-     * @dev See {IERC1155-setApprovalForAll}.
-     *
-     *      The added modifier ensures that the operator is allowed
-     *      by the OperatorFilterRegistry.
-     */
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) public override onlyAllowedOperatorApproval(operator) {
-        ERC1155.setApprovalForAll(operator, approved);
-    }
-
-    /**
-     * @dev See {IERC1155-safeTransferFrom}.
-     *
-     *      The added modifier ensures that the operator is allowed
-     *      by the OperatorFilterRegistry.
-     */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 amount,
-        bytes calldata data
-    ) public override onlyAllowedOperator(from) {
-        ERC1155SeaDropContractOfferer.safeTransferFrom(
-            from,
-            to,
-            tokenId,
-            amount,
-            data
-        );
-    }
-
-    /**
-     * @dev See {IERC1155-safeBatchTransferFrom}.
-     *
-     *      The added modifier ensures that the operator is allowed
-     *      by the OperatorFilterRegistry.
-     */
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata amounts,
-        bytes calldata data
-    ) public virtual override onlyAllowedOperator(from) {
-        ERC1155._safeBatchTransfer(msg.sender, from, to, ids, amounts, data);
     }
 
     /**

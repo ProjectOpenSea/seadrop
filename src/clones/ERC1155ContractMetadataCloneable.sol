@@ -5,26 +5,31 @@ import {
     IERC1155ContractMetadata
 } from "../interfaces/IERC1155ContractMetadata.sol";
 
-import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
+import { ERC1155ConduitPreapproved } from "../lib/ERC1155ConduitPreapproved.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
+import {
+    Initializable
+} from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+
 /**
- * @title  ERC1155ContractMetadata
+ * @title  ERC1155ContractMetadataCloneable
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice A token contract that extends ERC-1155
+ * @notice A cloneable token contract that extends ERC-1155
  *         with additional metadata and ownership capabilities.
  */
-contract ERC1155ContractMetadata is
-    ERC1155,
+contract ERC1155ContractMetadataCloneable is
+    ERC1155ConduitPreapproved,
     ERC2981,
     TwoStepOwnable,
-    IERC1155ContractMetadata
+    IERC1155ContractMetadata,
+    Initializable
 {
     /// @notice A struct containing the token supply info per token id.
     mapping(uint256 => TokenSupply) _tokenSupply;
@@ -52,7 +57,7 @@ contract ERC1155ContractMetadata is
     bytes32 internal _provenanceHash;
 
     /// @notice The allowed contract that can configure SeaDrop parameters.
-    address internal immutable _CONFIGURER;
+    address internal _CONFIGURER;
 
     /**
      * @dev Reverts if the sender is not the owner or the allowed
@@ -76,11 +81,11 @@ contract ERC1155ContractMetadata is
      * @param name_             The name of the token.
      * @param symbol_           The symbol of the token.
      */
-    constructor(
+    function __ERC1155ContractMetadataCloneable_init(
         address allowedConfigurer,
         string memory name_,
         string memory symbol_
-    ) {
+    ) internal onlyInitializing {
         // Set the name of the token.
         _name = name_;
 
@@ -304,7 +309,7 @@ contract ERC1155ContractMetadata is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC1155, ERC2981) returns (bool) {
+    ) public view virtual override(ERC1155ConduitPreapproved, ERC2981) returns (bool) {
         return
             interfaceId == type(IERC1155ContractMetadata).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)

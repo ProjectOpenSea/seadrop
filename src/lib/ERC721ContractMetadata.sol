@@ -17,7 +17,7 @@ import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @notice ERC721ContractMetadata is a token contract that extends ERC-721
+ * @notice A token contract that extends ERC-721
  *         with additional metadata and ownership capabilities.
  */
 contract ERC721ContractMetadata is
