@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
-import "hardhat/console.sol";
 
 /**
  * @title  ERC1155ConduitPreapproved
