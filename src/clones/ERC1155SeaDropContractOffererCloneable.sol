@@ -21,6 +21,12 @@ import { PublicDrop } from "../lib//ERC1155SeaDropStructs.sol";
 
 import { AllowListData } from "../lib/SeaDropStructs.sol";
 
+import {
+    ERC1155ConduitPreapproved
+} from "../lib/ERC1155ConduitPreapproved.sol";
+
+import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
+
 import { SpentItem } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 import {
@@ -30,8 +36,6 @@ import {
 import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-
-import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 /**
  * @title  ERC1155SeaDropContractOffererCloneable
@@ -297,7 +301,7 @@ contract ERC1155SeaDropContractOffererCloneable is
             return;
         }
 
-        ERC1155._safeTransfer(msg.sender, from, to, id, amount, data);
+        ERC1155._safeTransfer(_by(), from, to, id, amount, data);
     }
 
     /**

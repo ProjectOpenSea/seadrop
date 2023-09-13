@@ -5,6 +5,10 @@ import {
     IERC1155ContractMetadata
 } from "../interfaces/IERC1155ContractMetadata.sol";
 
+import {
+    ERC1155ConduitPreapproved
+} from "../lib/ERC1155ConduitPreapproved.sol";
+
 import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
@@ -21,7 +25,7 @@ import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
  *         with additional metadata and ownership capabilities.
  */
 contract ERC1155ContractMetadata is
-    ERC1155,
+    ERC1155ConduitPreapproved,
     ERC2981,
     TwoStepOwnable,
     IERC1155ContractMetadata

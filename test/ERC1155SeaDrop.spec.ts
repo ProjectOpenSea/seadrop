@@ -92,10 +92,18 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
     expect(await token.balanceOf(minter.address, 0)).to.eq(2);
 
     // Should auto-approve the conduit to transfer.
+    const openseaConduit = "0x1E0049783F008A0085193E00003D00cd54003c71";
+    expect(await token.isApprovedForAll(creator.address, openseaConduit)).to.eq(
+      true
+    );
+    expect(await token.isApprovedForAll(minter.address, openseaConduit)).to.eq(
+      true
+    );
     await whileImpersonating(
-      conduitOne.address,
+      openseaConduit,
       provider,
       async (impersonatedSigner) => {
+        console.log(await impersonatedSigner.getAddress());
         await token
           .connect(impersonatedSigner)
           .safeTransferFrom(creator.address, minter.address, 0, 1, "0x");

@@ -94,6 +94,12 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await token.connect(minter).approve(creator.address, 4);
 
     // Should auto-approve the conduit to transfer.
+    expect(
+      await token.isApprovedForAll(creator.address, conduitOne.address)
+    ).to.eq(true);
+    expect(
+      await token.isApprovedForAll(minter.address, conduitOne.address)
+    ).to.eq(true);
     await whileImpersonating(
       conduitOne.address,
       provider,

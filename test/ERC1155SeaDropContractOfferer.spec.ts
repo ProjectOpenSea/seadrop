@@ -146,7 +146,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
 
   it("Should return the configurer contact", async () => {
     expect(await tokenSeaDropInterface.configurer()).to.eq(configurer.address);
-  })
+  });
 
   it("Should not be able to call into the implementation contract without delegatecall", async () => {
     // Fallback
@@ -758,14 +758,14 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     for (const method of onlyOwnerMethods) {
       await (tokenSeaDropInterface as any)
         .connect(owner)
-      [method](...methodParams[method]);
+        [method](...methodParams[method]);
 
       await expect(
         (tokenSeaDropInterface as any)
           .connect(creator)
-        [method](...methodParams[method], {
-          gasLimit: 100_000,
-        })
+          [method](...methodParams[method], {
+            gasLimit: 100_000,
+          })
       ).to.be.revertedWithCustomError(token, "OnlyOwner");
     }
   });
@@ -798,7 +798,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       royaltyBps: 1_000,
       mintRecipient: AddressZero,
       mintTokenIds: [],
-      mintAmounts: []
+      mintAmounts: [],
     };
 
     await expect(
@@ -893,7 +893,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       royaltyBps: 0,
       mintRecipient: AddressZero,
       mintTokenIds: [],
-      mintAmounts: []
+      mintAmounts: [],
     };
     await expect(
       configurer.multiConfigure(token.address, zeroedConfig)

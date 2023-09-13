@@ -5,7 +5,11 @@ import {
     IERC1155ContractMetadata
 } from "../interfaces/IERC1155ContractMetadata.sol";
 
-import { ERC1155ConduitPreapproved } from "../lib/ERC1155ConduitPreapproved.sol";
+import {
+    ERC1155ConduitPreapproved
+} from "../lib/ERC1155ConduitPreapproved.sol";
+
+import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
@@ -309,7 +313,7 @@ contract ERC1155ContractMetadataCloneable is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC1155ConduitPreapproved, ERC2981) returns (bool) {
+    ) public view virtual override(ERC1155, ERC2981) returns (bool) {
         return
             interfaceId == type(IERC1155ContractMetadata).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
