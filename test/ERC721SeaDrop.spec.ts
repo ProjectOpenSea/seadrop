@@ -8,7 +8,6 @@ import { VERSION, deployERC721SeaDrop, mintTokens } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type {
-  ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
   IERC721SeaDrop,
@@ -20,7 +19,6 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitOne: ConduitInterface;
 
   // SeaDrop
   let token: ERC721SeaDrop;
@@ -48,15 +46,14 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
+    ({ marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
     // Deploy token
     ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
       owner,
-      marketplaceContract.address,
-      conduitOne.address
+      marketplaceContract.address
     ));
   });
 
@@ -94,14 +91,15 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await token.connect(minter).approve(creator.address, 4);
 
     // Should auto-approve the conduit to transfer.
-    expect(
-      await token.isApprovedForAll(creator.address, conduitOne.address)
-    ).to.eq(true);
-    expect(
-      await token.isApprovedForAll(minter.address, conduitOne.address)
-    ).to.eq(true);
+    const openseaConduit = "0x1E0049783F008A0085193E00003D00cd54003c71";
+    expect(await token.isApprovedForAll(creator.address, openseaConduit)).to.eq(
+      true
+    );
+    expect(await token.isApprovedForAll(minter.address, openseaConduit)).to.eq(
+      true
+    );
     await whileImpersonating(
-      conduitOne.address,
+      openseaConduit,
       provider,
       async (impersonatedSigner) => {
         await token

@@ -56,7 +56,6 @@ contract DeployAndConfigure1155ExampleToken is Script {
 
         ERC1155SeaDrop token = new ERC1155SeaDrop(
             address(configurer),
-            conduit,
             seaport,
             "My 1155 Example Token",
             "ExTKN1155"

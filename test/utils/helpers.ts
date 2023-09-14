@@ -29,8 +29,7 @@ export type AwaitedObject<T> = {
 
 export const deployERC721SeaDrop = async (
   owner: Wallet,
-  marketplaceContract: string,
-  conduit: string
+  marketplaceContract: string
 ) => {
   // Deploy configurer
   const ERC721SeaDropConfigurer = await ethers.getContractFactory(
@@ -43,7 +42,6 @@ export const deployERC721SeaDrop = async (
   const ERC721SeaDrop = await ethers.getContractFactory("ERC721SeaDrop", owner);
   const token = await ERC721SeaDrop.deploy(
     configurer.address,
-    conduit,
     marketplaceContract,
     "Test721",
     "T721"
@@ -59,8 +57,7 @@ export const deployERC721SeaDrop = async (
 
 export const deployERC1155SeaDrop = async (
   owner: Wallet,
-  marketplaceContract: string,
-  conduit: string
+  marketplaceContract: string
 ) => {
   // Deploy configurer
   const ERC1155SeaDropConfigurer = await ethers.getContractFactory(
@@ -76,7 +73,6 @@ export const deployERC1155SeaDrop = async (
   );
   const token = await ERC1155SeaDrop.deploy(
     configurer.address,
-    conduit,
     marketplaceContract,
     "Test1155",
     "T1155"

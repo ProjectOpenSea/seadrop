@@ -22,7 +22,6 @@ import { MintType, createMintOrder, expectedPrice } from "./utils/order";
 import type { SeaportFixtures } from "./seaport-utils/fixtures";
 import type { AwaitedObject } from "./utils/helpers";
 import type {
-  ConduitInterface,
   ConsiderationInterface,
   ERC1155SeaDrop,
   ERC1155SeaDropConfigurer,
@@ -41,8 +40,8 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitOne: ConduitInterface;
-  let conduitKeyOne: string;
+  const openseaConduitKey =
+    "0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000"; // conduit key for OpenSea conduit
   let createOrder: SeaportFixtures["createOrder"];
 
   // SeaDrop
@@ -76,16 +75,14 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ conduitOne, conduitKeyOne, createOrder, marketplaceContract } =
-      await seaportFixture(owner));
+    ({ createOrder, marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
     // Deploy token
     ({ token, tokenSeaDropInterface, configurer } = await deployERC1155SeaDrop(
       owner,
-      marketplaceContract.address,
-      conduitOne.address
+      marketplaceContract.address
     ));
 
     publicDrop = {
@@ -126,7 +123,6 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     );
     const tx = await ERC1155SeaDrop.deploy(
       AddressZero,
-      conduitOne.address,
       marketplaceContract.address,
       "",
       ""
@@ -230,11 +226,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
 
   it("Should not be able to mint until the creator payout is set", async () => {
     const { token: token2, tokenSeaDropInterface: tokenSeaDropInterface2 } =
-      await deployERC1155SeaDrop(
-        owner,
-        marketplaceContract.address,
-        conduitOne.address
-      );
+      await deployERC1155SeaDrop(owner, marketplaceContract.address);
 
     await token2.setMaxSupply(0, 5);
     await tokenSeaDropInterface2.updatePublicDrop(publicDrop, 0);
@@ -1232,7 +1224,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
+        .fulfillAdvancedOrder(order, [], openseaConduitKey, AddressZero)
     ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Approve the payment token.
@@ -1242,7 +1234,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
+        .fulfillAdvancedOrder(order, [], openseaConduitKey, AddressZero)
     ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Mint one more payment token to the minter.

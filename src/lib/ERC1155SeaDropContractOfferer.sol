@@ -48,17 +48,12 @@ contract ERC1155SeaDropContractOfferer is
 {
     using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage.Layout;
 
-    /// @notice The allowed conduit address that can mint.
-    address immutable _CONDUIT;
-
     /**
      * @notice Deploy the token contract.
      *
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters. Also contains SeaDrop
      *                          implementation code.
-     * @param allowedConduit    The address of the conduit contract allowed to
-     *                          interact.
      * @param allowedSeaport    The address of the Seaport contract allowed to
      *                          interact.
      * @param name_             The name of the token.
@@ -66,14 +61,10 @@ contract ERC1155SeaDropContractOfferer is
      */
     constructor(
         address allowedConfigurer,
-        address allowedConduit,
         address allowedSeaport,
         string memory name_,
         string memory symbol_
     ) ERC1155ContractMetadata(allowedConfigurer, name_, symbol_) {
-        // Set the allowed conduit to interact with this contract.
-        _CONDUIT = allowedConduit;
-
         // Set the allowed Seaport to interact with this contract.
         if (allowedSeaport == address(0)) {
             revert AllowedSeaportCannotBeZeroAddress();

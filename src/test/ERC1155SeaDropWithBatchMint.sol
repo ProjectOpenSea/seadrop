@@ -6,19 +6,10 @@ import { ERC1155SeaDrop } from "../ERC1155SeaDrop.sol";
 contract ERC1155SeaDropWithBatchMint is ERC1155SeaDrop {
     constructor(
         address allowedConfigurer,
-        address allowedConduit,
         address allowedSeaport,
         string memory name_,
         string memory symbol_
-    )
-        ERC1155SeaDrop(
-            allowedConfigurer,
-            allowedConduit,
-            allowedSeaport,
-            name_,
-            symbol_
-        )
-    {}
+    ) ERC1155SeaDrop(allowedConfigurer, allowedSeaport, name_, symbol_) {}
 
     function batchMint(
         address to,

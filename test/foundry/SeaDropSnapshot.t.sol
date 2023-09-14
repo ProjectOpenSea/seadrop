@@ -18,19 +18,10 @@ import { Merkle } from "murky/Merkle.sol";
 contract ERC721SeaDropPlusRegularMint is ERC721SeaDrop {
     constructor(
         address allowedConfigurer,
-        address allowedConduit,
         address allowedSeaport,
         string memory name,
         string memory symbol
-    )
-        ERC721SeaDrop(
-            allowedConfigurer,
-            allowedConduit,
-            allowedSeaport,
-            name,
-            symbol
-        )
-    {}
+    ) ERC721SeaDrop(allowedConfigurer, allowedSeaport, name, symbol) {}
 
     function mint(address recipient, uint256 quantity) public payable {
         _mint(recipient, quantity);
@@ -56,7 +47,6 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
 
         token = new ERC721SeaDropPlusRegularMint(
             address(configurer),
-            address(0),
             allowedSeaport,
             "",
             ""

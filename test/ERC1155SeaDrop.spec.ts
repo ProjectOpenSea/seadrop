@@ -8,7 +8,6 @@ import { VERSION, deployERC1155SeaDrop, mintTokens } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type {
-  ConduitInterface,
   ConsiderationInterface,
   ERC1155SeaDrop,
   IERC1155SeaDrop,
@@ -20,7 +19,6 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitOne: ConduitInterface;
 
   // SeaDrop
   let token: ERC1155SeaDrop;
@@ -48,15 +46,14 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
+    ({ marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
     // Deploy token
     ({ token, tokenSeaDropInterface } = await deployERC1155SeaDrop(
       owner,
-      marketplaceContract.address,
-      conduitOne.address
+      marketplaceContract.address
     ));
   });
 

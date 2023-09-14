@@ -9,7 +9,6 @@ import { faucet } from "./utils/faucet";
 import { VERSION, mintTokens } from "./utils/helpers";
 
 import type {
-  ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDropRandomOffset,
   IERC721SeaDrop,
@@ -21,7 +20,6 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitOne: ConduitInterface;
 
   // SeaDrop
   let token: ERC721SeaDropRandomOffset;
@@ -49,7 +47,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
+    ({ marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
@@ -68,7 +66,6 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
     token = await ERC721SeaDropRandomOffset.deploy(
       configurer.address,
       marketplaceContract.address,
-      conduitOne.address,
       "",
       ""
     );

@@ -39,8 +39,6 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters. Also contains SeaDrop
      *                          implementation code.
-     * @param allowedConduit    The address of the conduit contract allowed to
-     *                          interact.
      * @param allowedSeaport    The address of the Seaport contract allowed to
      *                          interact.
      * @param name              The name of the token.
@@ -49,18 +47,9 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
     constructor(
         address allowedConfigurer,
         address allowedSeaport,
-        address allowedConduit,
         string memory name,
         string memory symbol
-    )
-        ERC721SeaDrop(
-            allowedConfigurer,
-            allowedConduit,
-            allowedSeaport,
-            name,
-            symbol
-        )
-    {}
+    ) ERC721SeaDrop(allowedConfigurer, allowedSeaport, name, symbol) {}
 
     /**
      * @notice Set the random offset, for a fair metadata reveal. Only callable

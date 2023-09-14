@@ -16,7 +16,6 @@ import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
 import type {
-  ConduitInterface,
   ConsiderationInterface,
   ERC1155SeaDrop,
   IERC1155SeaDrop,
@@ -32,7 +31,6 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitOne: ConduitInterface;
 
   // SeaDrop
   let token: ERC1155SeaDrop;
@@ -70,15 +68,14 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
+    ({ marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
     // Deploy token
     ({ token, tokenSeaDropInterface } = await deployERC1155SeaDrop(
       owner,
-      marketplaceContract.address,
-      conduitOne.address
+      marketplaceContract.address
     ));
 
     // Set EIP-712 params
@@ -363,11 +360,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
 
     // Test with different token contract
     const { token: token2, tokenSeaDropInterface: tokenSeaDropInterface2 } =
-      await deployERC1155SeaDrop(
-        owner,
-        marketplaceContract.address,
-        conduitOne.address
-      );
+      await deployERC1155SeaDrop(owner, marketplaceContract.address);
     await token2.setMaxSupply(5, 100);
     await tokenSeaDropInterface2.updateCreatorPayouts([
       { payoutAddress: creator.address, basisPoints: 10_000 },

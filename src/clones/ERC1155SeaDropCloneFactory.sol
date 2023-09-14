@@ -18,19 +18,21 @@ import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
  */
 contract ERC1155SeaDropCloneFactory {
     address public immutable seaport;
-    address public immutable conduit;
     address public immutable configurer;
     address public immutable cloneableImplementation;
 
-    constructor(address allowedConduit, address allowedSeaport) {
-        conduit = allowedConduit;
+    /// @dev The canonical OpenSea conduit.
+    address public constant conduit =
+        0x1E0049783F008A0085193E00003D00cd54003c71;
+
+    constructor(address allowedSeaport) {
         seaport = allowedSeaport;
 
         ERC1155SeaDropConfigurer config = new ERC1155SeaDropConfigurer();
         configurer = address(config);
 
         ERC1155SeaDropCloneable impl = new ERC1155SeaDropCloneable();
-        impl.initialize(configurer, conduit, seaport, "", "", address(this));
+        impl.initialize(configurer, seaport, "", "", address(this));
         cloneableImplementation = address(impl);
     }
 
@@ -51,7 +53,6 @@ contract ERC1155SeaDropCloneFactory {
         );
         ERC1155SeaDropCloneable(instance).initialize(
             configurer,
-            conduit,
             seaport,
             name,
             symbol,

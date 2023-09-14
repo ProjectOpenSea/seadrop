@@ -9,7 +9,7 @@ import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
  */
 abstract contract ERC1155ConduitPreapproved is ERC1155 {
     /// @dev The canonical OpenSea conduit.
-    address private constant _CONDUIT =
+    address internal constant _CONDUIT =
         0x1E0049783F008A0085193E00003D00cd54003c71;
 
     function safeTransferFrom(

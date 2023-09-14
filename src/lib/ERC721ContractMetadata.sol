@@ -5,6 +5,8 @@ import {
     IERC721ContractMetadata
 } from "../interfaces/IERC721ContractMetadata.sol";
 
+import { ERC721AConduitPreapproved } from "./ERC721AConduitPreapproved.sol";
+
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
@@ -21,7 +23,7 @@ import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
  *         with additional metadata and ownership capabilities.
  */
 contract ERC721ContractMetadata is
-    ERC721A,
+    ERC721AConduitPreapproved,
     ERC2981,
     TwoStepOwnable,
     IERC721ContractMetadata

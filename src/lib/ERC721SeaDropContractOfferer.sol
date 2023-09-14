@@ -46,17 +46,12 @@ contract ERC721SeaDropContractOfferer is
 {
     using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
 
-    /// @notice The allowed conduit address that can mint.
-    address immutable _CONDUIT;
-
     /**
      * @notice Deploy the token contract.
      *
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters. Also contains SeaDrop
      *                          implementation code.
-     * @param allowedConduit    The address of the conduit contract allowed to
-     *                          interact.
      * @param allowedSeaport    The address of the Seaport contract allowed to
      *                          interact.
      * @param name              The name of the token.
@@ -64,14 +59,10 @@ contract ERC721SeaDropContractOfferer is
      */
     constructor(
         address allowedConfigurer,
-        address allowedConduit,
         address allowedSeaport,
         string memory name,
         string memory symbol
     ) ERC721ContractMetadata(allowedConfigurer, name, symbol) {
-        // Set the allowed conduit to interact with this contract.
-        _CONDUIT = allowedConduit;
-
         // Set the allowed Seaport to interact with this contract.
         if (allowedSeaport == address(0)) {
             revert AllowedSeaportCannotBeZeroAddress();

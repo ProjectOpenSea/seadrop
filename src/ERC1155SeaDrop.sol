@@ -21,8 +21,6 @@ contract ERC1155SeaDrop is ERC1155SeaDropContractOfferer {
      * @param allowedConfigurer The address of the contract allowed to
      *                          implementation code. Also contains SeaDrop
      *                          implementation code.
-     * @param allowedConduit    The address of the conduit contract allowed to
-     *                          interact.
      * @param allowedSeaport    The address of the Seaport contract allowed to
      *                          interact.
      * @param name_             The name of the token.
@@ -30,14 +28,12 @@ contract ERC1155SeaDrop is ERC1155SeaDropContractOfferer {
      */
     constructor(
         address allowedConfigurer,
-        address allowedConduit,
         address allowedSeaport,
         string memory name_,
         string memory symbol_
     )
         ERC1155SeaDropContractOfferer(
             allowedConfigurer,
-            allowedConduit,
             allowedSeaport,
             name_,
             symbol_

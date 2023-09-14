@@ -23,7 +23,6 @@ import { MintType, createMintOrder, expectedPrice } from "./utils/order";
 import type { SeaportFixtures } from "./seaport-utils/fixtures";
 import type { AwaitedObject } from "./utils/helpers";
 import type {
-  ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
   ERC721SeaDropConfigurer,
@@ -42,8 +41,8 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitOne: ConduitInterface;
-  let conduitKeyOne: string;
+  const openseaConduitKey =
+    "0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000"; // conduit key for OpenSea conduit
   let createOrder: SeaportFixtures["createOrder"];
 
   // SeaDrop
@@ -79,16 +78,14 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ conduitOne, conduitKeyOne, createOrder, marketplaceContract } =
-      await seaportFixture(owner));
+    ({ createOrder, marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
     // Deploy token
     ({ token, tokenSeaDropInterface, configurer } = await deployERC721SeaDrop(
       owner,
-      marketplaceContract.address,
-      conduitOne.address
+      marketplaceContract.address
     ));
 
     publicDrop = {
@@ -126,7 +123,6 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     );
     const tx = await ERC721SeaDrop.deploy(
       AddressZero,
-      conduitOne.address,
       marketplaceContract.address,
       "",
       ""
@@ -230,11 +226,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
   it("Should not be able to mint until the creator payout is set", async () => {
     const { token: token2, tokenSeaDropInterface: tokenSeaDropInterface2 } =
-      await deployERC721SeaDrop(
-        owner,
-        marketplaceContract.address,
-        conduitOne.address
-      );
+      await deployERC721SeaDrop(owner, marketplaceContract.address);
 
     await token2.setMaxSupply(5);
     await tokenSeaDropInterface2.updatePublicDrop(publicDrop);
@@ -531,8 +523,9 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     );
 
     // Impersonate as conduit
+    const openseaConduit = "0x1E0049783F008A0085193E00003D00cd54003c71";
     await whileImpersonating(
-      conduitOne.address,
+      openseaConduit,
       provider,
       async (impersonatedSigner) => {
         await impersonatedSigner.sendTransaction({ to: token.address, data });
@@ -576,7 +569,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
 
     // Impersonate as conduit
     await whileImpersonating(
-      conduitOne.address,
+      openseaConduit,
       provider,
       async (impersonatedSigner) => {
         await expect(
@@ -589,7 +582,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
             token,
             "InvalidCallerOnlyAllowedSeaport"
           )
-          .withArgs(conduitOne.address);
+          .withArgs(openseaConduit);
       }
     );
 
@@ -1285,7 +1278,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
+        .fulfillAdvancedOrder(order, [], openseaConduitKey, AddressZero)
     ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Approve the payment token.
@@ -1295,7 +1288,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
+        .fulfillAdvancedOrder(order, [], openseaConduitKey, AddressZero)
     ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Mint one more payment token to the minter.

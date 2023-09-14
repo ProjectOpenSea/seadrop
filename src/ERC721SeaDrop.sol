@@ -23,8 +23,6 @@ contract ERC721SeaDrop is ERC721SeaDropContractOfferer {
      * @param allowedConfigurer The address of the contract allowed to
      *                          implementation code. Also contains SeaDrop
      *                          implementation code.
-     * @param allowedConduit    The address of the conduit contract allowed to
-     *                          interact.
      * @param allowedSeaport    The address of the Seaport contract allowed to
      *                          interact.
      * @param name              The name of the token.
@@ -32,33 +30,17 @@ contract ERC721SeaDrop is ERC721SeaDropContractOfferer {
      */
     constructor(
         address allowedConfigurer,
-        address allowedConduit,
         address allowedSeaport,
         string memory name,
         string memory symbol
     )
         ERC721SeaDropContractOfferer(
             allowedConfigurer,
-            allowedConduit,
             allowedSeaport,
             name,
             symbol
         )
     {}
-
-    /**
-     * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
-     *      Always returns true for the conduit.
-     */
-    function isApprovedForAll(
-        address owner,
-        address operator
-    ) public view virtual override returns (bool) {
-        if (operator == _CONDUIT) {
-            return true;
-        }
-        return ERC721A.isApprovedForAll(owner, operator);
-    }
 
     /**
      * @notice Withdraws contract balance to the contract owner.

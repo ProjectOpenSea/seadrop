@@ -56,7 +56,6 @@ contract DeployAndConfigure721ExampleToken is Script {
 
         ERC721SeaDrop token = new ERC721SeaDrop(
             address(configurer),
-            conduit,
             seaport,
             "My 721 Example Token",
             "ExTKN721"

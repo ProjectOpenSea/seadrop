@@ -34,10 +34,7 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
     function setUp() public override {
         super.setUp();
 
-        factory = new ERC1155SeaDropCloneFactory(
-            address(123),
-            address(consideration)
-        );
+        factory = new ERC1155SeaDropCloneFactory(address(consideration));
     }
 
     function testClone__snapshot() public {
@@ -146,7 +143,6 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         ERC1155SeaDropCloneable token = ERC1155SeaDropCloneable(clone);
         vm.expectRevert("Initializable: contract is already initialized");
         token.initialize(
-            address(0),
             address(0),
             address(0),
             "name",

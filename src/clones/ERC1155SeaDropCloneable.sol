@@ -21,8 +21,6 @@ contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
      * @param allowedConfigurer The address of the contract allowed to
      *                          implementation code. Also contains SeaDrop
      *                          implementation code.
-     * @param allowedConduit    The address of the conduit contract allowed to
-     *                          interact.
      * @param allowedSeaport    The address of the Seaport contract allowed to
      *                          interact.
      * @param name_             The name of the token.
@@ -30,7 +28,6 @@ contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
      */
     function initialize(
         address allowedConfigurer,
-        address allowedConduit,
         address allowedSeaport,
         string memory name_,
         string memory symbol_,
@@ -42,7 +39,6 @@ contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
         // Initialize ERC1155SeaDropContractOffererCloneable.
         __ERC1155SeaDropContractOffererCloneable_init(
             allowedConfigurer,
-            allowedConduit,
             allowedSeaport,
             name_,
             symbol_

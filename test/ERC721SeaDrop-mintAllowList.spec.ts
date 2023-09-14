@@ -17,7 +17,6 @@ import { MintType, createMintOrder } from "./utils/order";
 
 import type { AwaitedObject } from "./utils/helpers";
 import type {
-  ConduitInterface,
   ConsiderationInterface,
   ERC721SeaDrop,
   IERC721SeaDrop,
@@ -33,7 +32,6 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  let conduitOne: ConduitInterface;
 
   // SeaDrop
   let token: ERC721SeaDrop;
@@ -65,15 +63,14 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ conduitOne, marketplaceContract } = await seaportFixture(owner));
+    ({ marketplaceContract } = await seaportFixture(owner));
   });
 
   beforeEach(async () => {
     // Deploy token
     ({ token, tokenSeaDropInterface } = await deployERC721SeaDrop(
       owner,
-      marketplaceContract.address,
-      conduitOne.address
+      marketplaceContract.address
     ));
 
     // Set a random feeBps.
@@ -386,11 +383,7 @@ describe(`ERC721SeaDrop - Mint Allow List (v${VERSION})`, function () {
     const {
       token: differentToken,
       tokenSeaDropInterface: differentTokenSeaDropInterface,
-    } = await deployERC721SeaDrop(
-      owner,
-      marketplaceContract.address,
-      conduitOne.address
-    );
+    } = await deployERC721SeaDrop(owner, marketplaceContract.address);
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
