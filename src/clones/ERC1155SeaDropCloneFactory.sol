@@ -21,10 +21,6 @@ contract ERC1155SeaDropCloneFactory {
     address public immutable configurer;
     address public immutable cloneableImplementation;
 
-    /// @dev The canonical OpenSea conduit.
-    address public constant conduit =
-        0x1E0049783F008A0085193E00003D00cd54003c71;
-
     constructor(address allowedSeaport) {
         seaport = allowedSeaport;
 
