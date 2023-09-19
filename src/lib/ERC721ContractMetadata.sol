@@ -70,7 +70,7 @@ contract ERC721ContractMetadata is
         address allowedConfigurer,
         string memory name,
         string memory symbol
-    ) ERC721A(name, symbol) {
+    ) ERC721AConduitPreapproved(name, symbol) {
         // Set the allowed configurer contract to interact with this contract.
         _CONFIGURER = allowedConfigurer;
     }
