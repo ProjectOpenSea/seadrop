@@ -11,7 +11,7 @@ abstract contract ERC721AConduitPreapproved is ERC721A {
     /// @dev The canonical OpenSea conduit.
     address internal constant _CONDUIT =
         0x1E0049783F008A0085193E00003D00cd54003c71;
-    
+
     /**
      * @notice Deploy the token contract.
      *
@@ -21,8 +21,7 @@ abstract contract ERC721AConduitPreapproved is ERC721A {
     constructor(
         string memory name,
         string memory symbol
-    ) ERC721A(name, symbol) {
-    }
+    ) ERC721A(name, symbol) {}
 
     /**
      * @dev Returns if the `operator` is allowed to manage all of the
