@@ -93,7 +93,7 @@ contract ERC1155ContractMetadata is
 
         // Set the allowed configurer contract to interact with this contract.
         _CONFIGURER = allowedConfigurer;
-        
+
         // Set the owner.
         _initializeOwner(msg.sender);
     }

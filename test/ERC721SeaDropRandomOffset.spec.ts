@@ -81,7 +81,7 @@ describe(`ERC721SeaDropRandomOffset (v${VERSION})`, function () {
 
     await expect(
       token.connect(minter).setRandomOffset()
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     await expect(token.setRandomOffset()).to.be.revertedWithCustomError(
       token,

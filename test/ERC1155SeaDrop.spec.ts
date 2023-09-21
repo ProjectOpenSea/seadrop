@@ -4,7 +4,12 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, deployERC1155SeaDrop, mintTokens } from "./utils/helpers";
+import {
+  VERSION,
+  deployERC1155SeaDrop,
+  mintTokens,
+  openseaConduitAddress,
+} from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type {
@@ -89,15 +94,14 @@ describe(`ERC1155SeaDrop (v${VERSION})`, function () {
     expect(await token.balanceOf(minter.address, 0)).to.eq(2);
 
     // Should auto-approve the conduit to transfer.
-    const openseaConduit = "0x1E0049783F008A0085193E00003D00cd54003c71";
-    expect(await token.isApprovedForAll(creator.address, openseaConduit)).to.eq(
-      true
-    );
-    expect(await token.isApprovedForAll(minter.address, openseaConduit)).to.eq(
-      true
-    );
+    expect(
+      await token.isApprovedForAll(creator.address, openseaConduitAddress)
+    ).to.eq(true);
+    expect(
+      await token.isApprovedForAll(minter.address, openseaConduitAddress)
+    ).to.eq(true);
     await whileImpersonating(
-      openseaConduit,
+      openseaConduitAddress,
       provider,
       async (impersonatedSigner) => {
         console.log(await impersonatedSigner.getAddress());

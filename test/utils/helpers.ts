@@ -27,6 +27,25 @@ export type AwaitedObject<T> = {
   [K in keyof T]: Awaited<T[K]>;
 };
 
+export const openseaConduitKey =
+  "0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000";
+export const openseaConduitAddress =
+  "0x1E0049783F008A0085193E00003D00cd54003c71";
+
+export const setConduit = async (
+  contractAddress: string,
+  conduitAddress: string
+) => {
+  const contractCode = await provider.getCode(contractAddress);
+  const newCode = contractCode
+    .toLowerCase()
+    .replace(
+      openseaConduitAddress.slice(2).toLowerCase(),
+      conduitAddress.slice(2).toLowerCase()
+    );
+  await setCode(contractAddress, newCode);
+};
+
 export const deployERC721SeaDrop = async (
   owner: Wallet,
   marketplaceContract: string

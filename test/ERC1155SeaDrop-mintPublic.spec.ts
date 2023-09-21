@@ -185,7 +185,10 @@ describe(`ERC1155SeaDrop - Mint Public (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(payer)
-        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, { value })
+        .fulfillAdvancedOrder(order, [], HashZero, AddressZero, {
+          value,
+          gasLimit: 200_000,
+        })
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"

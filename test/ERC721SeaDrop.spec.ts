@@ -4,7 +4,12 @@ import { ethers, network } from "hardhat";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, deployERC721SeaDrop, mintTokens } from "./utils/helpers";
+import {
+  VERSION,
+  deployERC721SeaDrop,
+  mintTokens,
+  openseaConduitAddress,
+} from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type {
@@ -91,15 +96,14 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     await token.connect(minter).approve(creator.address, 4);
 
     // Should auto-approve the conduit to transfer.
-    const openseaConduit = "0x1E0049783F008A0085193E00003D00cd54003c71";
-    expect(await token.isApprovedForAll(creator.address, openseaConduit)).to.eq(
-      true
-    );
-    expect(await token.isApprovedForAll(minter.address, openseaConduit)).to.eq(
-      true
-    );
+    expect(
+      await token.isApprovedForAll(creator.address, openseaConduitAddress)
+    ).to.eq(true);
+    expect(
+      await token.isApprovedForAll(minter.address, openseaConduitAddress)
+    ).to.eq(true);
     await whileImpersonating(
-      openseaConduit,
+      openseaConduitAddress,
       provider,
       async (impersonatedSigner) => {
         await token
@@ -228,7 +232,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
   it("Should allow the contract owner to withdraw all funds in the contract", async () => {
     await expect(
       token.connect(minter).withdraw()
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     await expect(token.connect(owner).withdraw()).to.be.revertedWithCustomError(
       token,
@@ -260,10 +264,9 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     contractBalance = await provider.getBalance(token.address);
     expect(contractBalance).to.equal(0);
 
-    // Set the owner to a contract without a payable fallback function to get coverage for a failed withdrawal.
-    // NOTE: If the below owner storage slot changes, the updated value can be found
-    // with `forge inspect ERC721SeaDrop storage-layout`
-    const ownerStorageSlot = "0x8";
+    // Owner storage slot from solady's Ownable.sol
+    const ownerStorageSlot =
+      "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff74873927";
 
     const revertedRecipientFactory = await ethers.getContractFactory(
       "RevertedRecipient"

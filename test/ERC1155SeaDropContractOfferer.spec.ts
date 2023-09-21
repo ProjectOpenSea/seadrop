@@ -16,7 +16,7 @@ import { getItemETH, toBN } from "./seaport-utils/encoding";
 import { seaportFixture } from "./seaport-utils/fixtures";
 import { getInterfaceID, randomHex } from "./utils/encoding";
 import { faucet } from "./utils/faucet";
-import { VERSION, deployERC1155SeaDrop } from "./utils/helpers";
+import { VERSION, deployERC1155SeaDrop, setConduit } from "./utils/helpers";
 import { MintType, createMintOrder, expectedPrice } from "./utils/order";
 
 import type { SeaportFixtures } from "./seaport-utils/fixtures";
@@ -40,9 +40,9 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
 
   // Seaport
   let marketplaceContract: ConsiderationInterface;
-  const openseaConduitKey =
-    "0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000"; // conduit key for OpenSea conduit
   let createOrder: SeaportFixtures["createOrder"];
+  let conduitOne: SeaportFixtures["conduitOne"];
+  let conduitKeyOne: SeaportFixtures["conduitKeyOne"];
 
   // SeaDrop
   let token: ERC1155SeaDrop;
@@ -75,7 +75,8 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       await faucet(wallet.address, provider);
     }
 
-    ({ createOrder, marketplaceContract } = await seaportFixture(owner));
+    ({ createOrder, marketplaceContract, conduitOne, conduitKeyOne } =
+      await seaportFixture(owner));
   });
 
   beforeEach(async () => {
@@ -134,7 +135,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     expect(event).to.not.be.null;
 
     await expect(
-      ERC1155SeaDrop.deploy(AddressZero, AddressZero, AddressZero, "", "", {
+      ERC1155SeaDrop.deploy(AddressZero, AddressZero, "", "", {
         gasLimit: 10_000_000,
       })
     ).to.be.revertedWithCustomError(token, "AllowedSeaportCannotBeZeroAddress");
@@ -313,7 +314,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       tokenSeaDropInterface
         .connect(creator)
         .updateDropURI("http://test.com", { gasLimit: 100_000 })
-    ).to.revertedWithCustomError(token, "OnlyOwner");
+    ).to.revertedWithCustomError(token, "Unauthorized");
 
     await expect(tokenSeaDropInterface.updateDropURI("http://test.com"))
       .to.emit(token, "DropURIUpdated")
@@ -566,7 +567,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         .updateAllowedSeaport([marketplaceContract.address], {
           gasLimit: 100_000,
         })
-    ).to.revertedWithCustomError(token, "OnlyOwner");
+    ).to.revertedWithCustomError(token, "Unauthorized");
 
     await expect(
       tokenSeaDropInterface
@@ -574,7 +575,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         .updateAllowedSeaport([marketplaceContract.address], {
           gasLimit: 100_000,
         })
-    ).to.revertedWithCustomError(token, "OnlyOwner");
+    ).to.revertedWithCustomError(token, "Unauthorized");
 
     await expect(
       tokenSeaDropInterface.connect(owner).updateAllowedSeaport([AddressZero], {
@@ -660,7 +661,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       tokenSeaDropInterface
         .connect(creator)
         .updateAllowList(allowListData, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     // Test `updateSigner` for coverage.
     await tokenSeaDropInterface.updateSigner(`0x${"5".repeat(40)}`, true);
@@ -669,7 +670,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       tokenSeaDropInterface
         .connect(creator)
         .updateSigner(`0x${"5".repeat(40)}`, false, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     // Test `updatePayer` for coverage.
     await tokenSeaDropInterface.updatePayer(`0x${"6".repeat(40)}`, true);
@@ -678,7 +679,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       tokenSeaDropInterface
         .connect(creator)
         .updateSigner(`0x${"6".repeat(40)}`, true, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
   });
 
   it("Should be able to update the allowed payers", async () => {
@@ -758,7 +759,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
           [method](...methodParams[method], {
             gasLimit: 100_000,
           })
-      ).to.be.revertedWithCustomError(token, "OnlyOwner");
+      ).to.be.revertedWithCustomError(token, "Unauthorized");
     }
   });
 
@@ -795,7 +796,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
 
     await expect(
       configurer.connect(creator).multiConfigure(token.address, config)
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     // Should revert if maxSupplyTokenIds.length != maxSupplyAmounts.length
     await expect(
@@ -956,7 +957,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
         .multiConfigureMint(minter.address, [0], [1], {
           gasLimit: 100_000,
         })
-    ).to.revertedWithCustomError(token, "OnlyOwner");
+    ).to.revertedWithCustomError(token, "Unauthorized");
   });
 
   it("Should not allow reentrancy during mint", async () => {
@@ -1217,6 +1218,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     expect(await paymentToken.balanceOf(creator.address)).to.eq(creatorAmount);
 
     // Now try with conduit
+    await setConduit(token.address, conduitOne.address);
     // Mint one minus the needed amount of payment tokens to the minter.
     await paymentToken.mint(minter.address, value.sub(1));
 
@@ -1224,18 +1226,18 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], openseaConduitKey, AddressZero)
+        .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
     ).to.be.revertedWith("NOT_AUTHORIZED");
 
     // Approve the payment token.
-    await paymentToken.approve(marketplaceContract.address, value);
+    await paymentToken.approve(conduitOne.address, value);
 
     // It should still fail as we have one minus the needed balance.
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], openseaConduitKey, AddressZero)
-    ).to.be.revertedWith("NOT_AUTHORIZED");
+        .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
+    ).to.be.revertedWithPanic("0x11");
 
     // Mint one more payment token to the minter.
     await paymentToken.mint(minter.address, 1);
@@ -1244,7 +1246,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
     await expect(
       marketplaceContract
         .connect(minter)
-        .fulfillAdvancedOrder(order, [], HashZero, AddressZero)
+        .fulfillAdvancedOrder(order, [], conduitKeyOne, AddressZero)
     )
       .to.emit(token, "SeaDropMint")
       .withArgs(

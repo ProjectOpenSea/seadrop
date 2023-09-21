@@ -876,7 +876,7 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       tokenSeaDropInterface
         .connect(signer)
         .updateSigner(signer.address, true, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
     expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([]);
 
     await tokenSeaDropInterface.updateSigner(signer.address, true);
@@ -885,22 +885,22 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
       tokenSeaDropInterface
         .connect(signer)
         .updateSigner(signer2.address, true, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
     await expect(
       tokenSeaDropInterface
         .connect(signer)
         .updateSigner(signer2.address, false, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
     await expect(
       tokenSeaDropInterface
         .connect(signer2)
         .updateSigner(signer.address, true, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
     await expect(
       tokenSeaDropInterface
         .connect(signer2)
         .updateSigner(signer.address, false, { gasLimit: 100_000 })
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     expect(await tokenSeaDropInterface.getSigners()).to.deep.eq([
       signer.address,

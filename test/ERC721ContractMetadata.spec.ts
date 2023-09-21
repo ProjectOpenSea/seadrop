@@ -62,7 +62,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await expect(
       token.connect(bob).setBaseURI("http://example.com")
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
     expect(await token.baseURI()).to.equal("");
 
     // it should not emit BatchMetadataUpdate when totalSupply is 0
@@ -91,7 +91,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await expect(
       token.connect(bob).setContractURI("http://example.com")
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
     expect(await token.contractURI()).to.equal("");
 
     await expect(token.setContractURI("http://example.com"))
@@ -105,7 +105,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await expect(
       token.connect(bob).setMaxSupply(10)
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
     expect(await token.maxSupply()).to.equal(0);
 
     await expect(token.setMaxSupply(25))
@@ -123,7 +123,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
   it("Should only let the owner notify update of batch token URIs", async () => {
     await expect(
       token.connect(bob).emitBatchMetadataUpdate(5, 10)
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     await expect(token.emitBatchMetadataUpdate(5, 10))
       .to.emit(token, "BatchMetadataUpdate")
@@ -135,7 +135,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await expect(
       token.connect(bob).setDefaultRoyalty(owner.address, 100)
-    ).to.be.revertedWithCustomError(token, "OnlyOwner");
+    ).to.be.revertedWithCustomError(token, "Unauthorized");
 
     await expect(
       token.setDefaultRoyalty(owner.address, 10_001)
@@ -219,7 +219,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
 
     await expect(
       token.connect(bob).setProvenanceHash(firstProvenanceHash)
-    ).to.revertedWithCustomError(token, "OnlyOwner");
+    ).to.revertedWithCustomError(token, "Unauthorized");
 
     await expect(token.setProvenanceHash(firstProvenanceHash))
       .to.emit(token, "ProvenanceHashUpdated")
