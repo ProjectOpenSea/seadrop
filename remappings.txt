@@ -6,7 +6,6 @@ ERC721A-Upgradeable/=lib/ERC721A-Upgradeable/contracts/
 @openzeppelin-upgradeable/contracts/=lib/openzeppelin-contracts-upgradeable/contracts/
 @rari-capital/solmate/=lib/seaport/lib/solmate/
 murky/=lib/murky/src/
-utility-contracts/=lib/utility-contracts/src/
 create2-scripts/=lib/create2-helpers/script/
 seadrop/=src/
 seaport-sol/=lib/seaport/lib/seaport-sol/

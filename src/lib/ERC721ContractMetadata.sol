@@ -9,7 +9,7 @@ import { ERC721AConduitPreapproved } from "./ERC721AConduitPreapproved.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
-import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
+import { Ownable } from "solady/src/auth/Ownable.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
@@ -25,7 +25,7 @@ import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 contract ERC721ContractMetadata is
     ERC721AConduitPreapproved,
     ERC2981,
-    TwoStepOwnable,
+    Ownable,
     IERC721ContractMetadata
 {
     /// @notice The max supply.
@@ -53,7 +53,7 @@ contract ERC721ContractMetadata is
      */
     function _onlyOwnerOrConfigurer() internal view {
         if (msg.sender != _CONFIGURER && msg.sender != owner()) {
-            revert OnlyOwner();
+            revert Unauthorized();
         }
     }
 
@@ -73,6 +73,9 @@ contract ERC721ContractMetadata is
     ) ERC721AConduitPreapproved(name, symbol) {
         // Set the allowed configurer contract to interact with this contract.
         _CONFIGURER = allowedConfigurer;
+
+        // Set the owner.
+        _initializeOwner(msg.sender);
     }
 
     /**

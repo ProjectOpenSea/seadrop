@@ -13,7 +13,7 @@ import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
-import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
+import { Ownable } from "solady/src/auth/Ownable.sol";
 
 /**
  * @title  ERC1155ContractMetadata
@@ -27,7 +27,7 @@ import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 contract ERC1155ContractMetadata is
     ERC1155ConduitPreapproved,
     ERC2981,
-    TwoStepOwnable,
+    Ownable,
     IERC1155ContractMetadata
 {
     /// @notice A struct containing the token supply info per token id.
@@ -67,7 +67,7 @@ contract ERC1155ContractMetadata is
      */
     function _onlyOwnerOrConfigurer() internal view {
         if (msg.sender != _CONFIGURER && msg.sender != owner()) {
-            revert OnlyOwner();
+            revert Unauthorized();
         }
     }
 
@@ -93,6 +93,9 @@ contract ERC1155ContractMetadata is
 
         // Set the allowed configurer contract to interact with this contract.
         _CONFIGURER = allowedConfigurer;
+        
+        // Set the owner.
+        _initializeOwner(msg.sender);
     }
 
     /**

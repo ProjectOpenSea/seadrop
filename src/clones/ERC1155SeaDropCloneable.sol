@@ -34,7 +34,7 @@ contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
         address initialOwner
     ) public initializer {
         // Initialize ownership.
-        _transferOwnership(initialOwner);
+        _initializeOwner(initialOwner);
 
         // Initialize ERC1155SeaDropContractOffererCloneable.
         __ERC1155SeaDropContractOffererCloneable_init(

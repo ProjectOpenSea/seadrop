@@ -13,7 +13,7 @@ import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
-import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
+import { Ownable } from "solady/src/auth/Ownable.sol";
 
 import {
     Initializable
@@ -31,7 +31,7 @@ import {
 contract ERC1155ContractMetadataCloneable is
     ERC1155ConduitPreapproved,
     ERC2981,
-    TwoStepOwnable,
+    Ownable,
     IERC1155ContractMetadata,
     Initializable
 {
@@ -72,7 +72,7 @@ contract ERC1155ContractMetadataCloneable is
      */
     function _onlyOwnerOrConfigurer() internal view {
         if (msg.sender != _CONFIGURER && msg.sender != owner()) {
-            revert OnlyOwner();
+            revert Unauthorized();
         }
     }
 

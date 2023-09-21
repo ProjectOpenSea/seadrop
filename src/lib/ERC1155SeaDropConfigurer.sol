@@ -32,7 +32,7 @@ contract ERC1155SeaDropConfigurer is
      * @notice Revert with an error if the sender is not the owner
      *         of the token contract.
      */
-    error OnlyOwner();
+    error Unauthorized();
 
     /**
      * @dev Reverts if the sender is not the owner of the token.
@@ -42,7 +42,7 @@ contract ERC1155SeaDropConfigurer is
      */
     function _onlyOwner(address token) internal view {
         if (msg.sender != IERC173(token).owner()) {
-            revert OnlyOwner();
+            revert Unauthorized();
         }
     }
 
