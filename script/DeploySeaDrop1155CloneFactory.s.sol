@@ -17,11 +17,11 @@ contract DeploySeaDrop1155CloneFactory is BaseCreate2Script {
             abi.encode(seaport_v1_5)
         );
 
-        bytes32 salt = 0x000000000000000000000000000000000000000028a4b5c923003304f4352aab;
+        bytes32 salt = 0x0000000000000000000000000000000000000000b98a7c38d8355702858f4296;
         address deployed = _immutableCreate2IfNotDeployed(salt, initCode);
-        // require(
-        //     deployed == 0x05d588AdcF1D332cB0f9F388f7ebF14339baE584,
-        //     "did not deploy to correct address"
-        // );
+        require(
+            deployed == 0x000000F20032b9e171844B00EA507E11960BD94a,
+            "did not deploy to correct address"
+        );
     }
 }

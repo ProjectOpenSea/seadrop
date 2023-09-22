@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define these env variables for this script:
-#   - $SCRIPT - the script location
+#   - $SCRIPT - the script contract name to run
 #   - $TEST - set to true to run on testnets, false (default) runs on mainnets
 
 declare -a mainnet_chains=(
@@ -44,7 +44,8 @@ for chain in "${!chains[@]}"; do
     --rpc-url $CHAIN \
     --private-key $PK \
     --broadcast \
-    --verify
+    --verify \
+    --no-storage-caching
 done
 echo "==========================================================="
 echo ""
