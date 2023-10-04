@@ -41,7 +41,7 @@ fi
 # Iterate over chains and run command for each chain
 for chain in "${!chains[@]}"; do
   export CHAIN=${chains[chain]}
-  echo "====== Running forge script with CHAIN set to $CHAIN ======"
+  echo "========== Running forge script with CHAIN set to $CHAIN =========="
   forge script $SCRIPT \
     --rpc-url $CHAIN \
     --private-key $PK \
@@ -50,7 +50,7 @@ for chain in "${!chains[@]}"; do
     --no-storage-caching \
     --skip-simulation
 done
-echo "==========================================================="
+echo "====================================================================="
 echo ""
 echo "Finished!"
 echo ""
