@@ -11,10 +11,11 @@ declare -a mainnet_chains=(
   "arbitrum"
   "arbitrum-nova"
   "avalanche"
-  #"bsc"
   "klaytn"
-  "gnosis"
   "base"
+  "zora"
+  #"bsc"
+  #"gnosis"
 )
 
 declare -a testnet_chains=(
@@ -24,10 +25,11 @@ declare -a testnet_chains=(
   "optimism-goerli"
   "arbitrum-goerli"
   "avalanche-fuji"
-  #"bsc-testnet"
   "baobab"
-  "chiado"
   "base-goerli"
+  "zora-test"
+  #"bsc-testnet"
+  #"chiado"
 )
 
 if [[ -n "$TEST" ]]; then
@@ -45,7 +47,8 @@ for chain in "${!chains[@]}"; do
     --private-key $PK \
     --broadcast \
     --verify \
-    --no-storage-caching
+    --no-storage-caching \
+    --skip-simulation
 done
 echo "==========================================================="
 echo ""

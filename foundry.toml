@@ -34,8 +34,9 @@ optimism-goerli = '${OP_GOERLI_RPC_URL}'
 arbitrum = '${ARB_RPC_URL}'
 arbitrum-nova = '${ARB_NOVA_RPC_URL}'
 arbitrum-goerli = '${ARB_GOERLI_RPC_URL}'
+arbitrum-sepolia = '${ARB_SEPOLIA_RPC_URL}'
 avalanche = '${AVAX_C_RPC_URL}'
-avalanche-fuji = '${AVAX_GOERLI_RPC_URL}'
+avalanche-fuji = '${AVAX_FUJI_RPC_URL}'
 gnosis = '${GNOSIS_RPC_URL}'
 chiado = '${CHIADO_RPC_URL}'
 bsc = '${BSC_RPC_URL}'
@@ -44,6 +45,8 @@ klaytn = '${KLAYTN_RPC_URL}'
 baobab = '${BAOBAB_RPC_URL}'
 base = '${BASE_RPC_URL}'
 base-goerli = '${BASE_GOERLI_RPC_URL}'
+zora = '${ZORA_RPC_URL}'
+zora-test = '${ZORA_TEST_RPC_URL}'
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
@@ -56,6 +59,7 @@ optimism-goerli = { key = "${OPSCAN_API_KEY}" }
 arbitrum = { key = "${ARBISCAN_API_KEY}" }
 arbitrum-nova = { key = "${ARBISCAN_API_KEY}" }
 arbitrum-goerli = { key = "${ARBISCAN_API_KEY}" }
+arbitrum-sepolia = { key = "${ARBISCAN_API_KEY}" }
 avalanche = { key = "${SNOWTRACE_API_KEY}" }
 avalanche-fuji = { key = "${SNOWTRACE_API_KEY}" }
 gnosis = { key = "${BLOCKSCOUT_API_KEY}" }
@@ -64,5 +68,7 @@ bsc = { key = "${BSCSCAN_API_KEY}" }
 bsc-testnet = { key = "${BSCSCAN_API_KEY}" }
 base = { key = "${BASESCAN_API_KEY}" }
 base-goerli = { key = "${BASESCAN_API_KEY}" }
+zora = { key = "${BLOCKSCOUT_API_KEY}" }
+zora-test = { key = "${BLOCKSCOUT_API_KEY}" }
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
