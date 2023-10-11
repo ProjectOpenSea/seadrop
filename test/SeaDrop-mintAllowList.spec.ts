@@ -50,7 +50,6 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   let token: INonFungibleSeaDropToken;
   let creator: Wallet;
   let owner: Wallet;
-  let admin: Wallet;
   let minter: Wallet;
   let feeRecipient: Wallet;
   let feeBps: number;
@@ -65,13 +64,12 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
   before(async () => {
     // Set the wallets.
     owner = new ethers.Wallet(randomHex(32), provider);
-    admin = new ethers.Wallet(randomHex(32), provider);
     creator = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
     feeRecipient = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets.
-    for (const wallet of [owner, admin, minter]) {
+    for (const wallet of [owner, minter]) {
       await faucet(wallet.address, provider);
     }
 
@@ -82,19 +80,19 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
 
   beforeEach(async () => {
     // Deploy token.
-    const SeaDropToken = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop"
-    );
-    token = await SeaDropToken.deploy("", "", admin.address, [seadrop.address]);
+    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
+    token = await SeaDropToken.deploy("", "", [seadrop.address]);
 
     // Set a random feeBps.
     feeBps = randomInt(1, 10000);
 
     // Update the fee recipient and creator payout address for the token.
     await token.setMaxSupply(1000);
-    await token
-      .connect(admin)
-      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+    await token.updateAllowedFeeRecipient(
+      seadrop.address,
+      feeRecipient.address,
+      true
+    );
 
     await token.updateCreatorPayoutAddress(seadrop.address, creator.address);
 
@@ -432,13 +430,9 @@ describe(`SeaDrop - Mint Allow List (v${VERSION})`, function () {
     // Calculate the value to send with the mint transaction.
     const value = ethers.BigNumber.from(mintParams.mintPrice).mul(mintQuantity);
 
-    // Deploy a new ERC721PartnerSeaDrop.
-    const SeaDropToken = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop"
-    );
-    const differentToken = await SeaDropToken.deploy("", "", owner.address, [
-      seadrop.address,
-    ]);
+    // Deploy a new ERC721SeaDrop.
+    const SeaDropToken = await ethers.getContractFactory("ERC721SeaDrop");
+    const differentToken = await SeaDropToken.deploy("", "", [seadrop.address]);
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);

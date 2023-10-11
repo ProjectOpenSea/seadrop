@@ -15,7 +15,7 @@ import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
 import type { ERC721SeaDrop, ISeaDrop } from "../typechain-types";
-import type { PublicDropStruct } from "../typechain-types/src/ERC721PartnerSeaDrop";
+import type { PublicDropStruct } from "../typechain-types/src/ERC721SeaDrop";
 import type { Wallet } from "ethers";
 
 describe(`ERC721SeaDrop (v${VERSION})`, function () {

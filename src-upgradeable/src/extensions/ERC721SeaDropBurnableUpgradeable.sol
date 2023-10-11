@@ -1,29 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {
-    ERC721PartnerSeaDropUpgradeable
-} from "../ERC721PartnerSeaDropUpgradeable.sol";
+import { ERC721SeaDropUpgradeable } from "../ERC721SeaDropUpgradeable.sol";
 
 /**
- * @title  ERC721PartnerSeaDropBurnable
+ * @title  ERC721SeaDropBurnable
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
- * @notice ERC721PartnerSeaDropBurnable is a token contract that extends
- *         ERC721PartnerSeaDrop to additionally provide a burn function.
+ * @notice ERC721SeaDropBurnable is a token contract that extends
+ *         ERC721SeaDrop to additionally provide a burn function.
  */
-contract ERC721PartnerSeaDropBurnableUpgradeable is
-    ERC721PartnerSeaDropUpgradeable
-{
+contract ERC721SeaDropBurnableUpgradeable is ERC721SeaDropUpgradeable {
     /**
      * @notice Deploy the token contract with its name, symbol,
-     *         administrator, and allowed SeaDrop addresses.
+     *         and allowed SeaDrop addresses.
      */
-    function __ERC721PartnerSeaDropBurnable_init(
+    function __ERC721SeaDropBurnable_init(
         string memory name,
         string memory symbol,
-        address administrator,
         address[] memory allowedSeaDrop
     ) internal onlyInitializing {
         __ERC721A_init_unchained(name, symbol);
@@ -32,22 +27,11 @@ contract ERC721PartnerSeaDropBurnableUpgradeable is
         __ERC721ContractMetadata_init_unchained(name, symbol);
         __ReentrancyGuard_init_unchained();
         __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
-        __TwoStepAdministered_init_unchained(administrator);
-        __ERC721PartnerSeaDrop_init_unchained(
-            name,
-            symbol,
-            administrator,
-            allowedSeaDrop
-        );
-        __ERC721PartnerSeaDropBurnable_init_unchained(
-            name,
-            symbol,
-            administrator,
-            allowedSeaDrop
-        );
+        __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
+        __ERC721SeaDropBurnable_init_unchained(name, symbol, allowedSeaDrop);
     }
 
-    function __ERC721PartnerSeaDropBurnable_init_unchained(
+    function __ERC721SeaDropBurnable_init_unchained(
         string memory,
         string memory,
         address,

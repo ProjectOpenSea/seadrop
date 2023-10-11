@@ -6,20 +6,15 @@ import { faucet } from "./utils/faucet";
 import { VERSION } from "./utils/helpers";
 import { whileImpersonating } from "./utils/impersonate";
 
-import type {
-  ERC721PartnerSeaDrop,
-  IERC721,
-  ISeaDrop,
-} from "../typechain-types";
+import type { ERC721SeaDrop, IERC721, ISeaDrop } from "../typechain-types";
 import type { Wallet } from "ethers";
 
 describe(`SeaDrop (v${VERSION})`, function () {
   const { provider } = ethers;
   let seadrop: ISeaDrop;
-  let token: ERC721PartnerSeaDrop;
+  let token: ERC721SeaDrop;
   let standard721Token: IERC721;
   let owner: Wallet;
-  let admin: Wallet;
   let minter: Wallet;
 
   after(async () => {
@@ -31,11 +26,10 @@ describe(`SeaDrop (v${VERSION})`, function () {
   before(async () => {
     // Set the wallets
     owner = new ethers.Wallet(randomHex(32), provider);
-    admin = new ethers.Wallet(randomHex(32), provider);
     minter = new ethers.Wallet(randomHex(32), provider);
 
     // Add eth to wallets
-    for (const wallet of [owner, admin, minter]) {
+    for (const wallet of [owner, minter]) {
       await faucet(wallet.address, provider);
     }
 
@@ -44,13 +38,11 @@ describe(`SeaDrop (v${VERSION})`, function () {
     seadrop = await SeaDrop.deploy();
 
     // Deploy token
-    const ERC721PartnerSeaDrop = await ethers.getContractFactory(
-      "ERC721PartnerSeaDrop",
+    const ERC721SeaDrop = await ethers.getContractFactory(
+      "ERC721SeaDrop",
       owner
     );
-    token = await ERC721PartnerSeaDrop.deploy("", "", admin.address, [
-      seadrop.address,
-    ]);
+    token = await ERC721SeaDrop.deploy("", "", [seadrop.address]);
 
     // Deploy a standard (non-IER721SeaDrop) token
     const ERC721A = await ethers.getContractFactory("ERC721A", owner);

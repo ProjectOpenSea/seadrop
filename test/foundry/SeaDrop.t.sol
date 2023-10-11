@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
+import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { TestERC721 } from "seadrop/test/TestERC721.sol";
 
@@ -28,10 +28,10 @@ contract TestSeaDrop is TestHelper {
     SignedMintValidationParams removeSigned;
 
     function setUp() public {
-        // Deploy the ERC721PartnerSeaDrop token.
+        // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721PartnerSeaDrop("", "", address(this), allowedSeaDrop);
+        token = new ERC721SeaDrop("", "", allowedSeaDrop);
 
         // Deploy a standard ERC721 token.
         standard721Token = new TestERC721();
@@ -49,7 +49,7 @@ contract TestSeaDrop is TestHelper {
         seadrop.updateDropURI(uri);
     }
 
-    function testUpdateDropURI_onlyERC721PartnerSeaDrop() public {
+    function testUpdateDropURI_onlyERC721SeaDrop() public {
         string memory uri = "https://example.com/";
         vm.startPrank(address(standard721Token));
         vm.expectRevert(

@@ -91,7 +91,7 @@ contract ERC721SeaDropCloneable is
 
     /**
      * @notice Update the allowed SeaDrop contracts.
-     *         Only the owner or administrator can use this function.
+     *         Only the owner can use this function.
      *
      * @param allowedSeaDrop The allowed SeaDrop addresses.
      */

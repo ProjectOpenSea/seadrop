@@ -29,8 +29,6 @@ contract DeployAndConfigureExampleToken is Script {
         address[] memory allowedSeadrop = new address[](1);
         allowedSeadrop[0] = seadrop;
 
-        // This example uses ERC721SeaDrop. For separate Owner and
-        // Administrator privileges, use ERC721PartnerSeaDrop.
         ERC721SeaDrop token = new ERC721SeaDrop(
             "My Example Token",
             "ExTKN",

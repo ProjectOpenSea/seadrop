@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
-import { ERC721PartnerSeaDrop } from "seadrop/ERC721PartnerSeaDrop.sol";
+import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { TestERC721 } from "seadrop/test/TestERC721.sol";
 import {
@@ -17,13 +17,12 @@ import {
 
 import { Merkle } from "murky/Merkle.sol";
 
-contract ERC721PartnerSeaDropPlusRegularMint is ERC721PartnerSeaDrop {
+contract ERC721SeaDropPlusRegularMint is ERC721SeaDrop {
     constructor(
         string memory name,
         string memory symbol,
-        address admin,
         address[] memory allowed
-    ) ERC721PartnerSeaDrop(name, symbol, admin, allowed) {}
+    ) ERC721SeaDrop(name, symbol, allowed) {}
 
     function mint(address recip, uint256 quantity) public payable {
         _mint(recip, quantity);
@@ -33,7 +32,7 @@ contract ERC721PartnerSeaDropPlusRegularMint is ERC721PartnerSeaDrop {
 contract TestSeaDropSnapshot is TestHelper {
     TestERC721 tokenGatedEligible;
     mapping(address => bool) seenAddresses;
-    ERC721PartnerSeaDropPlusRegularMint snapshotToken;
+    ERC721SeaDropPlusRegularMint snapshotToken;
 
     bytes32 merkleRoot;
     bytes32[] proof;
@@ -43,16 +42,13 @@ contract TestSeaDropSnapshot is TestHelper {
     MintParams mintParams;
     SignedMintValidationParams signedMintValidationParams;
 
-    address admin = makeAddr("admin");
-
     function setUp() public {
-        // Deploy the ERC721PartnerSeaDrop token.
+        // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        snapshotToken = new ERC721PartnerSeaDropPlusRegularMint(
+        snapshotToken = new ERC721SeaDropPlusRegularMint(
             "",
             "",
-            admin,
             allowedSeaDrop
         );
         // Deploy a standard ERC721 token.
@@ -75,11 +71,8 @@ contract TestSeaDropSnapshot is TestHelper {
         );
 
         // Set the public drop for the token contract.
-        vm.prank(admin);
-        snapshotToken.updatePublicDrop(address(seadrop), publicDrop);
         snapshotToken.updatePublicDrop(address(seadrop), publicDrop);
 
-        vm.prank(admin);
         snapshotToken.updateAllowedFeeRecipient(
             address(seadrop),
             address(5),
@@ -139,12 +132,6 @@ contract TestSeaDropSnapshot is TestHelper {
             feeBps: 100, // fee (1%)
             restrictFeeRecipients: false // if false, allow any fee recipient
         });
-        vm.prank(admin);
-        snapshotToken.updateTokenGatedDrop(
-            address(seadrop),
-            address(tokenGatedEligible),
-            tokenGatedDropStage
-        );
         snapshotToken.updateTokenGatedDrop(
             address(seadrop),
             address(tokenGatedEligible),
@@ -154,12 +141,6 @@ contract TestSeaDropSnapshot is TestHelper {
 
     function _configureSigner() internal {
         address signer = makeAddr("signer");
-        vm.prank(admin);
-        snapshotToken.updateSignedMintValidationParams(
-            address(seadrop),
-            signer,
-            signedMintValidationParams
-        );
         snapshotToken.updateSignedMintValidationParams(
             address(seadrop),
             signer,
@@ -228,5 +209,14 @@ contract TestSeaDropSnapshot is TestHelper {
             1010101,
             signature
         );
+    }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public pure returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }
