@@ -509,7 +509,7 @@ describe(`SeaDrop - Mint Signed (v${VERSION})`, function () {
     );
     expect(
       await seadrop.getSignedMintValidationParams(token.address, signer.address)
-    ).to.deep.eq([BigNumber.from(0), 1, 0, 0, 0, 1, 9000]);
+    ).to.deep.eq([BigNumber.from(1), 11, 50, 100000000000, 10000, 1, 9000]);
     expect(
       await seadrop.getSignedMintValidationParams(
         token.address,
