@@ -399,9 +399,11 @@ describe(`SeaDrop - Mint Allowed Token Holder (v${VERSION})`, function () {
 
     // Update the fee recipient and creator payout address for the new token.
     await differentToken.setMaxSupply(1000);
-    await differentToken
-      .connect(owner)
-      .updateAllowedFeeRecipient(seadrop.address, feeRecipient.address, true);
+    await differentToken.updateAllowedFeeRecipient(
+      seadrop.address,
+      feeRecipient.address,
+      true
+    );
 
     await differentToken.updateCreatorPayoutAddress(
       seadrop.address,
