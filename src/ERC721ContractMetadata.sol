@@ -7,6 +7,8 @@ import {
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
+import { ERC721AConduitPreapproved } from "./lib/ERC721AConduitPreapproved.sol";
+
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
@@ -24,7 +26,7 @@ import {
  *         with additional metadata and ownership capabilities.
  */
 contract ERC721ContractMetadata is
-    ERC721A,
+    ERC721AConduitPreapproved,
     TwoStepOwnable,
     ISeaDropTokenContractMetadata
 {
@@ -63,7 +65,7 @@ contract ERC721ContractMetadata is
      * @notice Deploy the token contract with its name and symbol.
      */
     constructor(string memory name, string memory symbol)
-        ERC721A(name, symbol)
+        ERC721AConduitPreapproved(name, symbol)
     {}
 
     /**
