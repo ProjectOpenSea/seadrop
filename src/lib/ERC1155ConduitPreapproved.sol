@@ -40,7 +40,7 @@ abstract contract ERC1155ConduitPreapproved is ERC1155 {
         return ERC1155.isApprovedForAll(owner, operator);
     }
 
-    function _by() internal view returns (address result) {
+    function _by() internal view virtual returns (address result) {
         assembly {
             // `msg.sender == _CONDUIT ? address(0) : msg.sender`.
             result := mul(iszero(eq(caller(), _CONDUIT)), caller())

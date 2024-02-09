@@ -48,7 +48,7 @@ contract ERC1155SeaDrop is ERC1155SeaDropContractOfferer {
      * @param id     The token id to burn.
      * @param amount The amount to burn.
      */
-    function burn(address from, uint256 id, uint256 amount) external {
+    function burn(address from, uint256 id, uint256 amount) external virtual {
         // Burn the token.
         _burn(msg.sender, from, id, amount);
     }
