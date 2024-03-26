@@ -1,4 +1,4 @@
-![Seadrop_GithubCover](img/seadrop-banner.png)
+![SeaDrop_GithubCover](img/seadrop-banner.png)
 
 [![Version][version-badge]][version-link]
 [![Test CI][ci-badge]][ci-link]
@@ -45,30 +45,22 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 [0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
 
 </td></tr>
-<tr><td>Goerli</td></tr>
 <tr><td>Sepolia</td></tr>
 <tr><td>Polygon</td></tr>
 <tr><td>Polygon Mumbai</td></tr>
 <tr><td>Klaytn</td></tr>
 <tr><td>Klaytn Baobab</td></tr>
 <tr><td>Optimism</td></tr>
-<tr><td>Optimism Goerli</td></tr>
+<tr><td>Optimism Sepolia</td></tr>
 <tr><td>Arbitrum One</td></tr>
 <tr><td>Arbitrum Nova</td></tr>
-<tr><td>Arbitrum Goerli</td></tr>
+<tr><td>Arbitrum Sepolia</td></tr>
 <tr><td>Avalanche C-Chain</td></tr>
 <tr><td>Avalanche Fuji</td></tr>
 <tr><td>BSC</td></tr>
 <tr><td>BSC Testnet</td></tr>
 <tr><td>Gnosis Chain</td></tr>
 </table>
-
-To be deployed on other EVM chains:
-
-- Skale
-- Celo
-- Fantom
-- RSK
 
 To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeployment.md).
 
