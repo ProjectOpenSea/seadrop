@@ -7,6 +7,10 @@ import {
 
 import { ERC721AConduitPreapproved } from "./ERC721AConduitPreapproved.sol";
 
+import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
+
+import { TokenTransferValidator } from "./TokenTransferValidator.sol";
+
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
@@ -24,6 +28,7 @@ import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
  */
 contract ERC721ContractMetadata is
     ERC721AConduitPreapproved,
+    TokenTransferValidator,
     ERC2981,
     Ownable,
     IERC721ContractMetadata
@@ -270,6 +275,37 @@ contract ERC721ContractMetadata is
 
         // Append the tokenId to the baseURI and return.
         return string.concat(theBaseURI, _toString(tokenId));
+    }
+
+    /**
+     * @notice Set the transfer validator. Only callable by the token owner.
+     */
+    function setTransferValidator(address newValidator) external onlyOwner {
+        // Set the new transfer validator.
+        _setTransferValidator(newValidator);
+    }
+
+    /**
+     * @dev Hook that is called before any token transfer.
+     *      This includes minting and burning.
+     */
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 /* quantity */
+    ) internal virtual override {
+        if (from != address(0) && to != address(0)) {
+            // Call the transfer validator if one is set.
+            if (_transferValidator != address(0)) {
+                ITransferValidator(_transferValidator).validateTransfer(
+                    msg.sender,
+                    from,
+                    to,
+                    startTokenId
+                );
+            }
+        }
     }
 
     /**

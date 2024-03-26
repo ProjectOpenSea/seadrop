@@ -9,6 +9,10 @@ import {
     ERC1155ConduitPreapproved
 } from "../lib/ERC1155ConduitPreapproved.sol";
 
+import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
+
+import { TokenTransferValidator } from "./TokenTransferValidator.sol";
+
 import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
@@ -26,6 +30,7 @@ import { Ownable } from "solady/src/auth/Ownable.sol";
  */
 contract ERC1155ContractMetadata is
     ERC1155ConduitPreapproved,
+    TokenTransferValidator,
     ERC2981,
     Ownable,
     IERC1155ContractMetadata
@@ -302,6 +307,46 @@ contract ERC1155ContractMetadata is
     ) public view virtual override returns (string memory) {
         // Return the base URI.
         return _baseURI;
+    }
+
+    /**
+     * @notice Set the transfer validator. Only callable by the token owner.
+     */
+    function setTransferValidator(address newValidator) external onlyOwner {
+        // Set the new transfer validator.
+        _setTransferValidator(newValidator);
+    }
+
+    /// @dev Override this function to return true if `_beforeTokenTransfer` is used.
+    function _useBeforeTokenTransfer() internal view virtual override returns (bool) {
+        return true;
+    }
+
+    /**
+     * @dev Hook that is called before any token transfer.
+     *      This includes minting and burning.
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory /* data */
+    ) internal virtual override {
+        if (from != address(0) && to != address(0)) {
+            // Call the transfer validator if one is set.
+            if (_transferValidator != address(0)) {
+                for (uint256 i = 0; i < ids.length; i++) {
+                    ITransferValidator(_transferValidator).validateTransfer(
+                        msg.sender,
+                        from,
+                        to,
+                        ids[i],
+                        amounts[i]
+                    );
+                }
+            }
+        }
     }
 
     /**
