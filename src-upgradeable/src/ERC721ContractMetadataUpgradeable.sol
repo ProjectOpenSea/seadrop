@@ -6,8 +6,12 @@ import {
 } from "./interfaces/ISeaDropTokenContractMetadataUpgradeable.sol";
 
 import {
-    ERC721AUpgradeable
-} from "../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
+    ERC721AConduitPreapprovedUpgradeable
+} from "./lib/ERC721AConduitPreapprovedUpgradeable.sol";
+
+import {
+    ERC721TransferValidatorUpgradeable
+} from "./lib/ERC721TransferValidatorUpgradeable.sol";
 
 import {
     TwoStepOwnableUpgradeable
@@ -34,7 +38,7 @@ import {
  *         with additional metadata and ownership capabilities.
  */
 contract ERC721ContractMetadataUpgradeable is
-    ERC721AUpgradeable,
+    ERC721AConduitPreapprovedUpgradeable,
     TwoStepOwnableUpgradeable,
     ISeaDropTokenContractMetadataUpgradeable
 {
@@ -61,16 +65,10 @@ contract ERC721ContractMetadataUpgradeable is
         string memory name,
         string memory symbol
     ) internal onlyInitializing {
-        __ERC721A_init_unchained(name, symbol);
+        __ERC721AConduitPreapprovedUpgradeable_init_unchained(name, symbol);
         __ConstructorInitializable_init_unchained();
         __TwoStepOwnable_init_unchained();
-        __ERC721ContractMetadata_init_unchained(name, symbol);
     }
-
-    function __ERC721ContractMetadata_init_unchained(
-        string memory,
-        string memory
-    ) internal onlyInitializing {}
 
     /**
      * @notice Sets the base URI for the token metadata and emits an event.
@@ -270,7 +268,8 @@ contract ERC721ContractMetadataUpgradeable is
      * @return royaltyAmount The royalty payment amount for _salePrice.
      */
     function royaltyInfo(
-        uint256, /* _tokenId */
+        uint256,
+        /* _tokenId */
         uint256 _salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
         // Put the royalty info on the stack for more efficient access.
@@ -287,6 +286,38 @@ contract ERC721ContractMetadataUpgradeable is
     }
 
     /**
+     * @notice Set the transfer validator. Only callable by the token owner.
+     */
+    function setTransferValidator(address newValidator) external onlyOwner {
+        // Set the new transfer validator.
+        _setTransferValidator(newValidator);
+    }
+
+    /**
+     * @dev Hook that is called before any token transfer.
+     *      This includes minting and burning.
+     */
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256,
+        /* startTokenId */
+        uint256 /* quantity */
+    ) internal virtual override {
+        if (from != address(0) && to != address(0)) {
+            // Call the transfer validator if one is set.
+            if (_transferValidator != address(0)) {
+                ITransferValidator(_transferValidator).validateTransfer(
+                    msg.sender,
+                    from,
+                    to,
+                    tokenId
+                );
+            }
+        }
+    }
+
+    /**
      * @notice Returns whether the interface is supported.
      *
      * @param interfaceId The interface id to check against.
@@ -295,7 +326,7 @@ contract ERC721ContractMetadataUpgradeable is
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721AUpgradeable)
+        override(IERC165Upgradeable, ERC721AConduitPreapprovedUpgradeable)
         returns (bool)
     {
         return
