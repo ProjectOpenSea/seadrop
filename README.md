@@ -1,4 +1,4 @@
-![Seadrop_GithubCover](img/seadrop-banner.png)
+![SeaDrop_GithubCover](img/seadrop-banner.png)
 
 [![Version][version-badge]][version-link]
 [![Test CI][ci-badge]][ci-link]
@@ -28,53 +28,7 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
 
 ## Background
 
-SeaDrop is a contract to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, and server-side signed mints. An implementing token contract should contain the methods to interface with `SeaDrop` through an authorized user such as the contract owner.
-
-## Deployments
-
-<table>
-<tr>
-<th>Network</th>
-<th>SeaDrop 1.0</th>
-</tr>
-
-<tr><td>Ethereum</td><td rowspan="17">
-
-[0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
-
-</td></tr>
-<tr><td>Goerli</td></tr>
-<tr><td>Sepolia</td></tr>
-<tr><td>Polygon</td></tr>
-<tr><td>Polygon Mumbai</td></tr>
-<tr><td>Klaytn</td></tr>
-<tr><td>Klaytn Baobab</td></tr>
-<tr><td>Optimism</td></tr>
-<tr><td>Optimism Goerli</td></tr>
-<tr><td>Arbitrum One</td></tr>
-<tr><td>Arbitrum Nova</td></tr>
-<tr><td>Arbitrum Goerli</td></tr>
-<tr><td>Avalanche C-Chain</td></tr>
-<tr><td>Avalanche Fuji</td></tr>
-<tr><td>BSC</td></tr>
-<tr><td>BSC Testnet</td></tr>
-<tr><td>Gnosis Chain</td></tr>
-</table>
-
-To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeployment.md).
-
-## Diagram
-
-![SeaDrop Diagram](img/seadrop-diagram.png)
-
-This diagram shows the logic flow in the case that a drop is hosted on OpenSea, with an optional mint hosted elsewhere. Note that a fee recipient is not required to integrate with SeaDrop, and a fee recipient may be any address.
-
-## Docs
-
-- [SeaDrop Deployment](docs/SeaDropDeployment.md)
-- [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
-- [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
-- [Provenance Hash](docs/ProvenanceHash.md)
+SeaDrop is a protocol to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, and server-side signed mints. Seadrop v2 is a [Seaport][seaport-link] contract offerer, which means a Seaport contract order is used to mint.
 
 ## Install
 
@@ -205,3 +159,4 @@ When making a pull request, ensure that:
 [docs-link]: https://github.com/ProjectOpenSea/seadrop/tree/main/docs
 [discussions-badge]: https://img.shields.io/badge/SeaDrop-discussions-blueviolet
 [discussions-link]: https://github.com/ProjectOpenSea/seadrop/discussions
+[seaport-link]: https://github.com/ProjectOpenSea/seaport
