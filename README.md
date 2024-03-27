@@ -28,7 +28,9 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
 
 ## Background
 
-SeaDrop is a protocol to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, and server-side signed mints. Seadrop v2 is a [Seaport][seaport-link] contract offerer, which means a Seaport contract order is used to mint.
+SeaDrop is a protocol to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, and server-side signed mints.
+
+SeaDrop v2 tokens are [Seaport][seaport-link] contract offerers. Mints are executed by fulfilling Seaport orders with `OrderType.CONTRACT`.
 
 ## Install
 
