@@ -163,7 +163,7 @@ describe(`ERC1155SeaDrop - Mint Public (v${VERSION})`, function () {
     await tokenSeaDropInterface.updatePublicDrop(
       {
         ...publicDrop,
-        startTime: Math.round(Date.now() / 1000) + 1000,
+        startTime: Math.round(Date.now() / 1000) + 100,
       },
       0
     );
