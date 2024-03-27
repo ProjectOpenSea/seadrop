@@ -5,7 +5,15 @@ import {
     ISeaDropTokenContractMetadata
 } from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
+import {
+    ERC721AConduitPreapprovedCloneable
+} from "./ERC721AConduitPreapprovedCloneable.sol";
+
 import { ERC721ACloneable } from "./ERC721ACloneable.sol";
+
+import { ERC721TransferValidator } from "../lib/ERC721TransferValidator.sol";
+
+import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
@@ -24,7 +32,8 @@ import {
  *         with additional metadata and ownership capabilities.
  */
 contract ERC721ContractMetadataCloneable is
-    ERC721ACloneable,
+    ERC721AConduitPreapprovedCloneable,
+    ERC721TransferValidator,
     TwoStepOwnable,
     ISeaDropTokenContractMetadata
 {
@@ -265,6 +274,37 @@ contract ERC721ContractMetadataCloneable is
 
         // Set the receiver of the royalty.
         receiver = info.royaltyAddress;
+    }
+
+    /**
+     * @notice Set the transfer validator. Only callable by the token owner.
+     */
+    function setTransferValidator(address newValidator) external onlyOwner {
+        // Set the new transfer validator.
+        _setTransferValidator(newValidator);
+    }
+
+    /**
+     * @dev Hook that is called before any token transfer.
+     *      This includes minting and burning.
+     */
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 /* quantity */
+    ) internal virtual override {
+        if (from != address(0) && to != address(0)) {
+            // Call the transfer validator if one is set.
+            if (_transferValidator != address(0)) {
+                ITransferValidator(_transferValidator).validateTransfer(
+                    msg.sender,
+                    from,
+                    to,
+                    startTokenId
+                );
+            }
+        }
     }
 
     /**

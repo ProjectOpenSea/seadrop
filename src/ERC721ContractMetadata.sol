@@ -9,6 +9,10 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { ERC721AConduitPreapproved } from "./lib/ERC721AConduitPreapproved.sol";
 
+import { ERC721TransferValidator } from "./lib/ERC721TransferValidator.sol";
+
+import { ITransferValidator } from "./interfaces/ITransferValidator.sol";
+
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
@@ -27,6 +31,7 @@ import {
  */
 contract ERC721ContractMetadata is
     ERC721AConduitPreapproved,
+    ERC721TransferValidator,
     TwoStepOwnable,
     ISeaDropTokenContractMetadata
 {
@@ -261,7 +266,8 @@ contract ERC721ContractMetadata is
      * @return royaltyAmount The royalty payment amount for _salePrice.
      */
     function royaltyInfo(
-        uint256, /* _tokenId */
+        uint256,
+        /* _tokenId */
         uint256 _salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
         // Put the royalty info on the stack for more efficient access.
@@ -273,6 +279,37 @@ contract ERC721ContractMetadata is
 
         // Set the receiver of the royalty.
         receiver = info.royaltyAddress;
+    }
+
+    /**
+     * @notice Set the transfer validator. Only callable by the token owner.
+     */
+    function setTransferValidator(address newValidator) external onlyOwner {
+        // Set the new transfer validator.
+        _setTransferValidator(newValidator);
+    }
+
+    /**
+     * @dev Hook that is called before any token transfer.
+     *      This includes minting and burning.
+     */
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 /* quantity */
+    ) internal virtual override {
+        if (from != address(0) && to != address(0)) {
+            // Call the transfer validator if one is set.
+            if (_transferValidator != address(0)) {
+                ITransferValidator(_transferValidator).validateTransfer(
+                    msg.sender,
+                    from,
+                    to,
+                    startTokenId
+                );
+            }
+        }
     }
 
     /**

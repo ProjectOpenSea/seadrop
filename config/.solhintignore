@@ -4,5 +4,7 @@ src/clones
 src/test/
 src/shim/
 
+src/interfaces/ITransferValidator.sol
+
 test/
 lib/

@@ -24,6 +24,9 @@ library ERC721ContractMetadataStorage {
         /// @notice Track the royalty info: address to receive royalties, and
         ///         royalty basis points.
         ISeaDropTokenContractMetadataUpgradeable.RoyaltyInfo _royaltyInfo;
+        /// @notice Track the transfer validator.
+        ///         The null address means no transfer validator is set.
+        address _transferValidator;
     }
 
     bytes32 internal constant STORAGE_SLOT =
