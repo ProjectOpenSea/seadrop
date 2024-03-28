@@ -25,7 +25,7 @@ contract ERC721TransferValidatorUpgradeable {
     /// @notice Set the transfer validator.
     ///         The external method that uses this must include access control.
     function _setTransferValidator(address newValidator) internal {
-        address oldValidator = _transferValidator;
+        address oldValidator = ERC721ContractMetadataStorage.layout()._transferValidator;
         if (oldValidator == newValidator) {
             revert SameTransferValidator();
         }

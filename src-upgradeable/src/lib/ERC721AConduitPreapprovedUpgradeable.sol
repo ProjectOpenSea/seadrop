@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ERC721AUpgradeable} from "../../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
+import { ERC721AUpgradeable } from "../../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
 
 /**
  * @title  ERC721AConduitPreapproved
@@ -18,6 +18,7 @@ abstract contract ERC721AConduitPreapprovedUpgradeable is ERC721AUpgradeable {
         string memory name, string memory symbol
     ) internal onlyInitializing {
         __ERC721A_init_unchained(name, symbol);
+    }
 
     /**
      * @dev Returns if the `operator` is allowed to manage all of the

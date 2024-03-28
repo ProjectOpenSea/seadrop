@@ -13,6 +13,8 @@ import {
     ERC721TransferValidatorUpgradeable
 } from "./lib/ERC721TransferValidatorUpgradeable.sol";
 
+import { ERC721AUpgradeable } from "../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
+
 import {
     TwoStepOwnableUpgradeable
 } from "../lib-upgradeable/utility-contracts/src/TwoStepOwnableUpgradeable.sol";
@@ -300,8 +302,7 @@ contract ERC721ContractMetadataUpgradeable is
     function _beforeTokenTransfers(
         address from,
         address to,
-        uint256,
-        /* startTokenId */
+        uint256 startTokenId,
         uint256 /* quantity */
     ) internal virtual override {
         if (from != address(0) && to != address(0)) {
@@ -311,7 +312,7 @@ contract ERC721ContractMetadataUpgradeable is
                     msg.sender,
                     from,
                     to,
-                    tokenId
+                    startTokenId
                 );
             }
         }
@@ -326,7 +327,7 @@ contract ERC721ContractMetadataUpgradeable is
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721AConduitPreapprovedUpgradeable)
+        override(IERC165Upgradeable, ERC721AUpgradeable)
         returns (bool)
     {
         return
