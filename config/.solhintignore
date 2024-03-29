@@ -3,8 +3,10 @@ node_modules/
 src/clones
 src/test/
 src/shim/
-src/interfaces/IDelegationRegistry.sol
 src/lib/ERC1155.sol
+
+src/interfaces/IDelegationRegistry.sol
+src/interfaces/ITransferValidator.sol
 
 test/
 lib/

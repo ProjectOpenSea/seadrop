@@ -46,42 +46,6 @@ contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
     }
 
     /**
-     * @dev Auto-approve the conduit after mint or transfer.
-     *
-     * @custom:param from    The address to transfer from.
-     * @param        to      The address to transfer to.
-     * @custom:param ids     The token ids to transfer.
-     * @custom:param amounts The quantities to transfer.
-     * @custom:param data    The data to pass if receiver is a contract.
-     */
-    function _afterTokenTransfer(
-        address /* from */,
-        address to,
-        uint256[] memory /* ids */,
-        uint256[] memory /* amounts */,
-        bytes memory /* data */
-    ) internal virtual override {
-        // Auto-approve the conduit.
-        if (to != address(0) && !isApprovedForAll(to, _CONDUIT)) {
-            _setApprovalForAll(to, _CONDUIT, true);
-        }
-    }
-
-    /**
-     * @dev Override this function to return true if `_afterTokenTransfer` is
-     *      used. The is to help the compiler avoid producing dead bytecode.
-     */
-    function _useAfterTokenTransfer()
-        internal
-        view
-        virtual
-        override
-        returns (bool)
-    {
-        return true;
-    }
-
-    /**
      * @notice Burns a token, restricted to the owner or approved operator,
      *         and must have sufficient balance.
      *
