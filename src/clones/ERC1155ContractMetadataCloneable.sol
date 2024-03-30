@@ -311,6 +311,14 @@ contract ERC1155ContractMetadataCloneable is
         return _baseURI;
     }
 
+    /**
+     * @notice Set the transfer validator. Only callable by the token owner.
+     */
+    function setTransferValidator(address newValidator) external onlyOwner {
+        // Set the new transfer validator.
+        _setTransferValidator(newValidator);
+    }
+
     /// @dev Override this function to return true if `_beforeTokenTransfer` is used.
     function _useBeforeTokenTransfer() internal view virtual override returns (bool) {
         return true;
