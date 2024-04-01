@@ -9,6 +9,8 @@ import {
     ERC1155ConduitPreapproved
 } from "../lib/ERC1155ConduitPreapproved.sol";
 
+import { ICreatorToken } from "../interfaces/ICreatorToken.sol";
+
 import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
 
 import { TokenTransferValidator } from "./TokenTransferValidator.sol";
@@ -359,6 +361,7 @@ contract ERC1155ContractMetadata is
     ) public view virtual override(ERC1155, ERC2981) returns (bool) {
         return
             interfaceId == type(IERC1155ContractMetadata).interfaceId ||
+            interfaceId == type(ICreatorToken).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
             ERC2981.supportsInterface(interfaceId) ||
             // ERC1155 returns supportsInterface true for

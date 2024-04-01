@@ -7,6 +7,8 @@ import {
 
 import { ERC721AConduitPreapproved } from "./ERC721AConduitPreapproved.sol";
 
+import { ICreatorToken } from "../interfaces/ICreatorToken.sol";
+
 import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
 
 import { TokenTransferValidator } from "./TokenTransferValidator.sol";
@@ -318,6 +320,7 @@ contract ERC721ContractMetadata is
     ) public view virtual override(ERC721A, ERC2981) returns (bool) {
         return
             interfaceId == type(IERC721ContractMetadata).interfaceId ||
+            interfaceId == type(ICreatorToken).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
             ERC2981.supportsInterface(interfaceId) ||
             // ERC721A returns supportsInterface true for

@@ -4,6 +4,7 @@ import { ethers, network } from "hardhat";
 
 import {
   ContractOffererInterface__factory,
+  ICreatorToken__factory,
   IERC165__factory,
   IERC2981__factory,
   IERC721ContractMetadata__factory,
@@ -613,6 +614,7 @@ describe(`ERC721SeaDropContractOfferer (v${VERSION})`, function () {
         ISeaDropTokenContractMetadata__factory,
       ],
       [IERC2981__factory, IERC165__factory],
+      [ICreatorToken__factory],
     ];
     const supportedInterfacesContractOffererInterface = [
       [ContractOffererInterface__factory],
