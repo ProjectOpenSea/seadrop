@@ -6,6 +6,7 @@ import {
   IERC165__factory,
   IERC2981__factory,
   IERC721__factory,
+  ILegacyCreatorToken__factory,
   INonFungibleSeaDropToken__factory,
   ISeaDropTokenContractMetadata__factory,
 } from "../typechain-types";
@@ -268,6 +269,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
       [ISeaDropTokenContractMetadata__factory, IERC2981__factory],
       [IERC2981__factory, IERC165__factory],
       [ICreatorToken__factory],
+      [ILegacyCreatorToken__factory],
     ];
     const supportedInterfacesERC721A = [
       [IERC721__factory, IERC165__factory],

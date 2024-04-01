@@ -13,7 +13,10 @@ import {
     ERC721TransferValidatorUpgradeable
 } from "./lib/ERC721TransferValidatorUpgradeable.sol";
 
-import { ICreatorToken } from "./interfaces/ICreatorToken.sol";
+import {
+    ICreatorToken,
+    ILegacyCreatorToken
+} from "./interfaces/ICreatorToken.sol";
 
 import { ITransferValidator } from "./interfaces/ITransferValidator.sol";
 
@@ -294,6 +297,20 @@ contract ERC721ContractMetadataUpgradeable is
     }
 
     /**
+     * @notice Returns the transfer validation function used.
+     */
+    function getTransferValidationFunction()
+        external
+        pure
+        returns (bytes4 functionSignature, bool isViewFunction)
+    {
+        functionSignature = keccak256(
+            "validateTransfer(address,address,address,uint256)"
+        );
+        isViewFunction = false;
+    }
+
+    /**
      * @notice Set the transfer validator. Only callable by the token owner.
      */
     function setTransferValidator(address newValidator) external onlyOwner {
@@ -339,6 +356,7 @@ contract ERC721ContractMetadataUpgradeable is
         return
             interfaceId == type(IERC2981Upgradeable).interfaceId ||
             interfaceId == type(ICreatorToken).interfaceId ||
+            interfaceId == type(ILegacyCreatorToken).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906
             super.supportsInterface(interfaceId);
     }

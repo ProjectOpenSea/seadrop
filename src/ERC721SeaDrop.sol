@@ -37,8 +37,11 @@ import {
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
+ * @contributor Limit Break (@limitbreak)
  * @notice ERC721SeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop.
+ *         Implements Limit Break's Creator Token Standards transfer
+ *         validation for royalty enforcement.
  */
 contract ERC721SeaDrop is
     ERC721ContractMetadata,
