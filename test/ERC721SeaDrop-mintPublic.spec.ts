@@ -13,13 +13,13 @@ import {
 } from "./utils/helpers";
 import { MintType, createMintOrder } from "./utils/order";
 
-import type { AwaitedObject } from "./utils/helpers";
 import type {
   ConsiderationInterface,
   ERC721SeaDrop,
   IERC721SeaDrop,
 } from "../typechain-types";
 import type { PublicDropStruct } from "../typechain-types/src/ERC721SeaDrop";
+import type { AwaitedObject } from "./utils/helpers";
 import type { Wallet } from "ethers";
 
 const { AddressZero, HashZero } = ethers.constants;

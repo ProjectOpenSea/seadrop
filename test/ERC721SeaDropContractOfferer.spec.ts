@@ -25,8 +25,6 @@ import {
 import { whileImpersonating } from "./utils/impersonate";
 import { MintType, createMintOrder, expectedPrice } from "./utils/order";
 
-import type { SeaportFixtures } from "./seaport-utils/fixtures";
-import type { AwaitedObject } from "./utils/helpers";
 import type {
   ConsiderationInterface,
   ERC721SeaDrop,
@@ -35,6 +33,8 @@ import type {
 } from "../typechain-types";
 import type { PublicDropStruct } from "../typechain-types/src/ERC721SeaDrop";
 import type { AllowListDataStruct } from "../typechain-types/src/shim/Shim";
+import type { SeaportFixtures } from "./seaport-utils/fixtures";
+import type { AwaitedObject } from "./utils/helpers";
 import type { Wallet } from "ethers";
 
 const { BigNumber } = ethers;
