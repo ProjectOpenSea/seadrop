@@ -4,6 +4,7 @@ src/clones
 src/test/
 src/shim/
 
+src/interfaces/ICreatorToken.sol
 src/interfaces/ITransferValidator.sol
 
 test/
