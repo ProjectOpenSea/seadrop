@@ -13,7 +13,13 @@ import {
     ERC721TransferValidatorUpgradeable
 } from "./lib/ERC721TransferValidatorUpgradeable.sol";
 
-import { ERC721AUpgradeable } from "../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
+import { ICreatorToken } from "./interfaces/ICreatorToken.sol";
+
+import { ITransferValidator } from "./interfaces/ITransferValidator.sol";
+
+import {
+    ERC721AUpgradeable
+} from "../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
 
 import {
     TwoStepOwnableUpgradeable
@@ -332,6 +338,7 @@ contract ERC721ContractMetadataUpgradeable is
     {
         return
             interfaceId == type(IERC2981Upgradeable).interfaceId ||
+            interfaceId == type(ICreatorToken).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906
             super.supportsInterface(interfaceId);
     }

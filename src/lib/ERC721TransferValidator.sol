@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import { ICreatorToken } from "../interfaces/ICreatorToken.sol";
+
 /**
  * @title  ERC721TransferValidator
  * @notice Functionality to use a transfer validator.
  */
-contract ERC721TransferValidator {
+abstract contract ERC721TransferValidator is ICreatorToken {
     /// @dev Store the transfer validator. The null address means no transfer validator is set.
     address internal _transferValidator;
-
-    /// @notice Emit an event when the transfer validator is updated.
-    event TransferValidatorUpdated(address oldValidator, address newValidator);
 
     /// @notice Revert with an error if the transfer validator is being set to the same address.
     error SameTransferValidator();

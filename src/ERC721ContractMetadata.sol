@@ -11,6 +11,8 @@ import { ERC721AConduitPreapproved } from "./lib/ERC721AConduitPreapproved.sol";
 
 import { ERC721TransferValidator } from "./lib/ERC721TransferValidator.sol";
 
+import { ICreatorToken } from "./interfaces/ICreatorToken.sol";
+
 import { ITransferValidator } from "./interfaces/ITransferValidator.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
@@ -326,6 +328,7 @@ contract ERC721ContractMetadata is
     {
         return
             interfaceId == type(IERC2981).interfaceId ||
+            interfaceId == type(ICreatorToken).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906
             super.supportsInterface(interfaceId);
     }

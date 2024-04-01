@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 
 import {
+  ICreatorToken__factory,
   IERC165__factory,
   IERC2981__factory,
   IERC721__factory,
@@ -266,6 +267,7 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     const supportedInterfacesERC721ContractMetadata = [
       [ISeaDropTokenContractMetadata__factory, IERC2981__factory],
       [IERC2981__factory, IERC165__factory],
+      [ICreatorToken__factory],
     ];
     const supportedInterfacesERC721A = [
       [IERC721__factory, IERC165__factory],
