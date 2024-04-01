@@ -13,7 +13,7 @@ import { ERC721A } from "ERC721A/ERC721A.sol";
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
- * @contributor Limit Break (@limitbreak)
+ * @custom:contributor Limit Break (@limitbreak)
  * @notice An ERC721 token contract based on ERC721A that can mint as a
  *         Seaport contract offerer.
  *         Implements Limit Break's Creator Token Standards transfer

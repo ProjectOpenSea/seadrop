@@ -324,8 +324,10 @@ contract ERC1155ContractMetadataCloneable is
         pure
         returns (bytes4 functionSignature, bool isViewFunction)
     {
-        functionSignature = keccak256(
-            "validateTransfer(address,address,address,uint256,uint256)"
+        functionSignature = bytes4(
+            keccak256(
+                "validateTransfer(address,address,address,uint256,uint256)"
+            )
         );
         isViewFunction = true;
     }
