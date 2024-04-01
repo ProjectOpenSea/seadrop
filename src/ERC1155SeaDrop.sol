@@ -11,8 +11,11 @@ import {
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
  * @author Michael Cohen (notmichael.eth)
+ * @contributor Limit Break (@limitbreak)
  * @notice An ERC1155 token contract that can mint as a
  *         Seaport contract offerer.
+ *         Implements Limit Break's Creator Token Standards transfer
+ *         validation for royalty enforcement.
  */
 contract ERC1155SeaDrop is ERC1155SeaDropContractOfferer {
     /**

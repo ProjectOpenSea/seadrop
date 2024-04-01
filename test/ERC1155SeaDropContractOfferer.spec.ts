@@ -9,6 +9,7 @@ import {
   IERC1155SeaDrop__factory,
   IERC165__factory,
   IERC2981__factory,
+  ILegacyCreatorToken__factory,
   ISeaDropTokenContractMetadata__factory,
   ISeaDropToken__factory,
 } from "../typechain-types";
@@ -524,6 +525,7 @@ describe(`ERC1155SeaDropContractOfferer (v${VERSION})`, function () {
       ],
       [IERC2981__factory, IERC165__factory],
       [ICreatorToken__factory],
+      [ILegacyCreatorToken__factory],
     ];
     const supportedInterfacesContractOffererInterface = [
       [ContractOffererInterface__factory],

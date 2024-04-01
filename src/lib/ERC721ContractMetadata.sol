@@ -7,7 +7,10 @@ import {
 
 import { ERC721AConduitPreapproved } from "./ERC721AConduitPreapproved.sol";
 
-import { ICreatorToken } from "../interfaces/ICreatorToken.sol";
+import {
+    ICreatorToken,
+    ILegacyCreatorToken
+} from "../interfaces/ICreatorToken.sol";
 
 import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
 
@@ -280,6 +283,20 @@ contract ERC721ContractMetadata is
     }
 
     /**
+     * @notice Returns the transfer validation function used.
+     */
+    function getTransferValidationFunction()
+        external
+        pure
+        returns (bytes4 functionSignature, bool isViewFunction)
+    {
+        functionSignature = keccak256(
+            "validateTransfer(address,address,address,uint256)"
+        );
+        isViewFunction = false;
+    }
+
+    /**
      * @notice Set the transfer validator. Only callable by the token owner.
      */
     function setTransferValidator(address newValidator) external onlyOwner {
@@ -321,6 +338,7 @@ contract ERC721ContractMetadata is
         return
             interfaceId == type(IERC721ContractMetadata).interfaceId ||
             interfaceId == type(ICreatorToken).interfaceId ||
+            interfaceId == type(ILegacyCreatorToken).interfaceId ||
             interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
             ERC2981.supportsInterface(interfaceId) ||
             // ERC721A returns supportsInterface true for
