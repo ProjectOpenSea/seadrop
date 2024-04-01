@@ -328,8 +328,9 @@ contract ERC721ContractMetadataUpgradeable is
     ) internal virtual override {
         if (from != address(0) && to != address(0)) {
             // Call the transfer validator if one is set.
-            if (_transferValidator != address(0)) {
-                ITransferValidator721(_transferValidator).validateTransfer(
+            address transferValidator = ERC721ContractMetadataStorage.layout()._transferValidator;
+            if (transferValidator != address(0)) {
+                ITransferValidator721(transferValidator).validateTransfer(
                     msg.sender,
                     from,
                     to,
