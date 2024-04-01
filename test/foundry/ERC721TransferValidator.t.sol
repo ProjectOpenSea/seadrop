@@ -5,6 +5,10 @@ import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
+import {
+    ITransferValidator721
+} from "seadrop/interfaces/ITransferValidator.sol";
+
 import { MockTransferValidator } from "seadrop/test/MockTransferValidator.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
@@ -77,6 +81,16 @@ contract ERC721TransferValidatorTest is TestHelper {
         );
         token_.setTransferValidator(address(0));
         token_.safeTransferFrom(address(this), msg.sender, 2);
+    }
+
+    function testGetTransferValidationFunction() public {
+        (bytes4 functionSignature, bool isViewFunction) = token_
+            .getTransferValidationFunction();
+        assertEq(
+            functionSignature,
+            ITransferValidator721.validateTransfer.selector
+        );
+        assertEq(isViewFunction, false);
     }
 
     function onERC721Received(

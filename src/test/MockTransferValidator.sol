@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.17;
 
-import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
+import { ITransferValidator721, ITransferValidator1155 } from "../interfaces/ITransferValidator.sol";
 
-contract MockTransferValidator is ITransferValidator {
+contract MockTransferValidator is ITransferValidator721, ITransferValidator1155 {
     bool internal _revertOnValidate;
 
     constructor(bool revertOnValidate) {
