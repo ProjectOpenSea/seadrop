@@ -835,13 +835,13 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
     expect(await token.totalSupply()).to.equal(3);
 
     // Only the owner or approved of the minted token should be able to burn it.
+    await expect(token.connect(creator).burn(1)).to.be.revertedWith(
+      "TransferCallerNotOwnerNorApproved()"
+    );
     await expect(token.connect(owner).burn(1)).to.be.revertedWith(
       "TransferCallerNotOwnerNorApproved()"
     );
-    await expect(token.connect(minter).burn(1)).to.be.revertedWith(
-      "TransferCallerNotOwnerNorApproved()"
-    );
-    await expect(token.connect(minter).burn(2)).to.be.revertedWith(
+    await expect(token.connect(owner).burn(2)).to.be.revertedWith(
       "TransferCallerNotOwnerNorApproved()"
     );
     await expect(token.connect(owner).burn(3)).to.be.revertedWith(
@@ -857,18 +857,18 @@ describe(`ERC721SeaDrop (v${VERSION})`, function () {
 
     expect(await token.totalSupply()).to.equal(2);
 
-    await token.connect(minter).setApprovalForAll(minter.address, true);
-    await token.connect(minter).burn(2);
+    await token.connect(minter).setApprovalForAll(owner.address, true);
+    await token.connect(owner).burn(2);
 
     expect(await token.totalSupply()).to.equal(1);
 
-    await token.connect(minter).setApprovalForAll(minter.address, false);
-    await expect(token.connect(minter).burn(3)).to.be.revertedWith(
+    await token.connect(minter).setApprovalForAll(owner.address, false);
+    await expect(token.connect(owner).burn(3)).to.be.revertedWith(
       "TransferCallerNotOwnerNorApproved()"
     );
 
-    await token.connect(minter).approve(owner.address, 3);
-    await token.connect(owner).burn(3);
+    await token.connect(minter).approve(creator.address, 3);
+    await token.connect(creator).burn(3);
 
     expect(await token.totalSupply()).to.equal(0);
 
