@@ -137,6 +137,17 @@ contract ERC721SeaDropCloneable is
     }
 
     /**
+     * @notice Burns `tokenId`. The caller must own `tokenId` or be an
+     *         approved operator.
+     *
+     * @param tokenId The token id to burn.
+     */
+    // solhint-disable-next-line comprehensive-interface
+    function burn(uint256 tokenId) external {
+        _burn(tokenId, true);
+    }
+
+    /**
      * @dev Overrides the `_startTokenId` function from ERC721A
      *      to start at token id `1`.
      *
