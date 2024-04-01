@@ -352,9 +352,10 @@ contract ERC1155ContractMetadata is
     ) internal virtual override {
         if (from != address(0) && to != address(0)) {
             // Call the transfer validator if one is set.
-            if (_transferValidator != address(0)) {
+            address transferValidator = _transferValidator;
+            if (transferValidator != address(0)) {
                 for (uint256 i = 0; i < ids.length; i++) {
-                    ITransferValidator1155(_transferValidator).validateTransfer(
+                    ITransferValidator1155(transferValidator).validateTransfer(
                         msg.sender,
                         from,
                         to,
