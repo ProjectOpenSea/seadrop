@@ -7,6 +7,11 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
+import {
+    ITransferValidator721,
+    ITransferValidator1155
+} from "seadrop/interfaces/ITransferValidator.sol";
+
 import { MockTransferValidator } from "seadrop/test/MockTransferValidator.sol";
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
@@ -32,11 +37,7 @@ contract ERC1155SeaDropWithMint is ERC1155SeaDrop {
         string memory symbol_
     ) ERC1155SeaDrop(allowedConfigurer, allowedSeaport, name_, symbol_) {}
 
-    function mint(
-        address to,
-        uint256 id,
-        uint256 amount
-    ) public onlyOwner {
+    function mint(address to, uint256 id, uint256 amount) public onlyOwner {
         _mint(to, id, amount, "");
     }
 }
@@ -55,10 +56,20 @@ contract TokenTransferValidatorTest is SeaDrop721Test {
     function setUp() public override {
         super.setUp();
 
-        token721 = new ERC721SeaDropWithMint(address(0), allowedSeaport, "", "");
+        token721 = new ERC721SeaDropWithMint(
+            address(0),
+            allowedSeaport,
+            "",
+            ""
+        );
         token721.setMaxSupply(10);
 
-        token1155 = new ERC1155SeaDropWithMint(address(0), allowedSeaport, "", "");
+        token1155 = new ERC1155SeaDropWithMint(
+            address(0),
+            allowedSeaport,
+            "",
+            ""
+        );
         token1155.setMaxSupply(1, 10);
         token1155.setMaxSupply(2, 10);
     }
@@ -184,5 +195,25 @@ contract TokenTransferValidatorTest is SeaDrop721Test {
             amounts,
             ""
         );
+    }
+
+    function testERC721GetTransferValidationFunction() public {
+        (bytes4 functionSignature, bool isViewFunction) = token721
+            .getTransferValidationFunction();
+        assertEq(
+            functionSignature,
+            ITransferValidator721.validateTransfer.selector
+        );
+        assertEq(isViewFunction, false);
+    }
+
+    function testERC1155GetTransferValidationFunction() public {
+        (bytes4 functionSignature, bool isViewFunction) = token1155
+            .getTransferValidationFunction();
+        assertEq(
+            functionSignature,
+            ITransferValidator1155.validateTransfer.selector
+        );
+        assertEq(isViewFunction, true);
     }
 }

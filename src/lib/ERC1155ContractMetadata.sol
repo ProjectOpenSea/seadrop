@@ -14,7 +14,7 @@ import {
     ILegacyCreatorToken
 } from "../interfaces/ICreatorToken.sol";
 
-import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
+import { ITransferValidator1155 } from "../interfaces/ITransferValidator.sol";
 
 import { TokenTransferValidator } from "./TokenTransferValidator.sol";
 
@@ -322,11 +322,7 @@ contract ERC1155ContractMetadata is
         pure
         returns (bytes4 functionSignature, bool isViewFunction)
     {
-        functionSignature = bytes4(
-            keccak256(
-                "validateTransfer(address,address,address,uint256,uint256)"
-            )
-        );
+        functionSignature = ITransferValidator1155.validateTransfer.selector;
         isViewFunction = true;
     }
 
@@ -358,7 +354,7 @@ contract ERC1155ContractMetadata is
             // Call the transfer validator if one is set.
             if (_transferValidator != address(0)) {
                 for (uint256 i = 0; i < ids.length; i++) {
-                    ITransferValidator(_transferValidator).validateTransfer(
+                    ITransferValidator1155(_transferValidator).validateTransfer(
                         msg.sender,
                         from,
                         to,

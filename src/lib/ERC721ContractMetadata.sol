@@ -12,7 +12,7 @@ import {
     ILegacyCreatorToken
 } from "../interfaces/ICreatorToken.sol";
 
-import { ITransferValidator } from "../interfaces/ITransferValidator.sol";
+import { ITransferValidator721 } from "../interfaces/ITransferValidator.sol";
 
 import { TokenTransferValidator } from "./TokenTransferValidator.sol";
 
@@ -290,9 +290,7 @@ contract ERC721ContractMetadata is
         pure
         returns (bytes4 functionSignature, bool isViewFunction)
     {
-        functionSignature = bytes4(
-            keccak256("validateTransfer(address,address,address,uint256)")
-        );
+        functionSignature = ITransferValidator721.validateTransfer.selector;
         isViewFunction = false;
     }
 
@@ -317,7 +315,7 @@ contract ERC721ContractMetadata is
         if (from != address(0) && to != address(0)) {
             // Call the transfer validator if one is set.
             if (_transferValidator != address(0)) {
-                ITransferValidator(_transferValidator).validateTransfer(
+                ITransferValidator721(_transferValidator).validateTransfer(
                     msg.sender,
                     from,
                     to,
