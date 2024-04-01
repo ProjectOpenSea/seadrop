@@ -4,6 +4,7 @@ import { toBN } from "../seaport-utils/encoding";
 
 import { toPaddedBuffer } from "./encoding";
 
+import type { AwaitedObject } from "./helpers";
 import type {
   ERC1155SeaDrop,
   ERC721SeaDrop,
@@ -14,7 +15,6 @@ import type {
 import type { MintParamsStruct as MintParamsStruct721 } from "../../typechain-types/src/shim/Shim";
 import type { MintParamsStruct as MintParamsStruct1155 } from "../../typechain-types/src/shim/Shim2";
 import type { AdvancedOrder, OrderParameters } from "../seaport-utils/types";
-import type { AwaitedObject } from "./helpers";
 import type { BigNumberish, Wallet } from "ethers";
 
 const { AddressZero, HashZero } = ethers.constants;
