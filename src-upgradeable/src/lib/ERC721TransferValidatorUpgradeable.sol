@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ERC721ContractMetadataStorage} from "../ERC721ContractMetadataStorage.sol";
+import { ICreatorToken } from "../interfaces/ICreatorToken.sol";
+
+import { ERC721ContractMetadataStorage } from "../ERC721ContractMetadataStorage.sol";
 
 /**
  * @title  ERC721TransferValidatorUpgradeable
  * @notice Functionality to use a transfer validator.
  */
-contract ERC721TransferValidatorUpgradeable {
+abstract contract ERC721TransferValidatorUpgradeable is ICreatorToken {
     using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
-
-    /// @notice Emit an event when the transfer validator is updated.
-    event TransferValidatorUpdated(address oldValidator, address newValidator);
 
     /// @notice Revert with an error if the transfer validator is being set to the same address.
     error SameTransferValidator();
