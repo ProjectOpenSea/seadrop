@@ -42,7 +42,7 @@ import {
  * @author James Wenzel (emo.eth)
  * @author Ryan Ghods (ralxz.eth)
  * @author Stephan Min (stephanm.eth)
- * @contributor Limit Break (@limitbreak)
+ * @custom:contributor Limit Break (@limitbreak)
  * @notice ERC721SeaDrop is a token contract that contains methods
  *         to properly interact with SeaDrop.
  *         Implements Limit Break's Creator Token Standards transfer
