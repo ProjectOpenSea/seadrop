@@ -6,6 +6,7 @@ src/shim/
 src/lib/ERC1155.sol
 
 src/interfaces/IDelegationRegistry.sol
+src/interfaces/ICreatorToken.sol
 src/interfaces/ITransferValidator.sol
 
 test/
