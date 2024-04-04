@@ -109,6 +109,22 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     );
   });
 
+  it("Should not let the owner set the max supply over the totalSupply", async () => {
+    await token.setMaxSupply(3);
+    await whileImpersonating(
+      seadrop.address,
+      provider,
+      async (impersonatedSigner) => {
+        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 3);
+      }
+    );
+    expect(await token.totalSupply()).to.equal(3);
+
+    await expect(token.setMaxSupply(2)).to.be.revertedWith(
+      "NewMaxSupplyCannotBeLessThenTotalSupply(2, 3)"
+    );
+  });
+
   it("Should only let the owner notify update of batch token URIs", async () => {
     await expect(
       token.connect(minter).emitBatchMetadataUpdate(5, 10)

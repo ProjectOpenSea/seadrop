@@ -11,6 +11,14 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     error CannotExceedMaxSupplyOfUint64(uint256 newMaxSupply);
 
     /**
+     * @notice Throw if the max supply exceeds the total supply.
+     */
+    error NewMaxSupplyCannotBeLessThenTotalSupply(
+        uint256 got,
+        uint256 totalSupply
+    );
+
+    /**
      * @dev Revert with an error when attempting to set the provenance
      *      hash after the mint has started.
      */

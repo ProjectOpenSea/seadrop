@@ -138,6 +138,14 @@ contract ERC721ContractMetadataCloneable is
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
+        // Ensure the max supply does not exceed the total supply.
+        if (newMaxSupply < totalSupply()) {
+            revert NewMaxSupplyCannotBeLessThenTotalSupply(
+                newMaxSupply,
+                totalSupply()
+            );
+        }
+
         // Set the new max supply.
         _maxSupply = newMaxSupply;
 

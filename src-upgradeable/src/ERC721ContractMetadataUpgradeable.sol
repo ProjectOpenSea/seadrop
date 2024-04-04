@@ -146,6 +146,14 @@ contract ERC721ContractMetadataUpgradeable is
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
+        // Ensure the max supply does not exceed the total supply.
+        if (newMaxSupply < totalSupply()) {
+            revert NewMaxSupplyCannotBeLessThenTotalSupply(
+                newMaxSupply,
+                totalSupply()
+            );
+        }
+
         // Set the new max supply.
         ERC721ContractMetadataStorage.layout()._maxSupply = newMaxSupply;
 
