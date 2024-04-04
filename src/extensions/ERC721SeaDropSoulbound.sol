@@ -47,9 +47,9 @@ contract ERC721SeaDropSoulbound is ERC721SeaDrop {
      */
     function _beforeTokenTransfers(
         address from,
-        address to,
-        uint256 startTokenId,
-        uint256 quantity
+        address, /* to */
+        uint256, /* startTokenId */
+        uint256 /* quantity */
     ) internal virtual override {
         if (from != address(0)) {
             revert SoulboundNotTransferable();
