@@ -155,7 +155,7 @@ contract ERC721ContractMetadata is
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
-        // Ensure the max supply does not exceed the total minted.
+        // Ensure the max supply does not exceed the total supply.
         if (newMaxSupply < totalSupply()) {
             revert NewMaxSupplyCannotBeLessThenTotalSupply(
                 newMaxSupply,
