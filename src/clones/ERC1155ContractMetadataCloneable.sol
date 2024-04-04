@@ -177,9 +177,17 @@ contract ERC1155ContractMetadataCloneable is
         _onlyOwnerOrConfigurer();
 
         // Ensure the max supply does not exceed the maximum value of uint64,
-        // a limit due to the storage of bit-packed variables in TokenSupply,
+        // a limit due to the storage of bit-packed variables in TokenSupply.
         if (newMaxSupply > 2 ** 64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
+        }
+
+        // Ensure the max supply does not exceed the total supply.
+        if (newMaxSupply < _tokenSupply[tokenId].totalSupply) {
+            revert NewMaxSupplyCannotBeLessThenTotalSupply(
+                newMaxSupply,
+                _tokenSupply[tokenId].totalSupply
+            );
         }
 
         // Set the new max supply.
@@ -337,7 +345,13 @@ contract ERC1155ContractMetadataCloneable is
     }
 
     /// @dev Override this function to return true if `_beforeTokenTransfer` is used.
-    function _useBeforeTokenTransfer() internal view virtual override returns (bool) {
+    function _useBeforeTokenTransfer()
+        internal
+        view
+        virtual
+        override
+        returns (bool)
+    {
         return true;
     }
 

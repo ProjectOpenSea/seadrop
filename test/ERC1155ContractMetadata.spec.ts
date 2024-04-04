@@ -122,6 +122,26 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
       .withArgs(BigNumber.from(2).pow(70));
   });
 
+  it("Should not let the owner set the max supply over the totalSupply", async () => {
+    await token.setMaxSupply(1, 3);
+    await mintTokens({
+      marketplaceContract,
+      token,
+      tokenSeaDropInterface,
+      minter: owner,
+      tokenId: 1,
+      quantity: 3,
+    });
+    expect(await token.totalSupply(1)).to.equal(3);
+
+    await expect(token.setMaxSupply(1, 2))
+      .to.be.revertedWithCustomError(
+        token,
+        "NewMaxSupplyCannotBeLessThenTotalSupply"
+      )
+      .withArgs(2, 3);
+  });
+
   it("Should only let the owner notify update of batch token URIs", async () => {
     await expect(
       token.connect(bob).emitBatchMetadataUpdate(5, 10)
