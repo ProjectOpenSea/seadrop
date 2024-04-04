@@ -26,4 +26,4 @@
 	url = https://github.com/ProjectOpenSea/seaport
 [submodule "lib/solady"]
 	path = lib/solady
-	url = git@github.com:Vectorized/solady.git
+	url = https://github.com/Vectorized/solady
