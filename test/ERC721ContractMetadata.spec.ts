@@ -187,13 +187,6 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
       token.connect(owner).setBaseURI("http://example.com/")
     ).to.emit(token, "BatchMetadataUpdate");
 
-    await whileImpersonating(
-      seadrop.address,
-      provider,
-      async (impersonatedSigner) => {
-        await token.connect(impersonatedSigner).mintSeaDrop(owner.address, 2);
-      }
-    );
     expect(await token.baseURI()).to.equal("http://example.com/");
     expect(await token.tokenURI(1)).to.equal("http://example.com/1");
     expect(await token.tokenURI(2)).to.equal("http://example.com/2");
