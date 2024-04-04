@@ -19,10 +19,10 @@
 	url = https://github.com/openzeppelin/openzeppelin-contracts
 [submodule "lib/openzeppelin-contracts-upgradeable"]
 	path = lib/openzeppelin-contracts-upgradeable
-	url = git@github.com:OpenZeppelin/openzeppelin-contracts-upgradeable.git
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
 [submodule "lib/ERC721A-Upgradeable"]
 	path = lib/ERC721A-Upgradeable
-	url = git@github.com:chiru-labs/ERC721A-Upgradeable.git
+	url = https://github.com/chiru-labs/ERC721A-Upgradeable
 [submodule "lib/ds-test"]
 	path = lib/ds-test
 	url = https://github.com/dapphub/ds-test
