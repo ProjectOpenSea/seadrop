@@ -57,6 +57,7 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 <tr><td>Arbitrum Sepolia</td></tr>
 <tr><td>Avalanche C-Chain</td></tr>
 <tr><td>Avalanche Fuji</td></tr>
+<tr><td>Base</td></tr>
 <tr><td>BSC</td></tr>
 <tr><td>BSC Testnet</td></tr>
 <tr><td>Gnosis Chain</td></tr>
