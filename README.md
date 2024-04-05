@@ -40,7 +40,7 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 <th>SeaDrop 1.0</th>
 </tr>
 
-<tr><td>Ethereum</td><td rowspan="17">
+<tr><td>Ethereum</td><td rowspan="20">
 
 [0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
 
@@ -48,18 +48,22 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 <tr><td>Sepolia</td></tr>
 <tr><td>Polygon</td></tr>
 <tr><td>Polygon Mumbai</td></tr>
-<tr><td>Klaytn</td></tr>
-<tr><td>Klaytn Baobab</td></tr>
-<tr><td>Optimism</td></tr>
-<tr><td>Optimism Sepolia</td></tr>
 <tr><td>Arbitrum One</td></tr>
 <tr><td>Arbitrum Nova</td></tr>
 <tr><td>Arbitrum Sepolia</td></tr>
 <tr><td>Avalanche C-Chain</td></tr>
 <tr><td>Avalanche Fuji</td></tr>
+<tr><td>Optimism</td></tr>
+<tr><td>Optimism Sepolia</td></tr>
+<tr><td>Base</td></tr>
+<tr><td>Base Sepolia</td></tr>
 <tr><td>BSC</td></tr>
 <tr><td>BSC Testnet</td></tr>
+<tr><td>Klaytn</td></tr>
+<tr><td>Klaytn Baobab</td></tr>
 <tr><td>Gnosis Chain</td></tr>
+<tr><td>Zora</td></tr>
+<tr><td>Zora Sepolia</td></tr>
 </table>
 
 To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeployment.md).
