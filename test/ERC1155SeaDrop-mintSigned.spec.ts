@@ -686,7 +686,7 @@ describe(`ERC1155SeaDrop - Mint Signed (v${VERSION})`, function () {
     ).to.be.revertedWithCustomError(
       marketplaceContract,
       "InvalidContractOrder"
-    ); // InvalidSignedFeeBps
+    ); // InvalidFeeBps
   });
 
   it("Should allow delegated payers to mint via the DelegationRegistry", async () => {
