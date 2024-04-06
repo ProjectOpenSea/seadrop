@@ -122,7 +122,7 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
       .withArgs(BigNumber.from(2).pow(70));
   });
 
-  it("Should not let the owner set the max supply over the totalSupply", async () => {
+  it("Should not let the owner set the max supply over the totalMinted", async () => {
     await token.setMaxSupply(1, 3);
     await mintTokens({
       marketplaceContract,
@@ -137,7 +137,7 @@ describe(`ERC1155ContractMetadata (v${VERSION})`, function () {
     await expect(token.setMaxSupply(1, 2))
       .to.be.revertedWithCustomError(
         token,
-        "NewMaxSupplyCannotBeLessThenTotalSupply"
+        "NewMaxSupplyCannotBeLessThenTotalMinted"
       )
       .withArgs(2, 3);
   });

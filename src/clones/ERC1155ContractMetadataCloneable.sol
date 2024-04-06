@@ -182,11 +182,11 @@ contract ERC1155ContractMetadataCloneable is
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
-        // Ensure the max supply does not exceed the total supply.
-        if (newMaxSupply < _tokenSupply[tokenId].totalSupply) {
-            revert NewMaxSupplyCannotBeLessThenTotalSupply(
+        // Ensure the max supply does not exceed the total minted.
+        if (newMaxSupply < _tokenSupply[tokenId].totalMinted) {
+            revert NewMaxSupplyCannotBeLessThenTotalMinted(
                 newMaxSupply,
-                _tokenSupply[tokenId].totalSupply
+                _tokenSupply[tokenId].totalMinted
             );
         }
 
