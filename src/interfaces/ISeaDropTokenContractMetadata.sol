@@ -11,11 +11,11 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     error CannotExceedMaxSupplyOfUint64(uint256 newMaxSupply);
 
     /**
-     * @notice Throw if the max supply exceeds the total supply.
+     * @notice Throw if the max supply exceeds the total minted.
      */
-    error NewMaxSupplyCannotBeLessThenTotalSupply(
+    error NewMaxSupplyCannotBeLessThenTotalMinted(
         uint256 got,
-        uint256 totalSupply
+        uint256 totalMinted
     );
 
     /**

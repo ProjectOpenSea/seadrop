@@ -109,7 +109,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     );
   });
 
-  it("Should not let the owner set the max supply over the totalSupply", async () => {
+  it("Should not let the owner set the max supply over the totalMinted", async () => {
     await token.setMaxSupply(3);
     await whileImpersonating(
       seadrop.address,
@@ -121,7 +121,7 @@ describe(`ERC721ContractMetadata (v${VERSION})`, function () {
     expect(await token.totalSupply()).to.equal(3);
 
     await expect(token.setMaxSupply(2)).to.be.revertedWith(
-      "NewMaxSupplyCannotBeLessThenTotalSupply(2, 3)"
+      "NewMaxSupplyCannotBeLessThenTotalMinted(2, 3)"
     );
   });
 

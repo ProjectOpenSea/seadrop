@@ -15,7 +15,7 @@ interface ISeaDropTokenContractMetadataUpgradeable is IERC2981Upgradeable {
     /**
      * @notice Throw if the max supply exceeds the total supply.
      */
-    error NewMaxSupplyCannotBeLessThenTotalSupply(
+    error NewMaxSupplyCannotBeLessThenTotalMinted(
         uint256 got,
         uint256 totalSupply
     );
