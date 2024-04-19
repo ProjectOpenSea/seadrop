@@ -21,6 +21,7 @@ contract ERC721DropTest is TestHelper {
                     args.allowList[i] != args.minter
             );
         }
+        vm.assume(args.minter != address(token));
         _;
     }
 

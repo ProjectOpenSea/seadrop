@@ -87,6 +87,7 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
                 args.minter != creator &&
                 args.feeRecipient != creator
         );
+        vm.assume(args.minter != address(token));
         _;
     }
 
