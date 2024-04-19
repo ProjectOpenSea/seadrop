@@ -2,24 +2,31 @@ import fs from "fs";
 import { ethers, upgrades } from "hardhat";
 
 async function mainDeploy() {
-  const ExampleToken = await ethers.getContractFactory("ExampleToken");
+  const ERC721SeaDropUpgradeable = await ethers.getContractFactory("ERC721SeaDropUpgradeable");
+
   console.log("Deploying...");
-  const exampleToken = await upgrades.deployProxy(
-    ExampleToken,
+
+  const tokenName = "ERC721SeaDropUpgradeable"
+  const tokenSymbol = "SD"
+  const allowedSeaDrop = ["0x00005EA00Ac477B1030CE78506496e8C2dE24bf5"]
+
+  const token = await upgrades.deployProxy(
+    ERC721SeaDropUpgradeable,
     [
-      "ExampleToken",
-      "ExTkn",
-      "0x4468A5B725E2C63056131121cD33b66848E1dd87",
-      ["0x00005EA00Ac477B1030CE78506496e8C2dE24bf5"],
+      tokenName,
+      tokenSymbol,
+      allowedSeaDrop,
     ],
     { initializer: "initialize" }
   );
-  await exampleToken.deployed();
+
+  await token.deployed();
+
   const addresses = {
-    proxy: exampleToken.address,
-    admin: await upgrades.erc1967.getAdminAddress(exampleToken.address),
+    proxy: token.address,
+    admin: await upgrades.erc1967.getAdminAddress(token.address),
     implementation: await upgrades.erc1967.getImplementationAddress(
-      exampleToken.address
+      token.address
     ),
   };
   console.log("Addresses: ", addresses);

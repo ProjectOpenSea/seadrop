@@ -13,16 +13,12 @@ Constructors are replaced by internal initializer functions following the naming
 
 These functions are internal, and you must define your own public initializer function that calls the parent class' initializer.
 
-If using with another upgradeable library, please do use their respective initializer modifier on the `initialize()` function, in addition to the `initializerERC721A` modifier.
+If using with another upgradeable library, please do use their respective initializer modifier on the `initialize()` function, in addition to the `onlyInitializing` modifier.
 
 ## Deployment
 
 If you are using hardhat, you can deploy it using 
 [OpenZeppelin Upgrade Plugins](https://docs.openzeppelin.com/upgrades-plugins/1.x/).
-
-```
-npm install --save-dev @openzeppelin/hardhat-upgrades
-```
 
 **Deploy Script**
 
@@ -34,14 +30,14 @@ Located at [`scripts/upgrade.ts`](./scripts/upgrade.ts)
 
 ### Testnet / Mainnet
 
-We will use the Goerli testnet as an example.
+We will use the Sepolia testnet as an example.
 
 Add the following to your environment file `.env`:
 
 ```
-export ETHERSCAN_KEY="Your Etherscan API Key"
 export PRIVATE_KEY="Your Wallet Private Key"
-export RPC_URL_GOERLI="https://Infura Or Alchemy URL With API Key"
+export SEPOLIA_RPC_URL="https://Infura Or Alchemy URL With API Key"
+export ETHERSCAN_API_KEY="Your Etherscan API Key"
 ```
 
 Hardhat config located at [`hardhat.config.ts`](./hardhat.config.ts)
@@ -51,7 +47,7 @@ Hardhat config located at [`hardhat.config.ts`](./hardhat.config.ts)
 In this directory (`src-upgradeable`) run:
 
 ```
-npx hardhat run --config hardhat.config.ts --network goerli scripts/deploy.ts
+npx hardhat run --config hardhat.config.ts --network sepolia scripts/deploy.ts
 ```
 
 **Upgrade**
@@ -59,5 +55,5 @@ npx hardhat run --config hardhat.config.ts --network goerli scripts/deploy.ts
 In this directory (`src-upgradeable`) run:
 
 ```
-npx hardhat run --config hardhat.config.ts --network goerli scripts/upgrade.ts
+npx hardhat run --config hardhat.config.ts --network sepolia scripts/upgrade.ts
 ```

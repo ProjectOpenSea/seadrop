@@ -33,22 +33,6 @@ contract ExampleToken is ERC721SeaDropUpgradeable {
      */
     error BurnIncorrectSender();
 
-    /**
-     * @notice Initialize the token contract with its name, symbol,
-     *         and allowed SeaDrop addresses.
-     */
-    function initialize(
-        string memory name,
-        string memory symbol,
-        address[] memory allowedSeaDrop
-    ) external initializer initializerERC721A {
-        ERC721SeaDropUpgradeable.__ERC721SeaDrop_init(
-            name,
-            symbol,
-            allowedSeaDrop
-        );
-    }
-
     function setBurnAddress(address newBurnAddress) external onlyOwner {
         ExampleTokenStorage.layout().burnAddress = newBurnAddress;
     }
@@ -62,7 +46,7 @@ contract ExampleToken is ERC721SeaDropUpgradeable {
      *
      * @param tokenId The token id to burn.
      */
-    function burn(uint256 tokenId) external {
+    function burn(uint256 tokenId) external override {
         if (msg.sender != ExampleTokenStorage.layout().burnAddress) {
             revert BurnIncorrectSender();
         }

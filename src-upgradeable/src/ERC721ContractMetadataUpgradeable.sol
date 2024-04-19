@@ -50,6 +50,7 @@ import {
  */
 contract ERC721ContractMetadataUpgradeable is
     ERC721AConduitPreapprovedUpgradeable,
+    ERC721TransferValidatorUpgradeable,
     TwoStepOwnableUpgradeable,
     ISeaDropTokenContractMetadataUpgradeable
 {
@@ -77,7 +78,6 @@ contract ERC721ContractMetadataUpgradeable is
         string memory symbol
     ) internal onlyInitializing {
         __ERC721AConduitPreapprovedUpgradeable_init_unchained(name, symbol);
-        __ConstructorInitializable_init_unchained();
         __TwoStepOwnable_init_unchained();
     }
 
