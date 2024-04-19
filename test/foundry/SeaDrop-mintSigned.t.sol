@@ -37,8 +37,10 @@ contract SeaDropMintSignedTest is TestHelper {
         vm.assume(
             args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
         );
+        vm.assume(
+            args.minter.code.length == 0 && args.minter > address(9)
+        );
         vm.assume(args.minter != address(0) && args.payer != address(0));
-        vm.assume(args.minter != address(token));
         _;
     }
 
