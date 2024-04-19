@@ -16,7 +16,7 @@ abstract contract ERC721AConduitPreapprovedUpgradeable is ERC721AUpgradeable {
      */
     function __ERC721AConduitPreapprovedUpgradeable_init_unchained(
         string memory name, string memory symbol
-    ) internal onlyInitializing {
+    ) internal onlyInitializingERC721A {
         __ERC721A_init_unchained(name, symbol);
     }
 
@@ -28,6 +28,6 @@ abstract contract ERC721AConduitPreapprovedUpgradeable is ERC721AUpgradeable {
         if (operator == _CONDUIT) {
             return true;
         }
-        return ERC721A.isApprovedForAll(owner, operator);
+        return ERC721AUpgradeable.isApprovedForAll(owner, operator);
     }
 }

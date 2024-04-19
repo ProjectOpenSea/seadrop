@@ -83,6 +83,9 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
             args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
         );
         vm.assume(
+            args.minter.code.length == 0 && args.minter > address(9)
+        );
+        vm.assume(
             args.minter != args.feeRecipient &&
                 args.minter != creator &&
                 args.feeRecipient != creator

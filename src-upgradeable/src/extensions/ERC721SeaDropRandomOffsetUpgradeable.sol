@@ -38,26 +38,8 @@ contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
         string memory symbol,
         address[] memory allowedSeaDrop
     ) internal onlyInitializing {
-        __ERC721A_init_unchained(name, symbol);
-        __ConstructorInitializable_init_unchained();
-        __TwoStepOwnable_init_unchained();
-        __ERC721ContractMetadata_init_unchained(name, symbol);
-        __ReentrancyGuard_init_unchained();
         __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
-        __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
-        __ERC721SeaDropRandomOffset_init_unchained(
-            name,
-            symbol,
-            allowedSeaDrop
-        );
     }
-
-    function __ERC721SeaDropRandomOffset_init_unchained(
-        string memory,
-        string memory,
-        address,
-        address[] memory
-    ) internal onlyInitializing {}
 
     /**
      * @notice Set the random offset, for a fair metadata reveal. Only callable

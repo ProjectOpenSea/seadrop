@@ -71,20 +71,29 @@ contract ERC721SeaDropUpgradeable is
     }
 
     /**
-     * @notice Deploy the token contract with its name, symbol,
+     * @notice Initialize the token contract with its name, symbol,
      *         and allowed SeaDrop addresses.
      */
+    function initialize(
+        string memory name,
+        string memory symbol,
+        address[] memory allowedSeaDrop
+    ) external initializer initializerERC721A {
+        __ERC721SeaDrop_init(
+            name,
+            symbol,
+            allowedSeaDrop
+        );
+    }
+
     function __ERC721SeaDrop_init(
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop
     ) internal onlyInitializing {
-        __ERC721A_init_unchained(name, symbol);
-        __ConstructorInitializable_init_unchained();
-        __TwoStepOwnable_init_unchained();
-        __ERC721ContractMetadata_init_unchained(name, symbol);
-        __ReentrancyGuard_init_unchained();
+        __ERC721ContractMetadata_init(name, symbol);
         __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
+        __ReentrancyGuard_init_unchained();
     }
 
     function __ERC721SeaDrop_init_unchained(
@@ -182,7 +191,7 @@ contract ERC721SeaDropUpgradeable is
      * @param tokenId The token id to burn.
      */
     // solhint-disable-next-line comprehensive-interface
-    function burn(uint256 tokenId) external {
+    function burn(uint256 tokenId) external virtual {
         _burn(tokenId, true);
     }
 

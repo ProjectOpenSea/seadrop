@@ -11,22 +11,22 @@ module.exports = {
           viaIR: true,
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 1000,
           },
         },
       },
     ],
   },
   networks: {
-    goerli: {
-      url: process.env.RPC_URL_GOERLI,
+    sepolia: {
+      url: process.env.SEPOLIA_RPC_URL,
       accounts: [process.env.PRIVATE_KEY],
     },
   },
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   paths: { sources: "./src" },
 };
