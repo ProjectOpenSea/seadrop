@@ -68,7 +68,7 @@ contract ERC1155SeaDrop is ERC1155SeaDropContractOfferer {
         address from,
         uint256[] calldata ids,
         uint256[] calldata amounts
-    ) external {
+    ) external virtual {
         // Burn the tokens.
         _batchBurn(msg.sender, from, ids, amounts);
     }
