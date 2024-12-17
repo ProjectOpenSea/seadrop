@@ -118,4 +118,26 @@ describe("Sepolia Token (Mint)", function() {
     const value: BigNumber = balanceBefore.add(BigNumber.from(1));
     expect(await nft.balanceOf(ownerAddress)).to.equal(value);
   });
+
+  it("sepolia mints one freeToken for owner", async () => {
+
+    const balanceBefore = await nft.balanceOf(ownerAddress);
+    console.info(`mint free token to owner: ${ownerAddress} with seadrop address: ${seadropAddress}`);
+    const zeroBM = BigNumber.from(0);
+    const transaction = await nft
+      .connect(owner)
+      .mint(seadropAddress, 1, ownerAddress, { value: zeroBM.toString() });
+
+    console.log(`free mint transaction details ${transaction.value} hash: ${transaction.hash}. Waiting for confirmations...`);
+    await transaction.wait(2);
+
+    const maxSupply = await nft.maxSupply();
+    const totalSupply = await nft.totalSupply();
+    const tokenUri = await getTokenUri(nft, owner, totalSupply + 1); //FIXME will fail when sold out
+    console.log(`tokenUri ${tokenUri}`);
+
+    // check the balance (this can fail in test/mainnet as it takes some time for confirmation)
+    const value: BigNumber = balanceBefore.add(BigNumber.from(1));
+    expect(await nft.balanceOf(ownerAddress)).to.equal(value);
+  });
 });

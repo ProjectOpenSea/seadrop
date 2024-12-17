@@ -39,6 +39,9 @@ describe("Sepolia Multiconfigure Token", function() {
     externalAccount = _externalAccount;
   });
 
+  /*
+  This method FAILS against sepolia with cancelled or rejected trx
+   */
   it("multiConfigure Should be able to use the multiConfigure method", async () => {
     const publicDrop: PublicDropStruct = {
       mintPrice: "100000000000000000", // 0.1 ether
