@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/ERC721A" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/ERC721A-Upgradeable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/create2-helpers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/create2-helpers/lib/forge-std" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/create2-helpers/lib/forge-std/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/create2-helpers/lib/openzeppelin-contracts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/create2-helpers/lib/openzeppelin-contracts/lib/forge-std" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/create2-helpers/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/forge-std" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/forge-std/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/murky" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/murky/lib/forge-std" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/murky/lib/forge-std/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/murky/lib/openzeppelin-contracts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/openzeppelin-contracts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/openzeppelin-contracts-upgradeable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/openzeppelin-contracts-upgradeable/lib/forge-std" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/openzeppelin-contracts-upgradeable/lib/forge-std/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/openzeppelin-contracts/lib/forge-std" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/solmate" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/solmate/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/utility-contracts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/utility-contracts/lib/ERC721A" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/utility-contracts/lib/forge-std" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/utility-contracts/lib/forge-std/lib/ds-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/utility-contracts/lib/openzeppelin-contracts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/utility-contracts/lib/solmate" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/lib/utility-contracts/lib/solmate/lib/ds-test" vcs="Git" />
+  </component>
+</project>

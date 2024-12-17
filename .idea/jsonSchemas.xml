@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JsonSchemaMappingsProjectConfiguration">
+    <state>
+      <map>
+        <entry key="dropSchema">
+          <value>
+            <SchemaInfo>
+              <option name="generatedName" value="New Schema" />
+              <option name="name" value="dropSchema" />
+              <option name="relativePathToSchema" value="src-upgradeable/config/schema/dropSchema.json" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="src-upgradeable/config/dropConfig.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
+      </map>
+    </state>
+  </component>
+</project>
