@@ -52,7 +52,8 @@ We will use the Sepolia testnet as an example.
 Add the following to your environment file `.env`:
 
 ```
-export PRIVATE_KEY="Your Wallet Private Key"
+export PRIVATE_KEY="Your Wallet Private Key" 
+NEVER DO THIS except for local node, not even for testnets.
 export SEPOLIA_RPC_URL="https://Infura Or Alchemy URL With API Key"
 export ETHERSCAN_API_KEY="Your Etherscan API Key"
 ```
@@ -74,3 +75,12 @@ In this directory (`src-upgradeable`) run:
 ```
 npx hardhat run --config hardhat.config.ts --network sepolia scripts/upgrade.ts
 ```
+
+
+### Contract Deploy prices
+
+See DEV_README.md
+
+
+
+
