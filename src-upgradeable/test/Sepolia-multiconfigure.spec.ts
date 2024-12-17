@@ -1,18 +1,15 @@
 import { expect } from "chai";
-import { BigNumber, Signer } from "ethers";
+import { Signer } from "ethers";
 import { ethers } from "hardhat";
-import {} from "../../typechain-types";
 import type { PublicDropStruct } from "../../typechain-types/src/ERC721SeaDrop";
-import {
-  AllowListDataStruct,
-  ERC721SeaDropStructsErrorsAndEventsUpgradeable,
-  WalterTheRabbit
-} from "../../typechain-types/WalterTheRabbit";
+import { ERC721SeaDropStructsErrorsAndEventsUpgradeable, WalterTheRabbit } from "../../typechain-types/WalterTheRabbit";
 import CollectionConfig from "../config/CollectionConfig";
-import { MAX_SUPPLY, seadropAddress } from "../config/constants";
-import { getTokenUri, instantiateContract } from "./__fixtures__/base";
+import { creatorAddress, seadropAddress } from "../config/constants";
+import { getAllowListData } from "../src/allowListUtils";
+import { instantiateContract } from "./__fixtures__/base";
 import MultiConfigureStructStruct = ERC721SeaDropStructsErrorsAndEventsUpgradeable.MultiConfigureStructStruct;
 
+const SECONDS_IN_A_DAY = 86400;
 /**
  * This test suite should be run against the Sepolia Network (through --network truffle)
  * hardhat test --config ./src-upgradeable/hardhat.config.ts src-upgradeable/test/WTR-multiconfigure.spec.ts --network truffle
@@ -40,45 +37,43 @@ describe("Sepolia Multiconfigure NFT", function() {
   });
 
   it("multiConfigure Should be able to set the Urls after deploy using the multiConfigure method", async () => {
+    const privateAllowlistStartDate = new Date('2024-12-26');
+    const dateInMillis = privateAllowlistStartDate.getTime();
+    const privateAllowlistStartDateInSeconds = Math.round(dateInMillis / 1000);
+    const privateAllowlistEndDate = privateAllowlistStartDateInSeconds + (SECONDS_IN_A_DAY * 10); // 10 days
+
+
     const publicDrop: PublicDropStruct = {
-      mintPrice: "100000000000000000", // 0.1 ether
-      maxTotalMintableByWallet: 10,
-      startTime: Math.round(Date.now() / 1000) - 100,
-      endTime: Math.round(Date.now() / 1000) + 1000,
+      mintPrice: "50000000000000000", // 0.05 ether
+      maxTotalMintableByWallet: 4,
+      startTime: privateAllowlistEndDate,
+      endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 365 * 5, // 5 years
+      // endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 5, // 5 days
       feeBps: 1000,
       restrictFeeRecipients: true
     };
 
     const ownerAddress = await owner.getAddress();
-    console.info(`owner ${ownerAddress}`);
-    const allowListData: AllowListDataStruct = {
-      merkleRoot: `0x${"3".repeat(64)}`,
-      publicKeyURIs: [],
-      allowListURI: ""
-    };
+    console.info(`owner ${ownerAddress} creator: ${creatorAddress}`);
+
+    const allowListData = await getAllowListData(ownerAddress);
+    // const allowListData =  {
+    //     merkleRoot: ethers.constants.HashZero,
+    //     publicKeyURIs: [],
+    //     allowListURI: "",
+    //   };
 
     const config :  MultiConfigureStructStruct = {
-      maxSupply: 100,
+      maxSupply: CollectionConfig.maxSupply,
       baseURI: CollectionConfig.publicMetadataUri,
       contractURI: CollectionConfig.contractMetadataUri,
       seaDropImpl: seadropAddress,
-      publicDrop: {
-        mintPrice: 0,
-        maxTotalMintableByWallet: 0,
-        startTime: 0,
-        endTime: 0,
-        feeBps: 0,
-        restrictFeeRecipients: true,
-      },
+      publicDrop: publicDrop,
       dropURI: CollectionConfig.dropUri,
-      allowListData: {
-        merkleRoot: ethers.constants.HashZero,
-        publicKeyURIs: [],
-        allowListURI: "",
-      },
-      creatorPayoutAddress: ownerAddress,
+      allowListData: allowListData,
+      creatorPayoutAddress: creatorAddress,
       provenanceHash: ethers.constants.HashZero,
-      allowedFeeRecipients: [],
+      allowedFeeRecipients: [creatorAddress, ownerAddress],
       disallowedFeeRecipients: [],
       allowedPayers: [],
       disallowedPayers: [],
@@ -89,7 +84,7 @@ describe("Sepolia Multiconfigure NFT", function() {
       signedMintValidationParams: [],
       disallowedSigners: []
     };
-    console.info(`config ${JSON.stringify(config)}`);
+    console.info(`calling multiConfigure with params: ${JSON.stringify(config)}`);
     await expect(nft.connect(owner).multiConfigure(config))
       .to.emit(nft, "DropURIUpdated")
       .withArgs(nft.address, "https://waltertherabbit.com");
