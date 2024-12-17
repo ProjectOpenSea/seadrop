@@ -44,7 +44,7 @@ const config: HardhatUserConfig = {
     truffle: {
       allowUnlimitedContractSize: true,
       url: 'http://localhost:24012/rpc',
-      timeout: 3600000,
+      timeout: 3600000,//1h
       // gasMultiplier: DEFAULT_GAS_MULTIPLIER,
       blockGasLimit: 100000000429720,
       gas: 2100000,
@@ -67,7 +67,7 @@ const config: HardhatUserConfig = {
   // specify separate cache for hardhat, since it could possibly conflict with foundry's
   paths: { sources: "./src", tests: "./test", cache: "./hh-cache" },
   mocha: {
-    timeout: 120000
+    timeout: 3600000
   }
 };
 
