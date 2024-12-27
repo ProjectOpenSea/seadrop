@@ -1,5 +1,7 @@
 import { expect } from 'chai'
 
+export const SECONDS_IN_A_DAY = 86400;
+
 /**
  * hardhat test --config ./src-upgradeable/hardhat.config.ts src-upgradeable/test/basic.spec.ts --network truffle
  */

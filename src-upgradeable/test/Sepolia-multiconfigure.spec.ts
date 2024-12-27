@@ -7,9 +7,10 @@ import CollectionConfig from "../config/CollectionConfig";
 import { creatorAddress, seadropAddress } from "../config/constants";
 import { getAllowListData } from "../src/allowListUtils";
 import { instantiateContract } from "./__fixtures__/base";
+import { SECONDS_IN_A_DAY } from "./basic.spec";
 import MultiConfigureStructStruct = ERC721SeaDropStructsErrorsAndEventsUpgradeable.MultiConfigureStructStruct;
 
-const SECONDS_IN_A_DAY = 86400;
+
 
 const emptyAllowListData =  {
   merkleRoot: ethers.constants.HashZero,
@@ -73,18 +74,17 @@ describe("Sepolia Multiconfigure NFT", function() {
   });
 
   it("multiConfigure public drop", async () => {
-    const privateAllowlistStartDate = new Date('2025-02-01');
-    const dateInMillis = privateAllowlistStartDate.getTime();
-    const privateAllowlistStartDateInSeconds = Math.round(dateInMillis / 1000);
-    const privateAllowlistEndDate = privateAllowlistStartDateInSeconds + (SECONDS_IN_A_DAY * 10); // 10 days
-
+    const privateAllowlistStartDate = new Date('2024-12-26');
+    const privateAllowlistEndDate = new Date('2025-01-10');
+    const privateAllowlistStartDateInSeconds = Math.round(privateAllowlistStartDate.getTime() / 1000);
+    const privateAllowlistEndDateInSeconds = Math.round(privateAllowlistEndDate.getTime() / 1000);
 
     const publicDrop: PublicDropStruct = {
       mintPrice: "50000000000000000", // 0.05 ether
       maxTotalMintableByWallet: 2,
-      startTime: privateAllowlistEndDate,
-      // endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 365 * 5, // 5 years
-      endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 5, // 5 days
+      startTime: privateAllowlistEndDateInSeconds,
+      // endTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY * 365 * 5, // 5 years
+      endTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY * 5, // 5 days
       feeBps: 1000,
       restrictFeeRecipients: true
     };
@@ -92,7 +92,7 @@ describe("Sepolia Multiconfigure NFT", function() {
     const ownerAddress = await owner.getAddress();
     console.info(`owner ${ownerAddress} creator: ${creatorAddress}`);
 
-    const allowListData = await getAllowListData(ownerAddress);
+    const allowListData = await getAllowListData(ownerAddress, creatorAddress, privateAllowlistStartDate, privateAllowlistEndDate);
     const config :  MultiConfigureStructStruct = {
       maxSupply: CollectionConfig.maxSupply,
       // maxSupply: 26,
