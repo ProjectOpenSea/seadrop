@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { deployContract } from './__fixtures__'
 
 /**
- * hardhat test --config ./src-upgradeable/hardhat.config.ts src-upgradeable/test/healthcheck.spec.ts --network truffle
+  * hardhat test --config ./src-upgradeable/hardhat.config.ts src-upgradeable/test/healthcheck.spec.ts --network hardhat
  */
 describe('Healthcheck', function () {
   it('deploys', async () => {

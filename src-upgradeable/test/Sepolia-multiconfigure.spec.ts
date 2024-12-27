@@ -10,6 +10,42 @@ import { instantiateContract } from "./__fixtures__/base";
 import MultiConfigureStructStruct = ERC721SeaDropStructsErrorsAndEventsUpgradeable.MultiConfigureStructStruct;
 
 const SECONDS_IN_A_DAY = 86400;
+
+const emptyAllowListData =  {
+  merkleRoot: ethers.constants.HashZero,
+  publicKeyURIs: [],
+  allowListURI: "",
+};
+
+const emptyConfig :  MultiConfigureStructStruct = {
+  maxSupply: 26,
+  baseURI: "",
+  contractURI: "",
+  seaDropImpl: seadropAddress,
+  publicDrop: {
+    mintPrice: 0,
+    maxTotalMintableByWallet: 0,
+    startTime: 0,
+    endTime: 0,
+    feeBps: 0,
+    restrictFeeRecipients: true,
+  },
+  dropURI: "",
+  allowListData: emptyAllowListData,
+  creatorPayoutAddress: creatorAddress,
+  provenanceHash: ethers.constants.HashZero,
+  allowedFeeRecipients: [],
+  disallowedFeeRecipients: [],
+  allowedPayers: [],
+  disallowedPayers: [],
+  tokenGatedAllowedNftTokens: [],
+  tokenGatedDropStages: [],
+  disallowedTokenGatedAllowedNftTokens: [],
+  signers: [],
+  signedMintValidationParams: [],
+  disallowedSigners: []
+};
+
 /**
  * This test suite should be run against the Sepolia Network (through --network truffle)
  * hardhat test --config ./src-upgradeable/hardhat.config.ts src-upgradeable/test/WTR-multiconfigure.spec.ts --network truffle
@@ -37,7 +73,7 @@ describe("Sepolia Multiconfigure NFT", function() {
   });
 
   it("multiConfigure Should be able to set the Urls after deploy using the multiConfigure method", async () => {
-    const privateAllowlistStartDate = new Date('2024-12-26');
+    const privateAllowlistStartDate = new Date('2025-02-01');
     const dateInMillis = privateAllowlistStartDate.getTime();
     const privateAllowlistStartDateInSeconds = Math.round(dateInMillis / 1000);
     const privateAllowlistEndDate = privateAllowlistStartDateInSeconds + (SECONDS_IN_A_DAY * 10); // 10 days
@@ -45,10 +81,10 @@ describe("Sepolia Multiconfigure NFT", function() {
 
     const publicDrop: PublicDropStruct = {
       mintPrice: "50000000000000000", // 0.05 ether
-      maxTotalMintableByWallet: 4,
+      maxTotalMintableByWallet: 2,
       startTime: privateAllowlistEndDate,
-      endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 365 * 5, // 5 years
-      // endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 5, // 5 days
+      // endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 365 * 5, // 5 years
+      endTime: privateAllowlistEndDate + SECONDS_IN_A_DAY * 5, // 5 days
       feeBps: 1000,
       restrictFeeRecipients: true
     };
@@ -57,14 +93,9 @@ describe("Sepolia Multiconfigure NFT", function() {
     console.info(`owner ${ownerAddress} creator: ${creatorAddress}`);
 
     const allowListData = await getAllowListData(ownerAddress);
-    // const allowListData =  {
-    //     merkleRoot: ethers.constants.HashZero,
-    //     publicKeyURIs: [],
-    //     allowListURI: "",
-    //   };
-
     const config :  MultiConfigureStructStruct = {
       maxSupply: CollectionConfig.maxSupply,
+      // maxSupply: 26,
       baseURI: CollectionConfig.publicMetadataUri,
       contractURI: CollectionConfig.contractMetadataUri,
       seaDropImpl: seadropAddress,
@@ -73,7 +104,7 @@ describe("Sepolia Multiconfigure NFT", function() {
       allowListData: allowListData,
       creatorPayoutAddress: creatorAddress,
       provenanceHash: ethers.constants.HashZero,
-      allowedFeeRecipients: [creatorAddress, ownerAddress],
+      allowedFeeRecipients: [ownerAddress],
       disallowedFeeRecipients: [],
       allowedPayers: [],
       disallowedPayers: [],
@@ -84,9 +115,41 @@ describe("Sepolia Multiconfigure NFT", function() {
       signedMintValidationParams: [],
       disallowedSigners: []
     };
+
+    const estimatedGasMSupply = await nft.estimateGas.maxSupply();
+    console.info(`estimating gas fees for method maxSupply: ${estimatedGasMSupply} wei`);
+    expect(estimatedGasMSupply).to.be.gte(30000);
+
+    // console.info(`calling setMaxSupply with params: ${24}`);
+    // const estimatedGasSupply = await nft.estimateGas.setMaxSupply(24);
+    // console.info(`estimating gas fees for method setMaxSupply: ${estimatedGasSupply} wei`);
+
+    const estimatedGas = await nft.estimateGas.multiConfigure(config);
+    console.info(`estimating gas fees for multiconfigure : ${estimatedGas} wei`);
+    expect(estimatedGas).to.be.lte(31000);
+
+    // await expect(nft.connect(owner).setMaxSupply(23))
+    //   .to.emit(nft, "MaxSupplyUpdated")
+    //   .withArgs(23);
+
+
     console.info(`calling multiConfigure with params: ${JSON.stringify(config)}`);
     await expect(nft.connect(owner).multiConfigure(config))
       .to.emit(nft, "DropURIUpdated")
       .withArgs(nft.address, "https://waltertherabbit.com");
   });
+
+  it("multiConfigure Should succeed with an empty config", async () => {
+
+    const estimatedGas = await nft.estimateGas.multiConfigure(emptyConfig);
+    console.info(`estimating gas fees for multiconfigure : ${estimatedGas} wei`);
+    expect(estimatedGas).to.be.gt(0);
+
+    console.info(`calling multiConfigure with params: ${JSON.stringify(emptyConfig)}`);
+    await expect(nft.connect(owner).multiConfigure(emptyConfig))
+      .to.emit(nft, "DropURIUpdated")
+      .withArgs(nft.address, "https://waltertherabbit.com");
+  });
 });
+
+

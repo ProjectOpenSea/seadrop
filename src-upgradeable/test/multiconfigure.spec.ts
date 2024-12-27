@@ -1,23 +1,19 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { BigNumber, Signer } from "ethers";
+import { Signer } from "ethers";
 import { ethers } from "hardhat";
-import {} from "../../typechain-types";
 import type { PublicDropStruct } from "../../typechain-types/src/ERC721SeaDrop";
-import {
-  AllowListDataStruct,
-  ERC721SeaDropStructsErrorsAndEventsUpgradeable,
-  WalterTheRabbit
-} from "../../typechain-types/WalterTheRabbit";
+import { ERC721SeaDropStructsErrorsAndEventsUpgradeable, WalterTheRabbit } from "../../typechain-types/WalterTheRabbit";
 import CollectionConfig from "../config/CollectionConfig";
-import { MAX_SUPPLY, seadropAddress } from "../config/constants";
-import { getTokenUri, instantiateContract } from "./__fixtures__/base";
+import { seadropAddress } from "../config/constants";
+import { deployContract } from "./__fixtures__/base";
 import MultiConfigureStructStruct = ERC721SeaDropStructsErrorsAndEventsUpgradeable.MultiConfigureStructStruct;
 
 /**
- * This test suite should be run against the Sepolia Network (through --network truffle)
+ * This test suite should be run against the localnod Network (through --network hardhat)
  * hardhat test --config ./src-upgradeable/hardhat.config.ts src-upgradeable/test/WTR-multiconfigure.spec.ts --network truffle
  */
-describe("WTR Multiconfigure", function() {
+describe("local Multiconfigure", function() {
   let nft: WalterTheRabbit;
   let owner: Signer;
   let ownerAddress: string;
@@ -26,17 +22,12 @@ describe("WTR Multiconfigure", function() {
   const mintPrice = ethers.utils.parseEther("0.01");
 
   before(async () => {
-    const {
-      nft: _nft,
-      owner: _owner,
-      ownerAddress: _ownerAddress,
-      externalAccount: _externalAccount
-    } = await instantiateContract();
+    const { seadrop, _nft, _owner, _ownerAddress } = await loadFixture(deployContract)
+    expect(nft.address).to.not.be.null
 
     nft = _nft as WalterTheRabbit;
     owner = _owner;
     ownerAddress = _ownerAddress;
-    externalAccount = _externalAccount;
   });
 
   /*
