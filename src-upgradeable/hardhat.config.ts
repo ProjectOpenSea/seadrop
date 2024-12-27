@@ -45,10 +45,19 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       url: 'http://localhost:24012/rpc',
       timeout: 3600000,//1h
-      // gasMultiplier: DEFAULT_GAS_MULTIPLIER,
-      blockGasLimit: 100000000429720,
-      gas: 2100000,
-      gasPrice: 8000000000,
+      gasMultiplier: DEFAULT_GAS_MULTIPLIER,
+      // blockGasLimit: 100000000429720,
+      // gasPrice: 14_400_000_000,// 14 GWEI = 0.000000014 eth
+      // gasPrice: 8000000000,
+      // gasPrice: 11_000_000_000,
+      // blockGasLimit: 100_000_000_429_720,
+      // blockGasLimit: 40_000_000,
+      // gas: 21_000,
+      // gas: 2100000,
+      // gas: 20_000_000, // gas limit must be:   20999 < gas limit <= 7920027
+      gas: 7_920_027, // gas limit must be:  2100000 <= gas limit <= 7920027
+
+
     },
     sepolia: {
       url: process.env.NETWORK_TESTNET_URL,
