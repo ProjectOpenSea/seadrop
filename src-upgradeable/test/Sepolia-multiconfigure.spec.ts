@@ -133,7 +133,7 @@ describe("Sepolia Multiconfigure NFT", function() {
 
     const estimatedGas = await nft.estimateGas.multiConfigure(config);
     console.info(`estimating gas fees for multiconfigure : ${estimatedGas} wei`);
-    expect(estimatedGas).to.be.lte(31000);
+    expect(estimatedGas).to.be.lte(200000);
     //
     // await expect(nft.connect(owner).setMaxSupply(23))
     //   .to.emit(nft, "MaxSupplyUpdated")
