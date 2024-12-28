@@ -58,9 +58,14 @@ export const getAllowListData: (address: string, creator: string, privateAllowli
 
 
 
-  // Encode the minter address and mintParams.
-  const elementsBuffer = await allowListElementsBuffer([
-    [address, mintParamsFreeMint], [creator, mintParamsFreeMint]
+  // Encode the minter addresses of both the owner & creator and mintParams for free mint.
+  // const elementsBuffer = allowListElementsBuffer([
+  //   [address, mintParamsFreeMint], [creator, mintParamsFreeMint]
+  // ]);
+
+  // just for the owner
+  const elementsBuffer = allowListElementsBuffer([
+    [address, mintParamsFreeMint]
   ]);
 
 // Construct a merkle tree from the allow list elements.

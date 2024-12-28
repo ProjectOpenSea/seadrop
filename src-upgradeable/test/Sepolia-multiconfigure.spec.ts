@@ -141,8 +141,6 @@ describe("Sepolia Multiconfigure NFT", function() {
     //   .to.emit(nft, "MaxSupplyUpdated")
     //   .withArgs(23);
 
-
-
     await expect(nft.connect(owner).multiConfigure(config))
       .to.emit(nft, "DropURIUpdated")
       .withArgs(nft.address, "https://waltertherabbit.com/");
