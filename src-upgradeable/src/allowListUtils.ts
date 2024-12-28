@@ -49,9 +49,9 @@ export const getAllowListData: (address: string, creator: string, privateAllowli
     maxTotalMintableByWallet: 11,
     startTime: privateAllowlistStartDateInSeconds,
     endTime: privateAllowlistEndInSeconds,
-    dropStageIndex: 1,
+    dropStageIndex: 2,
     maxTokenSupplyForStage: 10,
-    feeBps: 500,//5%
+    feeBps: 100,//500=5%
     restrictFeeRecipients: true
   };
   const mintParamsFreeMint = { ...allowListMintParams, mintPrice: 0 };
