@@ -7,8 +7,6 @@ import {
 PublicDrop
 } from "./lib/SeaDropStructsUpgradeable.sol";
 
-import "hardhat/console.sol";
-
 library WalterTheRabbitStorage {
     struct Layout {
         /// @notice The only address that can burn tokens on this contract.
@@ -84,15 +82,17 @@ contract WalterTheRabbit is ERC721SeaDropUpgradeable {
         uint256 quantity,
         address delegateAddress
     ) external payable {
+//        console.log("mint seadrop: %s to contract address: %s", seadrop, address(this));
+
         // Get the public drop data.
-        console.log("mint seadrop: %s to contract address: %s", seadrop, address(this));
         PublicDrop memory publicDrop = getPublicDrop(seadrop, address(this));
 
         // Ensure that the drop has started.
         //_checkActive(publicDrop.startTime, publicDrop.endTime);
         // Put the mint price on the stack.
         uint256 mintPrice = publicDrop.mintPrice;
-        console.log("mint quantity: %s price: %s. value: %s", quantity, mintPrice, msg.value);
+
+//        console.log("mint quantity: %s price: %s. value: %s", quantity, mintPrice, msg.value);
 
 
         require(
@@ -101,9 +101,10 @@ contract WalterTheRabbit is ERC721SeaDropUpgradeable {
         );
 
         require(msg.value == quantity * mintPrice, "Invalid ETH Amount for quantity");
-        console.log("after require", msg.value);
 
-        console.log("minting qty:", quantity);
+//        console.log("after require", msg.value);
+//        console.log("minting qty:", quantity);
+
         _mint(delegateAddress, quantity);
     }
 }

@@ -37,6 +37,9 @@ Run full tests on the local node hardhat network
       - 1.2 After the images are uploaded update metadata files in NFTGenerator (output/metadata/*.json) to replace the CID QmdYnyMJoGztyaNRCwKFRUyCDrK7sTMyi2Bg2kVsvDkNiL with the latest from 1.1
 
             # grep -rl matchstring somedir/ | xargs sed -i 's/string1/string2/g'
+        
+             grep -rl bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq . | xargs sed -i 's/bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq/bafybeibtwgyqaqntwlfsrggmlpng5xdd3x2hz6ju3vo2oyiebb2boy6ysy/g'            
+ 
             or
             # find /path/to/files -type f -exec sed -i 's/oldstring/new string/g' {} \;
         
@@ -229,12 +232,17 @@ So you can estimate current cost for the user on mainnet by taking a current gas
 
 
 
-### Releases
+## Releases
 
 Test - Sepolia
 
-WTR41 metadata CID 20 items
+### WTR41 metadata CID 20 items
+WTR 4.1 https://sepolia.etherscan.io/address/0x5166C24EB60384561a13FF963B7d8366dB210EE2 
+https://testnets.opensea.io/collection/waltertherabbit-10/overview
+
+    bafybeibtwgyqaqntwlfsrggmlpng5xdd3x2hz6ju3vo2oyiebb2boy6ysy
     
+This is one has a bad 1.png image
     bafybeigqtx4rqxi3iq3yhibteiiu264axhswjyz5ah2ewly2pky3junx4m
 
 

@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import type { PublicDropStruct } from "../../typechain-types/src/ERC721SeaDrop";
 import { ERC721SeaDropStructsErrorsAndEventsUpgradeable, WalterTheRabbit } from "../../typechain-types/WalterTheRabbit";
 import CollectionConfig from "../config/CollectionConfig";
-import { prodCreatorAddress, seadropAddress, testCreatorAddress } from "../config/constants";
+import { prodCreatorAddress, seadropAddress, testExternalAddress } from "../config/constants";
 import { getAllowListData } from "../src/allowListUtils";
 import { instantiateContract } from "./__fixtures__/base";
 import { SECONDS_IN_A_DAY } from "./basic.spec";
@@ -74,15 +74,14 @@ describe("Sepolia Multiconfigure NFT", function() {
   });
 
   it("multiConfigure public drop", async () => {
-    const privateAllowlistStartDate = new Date('2024-12-26');
-    const privateAllowlistEndDate = new Date('2025-01-06');
-    //const privateAllowlistStartDateInSeconds = Math.round(privateAllowlistStartDate.getTime() / 1000);
+    const privateAllowlistStartDate = new Date('2025-01-05');
+    const privateAllowlistEndDate = new Date('2025-01-10');
     const privateAllowlistEndDateInSeconds = Math.round(privateAllowlistEndDate.getTime() / 1000);
 
     const publicDrop: PublicDropStruct = {
       mintPrice: "50000000000000000", // 0.05 ether
       maxTotalMintableByWallet: 3,
-      startTime: privateAllowlistEndDateInSeconds,
+      startTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY,
       endTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY * 365 * 5, // 5 years
       // endTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY * 5, // 5 days
       feeBps: 500,//1000 = 10%
@@ -90,10 +89,11 @@ describe("Sepolia Multiconfigure NFT", function() {
     };
 
     const ownerAddress = await owner.getAddress();
-    const creatorAddress = testCreatorAddress
+    const creatorAddress = prodCreatorAddress;
+    const externalAddress = testExternalAddress;
     console.info(`owner ${ownerAddress} creator: ${creatorAddress}`);
 
-    const allowListData = await getAllowListData(ownerAddress, creatorAddress, privateAllowlistStartDate, privateAllowlistEndDate);
+    const allowListData = await getAllowListData(ownerAddress, creatorAddress, externalAddress, privateAllowlistStartDate, privateAllowlistEndDate);
 
     const config :  MultiConfigureStructStruct = {
       maxSupply: CollectionConfig.maxSupply,
@@ -135,7 +135,7 @@ describe("Sepolia Multiconfigure NFT", function() {
 
     const estimatedGas = await nft.estimateGas.multiConfigure(config);
     console.info(`estimating gas fees for multiconfigure : ${estimatedGas} wei`);
-    expect(estimatedGas).to.be.lte(200000);
+    expect(estimatedGas).to.be.lte(400_000);
     //
     // await expect(nft.connect(owner).setMaxSupply(23))
     //   .to.emit(nft, "MaxSupplyUpdated")

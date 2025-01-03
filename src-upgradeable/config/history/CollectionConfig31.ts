@@ -9,7 +9,7 @@ const CollectionConfig: CollectionConfigInterface = {
   tokenName: 'WalterTheRabbit',//this becomes OpenSea's collection name
   tokenSymbol: 'WTR',
   hiddenMetadataUri: 'ipfs://QmRdvFsMt1WCJPWykycsZcqLVsKvz4jDPDzTCmGuDF37aE/hidden.json',
-  maxSupply: 21,
+  maxSupply: 23,
   // whitelistSale: {
   //   price: 0.002,
   //   maxMintAmountPerTx: 10,

@@ -1,0 +1,20 @@
+diff --git a/node_modules/hardhat/src/internal/core/providers/http.ts b/node_modules/hardhat/src/internal/core/providers/http.ts
+index 10cc8e0..dd97ec0 100644
+--- a/node_modules/hardhat/src/internal/core/providers/http.ts
++++ b/node_modules/hardhat/src/internal/core/providers/http.ts
+@@ -102,13 +102,14 @@ export class HttpProvider extends EventEmitter implements EIP1193Provider {
+       args.params as any[]
+     );
+     const jsonRpcResponse = await this._fetchJsonRpcResponse(jsonRpcRequest);
+-
++    console.log(`http error: ${error.code} ${error.message}`)
+     if (isErrorResponse(jsonRpcResponse)) {
+       const error = new ProviderError(
+         jsonRpcResponse.error.message,
+         jsonRpcResponse.error.code
+       );
+       error.data = jsonRpcResponse.error.data;
++
+       // eslint-disable-next-line @nomicfoundation/hardhat-internal-rules/only-hardhat-error
+       throw error;
+     }
