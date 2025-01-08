@@ -39,28 +39,27 @@ const createMerkleTree = (leaves: Buffer[]) =>
     sortPairs: true
   });
 
-export const getAllowListData: (address: string, creator: string, privateAllowlistStartDate: Date, privateAllowlistEnd: Date) => Promise<AllowListDataStruct> = async (address: string, creator: string, privateAllowlistStartDate: Date, privateAllowlistEnd: Date) => {
+export const getAllowListData: (address: string, creator: string, externalAddress: string, privateAllowlistStartDate: Date, privateAllowlistEnd: Date) => Promise<AllowListDataStruct> = async (address: string, creator: string, externalAddress: string, privateAllowlistStartDate: Date, privateAllowlistEnd: Date) => {
   // Set the allow list mint params.
   const dateInMillis = privateAllowlistStartDate.getTime();
   const privateAllowlistStartDateInSeconds = Math.round(dateInMillis / 1000);
   const privateAllowlistEndInSeconds = Math.round(privateAllowlistEnd.getTime() / 1000);
   const allowListMintParams = {
-    mintPrice: "100000000000000000", // 0.1 ether
-    maxTotalMintableByWallet: 11,
+    mintPrice: "10000000000000000", // 0.01 ether
+    maxTotalMintableByWallet: 10,
     startTime: privateAllowlistStartDateInSeconds,
-    endTime: privateAllowlistEndInSeconds,
-    dropStageIndex: 2,
-    maxTokenSupplyForStage: 10,
-    feeBps: 100,//500=5%
+    endTime: privateAllowlistStartDateInSeconds + SECONDS_IN_A_DAY *2, //FIXME use endDateInSeconds
+    dropStageIndex: 1,
+    maxTokenSupplyForStage: 2,
+    feeBps: 500,//500=5%
     restrictFeeRecipients: true
   };
   const mintParamsFreeMint = { ...allowListMintParams, mintPrice: 0 };
-
-
+  //const mintParamsFreeMintMax1 = { ...allowListMintParams, mintPrice: 0, maxTotalMintableByWallet: 1 };
 
   // Encode the minter addresses of both the owner & creator and mintParams for free mint.
   // const elementsBuffer = allowListElementsBuffer([
-  //   [address, mintParamsFreeMint], [creator, mintParamsFreeMint]
+  //   [address, mintParamsFreeMint], [creator, mintParamsFreeMint], [externalAddress, mintParamsFreeMintMax1]
   // ]);
 
   // just for the owner

@@ -74,8 +74,8 @@ describe("Sepolia Multiconfigure NFT", function() {
   });
 
   it("multiConfigure public drop", async () => {
-    const privateAllowlistStartDate = new Date('2025-01-05');
-    const privateAllowlistEndDate = new Date('2025-01-10');
+    const privateAllowlistStartDate = new Date('2025-01-04');
+    const privateAllowlistEndDate = new Date('2025-01-12');
     const privateAllowlistEndDateInSeconds = Math.round(privateAllowlistEndDate.getTime() / 1000);
 
     const publicDrop: PublicDropStruct = {
@@ -91,10 +91,10 @@ describe("Sepolia Multiconfigure NFT", function() {
     const ownerAddress = await owner.getAddress();
     const creatorAddress = prodCreatorAddress;
     const externalAddress = testExternalAddress;
-    console.info(`owner ${ownerAddress} creator: ${creatorAddress}`);
+
+    console.info(`owner: ${ownerAddress} creator: ${creatorAddress} externalAddress: ${externalAddress}`);
 
     const allowListData = await getAllowListData(ownerAddress, creatorAddress, externalAddress, privateAllowlistStartDate, privateAllowlistEndDate);
-
     const config :  MultiConfigureStructStruct = {
       maxSupply: CollectionConfig.maxSupply,
       // maxSupply: 26,
@@ -106,7 +106,7 @@ describe("Sepolia Multiconfigure NFT", function() {
       allowListData: allowListData,
       creatorPayoutAddress: creatorAddress,
       provenanceHash: ethers.constants.HashZero,
-      allowedFeeRecipients: [],//this having creatorAddress or ownerAddress causes issue of execution reverted or
+      allowedFeeRecipients: [ownerAddress],//this having creatorAddress or ownerAddress causes issue of execution reverted or
       disallowedFeeRecipients: [],
       allowedPayers: [],
       disallowedPayers: [],
@@ -117,7 +117,6 @@ describe("Sepolia Multiconfigure NFT", function() {
       signedMintValidationParams: [],
       disallowedSigners: []
     };
-
 
     const currentSupply = await nft.maxSupply();
     console.info(`currentSupply:   ${currentSupply}`);
@@ -144,6 +143,11 @@ describe("Sepolia Multiconfigure NFT", function() {
     await expect(nft.connect(owner).multiConfigure(config))
       .to.emit(nft, "DropURIUpdated")
       .withArgs(nft.address, "https://waltertherabbit.com/");
+  });
+
+  it("check allow list data", async () => {
+    console.info(`check allow list data`);
+
   });
 
   it("multiConfigure empty config", async () => {
