@@ -79,11 +79,7 @@ contract ERC721SeaDropUpgradeable is
         string memory symbol,
         address[] memory allowedSeaDrop
     ) external initializer initializerERC721A {
-        __ERC721SeaDrop_init(
-            name,
-            symbol,
-            allowedSeaDrop
-        );
+        __ERC721SeaDrop_init(name, symbol, allowedSeaDrop);
     }
 
     function __ERC721SeaDrop_init(

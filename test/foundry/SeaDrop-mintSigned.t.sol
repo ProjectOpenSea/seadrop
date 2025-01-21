@@ -37,9 +37,7 @@ contract SeaDropMintSignedTest is TestHelper {
         vm.assume(
             args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
         );
-        vm.assume(
-            args.minter.code.length == 0 && args.minter > address(9)
-        );
+        vm.assume(args.minter.code.length == 0 && args.minter > address(9));
         vm.assume(args.minter != address(0) && args.payer != address(0));
         _;
     }
@@ -503,7 +501,11 @@ contract SeaDropMintSignedTest is TestHelper {
         address payer
     ) public {
         vm.assume(
-            minter != address(0) && payer != address(0) && minter != payer
+            minter != address(0) &&
+                payer != address(0) &&
+                minter != payer &&
+                minter.code.length == 0 &&
+                payer.code.length == 0
         );
 
         // Create a MintParams object.
