@@ -41,26 +41,31 @@ const createMerkleTree = (leaves: Buffer[]) =>
 
 export const getAllowListData: (address: string, creator: string, externalAddress: string, privateAllowlistStartDate: Date, privateAllowlistEnd: Date) => Promise<AllowListDataStruct> = async (address: string, creator: string, externalAddress: string, privateAllowlistStartDate: Date, privateAllowlistEnd: Date) => {
   // Set the allow list mint params.
-  const dateInMillis = privateAllowlistStartDate.getTime();
-  const privateAllowlistStartDateInSeconds = Math.round(dateInMillis / 1000);
+  const privateAllowlistStartDateInSeconds = Math.round(privateAllowlistStartDate.getTime() / 1000);
   const privateAllowlistEndInSeconds = Math.round(privateAllowlistEnd.getTime() / 1000);
   const allowListMintParams = {
     mintPrice: "10000000000000000", // 0.01 ether
     maxTotalMintableByWallet: 10,
     startTime: privateAllowlistStartDateInSeconds,
-    endTime: privateAllowlistStartDateInSeconds + SECONDS_IN_A_DAY *2, //FIXME use endDateInSeconds
+    endTime: privateAllowlistEndInSeconds,
     dropStageIndex: 1,
-    maxTokenSupplyForStage: 2,
-    feeBps: 500,//500=5%
+    maxTokenSupplyForStage: 22,
+    //500=5%
+    feeBps: 500,
     restrictFeeRecipients: true
   };
-  const mintParamsFreeMint = { ...allowListMintParams, mintPrice: 0 };
-  //const mintParamsFreeMintMax1 = { ...allowListMintParams, mintPrice: 0, maxTotalMintableByWallet: 1 };
+  const mintParamsFreeMint = { ...allowListMintParams, mintPrice: "1000000000000000" };
+  const mintParamsFreeMintMax1 = { ...allowListMintParams, mintPrice: "10000000000000000", maxTotalMintableByWallet: 1 };
 
   // Encode the minter addresses of both the owner & creator and mintParams for free mint.
+  /**
+   * this seems ok according to @see test/SeaDrop-mintAllowList.spec.ts
+   */
   // const elementsBuffer = allowListElementsBuffer([
   //   [address, mintParamsFreeMint], [creator, mintParamsFreeMint], [externalAddress, mintParamsFreeMintMax1]
   // ]);
+  // console.info(`setting allowlist with owner: ${address} - creator: ${creator} - external: ${externalAddress}`);
+  // console.info(`allowlist start: ${privateAllowlistStartDate} - ${privateAllowlistEnd} - supply for state: ${22}`);
 
   // just for the owner
   const elementsBuffer = allowListElementsBuffer([

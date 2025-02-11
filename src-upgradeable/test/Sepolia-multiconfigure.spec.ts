@@ -1,12 +1,13 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import { ethers } from "hardhat";
+import { ISeaDropUpgradeable } from "../../typechain-types";
 import type { PublicDropStruct } from "../../typechain-types/src/ERC721SeaDrop";
 import { ERC721SeaDropStructsErrorsAndEventsUpgradeable, WalterTheRabbit } from "../../typechain-types/WalterTheRabbit";
 import CollectionConfig from "../config/CollectionConfig";
 import { prodCreatorAddress, seadropAddress, testExternalAddress } from "../config/constants";
 import { getAllowListData } from "../src/allowListUtils";
-import { instantiateContract } from "./__fixtures__/base";
+import { instantiateContract, instantiateSeadropContract } from "./__fixtures__/base";
 import { SECONDS_IN_A_DAY } from "./basic.spec";
 import MultiConfigureStructStruct = ERC721SeaDropStructsErrorsAndEventsUpgradeable.MultiConfigureStructStruct;
 
@@ -74,16 +75,19 @@ describe("Sepolia Multiconfigure NFT", function() {
   });
 
   it("multiConfigure public drop", async () => {
-    const privateAllowlistStartDate = new Date('2025-01-04');
-    const privateAllowlistEndDate = new Date('2025-01-12');
-    const privateAllowlistEndDateInSeconds = Math.round(privateAllowlistEndDate.getTime() / 1000);
+    const privateAllowlistStartDate = new Date('2025-02-11');
+    const privateAllowlistEndDate = new Date('2025-02-15');
+
+    const publicDropStartDate = new Date('2025-02-15');
+    const publicDropStartDateInSeconds = Math.round(publicDropStartDate.getTime() / 1000);
+    console.info(`Public drop start: ${publicDropStartDate} = ${publicDropStartDateInSeconds} sec.`)
 
     const publicDrop: PublicDropStruct = {
       mintPrice: "50000000000000000", // 0.05 ether
       maxTotalMintableByWallet: 3,
-      startTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY,
-      endTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY * 365 * 5, // 5 years
-      // endTime: privateAllowlistEndDateInSeconds + SECONDS_IN_A_DAY * 5, // 5 days
+      startTime: publicDropStartDateInSeconds,
+      endTime: publicDropStartDateInSeconds + (SECONDS_IN_A_DAY * 365 * 3), // 3 years
+      // endTime: privateAllowlistEndDateInSeconds + (SECONDS_IN_A_DAY * 10), // 5 days
       feeBps: 500,//1000 = 10%
       restrictFeeRecipients: true
     };
@@ -102,11 +106,11 @@ describe("Sepolia Multiconfigure NFT", function() {
       contractURI: CollectionConfig.contractMetadataUri,
       seaDropImpl: seadropAddress,
       publicDrop: publicDrop,
-      dropURI: CollectionConfig.dropUri,
+      dropURI: "",
       allowListData: allowListData,
       creatorPayoutAddress: creatorAddress,
       provenanceHash: ethers.constants.HashZero,
-      allowedFeeRecipients: [ownerAddress],//this having creatorAddress or ownerAddress causes issue of execution reverted or
+      allowedFeeRecipients: [],//this having creatorAddress or ownerAddress causes issue of execution reverted or
       disallowedFeeRecipients: [],
       allowedPayers: [],
       disallowedPayers: [],
@@ -147,11 +151,16 @@ describe("Sepolia Multiconfigure NFT", function() {
 
   it("check allow list data", async () => {
     console.info(`check allow list data`);
-
+    const seadrop = await instantiateSeadropContract(seadropAddress);
+    console.info(`seadrop contract name: ${seadrop.address}`)
+    const allowListRoot = await seadrop.getAllowListMerkleRoot(nft.address);
+    console.info(`root: ${allowListRoot}`);
+    expect(allowListRoot).to.eq(
+      `0x${"0".repeat(64)}`
+    );
   });
 
   it("multiConfigure empty config", async () => {
-
     const estimatedGas = await nft.estimateGas.multiConfigure(emptyConfig);
     console.info(`estimating gas fees for multiconfigure : ${estimatedGas} wei`);
     expect(estimatedGas).to.be.gt(0);

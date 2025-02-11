@@ -1,8 +1,9 @@
 import { Contract, Signer } from "ethers";
 import { ethers, upgrades } from "hardhat";
 import { SeaDrop } from "../../../typechain-types/src";
+import { ISeaDrop } from "../../../typechain-types/src/interfaces";
 import CollectionConfig from "../../config/CollectionConfig";
-import { tokenName, tokenSymbol } from "../../config/constants";
+import { seadropAddress, tokenName, tokenSymbol } from "../../config/constants";
 
 export const deployContract = async () => {
   const [owner, externalAccount, nonHolder]: Signer[] =
@@ -67,7 +68,6 @@ export const deployContract = async () => {
 };
 
 async function  initUpgradableContract(contractAddress: string) {
-  // const Contract = await ethers.getContractFactory(CollectionConfig.contractName);
   if (contractAddress == null) {
     console.error("no contract address configured. maybe contract not deployed?")
   }
@@ -75,6 +75,19 @@ async function  initUpgradableContract(contractAddress: string) {
   return await ethers.getContractAt(CollectionConfig.contractName, contractAddress!);
 }
 
+
+export const instantiateSeadropContract = async (seadropAddress: string) => {
+  if (seadropAddress == null) {
+    console.error("seadrop contract address configured. maybe contract not deployed?")
+  }
+  console.info(`initializing seadrop contract for address: ${seadropAddress}`)
+  //return await ethers.getContractAt("SeaDrop", seadropAddress);
+  const [owner]: Signer[] =
+    await ethers.getSigners();
+  return await ethers.getContractAt("SeaDrop", seadropAddress);
+  //return await ethers.getContractAt("SeaDrop", seadropAddress, owner) as ISeaDrop;
+
+}
 export const instantiateContract = async () => {
   const [owner, externalAccount, nonHolder]: Signer[] =
     await ethers.getSigners();

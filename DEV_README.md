@@ -109,13 +109,28 @@ Seadrop compatible:
 
         Test Release 1 on Sepolia
         https://testnets.opensea.io/assets/sepolia/ TODO /1
-    
 
-### Mint App
-    yarn 
-    yarn devServer
+### Contract Metadata
 
- See free mint transactions like https://sepolia.etherscan.io/tx/0x874d68ddb9388bd3b11a498923e939a05d1f6b2827f0f541488845f6a2e51838
+Update contract metadata uri in CollectionConfig. 
+
+
+       contractMetadataUri: "ipfs://QmUk5F2gUs95MNPvqGkDe1BidiR77qf8dwfz5t9DdF4tvi",
+v42
+    bafkreieffnh6fchiap5vrlhltgdbqeac7bog3v36u4hsym3inla2zoncqi
+
+with content:
+
+    {
+      "name": "Walter the Rabbit",
+      "description": "Welcome to the mystical, magical world of Walter the Rabbit NFTs. 100% hand drawn by a real human artist. No generative AI sh!*t here. Countless different characters with unique back stories that will hit you before you even try it! It's the first foundational step towards the Walter the Rabbit video game.",
+      "image": "https://waltertherabbit.com/image.png",
+      "banner_image": "https://waltertherabbit.com/banner-image.png",
+      "featured_image": "https://waltertherabbit.com/featured-image.png",
+      "external_link": "https://waltertherabbit.com/",
+      "collaborators": [ ]
+    }
+
 
 
 ## Deploy Cost & Optimizations
