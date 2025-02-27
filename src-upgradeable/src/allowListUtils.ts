@@ -45,7 +45,7 @@ export const getAllowListData: (address: string, creator: string, externalAddres
   const privateAllowlistEndInSeconds = Math.round(privateAllowlistEnd.getTime() / 1000);
   const allowListMintParams = {
     mintPrice: "10000000000000000", // 0.01 ether
-    maxTotalMintableByWallet: 10,
+    maxTotalMintableByWallet: 12,
     startTime: privateAllowlistStartDateInSeconds,
     endTime: privateAllowlistEndInSeconds,
     dropStageIndex: 1,
@@ -61,16 +61,16 @@ export const getAllowListData: (address: string, creator: string, externalAddres
   /**
    * this seems ok according to @see test/SeaDrop-mintAllowList.spec.ts
    */
-  // const elementsBuffer = allowListElementsBuffer([
-  //   [address, mintParamsFreeMint], [creator, mintParamsFreeMint], [externalAddress, mintParamsFreeMintMax1]
-  // ]);
-  // console.info(`setting allowlist with owner: ${address} - creator: ${creator} - external: ${externalAddress}`);
-  // console.info(`allowlist start: ${privateAllowlistStartDate} - ${privateAllowlistEnd} - supply for state: ${22}`);
+  const elementsBuffer = allowListElementsBuffer([
+    [address, mintParamsFreeMint], [creator, mintParamsFreeMint], [externalAddress, mintParamsFreeMintMax1]
+  ]);
+  console.info(`setting allowlist with owner: ${address} - creator: ${creator} - external: ${externalAddress}`);
+  console.info(`allowlist start: ${privateAllowlistStartDate} - ${privateAllowlistEnd} - supply for state: ${22}`);
 
   // just for the owner
-  const elementsBuffer = allowListElementsBuffer([
-    [address, mintParamsFreeMint]
-  ]);
+  // const elementsBuffer = allowListElementsBuffer([
+  //   [address, mintParamsFreeMint]
+  // ]);
 
 // Construct a merkle tree from the allow list elements.
   const merkleTree = createMerkleTree(elementsBuffer);

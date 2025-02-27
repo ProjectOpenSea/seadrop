@@ -6,7 +6,7 @@ import type { PublicDropStruct } from "../../typechain-types/src/ERC721SeaDrop";
 import { ERC721SeaDropStructsErrorsAndEventsUpgradeable, WalterTheRabbit } from "../../typechain-types/WalterTheRabbit";
 import CollectionConfig from "../config/CollectionConfig";
 import { seadropAddress } from "../config/constants";
-import { deployContract } from "./__fixtures__/base";
+import { deployContract } from "./__fixtures__";
 import MultiConfigureStructStruct = ERC721SeaDropStructsErrorsAndEventsUpgradeable.MultiConfigureStructStruct;
 
 /**
@@ -22,12 +22,12 @@ describe("local Multiconfigure", function() {
   const mintPrice = ethers.utils.parseEther("0.01");
 
   before(async () => {
-    const { seadrop, _nft, _owner, _ownerAddress } = await loadFixture(deployContract)
-    expect(nft.address).to.not.be.null
-
+    const { seadrop: Seadrop, _nft, _owner, _ownerAddress } = await loadFixture(deployContract)
     nft = _nft as WalterTheRabbit;
     owner = _owner;
     ownerAddress = _ownerAddress;
+
+    expect(nft.address).to.not.be.null
   });
 
   /*
