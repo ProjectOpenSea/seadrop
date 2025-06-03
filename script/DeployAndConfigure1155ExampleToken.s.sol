@@ -37,8 +37,6 @@ contract DeployAndConfigure1155ExampleToken is Script {
     address seaport = 0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC;
     address conduit = 0x1E0049783F008A0085193E00003D00cd54003c71;
 
-    address contractAddress = 0x5e827D879e73a79d1DDefa7bFB288b3e7AD77C77;
-
     // Addresses: SeaDrop
     address creator = 0xEd8dAFF8C7Deb09fFA71Ae6B4966B9130Bf42F0B;
     address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
@@ -54,7 +52,7 @@ contract DeployAndConfigure1155ExampleToken is Script {
     function run() external {
         vm.startBroadcast();
 
-        //ERC1155SeaDropConfigurer configurer = new ERC1155SeaDropConfigurer();
+        ERC1155SeaDropConfigurer configurer = new ERC1155SeaDropConfigurer();
 
         ERC1155SeaDrop token = new ERC1155SeaDrop(
             address(configurer),
@@ -69,12 +67,12 @@ contract DeployAndConfigure1155ExampleToken is Script {
         token.setMaxSupply(3, maxSupply);
 
         // Configure the drop parameters.
-        //setSingleCreatorPayout(token);
+        setSingleCreatorPayout(token);
         IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
         ); 
-        IERC1155SeaDrop(contractAddress).updatePublicDrop(
+        IERC1155SeaDrop(address(token)).updatePublicDrop(
             PublicDrop({
                 startPrice: mintPrice,
                 endPrice: mintPrice,
@@ -91,7 +89,7 @@ contract DeployAndConfigure1155ExampleToken is Script {
             0
         );
 
-        IERC1155SeaDrop(contractAddress).updatePublicDrop(
+        IERC1155SeaDrop(address(token)).updatePublicDrop(
             PublicDrop({
                 startPrice: mintPrice * 5,
                 endPrice: mintPrice * 5,
