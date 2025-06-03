@@ -34,18 +34,19 @@ import { OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 contract DeployAndConfigure1155ExampleToken is Script {
     // Addresses: Seaport
-    address seaport = 0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC;
+    address seaport = 0x0000000000000068f116a894984e2db1123eb395;
     address conduit = 0x1E0049783F008A0085193E00003D00cd54003c71;
 
-    // Addresses: SeaDrop
+    // Creator payout address
     address creator = 0x1108f964b384f1dCDa03658B24310ccBc48E226F;
+    // OpenSea fee recipient, don't change this
     address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
 
     // Token config
     uint256 maxSupply = 100;
 
     // Drop config
-    uint16 feeBps = 500; // 5%
+    uint16 feeBps = 1_000; // 10%
     uint80 mintPrice = 0.0001 ether;
     uint16 maxTotalMintableByWallet = 25;
 
