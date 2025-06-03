@@ -37,27 +37,29 @@ contract DeployAndConfigure1155ExampleToken is Script {
     address seaport = 0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC;
     address conduit = 0x1E0049783F008A0085193E00003D00cd54003c71;
 
+    address contractAddress = 0x5e827D879e73a79d1DDefa7bFB288b3e7AD77C77;
+
     // Addresses: SeaDrop
-    address creator = 0x1108f964b384f1dCDa03658B24310ccBc48E226F;
+    address creator = 0xEd8dAFF8C7Deb09fFA71Ae6B4966B9130Bf42F0B;
     address feeRecipient = 0x0000a26b00c1F0DF003000390027140000fAa719;
 
     // Token config
-    uint256 maxSupply = 100;
+    uint256 maxSupply = 1000;
 
     // Drop config
-    uint16 feeBps = 500; // 5%
+    uint16 feeBps = 1000; // 5%
     uint80 mintPrice = 0.0001 ether;
-    uint16 maxTotalMintableByWallet = 25;
+    uint16 maxTotalMintableByWallet = 50;
 
     function run() external {
         vm.startBroadcast();
 
-        ERC1155SeaDropConfigurer configurer = new ERC1155SeaDropConfigurer();
+        //ERC1155SeaDropConfigurer configurer = new ERC1155SeaDropConfigurer();
 
         ERC1155SeaDrop token = new ERC1155SeaDrop(
             address(configurer),
             seaport,
-            "My 1155 Example Token",
+            "1155 Example Token",
             "ExTKN1155"
         );
 
@@ -67,20 +69,20 @@ contract DeployAndConfigure1155ExampleToken is Script {
         token.setMaxSupply(3, maxSupply);
 
         // Configure the drop parameters.
-        setSingleCreatorPayout(token);
+        //setSingleCreatorPayout(token);
         IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
             feeRecipient,
             true
-        );
-        IERC1155SeaDrop(address(token)).updatePublicDrop(
+        ); 
+        IERC1155SeaDrop(contractAddress).updatePublicDrop(
             PublicDrop({
                 startPrice: mintPrice,
                 endPrice: mintPrice,
-                startTime: uint40(block.timestamp),
-                endTime: uint40(block.timestamp) + 1_000_000,
+                startTime: 1745538091,
+                endTime: 1808610091,
                 paymentToken: address(0),
                 fromTokenId: 1,
-                toTokenId: 3,
+                toTokenId: 2,
                 maxTotalMintableByWallet: maxTotalMintableByWallet,
                 maxTotalMintableByWalletPerToken: maxTotalMintableByWallet,
                 feeBps: feeBps,
@@ -89,15 +91,32 @@ contract DeployAndConfigure1155ExampleToken is Script {
             0
         );
 
+        IERC1155SeaDrop(contractAddress).updatePublicDrop(
+            PublicDrop({
+                startPrice: mintPrice * 5,
+                endPrice: mintPrice * 5,
+                startTime: 1745538091,
+                endTime: 1808610091,
+                paymentToken: address(0),
+                fromTokenId: 3,
+                toTokenId: 3,
+                maxTotalMintableByWallet: maxTotalMintableByWallet,
+                maxTotalMintableByWalletPerToken: maxTotalMintableByWallet,
+                feeBps: feeBps,
+                restrictFeeRecipients: true
+            }),
+            1
+        );
+
         // We are ready, let's mint the first 3 tokens!
-        ConsiderationInterface(seaport).fulfillAdvancedOrder{
+        /* ConsiderationInterface(seaport).fulfillAdvancedOrder{
             value: mintPrice * 3
         }({
             advancedOrder: deriveOrder(address(token), 3),
             criteriaResolvers: new CriteriaResolver[](0),
             fulfillerConduitKey: bytes32(0),
             recipient: address(0)
-        });
+        }); */
     }
 
     function setSingleCreatorPayout(ERC1155SeaDrop token) internal {
