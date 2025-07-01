@@ -6,7 +6,7 @@ const CollectionConfig: CollectionConfigInterface = {
   tokenName: 'WalterTheRabbit',//this becomes OpenSea's collection name
   tokenSymbol: 'WTR',
   hiddenMetadataUri: 'ipfs://QmRdvFsMt1WCJPWykycsZcqLVsKvz4jDPDzTCmGuDF37aE/hidden.json',
-  maxSupply: 39,
+  maxSupply: 30,
   publicMetadataUri: "ipfs://bafybeidg5rirmcngqhiodfyfgd3tccmsqagfqehjg762dfg2nyvpb2kdee/", // sepolia v4.1 so items
   contractMetadataUri: "https://waltertherabbit.com/contract_metadata.json", // v4.4 https
   dropUri: "https://waltertherabbit.com/",

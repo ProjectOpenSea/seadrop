@@ -34,13 +34,13 @@ Run full tests on the local node hardhat network
 
     - 1.1 Upload the images folder (if there's animation replace the .png with a webp animated and update the metadata file too)
     
-      - 1.2 After the images are uploaded update metadata files in NFTGenerator (output/metadata/*.json) to replace the CID QmdYnyMJoGztyaNRCwKFRUyCDrK7sTMyi2Bg2kVsvDkNiL with the latest from 1.1
+      - 1.2 After the images are uploaded update metadata files in NFTGenerator (output/metadata/*.json) to replace the CID 
+        QmdYnyMJoGztyaNRCwKFRUyCDrK7sTMyi2Bg2kVsvDkNiL with the latest.
 
-            # grep -rl matchstring somedir/ | xargs sed -i 's/string1/string2/g'
-        
-             grep -rl bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq . | xargs sed -i 's/bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq/bafybeibtwgyqaqntwlfsrggmlpng5xdd3x2hz6ju3vo2oyiebb2boy6ysy/g'            
- 
-            or
+            grep -rl matchstring somedir/ | xargs sed -i 's/string1/string2/g'
+            #or
+            grep -rl bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq . | xargs sed -i 's/bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq/bafybeibtwgyqaqntwlfsrggmlpng5xdd3x2hz6ju3vo2oyiebb2boy6ysy/g'            
+            #or
             # find /path/to/files -type f -exec sed -i 's/oldstring/new string/g' {} \;
         
     - 1.3 Upload metadata folder's content (no ./metadata just the .jsons) and write down metadata CID
