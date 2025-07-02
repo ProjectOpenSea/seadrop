@@ -39,13 +39,26 @@ contract WalterTheRabbit is ERC721SeaDropUpgradeable {
     function initialize(
         string memory name,
         string memory symbol,
-        address[] memory allowedSeaDrop
-    ) external override initializer initializerERC721A {
+        address[] memory allowedSeaDrop,
+        string memory baseUri,
+        uint256 maxSupply
+    ) external initializer initializerERC721A {
         ERC721SeaDropUpgradeable.__ERC721SeaDrop_init(
             name,
             symbol,
             allowedSeaDrop
         );
+
+        if (bytes(baseUri).length != 0) {
+            this.setBaseURI(baseUri);
+        }
+//        _setBaseURI(baseUri);
+
+        if (maxSupply > 0) {
+            //this.setMaxSupply(config.maxSupply);
+            this.setMaxSupply(maxSupply);
+        }
+
     }
 
     /**

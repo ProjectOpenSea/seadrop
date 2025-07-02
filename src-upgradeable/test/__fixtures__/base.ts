@@ -78,7 +78,7 @@ async function  initUpgradableContract(contractAddress: string) {
 
 export const instantiateSeadropContract = async (seadropAddress: string) => {
   if (seadropAddress == null) {
-    console.error("seadrop contract address configured. maybe contract not deployed?")
+    console.error("seadrop contract address not configured. maybe contract not deployed?")
   }
   console.info(`initializing seadrop contract for address: ${seadropAddress}`)
   //return await ethers.getContractAt("SeaDrop", seadropAddress);
