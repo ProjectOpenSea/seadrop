@@ -34,26 +34,32 @@ Run full tests on the local node hardhat network
 
     - 1.1 Upload the images folder (if there's animation replace the .png with a webp animated and update the metadata file too)
     
+        wtr50-sepolia-images -> bafybeiangeitiebeuht7jikmbhh7tqwh3l4zhcxqukff2kt3vebplyanpa
+
+       Check that	https://ipfs.io/ipfs/bafybeiangeitiebeuht7jikmbhh7tqwh3l4zhcxqukff2kt3vebplyanpa/1.png resolves
+
+
       - 1.2 After the images are uploaded update metadata files in NFTGenerator (output/metadata/*.json) to replace the CID 
         QmdYnyMJoGztyaNRCwKFRUyCDrK7sTMyi2Bg2kVsvDkNiL with the latest.
 
             grep -rl matchstring somedir/ | xargs sed -i 's/string1/string2/g'
             #or
-            grep -rl bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq . | xargs sed -i 's/bafybeibqazuju2mz4hmtucvqnbly67fdisygil7kze6gxdhdbz3e44wfuq/bafybeibtwgyqaqntwlfsrggmlpng5xdd3x2hz6ju3vo2oyiebb2boy6ysy/g'            
+            grep -rl QmdYnyMJoGztyaNRCwKFRUyCDrK7sTMyi2Bg2kVsvDkNiL . | xargs sed -i 's/QmdYnyMJoGztyaNRCwKFRUyCDrK7sTMyi2Bg2kVsvDkNiL\/images/bafybeiangeitiebeuht7jikmbhh7tqwh3l4zhcxqukff2kt3vebplyanpa/g'            
             #or
             # find /path/to/files -type f -exec sed -i 's/oldstring/new string/g' {} \;
         
     - 1.3 Upload metadata folder's content (no ./metadata just the .jsons) and write down metadata CID
-    
+    Check that https://ipfs.io/ipfs/bafybeicg735bmbyjms4cldllx2pl7ldmx4lrqw5dqxa5u5ujfb5faqoypq/1 resolves to the 1.json metadata file
     - 1.4 Update metadata CID into smart-contract/CollectionConfig (both hidden and public)
     
-    - 1.5 Contract Level Metadata
-
-                  Upload a json file metadata to CID
-                  Add contract-metadata to smart-contract/CollectionConfig
-                  see https://docs.opensea.io/docs/contract-level-metadata
             
-2. Update Collection Metadata IPFS URI  
+2. Update Collection Metadata IPFS URI
+3. Contract Level Metadata
+Not needed metadata file is in the waltertherabbit.com/contract.json ``
+              Upload a json file metadata to CID
+              Add contract-metadata to smart-contract/CollectionConfig
+              see https://docs.opensea.io/docs/contract-level-metadata
+
 
 **DEPRECATED** In CollectionConfig.ts Now need to call the update method on the contract
         
