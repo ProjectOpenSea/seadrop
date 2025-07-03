@@ -1,13 +1,13 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
-import { deployContract } from './__fixtures__'
+import { instantiateContract } from './__fixtures__'
 
 /**
   * yarn hardhat test --config ./src-upgradeable/hardhat.config.ts src-upgradeable/test/healthcheck.spec.ts --network hardhat
  */
 describe('Healthcheck', function () {
   it('deploys', async () => {
-    const { seadrop, nft, owner, ownerAddress } = await loadFixture(deployContract)
+    const { seadrop, nft, owner, ownerAddress } = await loadFixture(instantiateContract)
     expect(nft.address).to.not.be.null
     const maxSupply = await nft.maxSupply();
     expect(maxSupply).to.equal(MAX_SUPPLY);

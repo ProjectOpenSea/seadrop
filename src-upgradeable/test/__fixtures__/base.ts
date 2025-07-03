@@ -29,10 +29,12 @@ export const deployContract = async () => {
     [
       tokenName,
       tokenSymbol,
-      [seadrop.address]
+      [seadrop.address],
+      "ipfs://testBaseUri",
+      20
     ],
     {
-      initializer: "initialize"
+      initializer: "initializeToken"
     }
   );
   console.info(`deploying ${tokenName}`);
@@ -95,7 +97,6 @@ export const instantiateContract = async () => {
   const nft = await initUpgradableContract(CollectionConfig.contractAddress!);
   console.info(`instantiated nft contract: ${await nft.name()}  ${await nft.symbol()}`);
   let ownerAddress = await owner.getAddress();
-  //await nft.updateCreatorPayoutAddress(seadropAddress, owner.getAddress());
   return {
     nft,
     owner,

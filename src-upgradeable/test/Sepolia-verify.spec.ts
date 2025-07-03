@@ -43,9 +43,6 @@ describe("Sepolia Verify NFT contract", function() {
     const contractURI = await nft.contractURI();
     expect(contractURI).to.equal(CollectionConfig.contractMetadataUri);
     console.info(`check contractURI: ${contractURI}`);
-
-
-
   });
 
   // it("sepolia check free mint for owner", async () => {

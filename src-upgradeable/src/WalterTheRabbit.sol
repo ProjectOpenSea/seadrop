@@ -36,7 +36,7 @@ contract WalterTheRabbit is ERC721SeaDropUpgradeable {
     * @notice Initialize the token contract with its name, symbol,
      *         administrator, and allowed SeaDrop addresses.
      */
-    function initialize(
+    function initializeToken(
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop,
