@@ -46,11 +46,11 @@ const config: HardhatUserConfig = {
       url: 'http://localhost:24012/rpc',
       timeout: 3600000,//1h
       gasMultiplier: DEFAULT_GAS_MULTIPLIER,
-      blockGasLimit: 100000000429720,
+//       blockGasLimit: 100000000429720,
       // gasPrice: 14_400_000_000,// 14 GWEI = 0.000000014 eth
       // gasPrice: 8000000000,
       // gasPrice: 11_000_000_000,
-      // blockGasLimit: 100_000_000_429_720,
+      blockGasLimit: 100_000_000_429_720,
       // blockGasLimit: 40_000_000,
       // gas: 21_000,
       // gas: 2100000,

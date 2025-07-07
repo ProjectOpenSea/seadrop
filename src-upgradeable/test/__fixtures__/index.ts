@@ -1,3 +1,3 @@
-import { deployContract } from "./base";
+import { deployContract, instantiateContract } from "./base";
 
-export { deployContract };
+export { deployContract, instantiateContract };

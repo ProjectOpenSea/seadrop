@@ -39,7 +39,8 @@ export const deployContract = async () => {
   );
   console.info(`deploying ${tokenName}`);
   await nft.deployed();
-  console.warn(`deployed contract proxy to ${nft.address} symbol: ${await nft.symbol()} name: ${await nft.name()} seadrop: ${seadrop.address}`);
+  //console.warn(`deployed contract proxy to ${nft.address} symbol: ${await nft.symbol()} name: ${await nft.name()} seadrop: ${seadrop.address}`);
+  console.warn(`deployed contract proxy to ${nft.address} symbol: ${await nft.symbol()}`);
   const addresses = {
     proxy: nft.address,
     admin: await upgrades.erc1967.getAdminAddress(nft.address),
@@ -80,7 +81,8 @@ async function  initUpgradableContract(contractAddress: string) {
 
 export const instantiateSeadropContract = async (seadropAddress: string) => {
   if (seadropAddress == null) {
-    console.error("seadrop contract address not configured. maybe contract not deployed?")
+    console.error("seadrop contract address not configured. maybe contract not deployed?");
+    return;
   }
   console.info(`initializing seadrop contract for address: ${seadropAddress}`)
   //return await ethers.getContractAt("SeaDrop", seadropAddress);
@@ -95,7 +97,7 @@ export const instantiateContract = async () => {
     await ethers.getSigners();
 
   const nft = await initUpgradableContract(CollectionConfig.contractAddress!);
-  console.info(`instantiated nft contract: ${await nft.name()}  ${await nft.symbol()}`);
+  //console.info(`instantiated nft contract: ${await nft.name()}  ${await nft.symbol()}`);
   let ownerAddress = await owner.getAddress();
   return {
     nft,

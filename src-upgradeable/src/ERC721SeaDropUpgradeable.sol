@@ -6,7 +6,7 @@ ERC721ContractMetadataUpgradeable,
 ISeaDropTokenContractMetadataUpgradeable
 } from "./ERC721ContractMetadataUpgradeable.sol";
 
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 
 import {
 INonFungibleSeaDropTokenUpgradeable
@@ -322,7 +322,7 @@ ReentrancyGuardUpgradeable
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the public drop data on SeaDrop.
-        console.log("getPublicDrop contract Address:", contractAddress);
+        //debug console.log("getPublicDrop contract Address:", contractAddress);
         if (isContract(seaDropImpl)) {
             return getPublicDropFromSeadrop(seaDropImpl, contractAddress);
         }
@@ -342,8 +342,8 @@ ReentrancyGuardUpgradeable
         // Ensure the SeaDrop is allowed.
         _onlyAllowedSeaDrop(seaDropImpl);
 
-        console.log("getPublicDropFromSeadrop seaDropImpl:", seaDropImpl);
-        console.log("getPublicDropFromSeadrop contractAddress:", contractAddress);
+//        console.log("getPublicDropFromSeadrop seaDropImpl:", seaDropImpl);
+//        console.log("getPublicDropFromSeadrop contractAddress:", contractAddress);
 
         ISeaDropUpgradeable seadropInterface = ISeaDropUpgradeable(seaDropImpl);
 //        if (seadropInterface == address(zero)) {

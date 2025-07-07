@@ -12,7 +12,7 @@
     "test": "hardhat test --config ./src-upgradeable/hardhat.config.ts",
     "test:nonupgradeable": "hardhat test --config ./hardhat.config.ts",
     "test:forge": "forge test -vvv",
-    "typechain": "typechain --target=./src-upgradeable/artifacts",
+    "typechain": "typechain",
     "profile": "REPORT_GAS=true hardhat test --config ./src-upgradeable/hardhat.config.ts",
     "coverage": "rm -rf temp-src-coverage; hardhat preprocess --dest temp-src-coverage; yarn coverage:hardhat:fix-lib-link; hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js; yarn lcov-convert-relative-paths-to-absolute",
     "coverage:forge": "forge coverage --report summary --report lcov; yarn lcov-filter-ignored-files",
