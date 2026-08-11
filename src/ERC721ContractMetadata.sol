@@ -197,8 +197,8 @@ contract ERC721ContractMetadata is
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
-        // Revert if the new royalty address is the zero address.
-        if (newInfo.royaltyAddress == address(0)) {
+        // Revert if the new royalty address is the zero address and basis points is non-zero.
+        if (newInfo.royaltyAddress == address(0) && newInfo.royaltyBps != 0) {
             revert RoyaltyAddressCannotBeZeroAddress();
         }
 
