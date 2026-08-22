@@ -5,6 +5,9 @@ Thank you for your Pull Request. Please provide a description above and review
 the requirements below.
 
 Bug fixes and new features should include tests.
+
+Do not report security vulnerabilities in a public pull request or issue. Use
+https://bugcrowd.com/engagements/opensea instead.
 -->
 
 ## Motivation
