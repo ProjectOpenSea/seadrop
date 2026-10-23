@@ -85,6 +85,7 @@ jobs:
       - run: yarn coverage
 
       - name: Submit coverage to Coveralls
+        if: github.repository == 'ProjectOpenSea/seadrop'
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -102,7 +103,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: v1.5.1
 
       - name: Install forge dependencies
         run: forge install
@@ -159,6 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
+        if: github.repository == 'ProjectOpenSea/seadrop'
         uses: coverallsapp/github-action@master
         with:
           parallel-finished: true
