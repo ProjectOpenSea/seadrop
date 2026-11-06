@@ -463,6 +463,14 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         return _createAllowListAndGetProof(minters, mintParams, 0);
     }
 
+    /// @dev A copy of mint params, since assigning a memory struct aliases
+    ///      it (unlike the spec's `{ ...mintParams }`).
+    function _copyMintParams(
+        MintParams memory mintParams
+    ) internal pure returns (MintParams memory) {
+        return abi.decode(abi.encode(mintParams), (MintParams));
+    }
+
     function _updateAllowList(address tokenAddress, bytes32 root) internal {
         IERC721SeaDrop(tokenAddress).updateAllowList(
             AllowListData({
