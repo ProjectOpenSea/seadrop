@@ -296,7 +296,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         IERC721SeaDrop(address(token_))
             .updateAllowedFeeRecipient(feeRecipient, true);
         token_.setMaxSupply(10);
-        setSingleCreatorPayout(makeAddr("creator"));
+        _setSingleCreatorPayout(address(token_), makeAddr("creator"));
         PublicDrop memory publicDrop = PublicDrop({
             startPrice: 1 ether,
             endPrice: 1 ether,
@@ -309,30 +309,11 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         });
         IERC721SeaDrop(address(token_)).updatePublicDrop(publicDrop);
 
-        addSeaDropOfferItem(2);
-        addSeaDropConsiderationItems(feeRecipient, 500, 2 ether);
-        configureSeaDropOrderParameters();
-
-        AdvancedOrder memory order = AdvancedOrder({
-            parameters: baseOrderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: bytes.concat(
-                bytes1(0x00), // SIP-6 version byte
-                bytes1(0x00), // substandard version byte: public mint
-                bytes20(feeRecipient),
-                bytes20(address(this))
-            )
-        });
-
-        vm.deal(address(this), 4 ether);
-        consideration.fulfillAdvancedOrder{ value: 2 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
+            address(token_), 2, feeRecipient, 500, 1 ether, address(this)
+        );
+        vm.deal(address(this), 2 * value);
+        _fulfill(order, address(this), value);
 
         assertEq(token_.ownerOf(4), address(this));
         assertEq(token_.ownerOf(5), address(this));
@@ -343,12 +324,10 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
 
         // Minting through Seaport continues after the lock is permanent.
         token_.lockPermanently();
-        consideration.fulfillAdvancedOrder{ value: 2 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        (order, value) = _publicMintOrder(
+            address(token_), 2, feeRecipient, 500, 1 ether, address(this)
+        );
+        _fulfill(order, address(this), value);
 
         assertEq(token_.ownerOf(6), address(this));
         assertEq(token_.ownerOf(7), address(this));
@@ -762,14 +741,5 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         } else {
             _assertTransferSucceeds(1);
         }
-    }
-
-    function onERC721Received(address, address, uint256, bytes calldata)
-        public
-        pure
-        override
-        returns (bytes4)
-    {
-        return this.onERC721Received.selector;
     }
 }

@@ -374,7 +374,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         address feeRecipient = makeAddr("feeRecipient");
         IERC1155SeaDrop(address(token_))
             .updateAllowedFeeRecipient(feeRecipient, true);
-        setSingleCreatorPayout(makeAddr("creator"));
+        _setSingleCreatorPayout(address(token_), makeAddr("creator"));
         PublicDrop memory publicDrop = PublicDrop({
             startPrice: 1 ether,
             endPrice: 1 ether,
@@ -390,31 +390,12 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         });
         IERC1155SeaDrop(address(token_)).updatePublicDrop(publicDrop, 0);
 
-        addSeaDropOfferItem(4, 2); // token id 4, 2 mints
-        addSeaDropConsiderationItems(feeRecipient, 500, 2 ether);
-        configureSeaDropOrderParameters();
-
-        AdvancedOrder memory order = AdvancedOrder({
-            parameters: baseOrderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: bytes.concat(
-                bytes1(0x00), // SIP-6 version byte
-                bytes1(0x00), // substandard version byte: public mint
-                bytes20(feeRecipient),
-                bytes20(address(this)),
-                bytes1(0x00) // public drop index 0
-            )
-        });
-
-        vm.deal(address(this), 4 ether);
-        consideration.fulfillAdvancedOrder{ value: 2 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        // Token id 4, 2 mints, public drop index 0.
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
+            address(token_), 4, 2, feeRecipient, 500, 1 ether, address(this), 0
+        );
+        vm.deal(address(this), 2 * value);
+        _fulfill(order, address(this), value);
 
         assertEq(token_.balanceOf(address(this), 4), 2);
         assertTrue(token_.locked(4));
@@ -424,12 +405,10 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
 
         // Minting through Seaport continues after the lock is permanent.
         token_.lockPermanently();
-        consideration.fulfillAdvancedOrder{ value: 2 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        (order, value) = _publicMintOrder(
+            address(token_), 4, 2, feeRecipient, 500, 1 ether, address(this), 0
+        );
+        _fulfill(order, address(this), value);
 
         assertEq(token_.balanceOf(address(this), 4), 4);
 

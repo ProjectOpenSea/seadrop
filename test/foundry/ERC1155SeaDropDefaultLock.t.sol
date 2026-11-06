@@ -119,7 +119,7 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         token = ERC1155SeaDrop(clone);
         address feeRecipient = makeAddr("feeRecipient");
         IERC1155SeaDrop(clone).updateAllowedFeeRecipient(feeRecipient, true);
-        setSingleCreatorPayout(makeAddr("creator"));
+        _setSingleCreatorPayout(clone, makeAddr("creator"));
         token.setMaxSupply(1, 100);
         PublicDrop memory publicDrop = PublicDrop({
             startPrice: 1 ether,
@@ -136,31 +136,12 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         });
         IERC1155SeaDrop(clone).updatePublicDrop(publicDrop, 0);
 
-        addSeaDropOfferItem(1, amount);
-        addSeaDropConsiderationItems(feeRecipient, 500, amount * 1 ether);
-        configureSeaDropOrderParameters();
-
-        AdvancedOrder memory order = AdvancedOrder({
-            parameters: baseOrderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: bytes.concat(
-                bytes1(0x00), // SIP-6 version byte
-                bytes1(0x00), // substandard version byte: public mint
-                bytes20(feeRecipient),
-                bytes20(address(this)),
-                bytes1(0x00) // public drop index 0
-            )
-        });
-
-        vm.deal(address(this), amount * 1 ether);
-        consideration.fulfillAdvancedOrder{ value: amount * 1 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        // Token id 1, public drop index 0.
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
+            clone, 1, amount, feeRecipient, 500, 1 ether, address(this), 0
+        );
+        vm.deal(address(this), value);
+        _fulfill(order, address(this), value);
     }
 
     function testDeployStartsUnlocked() public {
