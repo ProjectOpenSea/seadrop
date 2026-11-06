@@ -7,6 +7,10 @@ import {
     ERC721SeaDropRandomOffset
 } from "seadrop/extensions/ERC721SeaDropRandomOffset.sol";
 
+import {
+    ERC721SeaDropStructsErrorsAndEvents
+} from "seadrop/lib/ERC721SeaDropStructsErrorsAndEvents.sol";
+
 import { IERC721A } from "ERC721A/IERC721A.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
@@ -190,6 +194,26 @@ contract ERC721SeaDropRandomOffsetTest is TestHelper {
         vm.expectEmit(true, true, true, true, address(offsetToken));
         emit BatchMetadataUpdate(1, 10);
         offsetToken.setRandomOffset();
+    }
+
+    /// @dev tokenURI maps tokens modulo the max supply, so the max supply
+    ///      is locked once revealed, including through multiConfigure.
+    function testSetMaxSupply_lockedAfterReveal() public {
+        _reveal(10, 0);
+        string memory revealedURI = offsetToken.tokenURI(1);
+
+        vm.expectRevert(ERC721SeaDropRandomOffset.AlreadyRevealed.selector);
+        offsetToken.setMaxSupply(20);
+        vm.expectRevert(ERC721SeaDropRandomOffset.AlreadyRevealed.selector);
+        offsetToken.setMaxSupply(10);
+
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config;
+        config.maxSupply = 20;
+        vm.expectRevert(ERC721SeaDropRandomOffset.AlreadyRevealed.selector);
+        offsetToken.multiConfigure(config);
+
+        assertEq(offsetToken.maxSupply(), 10);
+        assertEq(offsetToken.tokenURI(1), revealedURI);
     }
 
     /// @dev With two tokens the only shift that moves them is a swap. The

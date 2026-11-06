@@ -3,6 +3,11 @@ pragma solidity 0.8.17;
 
 import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
 
+import {
+    ERC721ContractMetadata,
+    ISeaDropTokenContractMetadata
+} from "../ERC721ContractMetadata.sol";
+
 /**
  * @title  ERC721SeaDropRandomOffset
  * @author James Wenzel (emo.eth)
@@ -27,7 +32,8 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
     uint256 private constant _REVEALED_FALSE = 1;
     uint256 private constant _REVEALED_TRUE = 2;
 
-    /// @notice Revert when setting the randomOffset if already set.
+    /// @notice Revert when setting the randomOffset if already set, or
+    ///         the max supply after the reveal.
     error AlreadyRevealed();
 
     /// @notice Revert when setting the randomOffset if the collection is
@@ -85,6 +91,25 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
 
         // Emit an event for the reveal, which moves every token's metadata.
         emit BatchMetadataUpdate(_startTokenId(), _nextTokenId() - 1);
+    }
+
+    /**
+     * @notice Sets the max token supply and emits an event, until the
+     *         reveal. tokenURI maps tokens modulo the max supply, so
+     *         changing it after the reveal would reshuffle revealed tokens.
+     *
+     * @param newMaxSupply The new max supply to set.
+     */
+    function setMaxSupply(uint256 newMaxSupply)
+        public
+        override(ERC721ContractMetadata, ISeaDropTokenContractMetadata)
+    {
+        // Revert if the collection has been revealed.
+        if (revealed == _REVEALED_TRUE) {
+            revert AlreadyRevealed();
+        }
+
+        super.setMaxSupply(newMaxSupply);
     }
 
     /**
