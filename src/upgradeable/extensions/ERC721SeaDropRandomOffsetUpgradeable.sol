@@ -77,6 +77,9 @@ contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
         }
 
         ERC721SeaDropRandomOffsetStorage.layout().revealed = true;
+
+        // Emit an event for the reveal, which moves every token's metadata.
+        emit BatchMetadataUpdate(_startTokenId(), _nextTokenId() - 1);
     }
 
     /**

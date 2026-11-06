@@ -18,6 +18,8 @@ contract ERC721SeaDropRandomOffsetTest is TestHelper {
 
     address minter = makeAddr("minter");
 
+    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
+
     function setUp() public {
         // Deploy the token. The test contract is the owner.
         address[] memory allowedSeaDrop = new address[](1);
@@ -176,6 +178,18 @@ contract ERC721SeaDropRandomOffsetTest is TestHelper {
             keccak256(bytes(offsetToken.tokenURI(1)))
                 != keccak256(bytes(_uri(1)))
         );
+    }
+
+    /// @dev The reveal changes every token's URI, so it emits ERC-4906's
+    ///      BatchMetadataUpdate over all of them.
+    function testSetRandomOffset_emitsBatchMetadataUpdate() public {
+        offsetToken.setMaxSupply(10);
+        offsetToken.setBaseURI("http://example.com/");
+        _mintToMaxSupply();
+
+        vm.expectEmit(true, true, true, true, address(offsetToken));
+        emit BatchMetadataUpdate(1, 10);
+        offsetToken.setRandomOffset();
     }
 
     /// @dev With two tokens the only shift that moves them is a swap. The
