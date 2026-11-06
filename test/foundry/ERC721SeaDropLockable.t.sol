@@ -232,9 +232,14 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
     function testConstructorLocked() public {
         vm.recordLogs();
         _setUp(LockMode.Locked);
+
+        // The base contract starts unlocked, then the lock mode applies.
         _assertLockEvents(
             _lockEvents(),
-            _events(LockEvents.defaultLocked(true))
+            _events(
+                LockEvents.defaultLocked(false),
+                LockEvents.defaultLocked(true)
+            )
         );
 
         assertTrue(token_.defaultLocked());
@@ -247,10 +252,12 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         vm.recordLogs();
         _setUp(LockMode.PermanentlyLocked);
 
+        // The base contract starts unlocked, then the lock mode applies.
         // DefaultLocked(true) must come before PermanentlyLocked().
         _assertLockEvents(
             _lockEvents(),
             _events(
+                LockEvents.defaultLocked(false),
                 LockEvents.defaultLocked(true),
                 LockEvents.permanentlyLocked()
             )

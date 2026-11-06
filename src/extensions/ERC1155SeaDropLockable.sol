@@ -3,32 +3,30 @@ pragma solidity ^0.8.19;
 
 import { ERC1155SeaDrop } from "../ERC1155SeaDrop.sol";
 
-import { ERC8451Lockable, LockMode } from "../lib/ERC8451Lockable.sol";
-
-import { IERC6982 } from "../interfaces/IERC6982.sol";
-
-import { IERC8451 } from "../interfaces/IERC8451.sol";
+import { LockMode } from "../lib/ERC8451Lockable.sol";
 
 /**
  * @title  ERC1155SeaDropLockable
  * @author Ryan Ghods (ralxz.eth)
- * @notice ERC1155SeaDrop with lockable tokens (ERC-6982) and permanent
- *         locks (ERC-8451). Lock status applies per token id. Deploy with
+ * @notice ERC1155SeaDrop that picks its starting lock status at deployment
+ *         and can make the lock permanent at any time. Deploy with
  *         `LockMode.Locked` to pause trading until the owner unlocks it, or
  *         with `LockMode.PermanentlyLocked` for tokens that can never be
  *         transferred.
  *
- *         Locks restrict holder transfers only. Minting continues while
- *         tokens are locked, and the holder or an approved operator can
- *         still burn. Approvals work as usual until the lock is permanent.
- *         After that, new approvals revert, and existing approvals can
- *         still be revoked.
- *
- *         A token id exists while its total supply is greater than zero.
+ *         ERC1155SeaDrop already implements lockable tokens (ERC-6982) and
+ *         permanent locks (ERC-8451), but starts unlocked and only allows a
+ *         permanent lock before the first mint. Use this contract to lock
+ *         trading during a mint and make it permanent afterwards.
  */
-contract ERC1155SeaDropLockable is ERC1155SeaDrop, ERC8451Lockable {
+contract ERC1155SeaDropLockable is ERC1155SeaDrop {
     /**
      * @notice Deploy the token contract.
+     *
+     *         ERC1155SeaDrop emits `DefaultLocked(false)` first. With a
+     *         Locked or PermanentlyLocked mode, this then emits
+     *         `DefaultLocked(true)`, and `PermanentlyLocked()` for a
+     *         permanent lock, in the same transaction.
      *
      * @param allowedConfigurer The address of the contract allowed to
      *                          configure parameters. Also contains SeaDrop
@@ -46,102 +44,15 @@ contract ERC1155SeaDropLockable is ERC1155SeaDrop, ERC8451Lockable {
         string memory name_,
         string memory symbol_,
         LockMode lockMode
-    )
-        ERC1155SeaDrop(allowedConfigurer, allowedSeaport, name_, symbol_)
-        ERC8451Lockable(lockMode)
-    {}
-
-    /**
-     * @notice Approve or remove `operator` as an operator for the caller.
-     *         Granting an approval reverts once the lock is permanent.
-     *         Removing one always works.
-     */
-    function setApprovalForAll(
-        address operator,
-        bool isApproved
-    ) public virtual override {
-        if (isApproved) {
-            _revertIfPermanentlyLocked();
-        }
-
-        super.setApprovalForAll(operator, isApproved);
-    }
-
-    /**
-     * @notice Returns whether the interface is supported.
-     *
-     * @param interfaceId The interface id to check against.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override returns (bool) {
-        return
-            interfaceId == type(IERC6982).interfaceId ||
-            interfaceId == type(IERC8451).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
-    /**
-     * @dev Reverts holder transfers of locked token ids with `TokenLocked`.
-     *      Mints and burns are not holder transfers and are not affected.
-     *      The lock is checked before the transfer validator, so a locked
-     *      token id reports `TokenLocked` rather than a validator error.
-     */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal virtual override {
-        bool isHolderTransfer = from != address(0) && to != address(0);
-
-        if (isHolderTransfer) {
-            _revertIfAnyTokenLocked(ids);
-        }
-
-        super._beforeTokenTransfer(from, to, ids, amounts, data);
-
-        // The ERC-1155 transfer validator is not a view call, so a validator
-        // that is also the owner could change the lock while this transfer
-        // is in progress. Check again so that a lock it sets, including a
-        // permanent one, applies to this transfer.
-        if (isHolderTransfer && _transferValidator != address(0)) {
-            _revertIfAnyTokenLocked(ids);
+    ) ERC1155SeaDrop(allowedConfigurer, allowedSeaport, name_, symbol_) {
+        if (lockMode != LockMode.Unlocked) {
+            _initializeLock(lockMode);
         }
     }
 
     /**
-     * @dev Reverts with `TokenLocked` for the first locked token id.
-     *
-     * @param ids The token ids.
+     * @dev The lock can become permanent at any time, including after
+     *      tokens are minted.
      */
-    function _revertIfAnyTokenLocked(uint256[] memory ids) internal view {
-        // Put the length on the stack for more efficient access.
-        uint256 idsLength = ids.length;
-
-        for (uint256 i = 0; i < idsLength; ) {
-            _revertIfTokenLocked(ids[i]);
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @dev Only the owner can update the lock.
-     */
-    function _authorizeLockUpdate() internal view override {
-        _checkOwner();
-    }
-
-    /**
-     * @dev A token id exists while its total supply is greater than zero.
-     */
-    function _lockableTokenExists(
-        uint256 tokenId
-    ) internal view override returns (bool) {
-        return _tokenSupply[tokenId].totalSupply != 0;
-    }
+    function _checkPermanentLockAllowed() internal view override {}
 }

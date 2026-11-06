@@ -18,6 +18,12 @@ import { ITransferValidator1155 } from "../interfaces/ITransferValidator.sol";
 
 import { TokenTransferValidator } from "./TokenTransferValidator.sol";
 
+import { ERC8451Lockable, LockMode } from "./ERC8451Lockable.sol";
+
+import { IERC6982 } from "../interfaces/IERC6982.sol";
+
+import { IERC8451 } from "../interfaces/IERC8451.sol";
+
 import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
@@ -32,10 +38,20 @@ import { Ownable } from "solady/src/auth/Ownable.sol";
  * @author Michael Cohen (notmichael.eth)
  * @notice A token contract that extends ERC-1155
  *         with additional metadata and ownership capabilities.
+ *
+ *         Token ids are lockable (ERC-6982) with permanent locks
+ *         (ERC-8451). Tokens start unlocked. The owner can lock or unlock
+ *         them, and can make the lock permanent until the first token is
+ *         minted. Locks restrict holder transfers only: minting continues,
+ *         and the holder or an approved operator can still burn. A token id
+ *         exists while its total supply is greater than zero.
  */
 contract ERC1155ContractMetadata is
     ERC1155ConduitPreapproved,
     TokenTransferValidator,
+    // Declared right after TokenTransferValidator so the lock flags share
+    // the transfer validator's storage slot.
+    ERC8451Lockable,
     ERC2981,
     Ownable,
     IERC1155ContractMetadata
@@ -67,6 +83,10 @@ contract ERC1155ContractMetadata is
 
     /// @notice The allowed contract that can configure SeaDrop parameters.
     address internal immutable _CONFIGURER;
+
+    /// @notice Whether any token has been minted. The lock can only become
+    ///         permanent before then.
+    bool internal _mintStarted;
 
     /**
      * @dev Reverts if the sender is not the owner or the allowed
@@ -106,6 +126,10 @@ contract ERC1155ContractMetadata is
 
         // Set the owner.
         _initializeOwner(msg.sender);
+
+        // Start unlocked and emit DefaultLocked(false), as ERC-6982
+        // requires at deployment.
+        _initializeLock(LockMode.Unlocked);
     }
 
     /**
@@ -359,8 +383,30 @@ contract ERC1155ContractMetadata is
     }
 
     /**
+     * @notice Approve or remove `operator` as an operator for the caller.
+     *         Granting an approval reverts once the lock is permanent.
+     *         Removing one always works.
+     */
+    function setApprovalForAll(address operator, bool isApproved)
+        public
+        virtual
+        override
+    {
+        if (isApproved) {
+            _revertIfPermanentlyLocked();
+        }
+
+        super.setApprovalForAll(operator, isApproved);
+    }
+
+    /**
      * @dev Hook that is called before any token transfer.
      *      This includes minting and burning.
+     *
+     *      Holder transfers of locked token ids revert with `TokenLocked`,
+     *      checked before the transfer validator so a locked token id
+     *      reports `TokenLocked` rather than a validator error. A batch
+     *      transfer reverts with the first locked id.
      */
     function _beforeTokenTransfer(
         address from,
@@ -370,6 +416,8 @@ contract ERC1155ContractMetadata is
         bytes memory /* data */
     ) internal virtual override {
         if (from != address(0) && to != address(0)) {
+            _revertIfAnyTokenLocked(ids);
+
             // Call the transfer validator if one is set.
             address transferValidator = _transferValidator;
             if (transferValidator != address(0)) {
@@ -379,6 +427,30 @@ contract ERC1155ContractMetadata is
                             msg.sender, from, to, ids[i], amounts[i]
                         );
                 }
+
+                // The ERC-1155 validator is not a view call, so a validator
+                // that is also the owner could change the lock during this
+                // transfer. Check again so that a lock it sets, including a
+                // permanent one, applies to this transfer.
+                _revertIfAnyTokenLocked(ids);
+            }
+        }
+    }
+
+    /**
+     * @dev Reverts with `TokenLocked` for the first locked token id.
+     *
+     * @param ids The token ids.
+     */
+    function _revertIfAnyTokenLocked(uint256[] memory ids) internal view {
+        // Put the length on the stack for more efficient access.
+        uint256 idsLength = ids.length;
+
+        for (uint256 i = 0; i < idsLength;) {
+            _revertIfTokenLocked(ids[i]);
+
+            unchecked {
+                ++i;
             }
         }
     }
@@ -396,6 +468,8 @@ contract ERC1155ContractMetadata is
         returns (bool)
     {
         return interfaceId == type(IERC1155ContractMetadata).interfaceId
+            || interfaceId == type(IERC6982).interfaceId
+            || interfaceId == type(IERC8451).interfaceId
             || interfaceId == type(ICreatorToken).interfaceId
             || interfaceId == type(ILegacyCreatorToken).interfaceId
             || interfaceId == 0x49064906 // ERC-4906 (MetadataUpdate)
@@ -524,6 +598,12 @@ contract ERC1155ContractMetadata is
     function _incrementMintCounts(address to, uint256 id, uint256 amount)
         internal
     {
+        // Record that minting has started, after which the lock cannot
+        // become permanent.
+        if (!_mintStarted) {
+            _mintStarted = true;
+        }
+
         // Get the current token supply.
         TokenSupply storage tokenSupply = _tokenSupply[id];
 
@@ -545,6 +625,36 @@ contract ERC1155ContractMetadata is
 
             // Increment total minted by user per token.
             _totalMintedByUserPerToken[to][id] += amount;
+        }
+    }
+
+    /**
+     * @dev Only the owner can update the lock.
+     */
+    function _authorizeLockUpdate() internal view override {
+        _checkOwner();
+    }
+
+    /**
+     * @dev A token id exists while its total supply is greater than zero.
+     */
+    function _lockableTokenExists(uint256 tokenId)
+        internal
+        view
+        override
+        returns (bool)
+    {
+        return _tokenSupply[tokenId].totalSupply != 0;
+    }
+
+    /**
+     * @dev The lock can only become permanent before the first token is
+     *      minted, so an owner key cannot end trading for good on a
+     *      collection that already has holders.
+     */
+    function _checkPermanentLockAllowed() internal view virtual override {
+        if (_mintStarted) {
+            revert CannotLockPermanentlyAfterMint();
         }
     }
 }

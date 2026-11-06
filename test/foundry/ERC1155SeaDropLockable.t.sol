@@ -310,9 +310,14 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
     function testConstructorLocked() public {
         vm.recordLogs();
         _setUp(LockMode.Locked);
+
+        // The base contract starts unlocked, then the lock mode applies.
         _assertLockEvents(
             _lockEvents(),
-            _events(LockEvents.defaultLocked(true))
+            _events(
+                LockEvents.defaultLocked(false),
+                LockEvents.defaultLocked(true)
+            )
         );
 
         assertTrue(token_.defaultLocked());
@@ -325,10 +330,12 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         vm.recordLogs();
         _setUp(LockMode.PermanentlyLocked);
 
+        // The base contract starts unlocked, then the lock mode applies.
         // DefaultLocked(true) must come before PermanentlyLocked().
         _assertLockEvents(
             _lockEvents(),
             _events(
+                LockEvents.defaultLocked(false),
                 LockEvents.defaultLocked(true),
                 LockEvents.permanentlyLocked()
             )
@@ -788,11 +795,12 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         assertTrue(token_.locked(1));
         assertTrue(token_.permanentlyLocked());
         LockEvent[] memory events = _lockEvents();
-        LockEvent[] memory expected = new LockEvent[](4);
-        expected[0] = LockEvents.defaultLocked(true);
-        expected[1] = LockEvents.locked(1, false);
-        expected[2] = LockEvents.locked(1, true);
-        expected[3] = LockEvents.permanentlyLocked();
+        LockEvent[] memory expected = new LockEvent[](5);
+        expected[0] = LockEvents.defaultLocked(false);
+        expected[1] = LockEvents.defaultLocked(true);
+        expected[2] = LockEvents.locked(1, false);
+        expected[3] = LockEvents.locked(1, true);
+        expected[4] = LockEvents.permanentlyLocked();
         _assertLockEvents(events, expected);
         assertTrue(_replayErc6982(events, 1));
 

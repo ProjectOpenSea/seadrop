@@ -33,10 +33,17 @@ enum LockMode {
  *         mints and burns continue while tokens are locked.
  *
  *         The token contract that inherits this must call
- *         `_revertIfTokenLocked` for every holder transfer, decide who can
- *         update the lock in `_authorizeLockUpdate`, define when a token
- *         exists in `_lockableTokenExists`, and return true from
- *         `supportsInterface` for IERC6982 and IERC8451.
+ *         `_initializeLock` once at deployment (from its constructor, or
+ *         from its initializer for clones), call `_revertIfTokenLocked` for
+ *         every holder transfer, decide who can update the lock in
+ *         `_authorizeLockUpdate`, define when a token exists in
+ *         `_lockableTokenExists`, and return true from `supportsInterface`
+ *         for IERC6982 and IERC8451. It can limit when the lock may become
+ *         permanent in `_checkPermanentLockAllowed`.
+ *
+ *         Declare this right after `TokenTransferValidator` in the
+ *         inheritance list so its flags share the transfer validator's
+ *         storage slot, which holder transfers already read.
  */
 abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     using EnumerableSet for EnumerableSet.UintSet;
@@ -74,23 +81,9 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     ///         not exist.
     error LockQueryForNonexistentToken();
 
-    /**
-     * @notice Set the lock status every token starts with. Emits
-     *         `DefaultLocked`, which ERC-6982 requires at deployment, and
-     *         `PermanentlyLocked` if the lock is permanent from the start.
-     *
-     * @param lockMode The lock status to start with.
-     */
-    constructor(LockMode lockMode) {
-        bool isLocked = lockMode != LockMode.Unlocked;
-        _defaultLocked = isLocked;
-        emit DefaultLocked(isLocked);
-
-        if (lockMode == LockMode.PermanentlyLocked) {
-            _permanentlyLocked = true;
-            emit PermanentlyLocked();
-        }
-    }
+    /// @notice Revert when making the lock permanent after tokens were
+    ///         minted, in contracts that only allow it before.
+    error CannotLockPermanentlyAfterMint();
 
     /**
      * @notice Set the default lock status of every token that does not
@@ -169,6 +162,7 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     function lockPermanently() external {
         _authorizeLockUpdate();
         _revertIfPermanentlyLocked();
+        _checkPermanentLockAllowed();
 
         // ERC-8451 requires `defaultLocked()` to return true before
         // `PermanentlyLocked` is emitted.
@@ -223,6 +217,24 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     }
 
     /**
+     * @dev Set the lock status every token starts with. Emits
+     *      `DefaultLocked`, which ERC-6982 requires at deployment, and
+     *      `PermanentlyLocked` if the lock is permanent from the start.
+     *
+     * @param lockMode The lock status to start with.
+     */
+    function _initializeLock(LockMode lockMode) internal {
+        bool isLocked = lockMode != LockMode.Unlocked;
+        _defaultLocked = isLocked;
+        emit DefaultLocked(isLocked);
+
+        if (lockMode == LockMode.PermanentlyLocked) {
+            _permanentlyLocked = true;
+            emit PermanentlyLocked();
+        }
+    }
+
+    /**
      * @dev Reverts with `TokenLocked` if the token is locked. The token
      *      contract must call this for every holder transfer, where both
      *      the sender and the recipient are not the zero address.
@@ -270,6 +282,12 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
      * @dev Reverts if the caller cannot update the lock.
      */
     function _authorizeLockUpdate() internal view virtual;
+
+    /**
+     * @dev Reverts if the lock cannot become permanent now. Allows it by
+     *      default.
+     */
+    function _checkPermanentLockAllowed() internal view virtual {}
 
     /**
      * @dev Returns whether a token exists, for `locked`.
