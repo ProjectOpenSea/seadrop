@@ -14,8 +14,10 @@ import { ERC721SeaDrop } from "../ERC721SeaDrop.sol";
  *         to enable fair metadata reveals.
  */
 contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
-    /// @notice The random offset, between 1 and the MAX_SUPPLY at the time of
-    ///         being set.
+    /// @notice The random offset, between 1 and maxSupply - 1 at the time of
+    ///         being set (0 when maxSupply is 1). Token `tokenId` shows the
+    ///         metadata of the token `randomOffset` positions after it,
+    ///         wrapping around at maxSupply.
     uint256 public randomOffset;
 
     /// @notice If the collection has been revealed and the randomOffset has
@@ -71,17 +73,21 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
         // costs more gas than reading a local variable.
         uint256 maxSupply = _maxSupply;
 
-        // Revert if the collection is not yet fully minted.
-        if (_totalMinted() != maxSupply) {
+        // Revert if the collection is not yet fully minted. A zero max supply
+        // has nothing to reveal, and revealing it would lock the offset.
+        if (maxSupply == 0 || _totalMinted() != maxSupply) {
             revert NotFullyMinted();
         }
 
-        // block.difficulty returns PREVRANDAO on Ethereum post-merge
+        // block.prevrandao returns PREVRANDAO on Ethereum post-merge
         // NOTE: do not use this on other chains
-        // randomOffset returns between 1 and MAX_SUPPLY
-        randomOffset =
-            (uint256(keccak256(abi.encode(block.prevrandao))) % (maxSupply - 1))
-                + 1;
+        // randomOffset is uniform between 1 and maxSupply - 1, every shift
+        // except the identity. A single token has only the identity.
+        if (maxSupply > 1) {
+            randomOffset =
+                (uint256(keccak256(abi.encode(block.prevrandao)))
+                        % (maxSupply - 1)) + 1;
+        }
 
         // Set revealed to true.
         revealed = _REVEALED_TRUE;
@@ -117,10 +123,12 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
         } else {
             // If the baseURI is set and the collection is revealed,
             // return the tokenURI offset by the randomOffset.
+            uint256 startTokenId = _startTokenId();
             return string.concat(
                 base,
                 _toString(
-                    ((tokenId + randomOffset) % _maxSupply) + _startTokenId()
+                    ((tokenId - startTokenId + randomOffset) % _maxSupply)
+                        + startTokenId
                 )
             );
         }
