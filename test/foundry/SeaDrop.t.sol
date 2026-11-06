@@ -7,6 +7,10 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { TestERC721 } from "seadrop/test/TestERC721.sol";
 
+import { MaliciousRecipient } from "seadrop/test/MaliciousRecipient.sol";
+
+import { ERC721A } from "ERC721A/ERC721A.sol";
+
 import {
     AllowListData,
     MintParams,
@@ -467,5 +471,117 @@ contract TestSeaDrop is TestHelper {
             .maxTotalMintableByWallet,
             0
         );
+    }
+
+    function testTokenMethods_onlyINonFungibleSeaDropToken() public {
+        // A standard ERC721A token that does not implement
+        // INonFungibleSeaDropToken.
+        ERC721A standardERC721A = new ERC721A("", "");
+        address minter = makeAddr("minter");
+
+        bytes memory expectedRevert = abi.encodeWithSelector(
+            OnlyINonFungibleSeaDropToken.selector,
+            address(standardERC721A)
+        );
+
+        vm.startPrank(address(standardERC721A));
+
+        PublicDrop memory publicDrop = PublicDrop(
+            1000, // mint price
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp + 100), // end time
+            1, // max mints per wallet
+            1000, // fee (10%)
+            false // restrict fee recipients
+        );
+        vm.expectRevert(expectedRevert);
+        seadrop.updatePublicDrop(publicDrop);
+
+        AllowListData memory allowListData = AllowListData(
+            bytes32(0),
+            new string[](0),
+            ""
+        );
+        vm.expectRevert(expectedRevert);
+        seadrop.updateAllowList(allowListData);
+
+        TokenGatedDropStage memory tokenGatedDropStage = TokenGatedDropStage(
+            0.01 ether, // mint price
+            10, // max mints per wallet
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp + 500), // end time
+            1, // drop stage index
+            100, // max token supply for stage
+            100, // fee (1%)
+            true // restrict fee recipients
+        );
+        vm.expectRevert(expectedRevert);
+        seadrop.updateTokenGatedDrop(minter, tokenGatedDropStage);
+
+        vm.expectRevert(expectedRevert);
+        seadrop.updateCreatorPayoutAddress(minter);
+
+        vm.expectRevert(expectedRevert);
+        seadrop.updateAllowedFeeRecipient(minter, true);
+
+        SignedMintValidationParams
+            memory signedMintValidationParams = SignedMintValidationParams(
+                1, // min mint price
+                11, // max max total mintable by wallet
+                50, // min start time
+                100000000000, // max end time
+                10000, // max max token supply for stage
+                1, // min fee bps
+                9000 // max fee bps
+            );
+        vm.expectRevert(expectedRevert);
+        seadrop.updateSignedMintValidationParams(
+            minter,
+            signedMintValidationParams
+        );
+
+        vm.expectRevert(expectedRevert);
+        seadrop.updateDropURI("http://test.com");
+
+        vm.expectRevert(expectedRevert);
+        seadrop.updatePayer(minter, true);
+
+        vm.stopPrank();
+
+        // An INonFungibleSeaDropToken can use the token methods.
+        vm.expectEmit(true, true, true, true, address(seadrop));
+        emit DropURIUpdated(address(token), "http://test.com");
+        token.updateDropURI(address(seadrop), "http://test.com");
+    }
+
+    function testMintPublic_reentrancyThroughCreatorPayout() public {
+        token.setMaxSupply(10);
+
+        // Set a public drop with maxTotalMintableByWallet: 1
+        // and restrictFeeRecipients: false.
+        PublicDrop memory publicDrop = PublicDrop(
+            1 ether, // mint price
+            uint48(block.timestamp), // start time
+            uint48(block.timestamp + 100), // end time
+            1, // max mints per wallet
+            1000, // fee (10%)
+            false // restrict fee recipients
+        );
+        vm.prank(address(token));
+        seadrop.updatePublicDrop(publicDrop);
+
+        MaliciousRecipient maliciousRecipient = new MaliciousRecipient();
+
+        // Set the creator payout address to the MaliciousRecipient.
+        token.updateCreatorPayoutAddress(
+            address(seadrop),
+            address(maliciousRecipient)
+        );
+
+        // Should not be able to mint with reentrancy.
+        maliciousRecipient.setStartAttack{ value: 10 ether }();
+        vm.expectRevert("ETH_TRANSFER_FAILED");
+        maliciousRecipient.attack(seadrop, address(token));
+        assertEq(token.totalSupply(), 0);
     }
 }
