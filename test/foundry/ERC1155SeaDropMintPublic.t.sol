@@ -77,19 +77,20 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         seadropToken.updateAllowedFeeRecipient(feeRecipient, true);
     }
 
-    function _order(
-        uint256 quantity
-    ) internal view returns (AdvancedOrder memory, uint256) {
-        return
-            _publicMintOrder(
-                0,
-                quantity,
-                feeRecipient,
-                publicDrop.feeBps,
-                publicDrop.startPrice,
-                minter,
-                0
-            );
+    function _order(uint256 quantity)
+        internal
+        view
+        returns (AdvancedOrder memory, uint256)
+    {
+        return _publicMintOrder(
+            0,
+            quantity,
+            feeRecipient,
+            publicDrop.feeBps,
+            publicDrop.startPrice,
+            minter,
+            0
+        );
     }
 
     function testMintPublicStage() public {
@@ -137,10 +138,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         // Mint public with payer for minter.
         (AdvancedOrder memory order, uint256 value) = _order(3);
         bytes memory notActive = abi.encodeWithSelector(
-            NotActive.selector,
-            block.timestamp,
-            drop.startTime,
-            drop.endTime
+            NotActive.selector, block.timestamp, drop.startTime, drop.endTime
         );
         _expectPreviewRevert(payer, order, notActive);
         _fulfillExpectingInvalidContractOrder(payer, order, value);
@@ -156,9 +154,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         drop.endTime = 100;
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidStartAndEndTime.selector,
-                publicDrop.startTime,
-                100
+                InvalidStartAndEndTime.selector, publicDrop.startTime, 100
             )
         );
         seadropToken.updatePublicDrop(drop, 0);
@@ -184,10 +180,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         // Mint public with payer for minter.
         (AdvancedOrder memory order, uint256 value) = _order(3);
         bytes memory notActive = abi.encodeWithSelector(
-            NotActive.selector,
-            block.timestamp,
-            drop.startTime,
-            drop.endTime
+            NotActive.selector, block.timestamp, drop.startTime, drop.endTime
         );
         _expectPreviewRevert(payer, order, notActive);
         _fulfillExpectingInvalidContractOrder(payer, order, value);
@@ -217,8 +210,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         // NOTE: the spec comment names MintQuantityExceedsMaxSupply, but the
         // per-token wallet limit (1) is checked first and fires instead.
         bytes memory perTokenLimit = abi.encodeWithSelector(
-            ERC1155SeaDropErrorsAndEvents
-                .MintQuantityExceedsMaxMintedPerWalletForTokenId
+            ERC1155SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWalletForTokenId
                 .selector,
             0,
             2,
@@ -249,9 +241,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
             minter,
             order,
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxMintedPerWallet.selector,
-                3,
-                2
+                MintQuantityExceedsMaxMintedPerWallet.selector, 3, 2
             )
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
@@ -263,9 +253,8 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         value = value / 2;
 
         vm.expectRevert(
-            ConsiderationEventsAndErrors
-                .InsufficientNativeTokensSupplied
-                .selector
+            ConsiderationEventsAndErrors.InsufficientNativeTokensSupplied
+            .selector
         );
         _fulfill(minter, order, value);
 
@@ -274,9 +263,8 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         value = (value * 2) / 3;
 
         vm.expectRevert(
-            ConsiderationEventsAndErrors
-                .InsufficientNativeTokensSupplied
-                .selector
+            ConsiderationEventsAndErrors.InsufficientNativeTokensSupplied
+            .selector
         );
         _fulfill(minter, order, value);
     }
@@ -329,9 +317,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
     function testCannotSetInvalidFeeBps() public {
         PublicDrop memory drop = publicDrop;
         drop.feeBps = 15_000;
-        vm.expectRevert(
-            abi.encodeWithSelector(InvalidFeeBps.selector, 15_000)
-        );
+        vm.expectRevert(abi.encodeWithSelector(InvalidFeeBps.selector, 15_000));
         seadropToken.updatePublicDrop(drop, 0);
     }
 
@@ -341,13 +327,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
         seadropToken.updatePublicDrop(drop, 3);
 
         (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
-            0,
-            1,
-            feeRecipient,
-            0,
-            publicDrop.startPrice,
-            minter,
-            3
+            0, 1, feeRecipient, 0, publicDrop.startPrice, minter, 3
         );
 
         vm.expectEmit(true, true, true, true, address(token));
@@ -357,13 +337,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
 
     function testCannotMintZeroQuantityWithUnknownFeeRecipient() public {
         (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
-            0,
-            0,
-            creator,
-            publicDrop.feeBps,
-            publicDrop.startPrice,
-            minter,
-            0
+            0, 0, creator, publicDrop.feeBps, publicDrop.startPrice, minter, 0
         );
 
         // NOTE: the spec comment names MintQuantityCannotBeZero, which does
@@ -406,7 +380,7 @@ contract ERC1155SeaDropMintPublicTest is SeaDrop1155MintHelpers {
     }
 
     function testPreviewOrderReturnsExpectedOfferAndConsideration() public {
-        (AdvancedOrder memory order, ) = _publicMintOrder(
+        (AdvancedOrder memory order,) = _publicMintOrder(
             0,
             1,
             feeRecipient,

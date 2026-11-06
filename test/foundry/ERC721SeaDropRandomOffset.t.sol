@@ -33,10 +33,7 @@ contract ERC721SeaDropRandomOffsetTest is SeaDrop721MintHelpers {
     function setUp() public override {
         super.setUp();
         randomOffsetToken = new ERC721SeaDropRandomOffset(
-            address(configurer),
-            allowedSeaport,
-            "",
-            ""
+            address(configurer), allowedSeaport, "", ""
         );
         // Point the shared helpers (_mintTokens) at this token.
         token = randomOffsetToken;
@@ -87,9 +84,8 @@ contract ERC721SeaDropRandomOffsetTest is SeaDrop721MintHelpers {
         // (98 - randomOffset at the lowest) only exist for offsets up to 97,
         // so the Hardhat test was flaky for offsets 98 and 99. Pin
         // PREVRANDAO so the offset is deterministic (1 gives 46).
-        ERC721SeaDropRandomOffsetPrevrandaoCheat(address(vm)).prevrandao(
-            bytes32(uint256(1))
-        );
+        ERC721SeaDropRandomOffsetPrevrandaoCheat(address(vm))
+            .prevrandao(bytes32(uint256(1)));
 
         vm.expectEmit(true, true, true, true, address(randomOffsetToken));
         emit BatchMetadataUpdate(1, 100);
@@ -126,12 +122,10 @@ contract ERC721SeaDropRandomOffsetTest is SeaDrop721MintHelpers {
         assertEq(randomOffsetToken.tokenURI(tokenUri2), "http://example.com/2");
         assertEq(randomOffsetToken.tokenURI(tokenUri1), "http://example.com/1");
         assertEq(
-            randomOffsetToken.tokenURI(tokenUri100),
-            "http://example.com/100"
+            randomOffsetToken.tokenURI(tokenUri100), "http://example.com/100"
         );
         assertEq(
-            randomOffsetToken.tokenURI(tokenUri99),
-            "http://example.com/99"
+            randomOffsetToken.tokenURI(tokenUri99), "http://example.com/99"
         );
     }
 }

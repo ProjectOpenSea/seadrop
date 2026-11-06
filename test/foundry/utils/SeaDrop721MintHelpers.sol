@@ -147,9 +147,11 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
     }
 
     /// @dev Mirrors createMintOrder in test/utils/order.ts.
-    function _createMintOrder(
-        MintOrder memory m
-    ) internal view returns (AdvancedOrder memory order, uint256 value) {
+    function _createMintOrder(MintOrder memory m)
+        internal
+        view
+        returns (AdvancedOrder memory order, uint256 value)
+    {
         OfferItem[] memory offer = new OfferItem[](1);
         offer[0] = OfferItem({
             itemType: ItemType.ERC1155,
@@ -160,12 +162,8 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         });
 
         value = m.price * m.quantity;
-        ConsiderationItem[] memory items = _mintConsiderationItems(
-            m.token,
-            m.feeRecipient,
-            m.feeBps,
-            value
-        );
+        ConsiderationItem[] memory items =
+            _mintConsiderationItems(m.token, m.feeRecipient, m.feeBps, value);
 
         OrderParameters memory parameters = OrderParameters({
             offerer: m.token,
@@ -200,8 +198,8 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
     ) internal view returns (ConsiderationItem[] memory items) {
         uint256 feeAmount = (value * feeBps) / 10_000;
         uint256 creatorAmount = value - feeAmount;
-        CreatorPayout[] memory payouts = IERC721SeaDrop(tokenAddress)
-            .getCreatorPayouts();
+        CreatorPayout[] memory payouts =
+            IERC721SeaDrop(tokenAddress).getCreatorPayouts();
 
         items = new ConsiderationItem[](
             (feeAmount != 0 ? 1 : 0) + (creatorAmount != 0 ? payouts.length : 0)
@@ -221,24 +219,26 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         }
     }
 
-    function _nativeConsiderationItem(
-        address recipient,
-        uint256 amount
-    ) internal pure returns (ConsiderationItem memory) {
-        return
-            ConsiderationItem({
-                itemType: ItemType.NATIVE,
-                token: address(0),
-                identifierOrCriteria: 0,
-                startAmount: amount,
-                endAmount: amount,
-                recipient: payable(recipient)
-            });
+    function _nativeConsiderationItem(address recipient, uint256 amount)
+        internal
+        pure
+        returns (ConsiderationItem memory)
+    {
+        return ConsiderationItem({
+            itemType: ItemType.NATIVE,
+            token: address(0),
+            identifierOrCriteria: 0,
+            startAmount: amount,
+            endAmount: amount,
+            recipient: payable(recipient)
+        });
     }
 
-    function _mintExtraData(
-        MintOrder memory m
-    ) internal pure returns (bytes memory extraData) {
+    function _mintExtraData(MintOrder memory m)
+        internal
+        pure
+        returns (bytes memory extraData)
+    {
         extraData = bytes.concat(
             bytes1(0x00), // SIP-6 version byte
             bytes1(uint8(m.mintType)), // substandard version byte
@@ -247,9 +247,7 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         );
         if (m.mintType == MintType.ALLOW_LIST) {
             extraData = bytes.concat(
-                extraData,
-                abi.encode(m.mintParams),
-                abi.encodePacked(m.proof)
+                extraData, abi.encode(m.mintParams), abi.encodePacked(m.proof)
             );
         } else if (m.mintType == MintType.SIGNED) {
             extraData = bytes.concat(
@@ -263,9 +261,7 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
 
     /// @dev The minimumReceived and maximumSpent Seaport derives from the
     ///      order, as built by txDataForPreviewOrder in helpers.ts.
-    function _previewItems(
-        AdvancedOrder memory order
-    )
+    function _previewItems(AdvancedOrder memory order)
         internal
         pure
         returns (
@@ -327,17 +323,18 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
 
     /// @dev The InvalidContractOrder(orderHash) Seaport reverts with when the
     ///      contract offerer's generateOrder reverts.
-    function _invalidContractOrderError(
-        address tokenAddress
-    ) internal view returns (bytes memory) {
-        return
-            abi.encodeWithSelector(
-                InvalidContractOrder.selector,
-                bytes32(
-                    (uint256(uint160(tokenAddress)) << 96) +
-                        consideration.getContractOffererNonce(tokenAddress)
-                )
-            );
+    function _invalidContractOrderError(address tokenAddress)
+        internal
+        view
+        returns (bytes memory)
+    {
+        return abi.encodeWithSelector(
+            InvalidContractOrder.selector,
+            bytes32(
+                (uint256(uint160(tokenAddress)) << 96)
+                    + consideration.getContractOffererNonce(tokenAddress)
+            )
+        );
     }
 
     /**
@@ -355,10 +352,8 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
     ) internal {
         address tokenAddress = order.parameters.offerer;
 
-        (
-            SpentItem[] memory minimumReceived,
-            SpentItem[] memory maximumSpent
-        ) = _previewItems(order);
+        (SpentItem[] memory minimumReceived, SpentItem[] memory maximumSpent) =
+            _previewItems(order);
         (bool success, bytes memory returnData) = tokenAddress.staticcall(
             abi.encodeCall(
                 ContractOffererInterface.previewOrder,
@@ -388,16 +383,14 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         AdvancedOrder memory order,
         address fulfiller
     ) internal {
-        (
-            SpentItem[] memory minimumReceived,
-            SpentItem[] memory maximumSpent
-        ) = _previewItems(order);
+        (SpentItem[] memory minimumReceived, SpentItem[] memory maximumSpent) =
+            _previewItems(order);
 
         vm.prank(fulfiller);
-        (
-            SpentItem[] memory offer,
-            ReceivedItem[] memory received
-        ) = ContractOffererInterface(order.parameters.offerer).previewOrder(
+        (SpentItem[] memory offer, ReceivedItem[] memory received) = ContractOffererInterface(
+                order.parameters.offerer
+            )
+            .previewOrder(
                 address(0),
                 fulfiller,
                 minimumReceived,
@@ -408,8 +401,7 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         assertEq(offer.length, minimumReceived.length);
         for (uint256 i = 0; i < offer.length; i++) {
             assertEq(
-                uint256(offer[i].itemType),
-                uint256(minimumReceived[i].itemType)
+                uint256(offer[i].itemType), uint256(minimumReceived[i].itemType)
             );
             assertEq(offer[i].token, minimumReceived[i].token);
             assertEq(offer[i].identifier, minimumReceived[i].identifier);
@@ -420,8 +412,7 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         assertEq(received.length, maximumSpent.length);
         for (uint256 i = 0; i < received.length; i++) {
             assertEq(
-                uint256(received[i].itemType),
-                uint256(maximumSpent[i].itemType)
+                uint256(received[i].itemType), uint256(maximumSpent[i].itemType)
             );
             assertEq(received[i].token, maximumSpent[i].token);
             assertEq(received[i].identifier, maximumSpent[i].identifier);
@@ -447,9 +438,7 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
             proof = new bytes32[](0);
         } else {
             (root, proof) = _createMerkleRootAndProof(
-                minters,
-                minterIndexForProof,
-                mintParams
+                minters, minterIndexForProof, mintParams
             );
         }
     }
@@ -465,20 +454,23 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
 
     /// @dev A copy of mint params, since assigning a memory struct aliases
     ///      it (unlike the spec's `{ ...mintParams }`).
-    function _copyMintParams(
-        MintParams memory mintParams
-    ) internal pure returns (MintParams memory) {
+    function _copyMintParams(MintParams memory mintParams)
+        internal
+        pure
+        returns (MintParams memory)
+    {
         return abi.decode(abi.encode(mintParams), (MintParams));
     }
 
     function _updateAllowList(address tokenAddress, bytes32 root) internal {
-        IERC721SeaDrop(tokenAddress).updateAllowList(
-            AllowListData({
-                merkleRoot: root,
-                publicKeyURIs: new string[](0),
-                allowListURI: ""
-            })
-        );
+        IERC721SeaDrop(tokenAddress)
+            .updateAllowList(
+                AllowListData({
+                    merkleRoot: root,
+                    publicKeyURIs: new string[](0),
+                    allowListURI: ""
+                })
+            );
     }
 
     /**
@@ -496,13 +488,8 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         MintParams memory mintParams,
         uint256 salt
     ) internal returns (bytes memory signature, bytes32 digest) {
-        digest = _getDigest(
-            tokenAddress,
-            minter,
-            feeRecipient,
-            mintParams,
-            salt
-        );
+        digest =
+            _getDigest(tokenAddress, minter, feeRecipient, mintParams, salt);
         (address signerAddress, uint256 pk) = makeAddrAndKey(signerName);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
         assertEq(ecrecover(digest, v, r, s), signerAddress);
@@ -546,15 +533,12 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
         seaDropToken.updatePublicDrop(prevPublicDrop);
     }
 
-    function _setSingleCreatorPayout(
-        address tokenAddress,
-        address creator
-    ) internal {
+    function _setSingleCreatorPayout(address tokenAddress, address creator)
+        internal
+    {
         CreatorPayout[] memory creatorPayouts = new CreatorPayout[](1);
-        creatorPayouts[0] = CreatorPayout({
-            payoutAddress: creator,
-            basisPoints: 10_000
-        });
+        creatorPayouts[0] =
+            CreatorPayout({ payoutAddress: creator, basisPoints: 10_000 });
         IERC721SeaDrop(tokenAddress).updateCreatorPayouts(creatorPayouts);
     }
 

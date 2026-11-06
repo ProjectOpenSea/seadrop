@@ -34,7 +34,10 @@ import {
     OrderParameters
 } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { ItemType, OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
+import {
+    ItemType,
+    OrderType
+} from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 /**
  * @dev Port of the minting cases of
@@ -53,10 +56,7 @@ contract ERC1155SeaDropContractOffererMintTest is
     /// @dev "Should not be able to mint until the creator payout is set"
     function testCannotMintUntilCreatorPayoutsSet() public {
         ERC1155SeaDrop token2_ = new ERC1155SeaDrop(
-            address(configurer),
-            allowedSeaport,
-            "Test1155",
-            "T1155"
+            address(configurer), allowedSeaport, "Test1155", "T1155"
         );
         IERC1155SeaDrop sd2 = IERC1155SeaDrop(address(token2_));
 
@@ -85,9 +85,7 @@ contract ERC1155SeaDropContractOffererMintTest is
         _fulfillAsMinter(order, value, bytes32(0));
         // CreatorPayoutsNotSet
         _expectPreviewOrderRevert(
-            order,
-            minter,
-            abi.encodeWithSelector(CreatorPayoutsNotSet.selector)
+            order, minter, abi.encodeWithSelector(CreatorPayoutsNotSet.selector)
         );
 
         sd2.updateCreatorPayouts(_payouts(creator, 1_000, owner, 9_000));
@@ -95,7 +93,7 @@ contract ERC1155SeaDropContractOffererMintTest is
         (order, value) = _createMintOrder(args);
 
         // Should not be able to mint when minimumReceived.length is zero
-        (AdvancedOrder memory emptyOfferOrder, ) = _createMintOrder(args);
+        (AdvancedOrder memory emptyOfferOrder,) = _createMintOrder(args);
         emptyOfferOrder.parameters.offer = new OfferItem[](0);
         orderHash = _contractOrderHash(address(token2_));
         vm.expectRevert(
@@ -141,7 +139,7 @@ contract ERC1155SeaDropContractOffererMintTest is
 
         // Fix the next block timestamp so we can calculate the expected
         // price.
-        uint256 nextTimestamp = block.timestamp + 20;
+        uint256 nextTimestamp = vm.getBlockTimestamp() + 20;
         vm.warp(nextTimestamp);
         uint256 expected = _expectedPrice(
             descDrop.startPrice,
@@ -259,9 +257,7 @@ contract ERC1155SeaDropContractOffererMintTest is
             counter: consideration.getCounter(minter)
         });
         bytes memory signature = signOrder(
-            consideration,
-            minterPk,
-            consideration.getOrderHash(components)
+            consideration, minterPk, consideration.getOrderHash(components)
         );
 
         // How much ether (at most) needs to be supplied when fulfilling.
@@ -271,8 +267,7 @@ contract ERC1155SeaDropContractOffererMintTest is
         token.setApprovalForAll(address(consideration), true);
 
         consideration.fulfillOrder{ value: value }(
-            Order({ parameters: parameters, signature: signature }),
-            bytes32(0)
+            Order({ parameters: parameters, signature: signature }), bytes32(0)
         );
     }
 
@@ -441,7 +436,7 @@ contract ERC1155SeaDropContractOffererMintTest is
             abi.encodeWithSelector(MintQuantityExceedsMaxSupply.selector, 2, 1)
         );
         // Added (not in the spec): an order that reaches the duplicate check.
-        (AdvancedOrder memory duplicateOrder, ) = _createMintOrder(
+        (AdvancedOrder memory duplicateOrder,) = _createMintOrder(
             _publicMintArgs(
                 address(token),
                 _uints(0, 0),
@@ -455,8 +450,7 @@ contract ERC1155SeaDropContractOffererMintTest is
             duplicateOrder,
             minter,
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents
-                    .OfferContainsDuplicateTokenId
+                ERC1155SeaDropErrorsAndEvents.OfferContainsDuplicateTokenId
                     .selector,
                 0
             )
@@ -492,9 +486,7 @@ contract ERC1155SeaDropContractOffererMintTest is
             order,
             minter,
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxMintedPerWallet.selector,
-                4,
-                3
+                MintQuantityExceedsMaxMintedPerWallet.selector, 4, 3
             )
         );
 
@@ -596,10 +588,11 @@ contract ERC1155SeaDropContractOffererMintTest is
         _fulfillAsMinter(order, value, bytes32(0));
     }
 
-    function _copy(
-        bytes memory data,
-        uint256 length
-    ) internal pure returns (bytes memory copy) {
+    function _copy(bytes memory data, uint256 length)
+        internal
+        pure
+        returns (bytes memory copy)
+    {
         copy = new bytes(length);
         for (uint256 i = 0; i < length; i++) {
             copy[i] = data[i];

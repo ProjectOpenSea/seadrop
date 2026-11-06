@@ -58,25 +58,26 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
     }
 
     /// @dev The spec's allow list mint params with a random feeBps.
-    function _mintParams(
-        uint256 feeBpsSeed
-    ) internal view returns (MintParams memory) {
-        return
-            MintParams({
-                startPrice: 0.1 ether,
-                endPrice: 0.1 ether,
-                startTime: block.timestamp - 1000,
-                endTime: block.timestamp + 1000,
-                paymentToken: address(0),
-                fromTokenId: 10,
-                toTokenId: 10,
-                maxTotalMintableByWallet: 10,
-                maxTotalMintableByWalletPerToken: 9,
-                maxTokenSupplyForStage: 11,
-                dropStageIndex: 1,
-                feeBps: bound(feeBpsSeed, 1, 9_999),
-                restrictFeeRecipients: true
-            });
+    function _mintParams(uint256 feeBpsSeed)
+        internal
+        view
+        returns (MintParams memory)
+    {
+        return MintParams({
+            startPrice: 0.1 ether,
+            endPrice: 0.1 ether,
+            startTime: block.timestamp - 1000,
+            endTime: block.timestamp + 1000,
+            paymentToken: address(0),
+            fromTokenId: 10,
+            toTokenId: 10,
+            maxTotalMintableByWallet: 10,
+            maxTotalMintableByWalletPerToken: 9,
+            maxTokenSupplyForStage: 11,
+            dropStageIndex: 1,
+            feeBps: bound(feeBpsSeed, 1, 9_999),
+            restrictFeeRecipients: true
+        });
     }
 
     /// @dev randomInt(1, maxTotalMintableByWalletPerToken) = [1, 8].
@@ -93,29 +94,26 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         uint256 feeBps,
         bytes32[] memory proof
     ) internal view returns (AdvancedOrder memory, uint256) {
-        return
-            _allowListMintOrder(
-                address(token),
-                _single(10),
-                _single(quantity),
-                feeRecipient_,
-                feeBps,
-                mintParams.startPrice,
-                minter_,
-                mintParams,
-                proof
-            );
+        return _allowListMintOrder(
+            address(token),
+            _single(10),
+            _single(quantity),
+            feeRecipient_,
+            feeBps,
+            mintParams.startPrice,
+            minter_,
+            mintParams,
+            proof
+        );
     }
 
     /// @dev Sets an allow list of only `minter` and returns the proof.
-    function _allowOnlyMinter(
-        MintParams memory mintParams
-    ) internal returns (bytes32 root, bytes32[] memory proof) {
-        (root, proof) = _allowListRootAndProof(
-            _addresses(minter),
-            mintParams,
-            0
-        );
+    function _allowOnlyMinter(MintParams memory mintParams)
+        internal
+        returns (bytes32 root, bytes32[] memory proof)
+    {
+        (root, proof) =
+            _allowListRootAndProof(_addresses(minter), mintParams, 0);
         _updateAllowList(root);
     }
 
@@ -128,12 +126,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         (, bytes32[] memory proof) = _allowOnlyMinter(mintParams);
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            quantity,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+            quantity, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         vm.expectEmit(true, true, true, true, address(token));
@@ -152,9 +145,8 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         mintParamsFreeMint.endPrice = 0;
         uint256 quantity = _quantity(quantitySeed);
 
-        (bytes32 root, bytes32[] memory proof) = _allowOnlyMinter(
-            mintParamsFreeMint
-        );
+        (bytes32 root, bytes32[] memory proof) =
+            _allowOnlyMinter(mintParamsFreeMint);
         assertEq(seadropToken.getAllowListMerkleRoot(), root);
 
         (AdvancedOrder memory order, uint256 value) = _order(
@@ -180,12 +172,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         (, bytes32[] memory proof) = _allowOnlyMinter(mintParams);
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            quantity,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+            quantity, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         // The payer needs to be allowed first.
@@ -214,12 +201,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         (, bytes32[] memory proof) = _allowOnlyMinter(mintParams);
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            quantity,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+            quantity, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         address nonMinter = makeAddr("nonMinter");
@@ -247,9 +229,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         );
 
         _expectPreviewRevert(
-            nonMinter,
-            order,
-            abi.encodeWithSelector(InvalidProof.selector)
+            nonMinter, order, abi.encodeWithSelector(InvalidProof.selector)
         );
         _fulfillExpectingInvalidContractOrder(nonMinter, order, value);
     }
@@ -277,8 +257,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
             minter,
             order,
             abi.encodeWithSelector(
-                FeeRecipientNotAllowed.selector,
-                invalidFeeRecipient
+                FeeRecipientNotAllowed.selector, invalidFeeRecipient
             )
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
@@ -298,10 +277,8 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         // Update the fee recipient and creator payout address for the new
         // token.
         differentToken.setMaxSupply(10, 1000);
-        IERC1155SeaDrop(address(differentToken)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(differentToken))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         _setSingleCreatorPayout(address(differentToken), creator);
 
         // The spec omits tokenIds here, so createMintOrder uses token id 0.
@@ -318,9 +295,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         );
 
         _expectPreviewRevert(
-            minter,
-            order,
-            abi.encodeWithSelector(InvalidProof.selector)
+            minter, order, abi.encodeWithSelector(InvalidProof.selector)
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
     }
@@ -347,9 +322,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         );
 
         _expectPreviewRevert(
-            minter,
-            order,
-            abi.encodeWithSelector(InvalidProof.selector)
+            minter, order, abi.encodeWithSelector(InvalidProof.selector)
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
     }
@@ -364,12 +337,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         (, bytes32[] memory proof) = _allowOnlyMinter(mintParams);
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            quantity,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+            quantity, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         vm.expectEmit(true, true, true, true, address(token));
@@ -392,8 +360,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
             minter,
             order,
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents
-                    .MintQuantityExceedsMaxMintedPerWalletForTokenId
+                ERC1155SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWalletForTokenId
                     .selector,
                 10,
                 mintParams.maxTotalMintableByWalletPerToken + quantity,
@@ -403,9 +370,9 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         _fulfillExpectingInvalidContractOrder(minter, order, value);
     }
 
-    function testCannotMintAfterExceedingMaxTokenSupplyForStage(
-        uint256 feeBpsSeed
-    ) public {
+    function testCannotMintAfterExceedingMaxTokenSupplyForStage(uint256 feeBpsSeed)
+        public
+    {
         MintParams memory mintParams = _mintParams(feeBpsSeed);
 
         // Create the second minter that will call the transaction exceeding
@@ -414,16 +381,10 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         vm.deal(secondMinter, 100 ether);
 
         address[] memory minters = _addresses(minter, secondMinter);
-        (bytes32 root, bytes32[] memory proof) = _allowListRootAndProof(
-            minters,
-            mintParams,
-            0
-        );
-        (, bytes32[] memory proofSecondMinter) = _allowListRootAndProof(
-            minters,
-            mintParams,
-            1
-        );
+        (bytes32 root, bytes32[] memory proof) =
+            _allowListRootAndProof(minters, mintParams, 0);
+        (, bytes32[] memory proofSecondMinter) =
+            _allowListRootAndProof(minters, mintParams, 1);
         _updateAllowList(root);
 
         (AdvancedOrder memory order, uint256 value) = _order(
@@ -463,9 +424,9 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         _fulfillExpectingInvalidContractOrder(secondMinter, order, value);
     }
 
-    function testCannotMintAfterExceedingMaxTokenSupply(
-        uint256 feeBpsSeed
-    ) public {
+    function testCannotMintAfterExceedingMaxTokenSupply(uint256 feeBpsSeed)
+        public
+    {
         MintParams memory mintParams = _mintParams(feeBpsSeed);
 
         // Update the max supply.
@@ -476,16 +437,10 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         vm.deal(secondMinter, 100 ether);
 
         address[] memory minters = _addresses(minter, secondMinter);
-        (bytes32 root, bytes32[] memory proof) = _allowListRootAndProof(
-            minters,
-            mintParams,
-            0
-        );
-        (, bytes32[] memory proofSecondMinter) = _allowListRootAndProof(
-            minters,
-            mintParams,
-            1
-        );
+        (bytes32 root, bytes32[] memory proof) =
+            _allowListRootAndProof(minters, mintParams, 0);
+        (, bytes32[] memory proofSecondMinter) =
+            _allowListRootAndProof(minters, mintParams, 1);
         _updateAllowList(root);
 
         (AdvancedOrder memory order, uint256 value) = _order(
@@ -531,28 +486,18 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         MintParams memory mintParams = _mintParams(feeBpsSeed);
         uint256 quantity = _quantity(quantitySeed);
 
-        (, bytes32[] memory proof) = _allowListRootAndProof(
-            _addresses(minter),
-            mintParams,
-            0
-        );
+        (, bytes32[] memory proof) =
+            _allowListRootAndProof(_addresses(minter), mintParams, 0);
 
         // We are skipping updating the allow list, the root should be zero.
         assertEq(seadropToken.getAllowListMerkleRoot(), bytes32(0));
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            quantity,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+            quantity, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         _expectPreviewRevert(
-            minter,
-            order,
-            abi.encodeWithSelector(InvalidProof.selector)
+            minter, order, abi.encodeWithSelector(InvalidProof.selector)
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
 
@@ -568,9 +513,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         );
 
         _expectPreviewRevert(
-            minter,
-            order,
-            abi.encodeWithSelector(InvalidProof.selector)
+            minter, order, abi.encodeWithSelector(InvalidProof.selector)
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
     }
@@ -590,12 +533,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
 
         // ...but, as in the spec, the order carries the valid mintParams.
         (AdvancedOrder memory order, uint256 value) = _order(
-            quantity,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+            quantity, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         // NOTE: the spec comment names InvalidFeeBps(10100), but the order's
@@ -603,9 +541,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         // InvalidProof. testCannotMintWithFeeBpsOver10000 covers
         // InvalidFeeBps.
         _expectPreviewRevert(
-            minter,
-            order,
-            abi.encodeWithSelector(InvalidProof.selector)
+            minter, order, abi.encodeWithSelector(InvalidProof.selector)
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
     }
@@ -622,12 +558,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         (, bytes32[] memory proof) = _allowOnlyMinter(mintParams);
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            1,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+            1, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         _expectPreviewRevert(
@@ -650,19 +581,14 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         IDelegationRegistry(DELEGATION_REGISTRY).delegateForAll(payer, false);
     }
 
-    function testPreviewOrderReturnsExpectedOfferAndConsideration(
-        uint256 feeBpsSeed
-    ) public {
+    function testPreviewOrderReturnsExpectedOfferAndConsideration(uint256 feeBpsSeed)
+        public
+    {
         MintParams memory mintParams = _mintParams(feeBpsSeed);
         (, bytes32[] memory proof) = _allowOnlyMinter(mintParams);
 
-        (AdvancedOrder memory order, ) = _order(
-            1,
-            feeRecipient,
-            minter,
-            mintParams,
-            mintParams.feeBps,
-            proof
+        (AdvancedOrder memory order,) = _order(
+            1, feeRecipient, minter, mintParams, mintParams.feeBps, proof
         );
 
         _assertPreviewOrderMatches(minter, order);
@@ -723,10 +649,8 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
 
         assertEq(token.balanceOf(minter, 0), 1);
         assertEq(token.balanceOf(minter, 1), 1);
-        uint256[] memory balances = token.balanceOfBatch(
-            _addresses(minter, minter),
-            _pair(0, 1)
-        );
+        uint256[] memory balances =
+            token.balanceOfBatch(_addresses(minter, minter), _pair(0, 1));
         assertEq(balances.length, 2);
         assertEq(balances[0], 1);
         assertEq(balances[1], 1);
@@ -751,11 +675,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
         _expectPreviewRevert(
             minter,
             order,
-            abi.encodeWithSelector(
-                MintQuantityExceedsMaxSupply.selector,
-                2,
-                1
-            )
+            abi.encodeWithSelector(MintQuantityExceedsMaxSupply.selector, 2, 1)
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);
 
@@ -782,9 +702,7 @@ contract ERC1155SeaDropMintAllowListTest is SeaDrop1155MintHelpers {
             minter,
             order,
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxMintedPerWallet.selector,
-                3,
-                2
+                MintQuantityExceedsMaxMintedPerWallet.selector, 3, 2
             )
         );
         _fulfillExpectingInvalidContractOrder(minter, order, value);

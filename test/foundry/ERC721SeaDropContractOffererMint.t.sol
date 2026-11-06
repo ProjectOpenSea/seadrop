@@ -52,9 +52,8 @@ contract ERC721SeaDropContractOffererMintTest is
 {
     /// @dev it("Should not be able to mint until the creator payout is set")
     function testCannotMintUntilCreatorPayoutsSet() public {
-        ERC721SeaDrop token2 = _deployToken(
-            address(new ERC721SeaDropConfigurer())
-        );
+        ERC721SeaDrop token2 =
+            _deployToken(address(new ERC721SeaDropConfigurer()));
         IERC721SeaDrop seaDrop2 = IERC721SeaDrop(address(token2));
 
         vm.startPrank(owner);
@@ -145,7 +144,7 @@ contract ERC721SeaDropContractOffererMintTest is
         );
 
         // Fix the next block timestamp so we can calculate the expected price.
-        uint256 nextTimestamp = block.timestamp + 20;
+        uint256 nextTimestamp = vm.getBlockTimestamp() + 20;
         vm.warp(nextTimestamp);
         uint256 expected = _expectedPrice(
             descDrop.startPrice,
@@ -221,20 +220,10 @@ contract ERC721SeaDropContractOffererMintTest is
 
         ConsiderationItem[] memory items = new ConsiderationItem[](2);
         items[0] = ConsiderationItem(
-            ItemType.NATIVE,
-            address(0),
-            0,
-            10 ether,
-            0.1 ether,
-            payable(minter)
+            ItemType.NATIVE, address(0), 0, 10 ether, 0.1 ether, payable(minter)
         );
         items[1] = ConsiderationItem(
-            ItemType.NATIVE,
-            address(0),
-            0,
-            1 ether,
-            0.01 ether,
-            payable(owner)
+            ItemType.NATIVE, address(0), 0, 1 ether, 0.01 ether, payable(owner)
         );
 
         OrderParameters memory parameters = OrderParameters({
@@ -263,8 +252,7 @@ contract ERC721SeaDropContractOffererMintTest is
         uint256 value = 10 ether + 1 ether;
         vm.prank(owner);
         consideration.fulfillOrder{ value: value }(
-            Order(parameters, signature),
-            bytes32(0)
+            Order(parameters, signature), bytes32(0)
         );
     }
 
@@ -299,41 +287,36 @@ contract ERC721SeaDropContractOffererMintTest is
 
         // Impersonate as Seaport
         _assertSafeTransferFromReverts(
-            address(consideration),
-            dataFromNotTokenContract
+            address(consideration), dataFromNotTokenContract
         );
 
         // Impersonate as conduit
         _assertSafeTransferFromReverts(
-            _OPENSEA_CONDUIT,
-            dataFromNotTokenContract
+            _OPENSEA_CONDUIT, dataFromNotTokenContract
         );
 
         // Impersonate as owner
         _assertSafeTransferFromReverts(owner, dataFromNotTokenContract);
     }
 
-    function _assertSafeTransferFromSucceeds(
-        address caller,
-        bytes memory data
-    ) internal {
+    function _assertSafeTransferFromSucceeds(address caller, bytes memory data)
+        internal
+    {
         vm.prank(caller);
-        (bool success, ) = address(token).call(data);
+        (bool success,) = address(token).call(data);
         assertTrue(success);
     }
 
-    function _assertSafeTransferFromReverts(
-        address caller,
-        bytes memory data
-    ) internal {
+    function _assertSafeTransferFromReverts(address caller, bytes memory data)
+        internal
+    {
         vm.prank(caller);
         (bool success, bytes memory returnData) = address(token).call(data);
         assertFalse(success);
         assertEq(
             returnData,
             abi.encodeWithSelector(
-                InvalidCallerOnlyAllowedSeaport.selector,
-                caller
+                InvalidCallerOnlyAllowedSeaport.selector, caller
             )
         );
     }
@@ -355,9 +338,10 @@ contract ERC721SeaDropContractOffererMintTest is
 
         // Set the creator address to MaliciousRecipient.
         vm.prank(owner);
-        _seaDrop().updateCreatorPayouts(
-            _singlePayout(address(maliciousRecipient), 10_000)
-        );
+        _seaDrop()
+            .updateCreatorPayouts(
+                _singlePayout(address(maliciousRecipient), 10_000)
+            );
 
         // Should not be able to mint with reentrancy.
         vm.prank(owner);
@@ -482,15 +466,12 @@ contract ERC721SeaDropContractOffererMintTest is
     /// @dev it("Should return the expected values for getSeaportMetadata")
     function testGetSeaportMetadata() public {
         bytes4 getSeaportMetadataSelector = 0x2e778efc;
-        (bool success, bytes memory returnData) = address(token).staticcall(
-            abi.encodePacked(getSeaportMetadataSelector)
-        );
+        (bool success, bytes memory returnData) = address(token)
+            .staticcall(abi.encodePacked(getSeaportMetadataSelector));
         assertTrue(success);
 
-        (string memory name, Schema[] memory schemas) = abi.decode(
-            returnData,
-            (string, Schema[])
-        );
+        (string memory name, Schema[] memory schemas) =
+            abi.decode(returnData, (string, Schema[]));
 
         uint256[] memory supportedSubstandards = new uint256[](3);
         supportedSubstandards[0] = 0;
@@ -532,11 +513,8 @@ contract ERC721SeaDropContractOffererMintTest is
         _previewOrder(order, minter);
 
         // Unsupported substandard.
-        order.extraData = bytes.concat(
-            bytes1(0x00),
-            bytes1(0x04),
-            _slice(extraData, 2)
-        );
+        order.extraData =
+            bytes.concat(bytes1(0x00), bytes1(0x04), _slice(extraData, 2));
         _expectInvalidContractOrder(address(token));
         _fulfillAsMinter(order, value, bytes32(0));
         // CONTRACT BUG (asserting current behavior): the spec expects
@@ -559,18 +537,19 @@ contract ERC721SeaDropContractOffererMintTest is
         _previewOrder(order, minter);
     }
 
-    function _slice(
-        bytes memory data,
-        uint256 start
-    ) internal pure returns (bytes memory) {
+    function _slice(bytes memory data, uint256 start)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return _slice(data, start, data.length);
     }
 
-    function _slice(
-        bytes memory data,
-        uint256 start,
-        uint256 end
-    ) internal pure returns (bytes memory result) {
+    function _slice(bytes memory data, uint256 start, uint256 end)
+        internal
+        pure
+        returns (bytes memory result)
+    {
         result = new bytes(end - start);
         for (uint256 i = start; i < end; i++) {
             result[i - start] = data[i];

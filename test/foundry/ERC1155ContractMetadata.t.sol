@@ -94,9 +94,8 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
     function testCannotSetMaxSupplyOverUint64() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropTokenContractMetadata
-                    .CannotExceedMaxSupplyOfUint64
-                    .selector,
+                ISeaDropTokenContractMetadata.CannotExceedMaxSupplyOfUint64
+                .selector,
                 2 ** 70
             )
         );
@@ -110,8 +109,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropTokenContractMetadata
-                    .NewMaxSupplyCannotBeLessThenTotalMinted
+                ISeaDropTokenContractMetadata.NewMaxSupplyCannotBeLessThenTotalMinted
                     .selector,
                 2,
                 3
@@ -192,8 +190,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
         // Provenance hash should not be updatable after it has already
         // been set.
         vm.expectRevert(
-            ISeaDropTokenContractMetadata
-                .ProvenanceHashCannotBeSetAfterAlreadyBeingSet
+            ISeaDropTokenContractMetadata.ProvenanceHashCannotBeSetAfterAlreadyBeingSet
                 .selector
         );
         token.setProvenanceHash(secondProvenanceHash);
@@ -205,11 +202,8 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
         // Deploy a token exposing batchMint, with a zero configurer as in
         // the spec.
         ERC1155SeaDropWithBatchMint batchToken = new ERC1155SeaDropWithBatchMint(
-                address(0),
-                address(consideration),
-                "Test1155",
-                "T1155"
-            );
+            address(0), address(consideration), "Test1155", "T1155"
+        );
         batchToken.setMaxSupply(0, 1);
         batchToken.setMaxSupply(1, 1);
 
@@ -223,9 +217,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155ContractMetadata.MintExceedsMaxSupply.selector,
-                2,
-                1
+                IERC1155ContractMetadata.MintExceedsMaxSupply.selector, 2, 1
             )
         );
         batchToken.batchMint(owner, _pair(0, 1), _pair(1, 1), "");

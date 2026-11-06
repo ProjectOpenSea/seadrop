@@ -81,36 +81,26 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
 
     /// @dev Mirrors deployERC1155SeaDrop. The test contract is the owner.
     function _deployERC1155SeaDrop() internal returns (ERC1155SeaDrop) {
-        return
-            new ERC1155SeaDrop(
-                address(configurer),
-                allowedSeaport,
-                "Test1155",
-                "T1155"
-            );
+        return new ERC1155SeaDrop(
+            address(configurer), allowedSeaport, "Test1155", "T1155"
+        );
     }
 
     function _setSingleCreatorPayout(address tokenAddress, address creator)
         internal
     {
         CreatorPayout[] memory creatorPayouts = new CreatorPayout[](1);
-        creatorPayouts[0] = CreatorPayout({
-            payoutAddress: creator,
-            basisPoints: 10_000
-        });
+        creatorPayouts[0] =
+            CreatorPayout({ payoutAddress: creator, basisPoints: 10_000 });
         IERC1155SeaDrop(tokenAddress).updateCreatorPayouts(creatorPayouts);
     }
 
     function _setTwoCreatorPayouts(address first, address second) internal {
         CreatorPayout[] memory creatorPayouts = new CreatorPayout[](2);
-        creatorPayouts[0] = CreatorPayout({
-            payoutAddress: first,
-            basisPoints: 5_000
-        });
-        creatorPayouts[1] = CreatorPayout({
-            payoutAddress: second,
-            basisPoints: 5_000
-        });
+        creatorPayouts[0] =
+            CreatorPayout({ payoutAddress: first, basisPoints: 5_000 });
+        creatorPayouts[1] =
+            CreatorPayout({ payoutAddress: second, basisPoints: 5_000 });
         IERC1155SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
     }
 
@@ -122,9 +112,11 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
     ///      only added when the fee is nonzero, creator items only when the
     ///      creator amount is nonzero, and the order is valid from
     ///      now - 1000 to now + 1000.
-    function _createMintOrder(
-        MintOrderArgs memory args
-    ) internal view returns (AdvancedOrder memory order, uint256 value) {
+    function _createMintOrder(MintOrderArgs memory args)
+        internal
+        view
+        returns (AdvancedOrder memory order, uint256 value)
+    {
         uint256 numItems = args.tokenIds.length;
         OfferItem[] memory offer = new OfferItem[](numItems);
         uint256 totalQuantity;
@@ -143,13 +135,12 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         uint256 feeAmount = (value * args.feeBps) / 10_000;
         uint256 creatorAmount = value - feeAmount;
 
-        CreatorPayout[] memory creatorPayouts = IERC1155SeaDrop(args.token)
-            .getCreatorPayouts();
-        uint256 numConsideration = (feeAmount > 0 ? 1 : 0) +
-            (creatorAmount > 0 ? creatorPayouts.length : 0);
-        ConsiderationItem[] memory considerationItems = new ConsiderationItem[](
-            numConsideration
-        );
+        CreatorPayout[] memory creatorPayouts =
+            IERC1155SeaDrop(args.token).getCreatorPayouts();
+        uint256 numConsideration = (feeAmount > 0 ? 1 : 0)
+            + (creatorAmount > 0 ? creatorPayouts.length : 0);
+        ConsiderationItem[] memory considerationItems =
+            new ConsiderationItem[](numConsideration);
         uint256 index;
         if (feeAmount > 0) {
             considerationItems[index++] = ConsiderationItem({
@@ -163,8 +154,8 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         }
         if (creatorAmount > 0) {
             for (uint256 i = 0; i < creatorPayouts.length; i++) {
-                uint256 amount = (creatorAmount *
-                    creatorPayouts[i].basisPoints) / 10_000;
+                uint256 amount =
+                    (creatorAmount * creatorPayouts[i].basisPoints) / 10_000;
                 considerationItems[index++] = ConsiderationItem({
                     itemType: ItemType.NATIVE,
                     token: address(0),
@@ -211,20 +202,19 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         address minter,
         uint8 publicDropIndex
     ) internal view returns (AdvancedOrder memory, uint256) {
-        return
-            _createMintOrder(
-                MintOrderArgs({
-                    token: address(token),
-                    tokenIds: _single(tokenId),
-                    quantities: _single(quantity),
-                    feeRecipient: feeRecipient,
-                    feeBps: feeBps,
-                    price: price,
-                    minter: minter,
-                    mintType: MINT_TYPE_PUBLIC,
-                    mintTypeData: abi.encodePacked(publicDropIndex)
-                })
-            );
+        return _createMintOrder(
+            MintOrderArgs({
+                token: address(token),
+                tokenIds: _single(tokenId),
+                quantities: _single(quantity),
+                feeRecipient: feeRecipient,
+                feeBps: feeBps,
+                price: price,
+                minter: minter,
+                mintType: MINT_TYPE_PUBLIC,
+                mintTypeData: abi.encodePacked(publicDropIndex)
+            })
+        );
     }
 
     /// @dev Allow list mint order.
@@ -239,23 +229,21 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         MintParams memory mintParams,
         bytes32[] memory proof
     ) internal view returns (AdvancedOrder memory, uint256) {
-        return
-            _createMintOrder(
-                MintOrderArgs({
-                    token: tokenAddress,
-                    tokenIds: tokenIds,
-                    quantities: quantities,
-                    feeRecipient: feeRecipient,
-                    feeBps: feeBps,
-                    price: price,
-                    minter: minter,
-                    mintType: MINT_TYPE_ALLOW_LIST,
-                    mintTypeData: bytes.concat(
-                        abi.encode(mintParams),
-                        abi.encodePacked(proof)
-                    )
-                })
-            );
+        return _createMintOrder(
+            MintOrderArgs({
+                token: tokenAddress,
+                tokenIds: tokenIds,
+                quantities: quantities,
+                feeRecipient: feeRecipient,
+                feeBps: feeBps,
+                price: price,
+                minter: minter,
+                mintType: MINT_TYPE_ALLOW_LIST,
+                mintTypeData: bytes.concat(
+                    abi.encode(mintParams), abi.encodePacked(proof)
+                )
+            })
+        );
     }
 
     /// @dev Signed mint order.
@@ -271,24 +259,21 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         uint256 salt,
         bytes memory signature
     ) internal view returns (AdvancedOrder memory, uint256) {
-        return
-            _createMintOrder(
-                MintOrderArgs({
-                    token: tokenAddress,
-                    tokenIds: tokenIds,
-                    quantities: quantities,
-                    feeRecipient: feeRecipient,
-                    feeBps: feeBps,
-                    price: price,
-                    minter: minter,
-                    mintType: MINT_TYPE_SIGNED,
-                    mintTypeData: bytes.concat(
-                        abi.encode(mintParams),
-                        bytes32(salt),
-                        signature
-                    )
-                })
-            );
+        return _createMintOrder(
+            MintOrderArgs({
+                token: tokenAddress,
+                tokenIds: tokenIds,
+                quantities: quantities,
+                feeRecipient: feeRecipient,
+                feeBps: feeBps,
+                price: price,
+                minter: minter,
+                mintType: MINT_TYPE_SIGNED,
+                mintTypeData: bytes.concat(
+                    abi.encode(mintParams), bytes32(salt), signature
+                )
+            })
+        );
     }
 
     /**
@@ -312,14 +297,15 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
 
     /// @dev The order hash Seaport derives for the next contract order of
     ///      `offerer`, as used in InvalidContractOrder(bytes32).
-    function _contractOrderHash(
-        address offerer
-    ) internal view returns (bytes32) {
-        return
-            bytes32(
-                (uint256(uint160(offerer)) << 96) ^
-                    consideration.getContractOffererNonce(offerer)
-            );
+    function _contractOrderHash(address offerer)
+        internal
+        view
+        returns (bytes32)
+    {
+        return bytes32(
+            (uint256(uint160(offerer)) << 96)
+                ^ consideration.getContractOffererNonce(offerer)
+        );
     }
 
     /// @dev Fulfills the order and expects Seaport to revert with
@@ -345,26 +331,23 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         AdvancedOrder memory order,
         bytes memory reason
     ) internal {
-        (
-            SpentItem[] memory minimumReceived,
-            SpentItem[] memory maximumSpent
-        ) = _toSpentItems(order);
+        (SpentItem[] memory minimumReceived, SpentItem[] memory maximumSpent) =
+            _toSpentItems(order);
         address offerer = order.parameters.offerer;
         vm.expectRevert(reason);
-        ContractOffererInterface(offerer).previewOrder(
-            address(consideration),
-            fulfiller,
-            minimumReceived,
-            maximumSpent,
-            order.extraData
-        );
+        ContractOffererInterface(offerer)
+            .previewOrder(
+                address(consideration),
+                fulfiller,
+                minimumReceived,
+                maximumSpent,
+                order.extraData
+            );
     }
 
     /// @dev Mirrors the minimumReceived / maximumSpent mapping in the
     ///      "previewOrder" specs.
-    function _toSpentItems(
-        AdvancedOrder memory order
-    )
+    function _toSpentItems(AdvancedOrder memory order)
         internal
         pure
         returns (
@@ -382,9 +365,8 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
                 amount: offer[i].endAmount
             });
         }
-        ConsiderationItem[] memory considerationItems = order
-            .parameters
-            .consideration;
+        ConsiderationItem[] memory considerationItems =
+        order.parameters.consideration;
         maximumSpent = new SpentItem[](considerationItems.length);
         for (uint256 i = 0; i < considerationItems.length; i++) {
             maximumSpent[i] = SpentItem({
@@ -404,16 +386,15 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         address fulfiller,
         AdvancedOrder memory order
     ) internal {
-        (
-            SpentItem[] memory minimumReceived,
-            SpentItem[] memory maximumSpent
-        ) = _toSpentItems(order);
+        (SpentItem[] memory minimumReceived, SpentItem[] memory maximumSpent) =
+            _toSpentItems(order);
 
         vm.prank(fulfiller);
         (
             SpentItem[] memory offer,
             ReceivedItem[] memory considerationReturned
-        ) = ContractOffererInterface(order.parameters.offerer).previewOrder(
+        ) = ContractOffererInterface(order.parameters.offerer)
+            .previewOrder(
                 address(0),
                 fulfiller,
                 minimumReceived,
@@ -424,8 +405,7 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         assertEq(offer.length, minimumReceived.length);
         for (uint256 i = 0; i < offer.length; i++) {
             assertEq(
-                uint256(offer[i].itemType),
-                uint256(minimumReceived[i].itemType)
+                uint256(offer[i].itemType), uint256(minimumReceived[i].itemType)
             );
             assertEq(offer[i].token, minimumReceived[i].token);
             assertEq(offer[i].identifier, minimumReceived[i].identifier);
@@ -452,11 +432,9 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
     /// @dev Mirrors mintTokens in test/utils/helpers.ts: temporarily sets a
     ///      free public drop at index 0 for `tokenId`, mints through Seaport
     ///      and restores the previous public drop.
-    function _mintTokens(
-        address minter,
-        uint256 tokenId,
-        uint256 quantity
-    ) internal {
+    function _mintTokens(address minter, uint256 tokenId, uint256 quantity)
+        internal
+    {
         IERC1155SeaDrop seadropToken = IERC1155SeaDrop(address(token));
         PublicDrop memory prevPublicDrop = seadropToken.getPublicDrop(0);
 
@@ -507,21 +485,20 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
             proof = new bytes32[](0);
         } else {
             (root, proof) = _createMerkleRootAndProof(
-                minters,
-                minterIndexForProof,
-                mintParams
+                minters, minterIndexForProof, mintParams
             );
         }
     }
 
     function _updateAllowList(bytes32 root) internal {
-        IERC1155SeaDrop(address(token)).updateAllowList(
-            AllowListData({
-                merkleRoot: root,
-                publicKeyURIs: new string[](0),
-                allowListURI: ""
-            })
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowList(
+                AllowListData({
+                    merkleRoot: root,
+                    publicKeyURIs: new string[](0),
+                    allowListURI: ""
+                })
+            );
     }
 
     /**
@@ -547,13 +524,8 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
             salt,
             true
         );
-        digest = _getDigest(
-            tokenAddress,
-            minter,
-            feeRecipient,
-            mintParams,
-            salt
-        );
+        digest =
+            _getDigest(tokenAddress, minter, feeRecipient, mintParams, salt);
         (bytes32 r, bytes32 vs) = abi.decode(signature, (bytes32, bytes32));
         assertEq(ECDSA.recover(digest, r, vs), makeAddr(signerName));
     }
@@ -567,37 +539,41 @@ contract SeaDrop1155MintHelpers is SeaDrop1155Test {
         arr[0] = a;
     }
 
-    function _pair(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (uint256[] memory arr) {
+    function _pair(uint256 a, uint256 b)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
         arr = new uint256[](2);
         arr[0] = a;
         arr[1] = b;
     }
 
-    function _triple(
-        uint256 a,
-        uint256 b,
-        uint256 c
-    ) internal pure returns (uint256[] memory arr) {
+    function _triple(uint256 a, uint256 b, uint256 c)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
         arr = new uint256[](3);
         arr[0] = a;
         arr[1] = b;
         arr[2] = c;
     }
 
-    function _addresses(
-        address a
-    ) internal pure returns (address[] memory arr) {
+    function _addresses(address a)
+        internal
+        pure
+        returns (address[] memory arr)
+    {
         arr = new address[](1);
         arr[0] = a;
     }
 
-    function _addresses(
-        address a,
-        address b
-    ) internal pure returns (address[] memory arr) {
+    function _addresses(address a, address b)
+        internal
+        pure
+        returns (address[] memory arr)
+    {
         arr = new address[](2);
         arr[0] = a;
         arr[1] = b;

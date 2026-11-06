@@ -34,9 +34,7 @@ import {
 
 import { SpentItem } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import {
-    IERC2981
-} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
 
@@ -59,12 +57,8 @@ contract ERC721SeaDropContractOffererTest is
         vm.expectEmit(true, true, true, true, expected);
         emit SeaDropTokenDeployed(SEADROP_TOKEN_TYPE.ERC721_STANDARD);
         vm.prank(owner);
-        ERC721SeaDrop deployed = new ERC721SeaDrop(
-            address(0),
-            allowedSeaport,
-            "",
-            ""
-        );
+        ERC721SeaDrop deployed =
+            new ERC721SeaDrop(address(0), allowedSeaport, "", "");
         assertEq(address(deployed), expected);
 
         vm.expectRevert(AllowedSeaportCannotBeZeroAddress.selector);
@@ -83,13 +77,11 @@ contract ERC721SeaDropContractOffererTest is
         vm.startPrank(owner);
 
         // Fallback
-        (bool success, bytes memory returnData) = address(configurer).call(
-            hex"123456"
-        );
+        (bool success, bytes memory returnData) =
+            address(configurer).call(hex"123456");
         assertFalse(success);
         assertEq(
-            returnData,
-            abi.encodeWithSelector(OnlyDelegateCalled.selector)
+            returnData, abi.encodeWithSelector(OnlyDelegateCalled.selector)
         );
 
         // updateDropURI
@@ -113,20 +105,13 @@ contract ERC721SeaDropContractOffererTest is
         // generateOrder
         vm.expectRevert(OnlyDelegateCalled.selector);
         configurer.generateOrder(
-            address(0),
-            new SpentItem[](0),
-            new SpentItem[](0),
-            ""
+            address(0), new SpentItem[](0), new SpentItem[](0), ""
         );
 
         // previewOrder
         vm.expectRevert(OnlyDelegateCalled.selector);
         configurer.previewOrder(
-            address(0),
-            address(0),
-            new SpentItem[](0),
-            new SpentItem[](0),
-            ""
+            address(0), address(0), new SpentItem[](0), new SpentItem[](0), ""
         );
 
         // updateAllowedSeaport
@@ -205,18 +190,18 @@ contract ERC721SeaDropContractOffererTest is
         // [IERC721SeaDrop, ISeaDropToken]
         assertTrue(
             token.supportsInterface(
-                IERC721SeaDrop.updatePublicDrop.selector ^
-                    IERC721SeaDrop.getPublicDrop.selector ^
-                    IERC721SeaDrop.getMintStats.selector ^
-                    IERC721SeaDrop.multiConfigureMint.selector
+                IERC721SeaDrop.updatePublicDrop.selector
+                    ^ IERC721SeaDrop.getPublicDrop.selector
+                    ^ IERC721SeaDrop.getMintStats.selector
+                    ^ IERC721SeaDrop.multiConfigureMint.selector
             )
         );
 
         // [IERC721ContractMetadata, ISeaDropTokenContractMetadata]
         assertTrue(
             token.supportsInterface(
-                IERC721ContractMetadata.setMaxSupply.selector ^
-                    IERC721ContractMetadata.maxSupply.selector
+                IERC721ContractMetadata.setMaxSupply.selector
+                    ^ IERC721ContractMetadata.maxSupply.selector
             )
         );
 
@@ -226,28 +211,28 @@ contract ERC721SeaDropContractOffererTest is
         // [ICreatorToken]
         assertTrue(
             token.supportsInterface(
-                ICreatorToken.getTransferValidator.selector ^
-                    ICreatorToken.getTransferValidationFunction.selector ^
-                    ICreatorToken.setTransferValidator.selector
+                ICreatorToken.getTransferValidator.selector
+                    ^ ICreatorToken.getTransferValidationFunction.selector
+                    ^ ICreatorToken.setTransferValidator.selector
             )
         );
 
         // [ILegacyCreatorToken]
         assertTrue(
             token.supportsInterface(
-                ILegacyCreatorToken.getTransferValidator.selector ^
-                    ILegacyCreatorToken.setTransferValidator.selector
+                ILegacyCreatorToken.getTransferValidator.selector
+                    ^ ILegacyCreatorToken.setTransferValidator.selector
             )
         );
 
         // [ContractOffererInterface]
         assertTrue(
             token.supportsInterface(
-                ContractOffererInterface.generateOrder.selector ^
-                    ContractOffererInterface.ratifyOrder.selector ^
-                    ContractOffererInterface.previewOrder.selector ^
-                    ContractOffererInterface.getSeaportMetadata.selector ^
-                    ContractOffererInterface.supportsInterface.selector
+                ContractOffererInterface.generateOrder.selector
+                    ^ ContractOffererInterface.ratifyOrder.selector
+                    ^ ContractOffererInterface.previewOrder.selector
+                    ^ ContractOffererInterface.getSeaportMetadata.selector
+                    ^ ContractOffererInterface.supportsInterface.selector
             )
         );
 
@@ -383,37 +368,26 @@ contract ERC721SeaDropContractOffererTest is
 
         bytes[] memory calls = new bytes[](8);
         calls[0] = abi.encodeCall(
-            ISeaDropToken.updateAllowedSeaport,
-            (_addrs(address(token)))
+            ISeaDropToken.updateAllowedSeaport, (_addrs(address(token)))
         );
-        calls[1] = abi.encodeCall(
-            IERC721SeaDrop.updatePublicDrop,
-            (publicDrop)
-        );
-        calls[2] = abi.encodeCall(
-            ISeaDropToken.updateAllowList,
-            (_allowListData())
-        );
-        calls[3] = abi.encodeCall(
-            ISeaDropToken.updateDropURI,
-            ("http://test.com")
-        );
+        calls[1] = abi.encodeCall(IERC721SeaDrop.updatePublicDrop, (publicDrop));
+        calls[2] =
+            abi.encodeCall(ISeaDropToken.updateAllowList, (_allowListData()));
+        calls[3] =
+            abi.encodeCall(ISeaDropToken.updateDropURI, ("http://test.com"));
         calls[4] = abi.encodeCall(
-            ISeaDropToken.updateCreatorPayouts,
-            (_singlePayout(four, 10_000))
+            ISeaDropToken.updateCreatorPayouts, (_singlePayout(four, 10_000))
         );
         calls[5] = abi.encodeCall(
-            ISeaDropToken.updateAllowedFeeRecipient,
-            (four, true)
+            ISeaDropToken.updateAllowedFeeRecipient, (four, true)
         );
         calls[6] = abi.encodeCall(ISeaDropToken.updateSigner, (four, true));
         calls[7] = abi.encodeCall(ISeaDropToken.updatePayer, (four, true));
 
         for (uint256 i = 0; i < calls.length; i++) {
             vm.prank(owner);
-            (bool success, bytes memory returnData) = address(token).call(
-                calls[i]
-            );
+            (bool success, bytes memory returnData) =
+                address(token).call(calls[i]);
             assertTrue(success, string(returnData));
 
             vm.prank(creator);
@@ -436,7 +410,8 @@ contract ERC721SeaDropContractOffererTest is
         config.dropURI = "https://example3.com";
         config.allowListData = _allowListData();
         config.creatorPayouts = _singlePayout(creator, 10_000);
-        config.provenanceHash = 0x3333333333333333333333333333333333333333333333333333333333333333;
+        config.provenanceHash =
+        0x3333333333333333333333333333333333333333333333333333333333333333;
         config.allowedFeeRecipients = _addrs(feeRecipient);
         config.allowedPayers = _addrs(
             0x4444444444444444444444444444444444444444,
@@ -543,9 +518,9 @@ contract ERC721SeaDropContractOffererTest is
     /// @dev `checkResults` in the spec. The spec's public drop assertion
     ///      compares the fetched drop with itself (the local shadows the
     ///      outer `publicDrop`); this compares it with the configured drop.
-    function _checkMultiConfigureResults(
-        MultiConfigureStruct memory config
-    ) internal {
+    function _checkMultiConfigureResults(MultiConfigureStruct memory config)
+        internal
+    {
         assertEq(token.maxSupply(), 100);
         assertEq(token.baseURI(), "https://example1.com");
         assertEq(token.contractURI(), "https://example2.com");
@@ -560,8 +535,7 @@ contract ERC721SeaDropContractOffererTest is
             abi.encode(_singlePayout(creator, 10_000))
         );
         assertEq(
-            _seaDrop().getAllowListMerkleRoot(),
-            config.allowListData.merkleRoot
+            _seaDrop().getAllowListMerkleRoot(), config.allowListData.merkleRoot
         );
         assertEq(_seaDrop().getAllowedFeeRecipients(), _addrs(feeRecipient));
         assertEq(_seaDrop().getPayers(), config.allowedPayers);
@@ -631,16 +605,14 @@ contract ERC721SeaDropContractOffererTest is
         payouts[2] = CreatorPayout(minter, 1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidCreatorPayoutTotalBasisPoints.selector,
-                111
+                InvalidCreatorPayoutTotalBasisPoints.selector, 111
             )
         );
         _seaDrop().updateCreatorPayouts(payouts);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidCreatorPayoutTotalBasisPoints.selector,
-                10_001
+                InvalidCreatorPayoutTotalBasisPoints.selector, 10_001
             )
         );
         _seaDrop().updateCreatorPayouts(_singlePayout(creator, 10_001));
@@ -650,8 +622,7 @@ contract ERC721SeaDropContractOffererTest is
         payouts[1] = CreatorPayout(owner, 1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidCreatorPayoutTotalBasisPoints.selector,
-                9_999
+                InvalidCreatorPayoutTotalBasisPoints.selector, 9_999
             )
         );
         _seaDrop().updateCreatorPayouts(payouts);
@@ -659,16 +630,15 @@ contract ERC721SeaDropContractOffererTest is
         vm.stopPrank();
     }
 
-    function _updateCreatorPayoutsAndCheck(
-        CreatorPayout[] memory payouts
-    ) internal {
+    function _updateCreatorPayoutsAndCheck(CreatorPayout[] memory payouts)
+        internal
+    {
         vm.expectEmit(true, true, true, true, address(token));
         emit CreatorPayoutsUpdated(payouts);
         _seaDrop().updateCreatorPayouts(payouts);
 
         assertEq(
-            abi.encode(_seaDrop().getCreatorPayouts()),
-            abi.encode(payouts)
+            abi.encode(_seaDrop().getCreatorPayouts()), abi.encode(payouts)
         );
     }
 }

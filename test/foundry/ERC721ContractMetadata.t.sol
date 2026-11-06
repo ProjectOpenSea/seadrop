@@ -31,10 +31,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
     function setUp() public override {
         super.setUp();
         token = new ERC721SeaDrop(
-            address(configurer),
-            allowedSeaport,
-            "Test721",
-            "T721"
+            address(configurer), allowedSeaport, "Test721", "T721"
         );
     }
 
@@ -53,8 +50,8 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         for (uint256 i = 0; i < logs.length; i++) {
             assertTrue(
-                logs[i].topics.length == 0 ||
-                    logs[i].topics[0] != BatchMetadataUpdate.selector,
+                logs[i].topics.length == 0
+                    || logs[i].topics[0] != BatchMetadataUpdate.selector,
                 "should not emit BatchMetadataUpdate"
             );
         }
@@ -102,9 +99,8 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
     function testMaxSupplyCannotExceedUint64() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropTokenContractMetadata
-                    .CannotExceedMaxSupplyOfUint64
-                    .selector,
+                ISeaDropTokenContractMetadata.CannotExceedMaxSupplyOfUint64
+                .selector,
                 2 ** 70
             )
         );
@@ -119,8 +115,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropTokenContractMetadata
-                    .NewMaxSupplyCannotBeLessThenTotalMinted
+                ISeaDropTokenContractMetadata.NewMaxSupplyCannotBeLessThenTotalMinted
                     .selector,
                 2,
                 3
@@ -238,8 +233,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         _mintTokens(address(this), 1);
 
         vm.expectRevert(
-            ISeaDropTokenContractMetadata
-                .ProvenanceHashCannotBeSetAfterMintStarted
+            ISeaDropTokenContractMetadata.ProvenanceHashCannotBeSetAfterMintStarted
                 .selector
         );
         token.setProvenanceHash(secondProvenanceHash);
@@ -249,15 +243,13 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
 
     /// @dev "Should revert on unsupported function selector"
     function testRevertsOnUnsupportedFunctionSelector() public {
-        (bool success, bytes memory returnData) = address(token).call{
-            gas: 50_000
-        }(hex"12345678");
+        (bool success, bytes memory returnData) =
+            address(token).call{ gas: 50_000 }(hex"12345678");
         assertFalse(success);
         assertEq(
             returnData,
             abi.encodeWithSelector(
-                UnsupportedFunctionSelector.selector,
-                bytes4(0x12345678)
+                UnsupportedFunctionSelector.selector, bytes4(0x12345678)
             )
         );
     }

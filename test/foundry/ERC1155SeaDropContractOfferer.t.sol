@@ -87,18 +87,12 @@ contract ERC1155SeaDropContractOffererTest is
 
     /// @dev "Should emit an event when the contract is deployed"
     function testEmitsEventOnDeployAndRejectsZeroAllowedSeaport() public {
-        address expected = computeCreateAddress(
-            address(this),
-            vm.getNonce(address(this))
-        );
+        address expected =
+            computeCreateAddress(address(this), vm.getNonce(address(this)));
         vm.expectEmit(true, true, true, true, expected);
         emit SeaDropTokenDeployed(SEADROP_TOKEN_TYPE.ERC1155_STANDARD);
-        ERC1155SeaDrop deployed = new ERC1155SeaDrop(
-            address(0),
-            address(consideration),
-            "",
-            ""
-        );
+        ERC1155SeaDrop deployed =
+            new ERC1155SeaDrop(address(0), address(consideration), "", "");
         assertEq(address(deployed), expected);
 
         vm.expectRevert(AllowedSeaportCannotBeZeroAddress.selector);
@@ -114,9 +108,8 @@ contract ERC1155SeaDropContractOffererTest is
     ///      without delegatecall"
     function testImplementationRequiresDelegatecall() public {
         // Fallback
-        (bool success, bytes memory returnData) = address(configurer).call(
-            hex"123456"
-        );
+        (bool success, bytes memory returnData) =
+            address(configurer).call(hex"123456");
         assertFalse(success, "fallback should revert");
         assertEq(
             returnData,
@@ -143,19 +136,12 @@ contract ERC1155SeaDropContractOffererTest is
 
         vm.expectRevert(OnlyDelegateCalled.selector);
         configurer.generateOrder(
-            address(0),
-            new SpentItem[](0),
-            new SpentItem[](0),
-            ""
+            address(0), new SpentItem[](0), new SpentItem[](0), ""
         );
 
         vm.expectRevert(OnlyDelegateCalled.selector);
         configurer.previewOrder(
-            address(0),
-            address(0),
-            new SpentItem[](0),
-            new SpentItem[](0),
-            ""
+            address(0), address(0), new SpentItem[](0), new SpentItem[](0), ""
         );
 
         vm.expectRevert(OnlyDelegateCalled.selector);
@@ -236,13 +222,12 @@ contract ERC1155SeaDropContractOffererTest is
             token.supportsInterface(type(ILegacyCreatorToken).interfaceId)
         );
         // [ContractOffererInterface]: its ABI includes supportsInterface.
-        bytes4 contractOffererInterfaceId = ContractOffererInterface
-            .generateOrder
-            .selector ^
-            ContractOffererInterface.ratifyOrder.selector ^
-            ContractOffererInterface.previewOrder.selector ^
-            ContractOffererInterface.getSeaportMetadata.selector ^
-            ContractOffererInterface.supportsInterface.selector;
+        bytes4 contractOffererInterfaceId =
+            ContractOffererInterface.generateOrder.selector
+                ^ ContractOffererInterface.ratifyOrder.selector
+                ^ ContractOffererInterface.previewOrder.selector
+                ^ ContractOffererInterface.getSeaportMetadata.selector
+                ^ ContractOffererInterface.supportsInterface.selector;
         assertTrue(token.supportsInterface(contractOffererInterfaceId));
 
         // Ensure the supported interfaces from ERC1155 return true.
@@ -442,8 +427,8 @@ contract ERC1155SeaDropContractOffererTest is
         Vm.Log[] memory logs = vm.getRecordedLogs();
         for (uint256 i = 0; i < logs.length; i++) {
             assertTrue(
-                logs[i].topics.length == 0 ||
-                    logs[i].topics[0] != DropURIUpdated.selector,
+                logs[i].topics.length == 0
+                    || logs[i].topics[0] != DropURIUpdated.selector,
                 "zeroed config should not emit DropURIUpdated"
             );
         }
@@ -618,9 +603,7 @@ contract ERC1155SeaDropContractOffererTest is
         // Valid cases. The spec could not check the event args
         // (hardhat#3833); they are checked here.
         _updateCreatorPayoutsAndCheck(_payouts(creator, 10_000));
-        _updateCreatorPayoutsAndCheck(
-            _payouts(creator, 5_000, owner, 5_000)
-        );
+        _updateCreatorPayoutsAndCheck(_payouts(creator, 5_000, owner, 5_000));
         _updateCreatorPayoutsAndCheck(
             _payouts(creator, 9_000, owner, 500, minter, 500)
         );
@@ -647,38 +630,33 @@ contract ERC1155SeaDropContractOffererTest is
         sd.updateCreatorPayouts(withZeroAddress);
 
         vm.expectRevert(CreatorPayoutBasisPointsCannotBeZero.selector);
-        sd.updateCreatorPayouts(
-            _payouts(creator, 100, owner, 0, minter, 9_900)
-        );
+        sd.updateCreatorPayouts(_payouts(creator, 100, owner, 0, minter, 9_900));
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidCreatorPayoutTotalBasisPoints.selector,
-                111
+                InvalidCreatorPayoutTotalBasisPoints.selector, 111
             )
         );
         sd.updateCreatorPayouts(_payouts(creator, 100, owner, 10, minter, 1));
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidCreatorPayoutTotalBasisPoints.selector,
-                10_001
+                InvalidCreatorPayoutTotalBasisPoints.selector, 10_001
             )
         );
         sd.updateCreatorPayouts(_payouts(creator, 10_001));
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidCreatorPayoutTotalBasisPoints.selector,
-                9_999
+                InvalidCreatorPayoutTotalBasisPoints.selector, 9_999
             )
         );
         sd.updateCreatorPayouts(_payouts(creator, 9_998, owner, 1));
     }
 
-    function _updateCreatorPayoutsAndCheck(
-        CreatorPayout[] memory payouts
-    ) internal {
+    function _updateCreatorPayoutsAndCheck(CreatorPayout[] memory payouts)
+        internal
+    {
         vm.expectEmit(true, true, true, true, address(token));
         emit CreatorPayoutsUpdated(payouts);
         sd.updateCreatorPayouts(payouts);
@@ -694,15 +672,12 @@ contract ERC1155SeaDropContractOffererTest is
         );
 
         vm.prank(minter);
-        (bool success, bytes memory returnData) = address(token).staticcall(
-            abi.encodePacked(getSeaportMetadataSelector)
-        );
+        (bool success, bytes memory returnData) = address(token)
+            .staticcall(abi.encodePacked(getSeaportMetadataSelector));
         assertTrue(success);
 
-        (string memory name, Schema[] memory schemas) = abi.decode(
-            returnData,
-            (string, Schema[])
-        );
+        (string memory name, Schema[] memory schemas) =
+            abi.decode(returnData, (string, Schema[]));
 
         uint256[] memory supportedSubstandards = _uints(0, 1, 2);
         bytes memory metadata = abi.encode(supportedSubstandards);
@@ -715,15 +690,13 @@ contract ERC1155SeaDropContractOffererTest is
 
     /// @dev "Should revert on unsupported function selector"
     function testRevertsOnUnsupportedFunctionSelector() public {
-        (bool success, bytes memory returnData) = address(token).call(
-            hex"12345678"
-        );
+        (bool success, bytes memory returnData) =
+            address(token).call(hex"12345678");
         assertFalse(success, "should revert");
         assertEq(
             returnData,
             abi.encodeWithSelector(
-                UnsupportedFunctionSelector.selector,
-                bytes4(0x12345678)
+                UnsupportedFunctionSelector.selector, bytes4(0x12345678)
             )
         );
     }

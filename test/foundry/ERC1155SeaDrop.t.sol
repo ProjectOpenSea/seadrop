@@ -44,8 +44,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.assume(args.feeRecipient.code.length == 0);
         vm.assume(args.creator.code.length == 0);
 
-        assumeNoPrecompiles(args.feeRecipient);
-        assumeNoPrecompiles(args.creator);
+        assumeNotPrecompile(args.feeRecipient);
+        assumeNotPrecompile(args.creator);
 
         _;
     }
@@ -431,8 +431,7 @@ contract ERC1155SeaDropTransferAndBurnTest is SeaDrop1155MintHelpers {
         vm.prank(minter);
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidCallerOnlyAllowedSeaport.selector,
-                minter
+                InvalidCallerOnlyAllowedSeaport.selector, minter
             )
         );
         token.safeTransferFrom(address(token), creator, 0, 1, "");
@@ -455,11 +454,7 @@ contract ERC1155SeaDropTransferAndBurnTest is SeaDrop1155MintHelpers {
         token.safeTransferFrom(creator, minter, 0, 1, "");
         vm.prank(OPENSEA_CONDUIT);
         token.safeBatchTransferFrom(
-            creator,
-            minter,
-            _single(0),
-            _single(1),
-            hex"dadb0d"
+            creator, minter, _single(0), _single(1), hex"dadb0d"
         );
 
         // Should not allow a non-approved address to transfer.
@@ -469,11 +464,7 @@ contract ERC1155SeaDropTransferAndBurnTest is SeaDrop1155MintHelpers {
         vm.prank(owner);
         vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
         token.safeBatchTransferFrom(
-            minter,
-            creator,
-            _single(0),
-            _single(1),
-            hex"dadb0d"
+            minter, creator, _single(0), _single(1), hex"dadb0d"
         );
     }
 

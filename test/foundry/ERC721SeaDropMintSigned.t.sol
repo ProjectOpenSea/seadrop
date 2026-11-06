@@ -38,10 +38,7 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         super.setUp();
 
         token = new ERC721SeaDrop(
-            address(configurer),
-            allowedSeaport,
-            "Test721",
-            "T721"
+            address(configurer), allowedSeaport, "Test721", "T721"
         );
 
         vm.deal(payer, 100 ether);
@@ -50,10 +47,8 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         // Configure the token.
         token.setMaxSupply(100);
         setSingleCreatorPayout(creator);
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
 
         mintParams = MintParams({
             startPrice: 0.1 ether,
@@ -81,28 +76,26 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         uint256 salt,
         bytes memory signature
     ) internal view returns (AdvancedOrder memory, uint256) {
-        return
-            _signedOrder(
-                tokenAddress,
-                quantity,
-                orderFeeRecipient,
-                mintParams.feeBps,
-                mintParams.startPrice,
-                orderMinter,
-                params,
-                salt,
-                signature
-            );
+        return _signedOrder(
+            tokenAddress,
+            quantity,
+            orderFeeRecipient,
+            mintParams.feeBps,
+            mintParams.startPrice,
+            orderMinter,
+            params,
+            salt,
+            signature
+        );
     }
 
     function _otherSalt(uint256 salt) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(salt, "other salt")));
     }
 
-    function _assertSigners(
-        address tokenAddress,
-        address[] memory expected
-    ) internal {
+    function _assertSigners(address tokenAddress, address[] memory expected)
+        internal
+    {
         address[] memory signers = IERC721SeaDrop(tokenAddress).getSigners();
         assertEq(signers.length, expected.length);
         for (uint256 i = 0; i < expected.length; i++) {
@@ -110,17 +103,18 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         }
     }
 
-    function _list() internal pure returns (address[] memory list) {}
+    function _list() internal pure returns (address[] memory list) { }
 
     function _list(address a) internal pure returns (address[] memory list) {
         list = new address[](1);
         list[0] = a;
     }
 
-    function _list(
-        address a,
-        address b
-    ) internal pure returns (address[] memory list) {
+    function _list(address a, address b)
+        internal
+        pure
+        returns (address[] memory list)
+    {
         list = new address[](2);
         list[0] = a;
         list[1] = b;
@@ -131,22 +125,11 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         // Mint signed with payer for minter.
         MintParams memory params = mintParams;
         (bytes memory signature, bytes32 digest) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            address(token),
-            3,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature
+            address(token), 3, feeRecipient, minter, params, salt, signature
         );
 
         assertFalse(IERC721SeaDrop(address(token)).getDigestIsUsed(digest));
@@ -184,21 +167,10 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         // Change the salt to use a new digest.
         uint256 newSalt = _otherSalt(salt);
         (signature, digest) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            newSalt
+            "signer", address(token), minter, feeRecipient, params, newSalt
         );
         (order, value) = _order(
-            address(token),
-            3,
-            feeRecipient,
-            minter,
-            params,
-            newSalt,
-            signature
+            address(token), 3, feeRecipient, minter, params, newSalt, signature
         );
 
         assertFalse(IERC721SeaDrop(address(token)).getDigestIsUsed(digest));
@@ -213,29 +185,17 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
     /// @dev "Should not mint a signed mint with different params"
     function testCannotMintSignedWithDifferentParams(uint256 salt) public {
         MintParams memory params = mintParams;
-        bytes memory invalidSignature = abi.encodeWithSelector(
-            ECDSA.InvalidSignature.selector
-        );
+        bytes memory invalidSignature =
+            abi.encodeWithSelector(ECDSA.InvalidSignature.selector);
 
         // Sign the mint for minter.
-        (bytes memory signature, ) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+        (bytes memory signature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         // Test with a different minter address.
         (AdvancedOrder memory order, uint256 value) = _order(
-            address(token),
-            3,
-            feeRecipient,
-            payer,
-            params,
-            salt,
-            signature
+            address(token), 3, feeRecipient, payer, params, salt, signature
         );
 
         // The spec fulfills from `minter` and comments InvalidSignature, but
@@ -257,50 +217,32 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(payer, true);
         IERC721SeaDrop(address(token)).updatePayer(payer, true);
 
-        (order, value) = _order(
-            address(token),
-            3,
-            payer,
-            minter,
-            params,
-            salt,
-            signature
-        );
+        (order, value) =
+            _order(address(token), 3, payer, minter, params, salt, signature);
         _assertMintReverts(order, minter, value, invalidSignature);
 
         // Test with a different token contract.
         ERC721SeaDrop token2 = new ERC721SeaDrop(
-            address(configurer),
-            allowedSeaport,
-            "Test721",
-            "T721"
+            address(configurer), allowedSeaport, "Test721", "T721"
         );
         token2.setMaxSupply(100);
         _setSingleCreatorPayout(address(token2), creator);
-        IERC721SeaDrop(address(token2)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token2))
+            .updateAllowedFeeRecipient(feeRecipient, true);
 
         // Test coverage for error SignerNotPresent().
         vm.expectRevert(SignerNotPresent.selector);
-        IERC721SeaDrop(address(token2)).updateSigner(
-            address(0x8888888888888888888888888888888888888888),
-            false
-        );
+        IERC721SeaDrop(address(token2))
+            .updateSigner(
+                address(0x8888888888888888888888888888888888888888), false
+            );
 
         IERC721SeaDrop(address(token2)).updateSigner(signer, true);
         IERC721SeaDrop(address(token2)).updateSigner(signer, false);
         IERC721SeaDrop(address(token2)).updateSigner(signer, true);
 
         (order, value) = _order(
-            address(token2),
-            3,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature
+            address(token2), 3, feeRecipient, minter, params, salt, signature
         );
         _assertMintReverts(order, minter, value, invalidSignature);
 
@@ -308,22 +250,11 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         IERC721SeaDrop(address(token)).updateSigner(signer2, true);
         IERC721SeaDrop(address(token)).updateSigner(signer2, false);
         _assertSigners(address(token2), _list(signer));
-        (bytes memory signature2, ) = _signMint(
-            "signer2",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+        (bytes memory signature2,) = _signMint(
+            "signer2", address(token), minter, feeRecipient, params, salt
         );
         (order, value) = _order(
-            address(token),
-            3,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature2
+            address(token), 3, feeRecipient, minter, params, salt, signature2
         );
         _assertMintReverts(order, minter, value, invalidSignature);
 
@@ -372,28 +303,17 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
 
     /// @dev "Should not mint a signed mint after exceeding max mints per
     ///      wallet"
-    function testCannotMintSignedAfterExceedingMaxMintsPerWallet(
-        uint256 salt
-    ) public {
+    function testCannotMintSignedAfterExceedingMaxMintsPerWallet(uint256 salt)
+        public
+    {
         MintParams memory params = mintParams;
-        (bytes memory signature, ) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+        (bytes memory signature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         // Max mints per wallet is 10. Mint 10.
         (AdvancedOrder memory order, uint256 value) = _order(
-            address(token),
-            10,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature
+            address(token), 10, feeRecipient, minter, params, salt, signature
         );
         _fulfillAndExpectMint(order, minter, value, params.dropStageIndex);
 
@@ -401,13 +321,7 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         // MintQuantityExceedsMaxMintedPerWallet, but it reuses the salt and
         // signature, so the used digest is rejected first.
         (order, value) = _order(
-            address(token),
-            1,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature
+            address(token), 1, feeRecipient, minter, params, salt, signature
         );
         _assertMintReverts(
             order,
@@ -419,13 +333,8 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         // The spec's intent: a fresh signature for the same params exceeds
         // the max mints per wallet.
         uint256 freshSalt = _otherSalt(salt);
-        (bytes memory freshSignature, ) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            freshSalt
+        (bytes memory freshSignature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, params, freshSalt
         );
         (order, value) = _order(
             address(token),
@@ -441,9 +350,7 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
             minter,
             value,
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxMintedPerWallet.selector,
-                11,
-                10
+                MintQuantityExceedsMaxMintedPerWallet.selector, 11, 10
             )
         );
 
@@ -475,13 +382,8 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         zeroFeeParams.endPrice = 1;
         zeroFeeParams.feeBps = 1;
 
-        (bytes memory signature, ) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            zeroFeeParams,
-            salt
+        (bytes memory signature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, zeroFeeParams, salt
         );
 
         (AdvancedOrder memory order, uint256 value) = _signedOrder(
@@ -507,7 +409,7 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         MintParams memory invalidFeeBpsParams = _copyMintParams(mintParams);
         invalidFeeBpsParams.feeBps = 11_000;
 
-        (bytes memory signature, ) = _signMint(
+        (bytes memory signature,) = _signMint(
             "signer",
             address(token),
             minter,
@@ -541,23 +443,12 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
         _setCreatorPayouts(address(token), creator, 5_000, address(this), 5_000);
 
         MintParams memory params = mintParams;
-        (bytes memory signature, ) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+        (bytes memory signature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            address(token),
-            3,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature
+            address(token), 3, feeRecipient, minter, params, salt, signature
         );
 
         _assertMintReverts(
@@ -582,23 +473,12 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
     ///      previewOrder"
     function testPreviewOrder(uint256 salt) public {
         MintParams memory params = mintParams;
-        (bytes memory signature, ) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+        (bytes memory signature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
-        (AdvancedOrder memory order, ) = _order(
-            address(token),
-            1,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature
+        (AdvancedOrder memory order,) = _order(
+            address(token), 1, feeRecipient, minter, params, salt, signature
         );
 
         _assertPreviewOrderEchoesOrder(order, minter);
@@ -650,23 +530,12 @@ contract ERC721SeaDropMintSignedTest is SeaDrop721MintHelpers {
      */
     function testRevertsOnChangedChainId(uint256 salt) public {
         MintParams memory params = mintParams;
-        (bytes memory signature, ) = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+        (bytes memory signature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         (AdvancedOrder memory order, uint256 value) = _order(
-            address(token),
-            3,
-            feeRecipient,
-            minter,
-            params,
-            salt,
-            signature
+            address(token), 3, feeRecipient, minter, params, salt, signature
         );
 
         // The signed mint is valid on the chain it was signed for.

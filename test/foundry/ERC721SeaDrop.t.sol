@@ -48,8 +48,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         vm.assume(args.feeRecipient.code.length == 0);
         vm.assume(args.creator.code.length == 0);
 
-        assumeNoPrecompiles(args.feeRecipient);
-        assumeNoPrecompiles(args.creator);
+        assumeNotPrecompile(args.feeRecipient);
+        assumeNotPrecompile(args.creator);
 
         _;
     }
@@ -357,10 +357,7 @@ contract ERC721SeaDropTransferBurnWithdrawTest is SeaDrop721MintHelpers {
     function setUp() public override {
         super.setUp();
         token = new ERC721SeaDrop(
-            address(configurer),
-            allowedSeaport,
-            "Test721",
-            "T721"
+            address(configurer), allowedSeaport, "Test721", "T721"
         );
         vm.deal(minter, 100 ether);
         vm.deal(creator, 100 ether);
@@ -503,10 +500,8 @@ contract ERC721SeaDropTransferBurnWithdrawTest is SeaDrop721MintHelpers {
         // The token reverts with no data (its fallback is not payable), and
         // RevertedRecipient reverts with a custom error. withdraw() bubbles
         // up the revert data.
-        address[2] memory ownerAddresses = [
-            address(token),
-            address(revertedRecipient)
-        ];
+        address[2] memory ownerAddresses =
+            [address(token), address(revertedRecipient)];
         bytes[2] memory expectedRevertData = [
             bytes(""),
             abi.encodeWithSelector(RevertedRecipient.CannotAcceptEther.selector)
@@ -524,9 +519,8 @@ contract ERC721SeaDropTransferBurnWithdrawTest is SeaDrop721MintHelpers {
             token.approve{ value: 100 }(address(this), 1);
 
             vm.prank(ownerAddresses[i]);
-            (bool success, bytes memory returnData) = address(token).call(
-                abi.encodeCall(ERC721SeaDrop.withdraw, ())
-            );
+            (bool success, bytes memory returnData) =
+                address(token).call(abi.encodeCall(ERC721SeaDrop.withdraw, ()));
             assertFalse(success);
             assertEq(returnData, expectedRevertData[i]);
         }

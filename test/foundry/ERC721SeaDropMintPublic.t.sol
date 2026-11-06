@@ -37,10 +37,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
         super.setUp();
 
         token = new ERC721SeaDrop(
-            address(configurer),
-            allowedSeaport,
-            "Test721",
-            "T721"
+            address(configurer), allowedSeaport, "Test721", "T721"
         );
 
         vm.deal(payer, 100 ether);
@@ -60,35 +57,31 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
             restrictFeeRecipients: true
         });
         IERC721SeaDrop(address(token)).updatePublicDrop(publicDrop);
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
     }
 
-    function _order(
-        uint256 quantity,
-        address orderFeeRecipient
-    ) internal view returns (AdvancedOrder memory, uint256) {
-        return
-            _publicOrder(
-                address(token),
-                quantity,
-                orderFeeRecipient,
-                publicDrop.feeBps,
-                publicDrop.startPrice,
-                minter
-            );
+    function _order(uint256 quantity, address orderFeeRecipient)
+        internal
+        view
+        returns (AdvancedOrder memory, uint256)
+    {
+        return _publicOrder(
+            address(token),
+            quantity,
+            orderFeeRecipient,
+            publicDrop.feeBps,
+            publicDrop.startPrice,
+            minter
+        );
     }
 
     /// @dev "Should mint a public stage"
     function testMintPublicStage() public {
         // Mint public with payer as minter.
         uint256 quantity = 3;
-        (AdvancedOrder memory order, uint256 value) = _order(
-            quantity,
-            feeRecipient
-        );
+        (AdvancedOrder memory order, uint256 value) =
+            _order(quantity, feeRecipient);
 
         _assertMintReverts(
             order,
@@ -127,10 +120,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
         // Mint public with payer for minter.
         (AdvancedOrder memory order, uint256 value) = _order(3, feeRecipient);
         bytes memory notActive = abi.encodeWithSelector(
-            NotActive.selector,
-            block.timestamp,
-            drop.startTime,
-            drop.endTime
+            NotActive.selector, block.timestamp, drop.startTime, drop.endTime
         );
         _assertMintReverts(order, payer, value, notActive);
 
@@ -145,9 +135,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
         drop.endTime = 100;
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidStartAndEndTime.selector,
-                publicDrop.startTime,
-                100
+                InvalidStartAndEndTime.selector, publicDrop.startTime, 100
             )
         );
         IERC721SeaDrop(address(token)).updatePublicDrop(drop);
@@ -159,10 +147,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
         // Mint public with payer for minter.
         (AdvancedOrder memory order, uint256 value) = _order(3, feeRecipient);
         bytes memory notActive = abi.encodeWithSelector(
-            NotActive.selector,
-            block.timestamp,
-            drop.startTime,
-            drop.endTime
+            NotActive.selector, block.timestamp, drop.startTime, drop.endTime
         );
         _assertMintReverts(order, payer, value, notActive);
 
@@ -204,9 +189,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
             minter,
             value,
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxMintedPerWallet.selector,
-                3,
-                2
+                MintQuantityExceedsMaxMintedPerWallet.selector, 3, 2
             )
         );
     }
@@ -218,9 +201,8 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
         value = value / 2;
 
         vm.expectRevert(
-            ConsiderationEventsAndErrors
-                .InsufficientNativeTokensSupplied
-                .selector
+            ConsiderationEventsAndErrors.InsufficientNativeTokensSupplied
+            .selector
         );
         _fulfill(order, minter, value);
 
@@ -230,9 +212,8 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
         value = (value * 2) / 3;
 
         vm.expectRevert(
-            ConsiderationEventsAndErrors
-                .InsufficientNativeTokensSupplied
-                .selector
+            ConsiderationEventsAndErrors.InsufficientNativeTokensSupplied
+            .selector
         );
         _fulfill(order, minter, value);
     }
@@ -260,9 +241,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
     function testCannotSetInvalidFeeBps() public {
         PublicDrop memory drop = publicDrop;
         drop.feeBps = 15_000;
-        vm.expectRevert(
-            abi.encodeWithSelector(InvalidFeeBps.selector, 15_000)
-        );
+        vm.expectRevert(abi.encodeWithSelector(InvalidFeeBps.selector, 15_000));
         IERC721SeaDrop(address(token)).updatePublicDrop(drop);
     }
 
@@ -273,12 +252,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
         IERC721SeaDrop(address(token)).updatePublicDrop(drop);
 
         (AdvancedOrder memory order, uint256 value) = _publicOrder(
-            address(token),
-            1,
-            feeRecipient,
-            0,
-            publicDrop.startPrice,
-            minter
+            address(token), 1, feeRecipient, 0, publicDrop.startPrice, minter
         );
 
         _fulfillAndExpectMint(order, minter, value, _PUBLIC_DROP_STAGE_INDEX);
@@ -303,12 +277,7 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
     function testCannotMintZeroQuantity() public {
         (AdvancedOrder memory order, uint256 value) = _order(0, creator);
 
-        _assertMintReverts(
-            order,
-            minter,
-            value,
-            _zeroQuantityError()
-        );
+        _assertMintReverts(order, minter, value, _zeroQuantityError());
     }
 
     /// @dev "Should allow delegated payers to mint via the DelegationRegistry"
@@ -335,18 +304,13 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721MintHelpers {
     function testCannotMintQuantityOfZero() public {
         (AdvancedOrder memory order, uint256 value) = _order(0, feeRecipient);
 
-        _assertMintReverts(
-            order,
-            minter,
-            value,
-            _zeroQuantityError()
-        );
+        _assertMintReverts(order, minter, value, _zeroQuantityError());
     }
 
     /// @dev "Should return the expected offer and consideration in
     ///      previewOrder"
     function testPreviewOrder() public {
-        (AdvancedOrder memory order, ) = _publicOrder(
+        (AdvancedOrder memory order,) = _publicOrder(
             address(token),
             1,
             feeRecipient,

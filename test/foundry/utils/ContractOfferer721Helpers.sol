@@ -106,16 +106,13 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
     /**
      * Deployment and configuration
      */
-    function _deployToken(
-        address configurer_
-    ) internal returns (ERC721SeaDrop deployed) {
+    function _deployToken(address configurer_)
+        internal
+        returns (ERC721SeaDrop deployed)
+    {
         vm.prank(owner);
-        deployed = new ERC721SeaDrop(
-            configurer_,
-            allowedSeaport,
-            "Test721",
-            "T721"
-        );
+        deployed =
+            new ERC721SeaDrop(configurer_, allowedSeaport, "Test721", "T721");
     }
 
     function _seaDrop() internal view returns (IERC721SeaDrop) {
@@ -123,18 +120,18 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
     }
 
     function _allowListData() internal pure returns (AllowListData memory) {
-        return
-            AllowListData({
-                merkleRoot: _ALLOW_LIST_MERKLE_ROOT,
-                publicKeyURIs: new string[](0),
-                allowListURI: ""
-            });
+        return AllowListData({
+            merkleRoot: _ALLOW_LIST_MERKLE_ROOT,
+            publicKeyURIs: new string[](0),
+            allowListURI: ""
+        });
     }
 
-    function _singlePayout(
-        address payoutAddress,
-        uint16 basisPoints
-    ) internal pure returns (CreatorPayout[] memory payouts) {
+    function _singlePayout(address payoutAddress, uint16 basisPoints)
+        internal
+        pure
+        returns (CreatorPayout[] memory payouts)
+    {
         payouts = new CreatorPayout[](1);
         payouts[0] = CreatorPayout(payoutAddress, basisPoints);
     }
@@ -144,21 +141,21 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
         r[0] = a;
     }
 
-    function _addrs(
-        address a,
-        address b
-    ) internal pure returns (address[] memory r) {
+    function _addrs(address a, address b)
+        internal
+        pure
+        returns (address[] memory r)
+    {
         r = new address[](2);
         r[0] = a;
         r[1] = b;
     }
 
-    function _addrs(
-        address a,
-        address b,
-        address c,
-        address d
-    ) internal pure returns (address[] memory r) {
+    function _addrs(address a, address b, address c, address d)
+        internal
+        pure
+        returns (address[] memory r)
+    {
         r = new address[](4);
         r[0] = a;
         r[1] = b;
@@ -199,11 +196,7 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
         value = price * quantity;
 
         ConsiderationItem[] memory items = _mintConsideration(
-            tokenAddress,
-            feeRecipient_,
-            feeBps,
-            value,
-            paymentToken
+            tokenAddress, feeRecipient_, feeBps, value, paymentToken
         );
 
         order = AdvancedOrder({
@@ -213,8 +206,8 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
                 offer: offer,
                 consideration: items,
                 orderType: OrderType.CONTRACT,
-                startTime: block.timestamp - 1000,
-                endTime: block.timestamp + 1000,
+                startTime: vm.getBlockTimestamp() - 1000,
+                endTime: vm.getBlockTimestamp() + 1000,
                 zoneHash: bytes32(0),
                 salt: 0,
                 conduitKey: bytes32(0),
@@ -241,16 +234,15 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
     ) internal view returns (ConsiderationItem[] memory items) {
         uint256 feeAmount = (value * feeBps) / 10_000;
         uint256 creatorAmount = value - feeAmount;
-        ItemType itemType = paymentToken == address(0)
-            ? ItemType.NATIVE
-            : ItemType.ERC20;
+        ItemType itemType =
+            paymentToken == address(0) ? ItemType.NATIVE : ItemType.ERC20;
 
-        CreatorPayout[] memory creatorPayouts = IERC721SeaDrop(tokenAddress)
-            .getCreatorPayouts();
+        CreatorPayout[] memory creatorPayouts =
+            IERC721SeaDrop(tokenAddress).getCreatorPayouts();
 
         items = new ConsiderationItem[](
-            (feeAmount > 0 ? 1 : 0) +
-                (creatorAmount > 0 ? creatorPayouts.length : 0)
+            (feeAmount > 0 ? 1 : 0)
+                + (creatorAmount > 0 ? creatorPayouts.length : 0)
         );
 
         uint256 index;
@@ -267,8 +259,8 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
 
         if (creatorAmount > 0) {
             for (uint256 i = 0; i < creatorPayouts.length; i++) {
-                uint256 amount = (creatorAmount *
-                    creatorPayouts[i].basisPoints) / 10_000;
+                uint256 amount =
+                    (creatorAmount * creatorPayouts[i].basisPoints) / 10_000;
                 items[index++] = ConsiderationItem({
                     itemType: itemType,
                     token: paymentToken,
@@ -314,14 +306,15 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
 
     /// @dev The order hash Seaport derives for the next contract order of
     ///      `offerer`, as used in `InvalidContractOrder(bytes32)`.
-    function _contractOrderHash(
-        address offerer
-    ) internal view returns (bytes32) {
-        return
-            bytes32(
-                (uint256(uint160(offerer)) << 96) ^
-                    consideration.getContractOffererNonce(offerer)
-            );
+    function _contractOrderHash(address offerer)
+        internal
+        view
+        returns (bytes32)
+    {
+        return bytes32(
+            (uint256(uint160(offerer)) << 96)
+                ^ consideration.getContractOffererNonce(offerer)
+        );
     }
 
     /// @dev Expect Seaport to revert the next contract order of `offerer`
@@ -336,16 +329,13 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
     /// @dev Call `previewOrder` on the order's offerer with the arguments
     ///      Seaport derives from the order, so the underlying SeaDrop error
     ///      that Seaport wraps in `InvalidContractOrder` can be asserted.
-    function _previewOrder(
-        AdvancedOrder memory order,
-        address fulfiller
-    )
+    function _previewOrder(AdvancedOrder memory order, address fulfiller)
         internal
         view
         returns (SpentItem[] memory offer, ReceivedItem[] memory consideration_)
     {
-        return
-            ContractOffererInterface(order.parameters.offerer).previewOrder(
+        return ContractOffererInterface(order.parameters.offerer)
+            .previewOrder(
                 address(consideration),
                 fulfiller,
                 _offerToSpentItems(order.parameters.offer),
@@ -354,9 +344,11 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
             );
     }
 
-    function _offerToSpentItems(
-        OfferItem[] memory offer
-    ) internal pure returns (SpentItem[] memory spentItems) {
+    function _offerToSpentItems(OfferItem[] memory offer)
+        internal
+        pure
+        returns (SpentItem[] memory spentItems)
+    {
         spentItems = new SpentItem[](offer.length);
         for (uint256 i = 0; i < offer.length; i++) {
             spentItems[i] = SpentItem({
@@ -368,9 +360,11 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
         }
     }
 
-    function _considerationToSpentItems(
-        ConsiderationItem[] memory items
-    ) internal pure returns (SpentItem[] memory spentItems) {
+    function _considerationToSpentItems(ConsiderationItem[] memory items)
+        internal
+        pure
+        returns (SpentItem[] memory spentItems)
+    {
         spentItems = new SpentItem[](items.length);
         for (uint256 i = 0; i < items.length; i++) {
             spentItems[i] = SpentItem({
@@ -419,8 +413,8 @@ abstract contract ERC721SeaDropContractOffererHelpers is SeaDrop721Test {
     ) internal pure returns (uint256 count) {
         for (uint256 i = 0; i < logs.length; i++) {
             if (
-                logs[i].emitter != emitter ||
-                logs[i].topics.length < topics.length
+                logs[i].emitter != emitter
+                    || logs[i].topics.length < topics.length
             ) {
                 continue;
             }

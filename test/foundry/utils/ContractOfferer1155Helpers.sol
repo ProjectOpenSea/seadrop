@@ -23,7 +23,10 @@ import {
     SpentItem
 } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { ItemType, OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
+import {
+    ItemType,
+    OrderType
+} from "seaport-types/src/lib/ConsiderationEnums.sol";
 
 /**
  * @dev Helpers for driving ERC1155SeaDrop as a Seaport contract offerer,
@@ -55,9 +58,11 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
      *      is the fee recipient item plus one item per creator payout.
      *      Returns the order and `value` (price * total quantity).
      */
-    function _createMintOrder(
-        MintOrderArgs memory args
-    ) internal view returns (AdvancedOrder memory order, uint256 value) {
+    function _createMintOrder(MintOrderArgs memory args)
+        internal
+        view
+        returns (AdvancedOrder memory order, uint256 value)
+    {
         uint256 numTokenIds = args.tokenIds.length;
         OfferItem[] memory offer = new OfferItem[](numTokenIds);
         uint256 totalQuantity;
@@ -81,8 +86,8 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
             offer: offer,
             consideration: items,
             orderType: OrderType.CONTRACT,
-            startTime: block.timestamp - 1000,
-            endTime: block.timestamp + 1000,
+            startTime: vm.getBlockTimestamp() - 1000,
+            endTime: vm.getBlockTimestamp() + 1000,
             zoneHash: bytes32(0),
             salt: 0,
             conduitKey: bytes32(0),
@@ -104,23 +109,23 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
      * @dev The fee recipient item (if the fee is nonzero) followed by one
      *      item per creator payout (if the creator amount is nonzero).
      */
-    function _mintConsideration(
-        MintOrderArgs memory args,
-        uint256 value
-    ) internal view returns (ConsiderationItem[] memory items) {
+    function _mintConsideration(MintOrderArgs memory args, uint256 value)
+        internal
+        view
+        returns (ConsiderationItem[] memory items)
+    {
         uint256 feeAmount = (value * args.feeBps) / 10_000;
         uint256 creatorAmount = value - feeAmount;
 
-        ItemType itemType = args.paymentToken == address(0)
-            ? ItemType.NATIVE
-            : ItemType.ERC20;
+        ItemType itemType =
+            args.paymentToken == address(0) ? ItemType.NATIVE : ItemType.ERC20;
 
-        CreatorPayout[] memory creatorPayouts = IERC1155SeaDrop(args.token)
-            .getCreatorPayouts();
+        CreatorPayout[] memory creatorPayouts =
+            IERC1155SeaDrop(args.token).getCreatorPayouts();
 
         items = new ConsiderationItem[](
-            (feeAmount > 0 ? 1 : 0) +
-                (creatorAmount > 0 ? creatorPayouts.length : 0)
+            (feeAmount > 0 ? 1 : 0)
+                + (creatorAmount > 0 ? creatorPayouts.length : 0)
         );
         uint256 index;
         if (feeAmount > 0) {
@@ -135,8 +140,8 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
         }
         if (creatorAmount > 0) {
             for (uint256 i = 0; i < creatorPayouts.length; i++) {
-                uint256 amount = (creatorAmount *
-                    creatorPayouts[i].basisPoints) / 10_000;
+                uint256 amount =
+                    (creatorAmount * creatorPayouts[i].basisPoints) / 10_000;
                 items[index++] = ConsiderationItem({
                     itemType: itemType,
                     token: args.paymentToken,
@@ -154,28 +159,28 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
      *      `offerer`, used as the argument of `InvalidContractOrder`.
      *      Read it before any `vm.prank` / `vm.expectRevert`.
      */
-    function _contractOrderHash(
-        address offerer
-    ) internal view returns (bytes32) {
-        return
-            bytes32(
-                (uint256(uint160(offerer)) << 96) +
-                    consideration.getContractOffererNonce(offerer)
-            );
+    function _contractOrderHash(address offerer)
+        internal
+        view
+        returns (bytes32)
+    {
+        return bytes32(
+            (uint256(uint160(offerer)) << 96)
+                + consideration.getContractOffererNonce(offerer)
+        );
     }
 
     /**
      * @dev Calls `previewOrder` on the offerer with the same minimumReceived,
      *      maximumSpent and context Seaport would pass to `generateOrder`.
      */
-    function _previewOrder(
-        AdvancedOrder memory order,
-        address fulfiller
-    ) internal view {
+    function _previewOrder(AdvancedOrder memory order, address fulfiller)
+        internal
+        view
+    {
         OrderParameters memory parameters = order.parameters;
-        SpentItem[] memory minimumReceived = new SpentItem[](
-            parameters.offer.length
-        );
+        SpentItem[] memory minimumReceived =
+            new SpentItem[](parameters.offer.length);
         for (uint256 i = 0; i < parameters.offer.length; i++) {
             minimumReceived[i] = SpentItem({
                 itemType: parameters.offer[i].itemType,
@@ -184,9 +189,8 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
                 amount: parameters.offer[i].startAmount
             });
         }
-        SpentItem[] memory maximumSpent = new SpentItem[](
-            parameters.consideration.length
-        );
+        SpentItem[] memory maximumSpent =
+            new SpentItem[](parameters.consideration.length);
         for (uint256 i = 0; i < parameters.consideration.length; i++) {
             maximumSpent[i] = SpentItem({
                 itemType: parameters.consideration[i].itemType,
@@ -195,13 +199,14 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
                 amount: parameters.consideration[i].startAmount
             });
         }
-        ContractOffererInterface(parameters.offerer).previewOrder(
-            address(consideration),
-            fulfiller,
-            minimumReceived,
-            maximumSpent,
-            order.extraData
-        );
+        ContractOffererInterface(parameters.offerer)
+            .previewOrder(
+                address(consideration),
+                fulfiller,
+                minimumReceived,
+                maximumSpent,
+                order.extraData
+            );
     }
 
     /**
@@ -219,10 +224,10 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
     }
 
     /// @dev External wrapper so `vm.expectRevert` targets a single call.
-    function externalPreviewOrder(
-        AdvancedOrder memory order,
-        address fulfiller
-    ) external view {
+    function externalPreviewOrder(AdvancedOrder memory order, address fulfiller)
+        external
+        view
+    {
         _previewOrder(order, fulfiller);
     }
 
@@ -278,20 +283,21 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
         arr[0] = a;
     }
 
-    function _uints(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (uint256[] memory arr) {
+    function _uints(uint256 a, uint256 b)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
         arr = new uint256[](2);
         arr[0] = a;
         arr[1] = b;
     }
 
-    function _uints(
-        uint256 a,
-        uint256 b,
-        uint256 c
-    ) internal pure returns (uint256[] memory arr) {
+    function _uints(uint256 a, uint256 b, uint256 c)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
         arr = new uint256[](3);
         arr[0] = a;
         arr[1] = b;
@@ -303,21 +309,21 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
         arr[0] = a;
     }
 
-    function _addrs(
-        address a,
-        address b
-    ) internal pure returns (address[] memory arr) {
+    function _addrs(address a, address b)
+        internal
+        pure
+        returns (address[] memory arr)
+    {
         arr = new address[](2);
         arr[0] = a;
         arr[1] = b;
     }
 
-    function _addrs(
-        address a,
-        address b,
-        address c,
-        address d
-    ) internal pure returns (address[] memory arr) {
+    function _addrs(address a, address b, address c, address d)
+        internal
+        pure
+        returns (address[] memory arr)
+    {
         arr = new address[](4);
         arr[0] = a;
         arr[1] = b;
@@ -336,10 +342,9 @@ abstract contract ERC1155SeaDropContractOffererHelpers is SeaDrop1155Test {
         }
     }
 
-    function _assertEq(
-        CreatorPayout[] memory a,
-        CreatorPayout[] memory b
-    ) internal {
+    function _assertEq(CreatorPayout[] memory a, CreatorPayout[] memory b)
+        internal
+    {
         assertEq(a.length, b.length, "creator payouts length");
         for (uint256 i = 0; i < a.length; i++) {
             assertEq(a[i].payoutAddress, b[i].payoutAddress, "payoutAddress");
@@ -386,10 +391,7 @@ abstract contract ERC1155SeaDropContractOffererTestBase is
         vm.deal(minter, 100 ether);
 
         token = new ERC1155SeaDrop(
-            address(configurer),
-            allowedSeaport,
-            "Test1155",
-            "T1155"
+            address(configurer), allowedSeaport, "Test1155", "T1155"
         );
         sd = IERC1155SeaDrop(address(token));
 
@@ -415,12 +417,11 @@ abstract contract ERC1155SeaDropContractOffererTestBase is
 
     /// @dev The spec's `allowListData`.
     function _allowListData() internal pure returns (AllowListData memory) {
-        return
-            AllowListData({
-                merkleRoot: _ALLOW_LIST_MERKLE_ROOT,
-                publicKeyURIs: new string[](0),
-                allowListURI: ""
-            });
+        return AllowListData({
+            merkleRoot: _ALLOW_LIST_MERKLE_ROOT,
+            publicKeyURIs: new string[](0),
+            allowListURI: ""
+        });
     }
 
     /// @dev `createMintOrder` arguments for a public mint of `token_` at
@@ -433,18 +434,17 @@ abstract contract ERC1155SeaDropContractOffererTestBase is
         uint256 price,
         address minter_
     ) internal view returns (MintOrderArgs memory) {
-        return
-            MintOrderArgs({
-                token: token_,
-                tokenIds: tokenIds,
-                quantities: quantities,
-                publicDropIndex: 0,
-                feeRecipient: feeRecipient,
-                feeBps: feeBps,
-                price: price,
-                paymentToken: address(0),
-                minter: minter_
-            });
+        return MintOrderArgs({
+            token: token_,
+            tokenIds: tokenIds,
+            quantities: quantities,
+            publicDropIndex: 0,
+            feeRecipient: feeRecipient,
+            feeBps: feeBps,
+            price: price,
+            paymentToken: address(0),
+            minter: minter_
+        });
     }
 
     /// @dev `marketplaceContract.connect(minter).fulfillAdvancedOrder(...)`.
@@ -462,20 +462,20 @@ abstract contract ERC1155SeaDropContractOffererTestBase is
         });
     }
 
-    function _payouts(
-        address a,
-        uint16 aBps
-    ) internal pure returns (CreatorPayout[] memory payouts) {
+    function _payouts(address a, uint16 aBps)
+        internal
+        pure
+        returns (CreatorPayout[] memory payouts)
+    {
         payouts = new CreatorPayout[](1);
         payouts[0] = CreatorPayout({ payoutAddress: a, basisPoints: aBps });
     }
 
-    function _payouts(
-        address a,
-        uint16 aBps,
-        address b,
-        uint16 bBps
-    ) internal pure returns (CreatorPayout[] memory payouts) {
+    function _payouts(address a, uint16 aBps, address b, uint16 bBps)
+        internal
+        pure
+        returns (CreatorPayout[] memory payouts)
+    {
         payouts = new CreatorPayout[](2);
         payouts[0] = CreatorPayout({ payoutAddress: a, basisPoints: aBps });
         payouts[1] = CreatorPayout({ payoutAddress: b, basisPoints: bBps });
