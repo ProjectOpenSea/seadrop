@@ -4,11 +4,6 @@ test = 'test/foundry'
 out = 'out'
 libs = ['lib']
 solc_version = '0.8.17'
-remappings = [
-    'openzeppelin-contracts/=lib/openzeppelin-contracts/contracts',
-    'ds-test/=lib/forge-std/lib/ds-test/src/',
-    'seadrop/=src/',
-]
 optimizer_runs = 1_000_000
 # via_ir = true
 ignored_error_codes = []
@@ -26,10 +21,10 @@ additional_compiler_profiles = [
 compilation_restrictions = [
     { paths = "src/upgradeable/**", via_ir = true, optimizer_runs = 1_000, bytecode_hash = "Ipfs" },
 ]
-# The upgradeable scripts embed the implementation's creation code, so solc
-# flags them as over the EIP-170 size limit. Scripts are never deployed; the
-# implementation itself is checked as usual.
-ignored_warnings_from = ['script/upgradeable']
+# Scripts embed the creation code of what they deploy (and the create2
+# helpers), so solc flags some as over the EIP-170 size limit. Scripts are
+# never deployed; the contracts they deploy are checked as usual.
+ignored_warnings_from = ['script']
 
 # forge coverage turns the optimizer and via-IR off, but src/upgradeable keeps
 # its restricted settings, so its coverage lands on the wrong lines. Coverage
