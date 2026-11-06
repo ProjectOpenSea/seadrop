@@ -608,8 +608,8 @@ contract ERC721SeaDropContractOffererImplementation is
             revert SignatureAlreadyUsed();
         } else if (mintDetails.withEffects) {
             // Mark the digest as used.
-            ERC721SeaDropContractOffererStorage.layout()
-            ._usedDigests[digest] = true;
+            ERC721SeaDropContractOffererStorage.layout()._usedDigests[digest] =
+                true;
         }
 
         // Check that the stage is active and calculate the current price.

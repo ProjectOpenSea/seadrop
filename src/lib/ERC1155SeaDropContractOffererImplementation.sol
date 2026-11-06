@@ -283,8 +283,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         if (addOrUpdateDropStage) {
-            ERC1155SeaDropContractOffererStorage.layout()
-            ._publicDrops[index] = publicDrop;
+            ERC1155SeaDropContractOffererStorage.layout()._publicDrops[index] =
+                publicDrop;
             // Add to enumeration if it does not exist already.
             if (dropStageDoesNotExist) {
                 enumeratedIndexes.push(index);
@@ -710,8 +710,8 @@ contract ERC1155SeaDropContractOffererImplementation is
             revert SignatureAlreadyUsed();
         } else if (mintDetails.withEffects) {
             // Mark the digest as used.
-            ERC1155SeaDropContractOffererStorage.layout()
-            ._usedDigests[digest] = true;
+            ERC1155SeaDropContractOffererStorage.layout()._usedDigests[digest] =
+                true;
         }
 
         // Check that the tokenId is within the range of the stage.
