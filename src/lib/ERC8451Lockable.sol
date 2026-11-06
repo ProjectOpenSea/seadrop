@@ -111,21 +111,19 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
      * @param tokenIds The token ids to update.
      * @param isLocked Whether the tokens are locked.
      */
-    function setTokensLocked(
-        uint256[] calldata tokenIds,
-        bool isLocked
-    ) external {
+    function setTokensLocked(uint256[] calldata tokenIds, bool isLocked)
+        external
+    {
         _authorizeLockUpdate();
         _revertIfPermanentlyLocked();
 
-        TokenLockOverride lockOverride = isLocked
-            ? TokenLockOverride.Locked
-            : TokenLockOverride.Unlocked;
+        TokenLockOverride lockOverride =
+            isLocked ? TokenLockOverride.Locked : TokenLockOverride.Unlocked;
 
         // Put the length on the stack for more efficient access.
         uint256 tokenIdsLength = tokenIds.length;
 
-        for (uint256 i = 0; i < tokenIdsLength; ) {
+        for (uint256 i = 0; i < tokenIdsLength;) {
             uint256 tokenId = tokenIds[i];
 
             _tokenLockOverrides[tokenId] = lockOverride;
@@ -233,7 +231,7 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
         // most recent `Locked` event unlocked it. The set is left in place
         // since `_isTokenLocked` ignores it once the lock is permanent.
         uint256 unlockedLength = _unlockedTokenIds.length();
-        for (uint256 i = 0; i < unlockedLength; ) {
+        for (uint256 i = 0; i < unlockedLength;) {
             emit Locked(_unlockedTokenIds.at(i), true);
 
             unchecked {
@@ -298,14 +296,16 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
      * @dev Reverts if the lock cannot become permanent now. Allows it by
      *      default.
      */
-    function _checkPermanentLockAllowed() internal view virtual {}
+    function _checkPermanentLockAllowed() internal view virtual { }
 
     /**
      * @dev Returns whether a token exists, for `locked`.
      *
      * @param tokenId The token id.
      */
-    function _lockableTokenExists(
-        uint256 tokenId
-    ) internal view virtual returns (bool);
+    function _lockableTokenExists(uint256 tokenId)
+        internal
+        view
+        virtual
+        returns (bool);
 }

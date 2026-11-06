@@ -20,16 +20,19 @@ library LockEvents {
     bytes32 internal constant PERMANENTLY_LOCKED =
         keccak256("PermanentlyLocked()");
 
-    function defaultLocked(
-        bool isLocked
-    ) internal pure returns (LockEvent memory) {
+    function defaultLocked(bool isLocked)
+        internal
+        pure
+        returns (LockEvent memory)
+    {
         return LockEvent(DEFAULT_LOCKED, 0, isLocked);
     }
 
-    function locked(
-        uint256 tokenId,
-        bool isLocked
-    ) internal pure returns (LockEvent memory) {
+    function locked(uint256 tokenId, bool isLocked)
+        internal
+        pure
+        returns (LockEvent memory)
+    {
         return LockEvent(LOCKED, tokenId, isLocked);
     }
 
@@ -38,22 +41,22 @@ library LockEvents {
     }
 
     /// @dev Returns the lock events in `logs`, in order.
-    function decode(
-        Vm.Log[] memory logs
-    ) internal pure returns (LockEvent[] memory events) {
+    function decode(Vm.Log[] memory logs)
+        internal
+        pure
+        returns (LockEvent[] memory events)
+    {
         events = new LockEvent[](logs.length);
         uint256 count;
         for (uint256 i = 0; i < logs.length; i++) {
             if (logs[i].topics.length == 0) continue;
             bytes32 topic = logs[i].topics[0];
             if (topic == DEFAULT_LOCKED) {
-                events[count++] = defaultLocked(
-                    abi.decode(logs[i].data, (bool))
-                );
+                events[count++] =
+                    defaultLocked(abi.decode(logs[i].data, (bool)));
             } else if (topic == LOCKED) {
                 events[count++] = locked(
-                    uint256(logs[i].topics[1]),
-                    abi.decode(logs[i].data, (bool))
+                    uint256(logs[i].topics[1]), abi.decode(logs[i].data, (bool))
                 );
             } else if (topic == PERMANENTLY_LOCKED) {
                 events[count++] = permanentlyLocked();

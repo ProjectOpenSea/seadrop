@@ -36,13 +36,9 @@ contract ERC1155SeaDropLockableWithMint is ERC1155SeaDropLockable {
         LockMode lockMode
     )
         ERC1155SeaDropLockable(
-            allowedConfigurer,
-            allowedSeaport,
-            name_,
-            symbol_,
-            lockMode
+            allowedConfigurer, allowedSeaport, name_, symbol_, lockMode
         )
-    {}
+    { }
 
     function mint(address to, uint256 id, uint256 amount) public onlyOwner {
         _mint(to, id, amount, "");
@@ -66,13 +62,9 @@ contract LockingTransferValidator {
         token = token_;
     }
 
-    function validateTransfer(
-        address,
-        address,
-        address,
-        uint256,
-        uint256
-    ) external {
+    function validateTransfer(address, address, address, uint256, uint256)
+        external
+    {
         if (!token.permanentlyLocked()) {
             token.lockPermanently();
         }
@@ -89,17 +81,13 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
     address operator = makeAddr("operator");
     address recipient = makeAddr("recipient");
 
-    function _deploy(
-        LockMode lockMode
-    ) internal returns (ERC1155SeaDropLockableWithMint) {
-        return
-            new ERC1155SeaDropLockableWithMint(
-                address(configurer),
-                allowedSeaport,
-                "",
-                "",
-                lockMode
-            );
+    function _deploy(LockMode lockMode)
+        internal
+        returns (ERC1155SeaDropLockableWithMint)
+    {
+        return new ERC1155SeaDropLockableWithMint(
+            address(configurer), allowedSeaport, "", "", lockMode
+        );
     }
 
     /// @dev Deploy with the given lock mode and mint 10 of each of token
@@ -129,14 +117,10 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         for (uint256 i = 0; i < expected.length; i++) {
             assertEq(actual[i].topic, expected[i].topic, "lock event topic");
             assertEq(
-                actual[i].tokenId,
-                expected[i].tokenId,
-                "lock event token id"
+                actual[i].tokenId, expected[i].tokenId, "lock event token id"
             );
             assertEq(
-                actual[i].isLocked,
-                expected[i].isLocked,
-                "lock event status"
+                actual[i].isLocked, expected[i].isLocked, "lock event status"
             );
         }
     }
@@ -144,10 +128,11 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
     /// @dev Rebuild a token's lock status from events the way a consumer
     ///      that only knows ERC-6982 would: the token's most recent
     ///      `Locked` event wins, then the most recent `DefaultLocked`.
-    function _replayErc6982(
-        LockEvent[] memory events,
-        uint256 tokenId
-    ) internal pure returns (bool) {
+    function _replayErc6982(LockEvent[] memory events, uint256 tokenId)
+        internal
+        pure
+        returns (bool)
+    {
         bool defaultStatus;
         bool hasOverride;
         bool overrideStatus;
@@ -155,8 +140,8 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
             if (events[i].topic == LockEvents.DEFAULT_LOCKED) {
                 defaultStatus = events[i].isLocked;
             } else if (
-                events[i].topic == LockEvents.LOCKED &&
-                events[i].tokenId == tokenId
+                events[i].topic == LockEvents.LOCKED
+                    && events[i].tokenId == tokenId
             ) {
                 hasOverride = true;
                 overrideStatus = events[i].isLocked;
@@ -165,36 +150,41 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         return hasOverride ? overrideStatus : defaultStatus;
     }
 
-    function _events(
-        LockEvent memory a
-    ) internal pure returns (LockEvent[] memory events) {
+    function _events(LockEvent memory a)
+        internal
+        pure
+        returns (LockEvent[] memory events)
+    {
         events = new LockEvent[](1);
         events[0] = a;
     }
 
-    function _events(
-        LockEvent memory a,
-        LockEvent memory b
-    ) internal pure returns (LockEvent[] memory events) {
+    function _events(LockEvent memory a, LockEvent memory b)
+        internal
+        pure
+        returns (LockEvent[] memory events)
+    {
         events = new LockEvent[](2);
         events[0] = a;
         events[1] = b;
     }
 
-    function _events(
-        LockEvent memory a,
-        LockEvent memory b,
-        LockEvent memory c
-    ) internal pure returns (LockEvent[] memory events) {
+    function _events(LockEvent memory a, LockEvent memory b, LockEvent memory c)
+        internal
+        pure
+        returns (LockEvent[] memory events)
+    {
         events = new LockEvent[](3);
         events[0] = a;
         events[1] = b;
         events[2] = c;
     }
 
-    function _tokenLocked(
-        uint256 tokenId
-    ) internal pure returns (bytes memory) {
+    function _tokenLocked(uint256 tokenId)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodeWithSelector(IERC8451.TokenLocked.selector, tokenId);
     }
 
@@ -203,20 +193,21 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         arr[0] = a;
     }
 
-    function _asArray(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (uint256[] memory arr) {
+    function _asArray(uint256 a, uint256 b)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
         arr = new uint256[](2);
         arr[0] = a;
         arr[1] = b;
     }
 
-    function _asArray(
-        uint256 a,
-        uint256 b,
-        uint256 c
-    ) internal pure returns (uint256[] memory arr) {
+    function _asArray(uint256 a, uint256 b, uint256 c)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
         arr = new uint256[](3);
         arr[0] = a;
         arr[1] = b;
@@ -236,11 +227,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         token_.safeTransferFrom(holder, recipient, id, 1, "");
         vm.expectRevert(_tokenLocked(id));
         token_.safeBatchTransferFrom(
-            holder,
-            recipient,
-            _asArray(id),
-            _asArray(1),
-            ""
+            holder, recipient, _asArray(id), _asArray(1), ""
         );
         // A transfer to yourself is still a holder transfer.
         vm.expectRevert(_tokenLocked(id));
@@ -297,8 +284,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         vm.recordLogs();
         _setUp(LockMode.Unlocked);
         _assertLockEvents(
-            _lockEvents(),
-            _events(LockEvents.defaultLocked(false))
+            _lockEvents(), _events(LockEvents.defaultLocked(false))
         );
 
         assertFalse(token_.defaultLocked());
@@ -315,8 +301,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         _assertLockEvents(
             _lockEvents(),
             _events(
-                LockEvents.defaultLocked(false),
-                LockEvents.defaultLocked(true)
+                LockEvents.defaultLocked(false), LockEvents.defaultLocked(true)
             )
         );
 
@@ -387,27 +372,23 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         _setUp(LockMode.Locked);
 
         address feeRecipient = makeAddr("feeRecipient");
-        IERC1155SeaDrop(address(token_)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token_))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         setSingleCreatorPayout(makeAddr("creator"));
-        IERC1155SeaDrop(address(token_)).updatePublicDrop(
-            PublicDrop({
-                startPrice: 1 ether,
-                endPrice: 1 ether,
-                startTime: uint40(block.timestamp),
-                endTime: uint40(block.timestamp + 500),
-                paymentToken: address(0),
-                fromTokenId: 1,
-                toTokenId: 4,
-                maxTotalMintableByWallet: 6,
-                maxTotalMintableByWalletPerToken: 5,
-                feeBps: 500,
-                restrictFeeRecipients: true
-            }),
-            0
-        );
+        PublicDrop memory publicDrop = PublicDrop({
+            startPrice: 1 ether,
+            endPrice: 1 ether,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp + 500),
+            paymentToken: address(0),
+            fromTokenId: 1,
+            toTokenId: 4,
+            maxTotalMintableByWallet: 6,
+            maxTotalMintableByWalletPerToken: 5,
+            feeBps: 500,
+            restrictFeeRecipients: true
+        });
+        IERC1155SeaDrop(address(token_)).updatePublicDrop(publicDrop, 0);
 
         addSeaDropOfferItem(4, 2); // token id 4, 2 mints
         addSeaDropConsiderationItems(feeRecipient, 500, 2 ether);
@@ -481,22 +462,14 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         vm.prank(holder);
         vm.expectRevert(_tokenLocked(2));
         token_.safeBatchTransferFrom(
-            holder,
-            recipient,
-            _asArray(1, 2, 3),
-            amounts,
-            ""
+            holder, recipient, _asArray(1, 2, 3), amounts, ""
         );
 
         // A batch of only unlocked token ids succeeds.
         token_.setTokensLocked(_asArray(2), false);
         vm.prank(holder);
         token_.safeBatchTransferFrom(
-            holder,
-            recipient,
-            _asArray(1, 2),
-            _asArray(1, 1),
-            ""
+            holder, recipient, _asArray(1, 2), _asArray(1, 1), ""
         );
         assertEq(token_.balanceOf(recipient, 1), 1);
         assertEq(token_.balanceOf(recipient, 2), 1);
@@ -510,8 +483,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         vm.recordLogs();
         token_.setDefaultLocked(false);
         _assertLockEvents(
-            _lockEvents(),
-            _events(LockEvents.defaultLocked(false))
+            _lockEvents(), _events(LockEvents.defaultLocked(false))
         );
         assertFalse(token_.defaultLocked());
         assertFalse(token_.locked(1));
@@ -521,8 +493,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         vm.recordLogs();
         token_.setDefaultLocked(true);
         _assertLockEvents(
-            _lockEvents(),
-            _events(LockEvents.defaultLocked(true))
+            _lockEvents(), _events(LockEvents.defaultLocked(true))
         );
         assertTrue(token_.locked(1));
         _assertHolderTransfersRevert(1);
@@ -612,9 +583,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         assertTrue(relocked[1] && relocked[2] && relocked[4] && relocked[5]);
         assertFalse(relocked[3]);
         assertEq(
-            events[4].topic,
-            LockEvents.PERMANENTLY_LOCKED,
-            "last lock event"
+            events[4].topic, LockEvents.PERMANENTLY_LOCKED, "last lock event"
         );
 
         for (uint256 id = 1; id <= 5; id++) {
@@ -865,9 +834,8 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         _setUp(LockMode.Unlocked);
 
         // The validator is also the owner, so it can lock during a transfer.
-        LockingTransferValidator validator = new LockingTransferValidator(
-            token_
-        );
+        LockingTransferValidator validator =
+            new LockingTransferValidator(token_);
         token_.setTransferValidator(address(validator));
         token_.transferOwnership(address(validator));
 
@@ -877,11 +845,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
 
         vm.expectRevert(_tokenLocked(1));
         token_.safeBatchTransferFrom(
-            holder,
-            recipient,
-            _asArray(1, 2),
-            _asArray(1, 1),
-            ""
+            holder, recipient, _asArray(1, 2), _asArray(1, 1), ""
         );
         vm.stopPrank();
 
@@ -908,8 +872,8 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
             token_.lockPermanently();
         }
 
-        bool expected = lockPermanently ||
-            (tokenOverrideSet ? tokenIsLocked : defaultIsLocked);
+        bool expected = lockPermanently
+            || (tokenOverrideSet ? tokenIsLocked : defaultIsLocked);
         assertEq(token_.locked(1), expected);
         assertEq(token_.locked(2), lockPermanently || defaultIsLocked);
 

@@ -36,13 +36,9 @@ contract ERC721SeaDropLockableWithMint is ERC721SeaDropLockable {
         LockMode lockMode
     )
         ERC721SeaDropLockable(
-            allowedConfigurer,
-            allowedSeaport,
-            name,
-            symbol,
-            lockMode
+            allowedConfigurer, allowedSeaport, name, symbol, lockMode
         )
-    {}
+    { }
 
     function mint(address to, uint256 quantity) public onlyOwner {
         _mint(to, quantity);
@@ -59,17 +55,13 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
     address operator = makeAddr("operator");
     address recipient = makeAddr("recipient");
 
-    function _deploy(
-        LockMode lockMode
-    ) internal returns (ERC721SeaDropLockableWithMint) {
-        return
-            new ERC721SeaDropLockableWithMint(
-                address(configurer),
-                allowedSeaport,
-                "",
-                "",
-                lockMode
-            );
+    function _deploy(LockMode lockMode)
+        internal
+        returns (ERC721SeaDropLockableWithMint)
+    {
+        return new ERC721SeaDropLockableWithMint(
+            address(configurer), allowedSeaport, "", "", lockMode
+        );
     }
 
     /// @dev Deploy with the given lock mode and mint tokens 1 to 3 to the
@@ -92,48 +84,49 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         for (uint256 i = 0; i < expected.length; i++) {
             assertEq(actual[i].topic, expected[i].topic, "lock event topic");
             assertEq(
-                actual[i].tokenId,
-                expected[i].tokenId,
-                "lock event token id"
+                actual[i].tokenId, expected[i].tokenId, "lock event token id"
             );
             assertEq(
-                actual[i].isLocked,
-                expected[i].isLocked,
-                "lock event status"
+                actual[i].isLocked, expected[i].isLocked, "lock event status"
             );
         }
     }
 
-    function _events(
-        LockEvent memory a
-    ) internal pure returns (LockEvent[] memory events) {
+    function _events(LockEvent memory a)
+        internal
+        pure
+        returns (LockEvent[] memory events)
+    {
         events = new LockEvent[](1);
         events[0] = a;
     }
 
-    function _events(
-        LockEvent memory a,
-        LockEvent memory b
-    ) internal pure returns (LockEvent[] memory events) {
+    function _events(LockEvent memory a, LockEvent memory b)
+        internal
+        pure
+        returns (LockEvent[] memory events)
+    {
         events = new LockEvent[](2);
         events[0] = a;
         events[1] = b;
     }
 
-    function _events(
-        LockEvent memory a,
-        LockEvent memory b,
-        LockEvent memory c
-    ) internal pure returns (LockEvent[] memory events) {
+    function _events(LockEvent memory a, LockEvent memory b, LockEvent memory c)
+        internal
+        pure
+        returns (LockEvent[] memory events)
+    {
         events = new LockEvent[](3);
         events[0] = a;
         events[1] = b;
         events[2] = c;
     }
 
-    function _tokenLocked(
-        uint256 tokenId
-    ) internal pure returns (bytes memory) {
+    function _tokenLocked(uint256 tokenId)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodeWithSelector(IERC8451.TokenLocked.selector, tokenId);
     }
 
@@ -142,10 +135,11 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         arr[0] = a;
     }
 
-    function _asArray(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (uint256[] memory arr) {
+    function _asArray(uint256 a, uint256 b)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
         arr = new uint256[](2);
         arr[0] = a;
         arr[1] = b;
@@ -219,8 +213,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         vm.recordLogs();
         _setUp(LockMode.Unlocked);
         _assertLockEvents(
-            _lockEvents(),
-            _events(LockEvents.defaultLocked(false))
+            _lockEvents(), _events(LockEvents.defaultLocked(false))
         );
 
         assertFalse(token_.defaultLocked());
@@ -237,8 +230,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         _assertLockEvents(
             _lockEvents(),
             _events(
-                LockEvents.defaultLocked(false),
-                LockEvents.defaultLocked(true)
+                LockEvents.defaultLocked(false), LockEvents.defaultLocked(true)
             )
         );
 
@@ -301,24 +293,21 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         _setUp(LockMode.Locked);
 
         address feeRecipient = makeAddr("feeRecipient");
-        IERC721SeaDrop(address(token_)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token_))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token_.setMaxSupply(10);
         setSingleCreatorPayout(makeAddr("creator"));
-        IERC721SeaDrop(address(token_)).updatePublicDrop(
-            PublicDrop({
-                startPrice: 1 ether,
-                endPrice: 1 ether,
-                startTime: uint40(block.timestamp),
-                endTime: uint40(block.timestamp + 500),
-                paymentToken: address(0),
-                maxTotalMintableByWallet: 5,
-                feeBps: 500,
-                restrictFeeRecipients: true
-            })
-        );
+        PublicDrop memory publicDrop = PublicDrop({
+            startPrice: 1 ether,
+            endPrice: 1 ether,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp + 500),
+            paymentToken: address(0),
+            maxTotalMintableByWallet: 5,
+            feeBps: 500,
+            restrictFeeRecipients: true
+        });
+        IERC721SeaDrop(address(token_)).updatePublicDrop(publicDrop);
 
         addSeaDropOfferItem(2);
         addSeaDropConsiderationItems(feeRecipient, 500, 2 ether);
@@ -392,8 +381,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         vm.recordLogs();
         token_.setDefaultLocked(false);
         _assertLockEvents(
-            _lockEvents(),
-            _events(LockEvents.defaultLocked(false))
+            _lockEvents(), _events(LockEvents.defaultLocked(false))
         );
         assertFalse(token_.defaultLocked());
         assertFalse(token_.locked(1));
@@ -403,8 +391,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         vm.recordLogs();
         token_.setDefaultLocked(true);
         _assertLockEvents(
-            _lockEvents(),
-            _events(LockEvents.defaultLocked(true))
+            _lockEvents(), _events(LockEvents.defaultLocked(true))
         );
         assertTrue(token_.locked(1));
         _assertHolderTransfersRevert(1);
@@ -508,9 +495,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         assertTrue(relocked[1] && relocked[2] && relocked[4] && relocked[5]);
         assertFalse(relocked[3]);
         assertEq(
-            events[4].topic,
-            LockEvents.PERMANENTLY_LOCKED,
-            "last lock event"
+            events[4].topic, LockEvents.PERMANENTLY_LOCKED, "last lock event"
         );
 
         for (uint256 id = 1; id <= 5; id++) {
@@ -767,8 +752,8 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
             token_.lockPermanently();
         }
 
-        bool expected = lockPermanently ||
-            (tokenOverrideSet ? tokenIsLocked : defaultIsLocked);
+        bool expected = lockPermanently
+            || (tokenOverrideSet ? tokenIsLocked : defaultIsLocked);
         assertEq(token_.locked(1), expected);
         assertEq(token_.locked(2), lockPermanently || defaultIsLocked);
 
@@ -779,12 +764,12 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         }
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        override
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }

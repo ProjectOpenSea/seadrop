@@ -12,10 +12,9 @@ import { ERC8451Lockable, LockMode } from "seadrop/lib/ERC8451Lockable.sol";
 import { IERC8451 } from "seadrop/interfaces/IERC8451.sol";
 
 contract ERC721SeaDropDefaultWithMint is ERC721SeaDrop {
-    constructor(
-        address allowedConfigurer,
-        address allowedSeaport
-    ) ERC721SeaDrop(allowedConfigurer, allowedSeaport, "", "") {}
+    constructor(address allowedConfigurer, address allowedSeaport)
+        ERC721SeaDrop(allowedConfigurer, allowedSeaport, "", "")
+    { }
 
     function mint(address to, uint256 quantity) public onlyOwner {
         _mint(to, quantity);
@@ -24,10 +23,9 @@ contract ERC721SeaDropDefaultWithMint is ERC721SeaDrop {
 
 /// @dev Exposes `_initializeLock` so tests can check its guards.
 contract ERC721SeaDropInitializeLockHarness is ERC721SeaDropDefaultWithMint {
-    constructor(
-        address allowedConfigurer,
-        address allowedSeaport
-    ) ERC721SeaDropDefaultWithMint(allowedConfigurer, allowedSeaport) {}
+    constructor(address allowedConfigurer, address allowedSeaport)
+        ERC721SeaDropDefaultWithMint(allowedConfigurer, allowedSeaport)
+    { }
 
     function initializeLock(LockMode lockMode) external {
         _initializeLock(lockMode);
@@ -49,8 +47,7 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
         super.setUp();
         vm.recordLogs();
         token_ = new ERC721SeaDropDefaultWithMint(
-            address(configurer),
-            allowedSeaport
+            address(configurer), allowedSeaport
         );
         token = token_;
     }
@@ -67,9 +64,11 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
         }
     }
 
-    function _tokenLocked(
-        uint256 tokenId
-    ) internal pure returns (bytes memory) {
+    function _tokenLocked(uint256 tokenId)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodeWithSelector(IERC8451.TokenLocked.selector, tokenId);
     }
 
@@ -137,18 +136,14 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
         token_.setDefaultLocked(true);
         token_.mint(holder, 1);
 
-        vm.expectRevert(
-            ERC8451Lockable.CannotLockPermanentlyAfterMint.selector
-        );
+        vm.expectRevert(ERC8451Lockable.CannotLockPermanentlyAfterMint.selector);
         token_.lockPermanently();
 
         // Burning every token does not reopen it.
         vm.prank(holder);
         token_.burn(1);
         assertEq(token_.totalSupply(), 0);
-        vm.expectRevert(
-            ERC8451Lockable.CannotLockPermanentlyAfterMint.selector
-        );
+        vm.expectRevert(ERC8451Lockable.CannotLockPermanentlyAfterMint.selector);
         token_.lockPermanently();
 
         assertFalse(token_.permanentlyLocked());
@@ -178,9 +173,8 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
 
     function testInitializeLockRevertsOncePermanent() public {
         ERC721SeaDropInitializeLockHarness harness = new ERC721SeaDropInitializeLockHarness(
-                address(configurer),
-                allowedSeaport
-            );
+            address(configurer), allowedSeaport
+        );
         harness.lockPermanently();
 
         vm.expectRevert(ERC8451Lockable.LockIsPermanent.selector);
@@ -192,9 +186,8 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
 
     function testInitializeLockPermanentlyRelocksUnlockedIds() public {
         ERC721SeaDropInitializeLockHarness harness = new ERC721SeaDropInitializeLockHarness(
-                address(configurer),
-                allowedSeaport
-            );
+            address(configurer), allowedSeaport
+        );
         harness.setTokensLocked(_asArray(1), false);
 
         // Starting permanently locked still emits the Locked(id, true)

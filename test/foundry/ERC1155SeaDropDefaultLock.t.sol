@@ -24,10 +24,9 @@ import {
 import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 contract ERC1155SeaDropDefaultWithMint is ERC1155SeaDrop {
-    constructor(
-        address allowedConfigurer,
-        address allowedSeaport
-    ) ERC1155SeaDrop(allowedConfigurer, allowedSeaport, "", "") {}
+    constructor(address allowedConfigurer, address allowedSeaport)
+        ERC1155SeaDrop(allowedConfigurer, allowedSeaport, "", "")
+    { }
 
     function mint(address to, uint256 id, uint256 amount) public onlyOwner {
         _mint(to, id, amount, "");
@@ -37,13 +36,9 @@ contract ERC1155SeaDropDefaultWithMint is ERC1155SeaDrop {
 /// @dev A transfer validator that is also the token owner and locks every
 ///      token while validating a transfer.
 contract DefaultLockingTransferValidator {
-    function validateTransfer(
-        address,
-        address,
-        address,
-        uint256,
-        uint256
-    ) external {
+    function validateTransfer(address, address, address, uint256, uint256)
+        external
+    {
         ERC1155SeaDrop token = ERC1155SeaDrop(msg.sender);
         if (!token.defaultLocked()) {
             token.setDefaultLocked(true);
@@ -67,8 +62,7 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         super.setUp();
         vm.recordLogs();
         token_ = new ERC1155SeaDropDefaultWithMint(
-            address(configurer),
-            allowedSeaport
+            address(configurer), allowedSeaport
         );
         token = token_;
         token_.setMaxSupply(1, 100);
@@ -87,9 +81,11 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         }
     }
 
-    function _tokenLocked(
-        uint256 tokenId
-    ) internal pure returns (bytes memory) {
+    function _tokenLocked(uint256 tokenId)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodeWithSelector(IERC8451.TokenLocked.selector, tokenId);
     }
 
@@ -99,9 +95,10 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     }
 
     /// @dev Returns the lock events `emitter` emitted since recording began.
-    function _lockEventsFrom(
-        address emitter
-    ) internal returns (LockEvent[] memory) {
+    function _lockEventsFrom(address emitter)
+        internal
+        returns (LockEvent[] memory)
+    {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         Vm.Log[] memory fromEmitter = new Vm.Log[](logs.length);
         uint256 count;
@@ -124,22 +121,20 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         IERC1155SeaDrop(clone).updateAllowedFeeRecipient(feeRecipient, true);
         setSingleCreatorPayout(makeAddr("creator"));
         token.setMaxSupply(1, 100);
-        IERC1155SeaDrop(clone).updatePublicDrop(
-            PublicDrop({
-                startPrice: 1 ether,
-                endPrice: 1 ether,
-                startTime: uint40(block.timestamp),
-                endTime: uint40(block.timestamp + 500),
-                paymentToken: address(0),
-                fromTokenId: 1,
-                toTokenId: 1,
-                maxTotalMintableByWallet: 10,
-                maxTotalMintableByWalletPerToken: 10,
-                feeBps: 500,
-                restrictFeeRecipients: true
-            }),
-            0
-        );
+        PublicDrop memory publicDrop = PublicDrop({
+            startPrice: 1 ether,
+            endPrice: 1 ether,
+            startTime: uint40(block.timestamp),
+            endTime: uint40(block.timestamp + 500),
+            paymentToken: address(0),
+            fromTokenId: 1,
+            toTokenId: 1,
+            maxTotalMintableByWallet: 10,
+            maxTotalMintableByWalletPerToken: 10,
+            feeBps: 500,
+            restrictFeeRecipients: true
+        });
+        IERC1155SeaDrop(clone).updatePublicDrop(publicDrop, 0);
 
         addSeaDropOfferItem(1, amount);
         addSeaDropConsiderationItems(feeRecipient, 500, amount * 1 ether);
@@ -228,18 +223,14 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         token_.setDefaultLocked(true);
         token_.mint(holder, 1, 1);
 
-        vm.expectRevert(
-            ERC8451Lockable.CannotLockPermanentlyAfterMint.selector
-        );
+        vm.expectRevert(ERC8451Lockable.CannotLockPermanentlyAfterMint.selector);
         token_.lockPermanently();
 
         // Burning the whole supply does not reopen it.
         vm.prank(holder);
         token_.burn(holder, 1, 1);
         assertEq(token_.totalSupply(1), 0);
-        vm.expectRevert(
-            ERC8451Lockable.CannotLockPermanentlyAfterMint.selector
-        );
+        vm.expectRevert(ERC8451Lockable.CannotLockPermanentlyAfterMint.selector);
         token_.lockPermanently();
 
         assertFalse(token_.permanentlyLocked());
@@ -277,9 +268,8 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     }
 
     function testCloneStartsUnlockedAndLocksPermanentlyBeforeMint() public {
-        ERC1155SeaDropCloneFactory factory = new ERC1155SeaDropCloneFactory(
-            allowedSeaport
-        );
+        ERC1155SeaDropCloneFactory factory =
+            new ERC1155SeaDropCloneFactory(allowedSeaport);
 
         vm.recordLogs();
         address clone = factory.createClone("", "", bytes32("1"));
@@ -307,17 +297,14 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     }
 
     function testCloneCannotLockPermanentlyAfterMint() public {
-        ERC1155SeaDropCloneFactory factory = new ERC1155SeaDropCloneFactory(
-            allowedSeaport
-        );
+        ERC1155SeaDropCloneFactory factory =
+            new ERC1155SeaDropCloneFactory(allowedSeaport);
         address clone = factory.createClone("", "", bytes32("2"));
         ERC1155SeaDrop cloneToken = ERC1155SeaDrop(clone);
 
         _mintThroughSeaport(clone, 1);
 
-        vm.expectRevert(
-            ERC8451Lockable.CannotLockPermanentlyAfterMint.selector
-        );
+        vm.expectRevert(ERC8451Lockable.CannotLockPermanentlyAfterMint.selector);
         cloneToken.lockPermanently();
 
         // A temporary lock still applies to the clone.
@@ -330,7 +317,8 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         ERC1155SeaDrop target,
         address from
     ) internal {
-        DefaultLockingTransferValidator validator = new DefaultLockingTransferValidator();
+        DefaultLockingTransferValidator validator =
+            new DefaultLockingTransferValidator();
         target.setTransferValidator(address(validator));
         target.transferOwnership(address(validator));
 
@@ -350,9 +338,8 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     }
 
     function testCloneLockSetByTransferValidatorApplies() public {
-        ERC1155SeaDropCloneFactory factory = new ERC1155SeaDropCloneFactory(
-            allowedSeaport
-        );
+        ERC1155SeaDropCloneFactory factory =
+            new ERC1155SeaDropCloneFactory(allowedSeaport);
         address clone = factory.createClone("", "", bytes32("3"));
         _mintThroughSeaport(clone, 1);
         _assertLockSetByValidatorApplies(ERC1155SeaDrop(clone), address(this));
