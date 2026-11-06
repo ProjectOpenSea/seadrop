@@ -21,6 +21,9 @@ contract ERC721DropTest is TestHelper {
                     && args.allowList[i] != args.minter
             );
         }
+        // allowList[0] receives the mints, and a contract without
+        // onERC721Received (SeaDrop, say) can't take a _safeMint.
+        vm.assume(args.allowList[0].code.length == 0);
         _;
     }
 
