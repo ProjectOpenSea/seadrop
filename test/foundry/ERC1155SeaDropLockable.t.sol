@@ -25,6 +25,8 @@ import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
 
+import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
+
 contract ERC1155SeaDropLockableWithMint is ERC1155SeaDropLockable {
     constructor(
         address allowedConfigurer,
@@ -201,8 +203,9 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
 
     /// @dev Expect every holder transfer of `id` to revert with
     ///      `TokenLocked(id)`, from the holder, from approved operators, and
-    ///      from the preapproved OpenSea conduit, including batch transfers
-    ///      where `id` follows an unlocked id.
+    ///      from the preapproved OpenSea conduit, as a single or batch
+    ///      transfer. `testBatchTransferRevertsOnFirstLockedId` covers
+    ///      batches that mix locked and unlocked ids.
     function _assertHolderTransfersRevert(uint256 id) internal {
         uint256 balance = token_.balanceOf(holder, id);
 
@@ -316,15 +319,20 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
     }
 
     function testConstructorRejectsInvalidLockMode() public {
+        // The same init code deploys with the highest valid lock mode, so
+        // the failure below comes from the lock mode alone.
+        assertTrue(_create(2) != address(0));
+        assertEq(_create(3), address(0));
+    }
+
+    function _create(uint256 lockMode) internal returns (address deployed) {
         bytes memory initCode = abi.encodePacked(
             type(ERC1155SeaDropLockableWithMint).creationCode,
-            abi.encode(address(configurer), allowedSeaport, "", "", 3)
+            abi.encode(address(configurer), allowedSeaport, "", "", lockMode)
         );
-        address deployed;
         assembly {
             deployed := create(0, add(initCode, 0x20), mload(initCode))
         }
-        assertEq(deployed, address(0));
     }
 
     function testMintWhileLocked() public {
@@ -390,7 +398,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
             )
         });
 
-        vm.deal(address(this), 2 ether);
+        vm.deal(address(this), 4 ether);
         consideration.fulfillAdvancedOrder{ value: 2 ether }({
             advancedOrder: order,
             criteriaResolvers: criteriaResolvers,
@@ -400,6 +408,20 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
 
         assertEq(token_.balanceOf(address(this), 4), 2);
         assertTrue(token_.locked(4));
+
+        vm.expectRevert(_tokenLocked(4));
+        token_.safeTransferFrom(address(this), holder, 4, 1, "");
+
+        // Minting through Seaport continues after the lock is permanent.
+        token_.lockPermanently();
+        consideration.fulfillAdvancedOrder{ value: 2 ether }({
+            advancedOrder: order,
+            criteriaResolvers: criteriaResolvers,
+            fulfillerConduitKey: bytes32(0),
+            recipient: address(0)
+        });
+
+        assertEq(token_.balanceOf(address(this), 4), 4);
 
         vm.expectRevert(_tokenLocked(4));
         token_.safeTransferFrom(address(this), holder, 4, 1, "");
@@ -647,7 +669,7 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
 
         // Without an approval, others cannot burn.
         vm.prank(operator);
-        vm.expectRevert();
+        vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
         token_.burn(holder, 1, 1);
     }
 

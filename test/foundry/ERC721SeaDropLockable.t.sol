@@ -25,6 +25,8 @@ import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
 
+import { IERC721A } from "ERC721A/IERC721A.sol";
+
 contract ERC721SeaDropLockableWithMint is ERC721SeaDropLockable {
     constructor(
         address allowedConfigurer,
@@ -261,15 +263,20 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
     }
 
     function testConstructorRejectsInvalidLockMode() public {
+        // The same init code deploys with the highest valid lock mode, so
+        // the failure below comes from the lock mode alone.
+        assertTrue(_create(2) != address(0));
+        assertEq(_create(3), address(0));
+    }
+
+    function _create(uint256 lockMode) internal returns (address deployed) {
         bytes memory initCode = abi.encodePacked(
             type(ERC721SeaDropLockableWithMint).creationCode,
-            abi.encode(address(configurer), allowedSeaport, "", "", 3)
+            abi.encode(address(configurer), allowedSeaport, "", "", lockMode)
         );
-        address deployed;
         assembly {
             deployed := create(0, add(initCode, 0x20), mload(initCode))
         }
-        assertEq(deployed, address(0));
     }
 
     function testMintWhileLocked() public {
@@ -323,7 +330,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
             )
         });
 
-        vm.deal(address(this), 2 ether);
+        vm.deal(address(this), 4 ether);
         consideration.fulfillAdvancedOrder{ value: 2 ether }({
             advancedOrder: order,
             criteriaResolvers: criteriaResolvers,
@@ -337,6 +344,22 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
 
         vm.expectRevert(_tokenLocked(4));
         token_.transferFrom(address(this), holder, 4);
+
+        // Minting through Seaport continues after the lock is permanent.
+        token_.lockPermanently();
+        consideration.fulfillAdvancedOrder{ value: 2 ether }({
+            advancedOrder: order,
+            criteriaResolvers: criteriaResolvers,
+            fulfillerConduitKey: bytes32(0),
+            recipient: address(0)
+        });
+
+        assertEq(token_.ownerOf(6), address(this));
+        assertEq(token_.ownerOf(7), address(this));
+        assertTrue(token_.locked(7));
+
+        vm.expectRevert(_tokenLocked(7));
+        token_.transferFrom(address(this), holder, 7);
     }
 
     function testHolderAndOperatorTransfersRevertWhileLocked() public {
@@ -606,7 +629,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
 
         // Without an approval, others cannot burn.
         vm.prank(operator);
-        vm.expectRevert();
+        vm.expectRevert(IERC721A.TransferCallerNotOwnerNorApproved.selector);
         token_.burn(2);
     }
 
