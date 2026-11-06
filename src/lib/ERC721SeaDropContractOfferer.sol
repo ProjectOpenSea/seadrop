@@ -335,6 +335,13 @@ contract ERC721SeaDropContractOfferer is
         (address recipient, uint256 quantity) =
             abi.decode(data, (address, uint256));
 
+        // Ensure the mint doesn't exceed the max supply, as mint orders
+        // can't either.
+        uint256 newTotalMinted = _totalMinted() + quantity;
+        if (newTotalMinted > _maxSupply) {
+            revert MintQuantityExceedsMaxSupply(newTotalMinted, _maxSupply);
+        }
+
         _mint(recipient, quantity);
     }
 }

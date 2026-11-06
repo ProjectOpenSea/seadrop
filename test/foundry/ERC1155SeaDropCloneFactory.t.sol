@@ -5,27 +5,23 @@ import { SeaDrop1155Test } from "./utils/SeaDrop1155Test.sol";
 
 import {
     ERC1155SeaDropCloneFactory
-} from "../../src/clones/ERC1155SeaDropCloneFactory.sol";
+} from "seadrop/clones/ERC1155SeaDropCloneFactory.sol";
 
 import {
     ERC1155SeaDropCloneable
-} from "../../src/clones/ERC1155SeaDropCloneable.sol";
+} from "seadrop/clones/ERC1155SeaDropCloneable.sol";
+
+import { IERC1155SeaDrop } from "seadrop/interfaces/IERC1155SeaDrop.sol";
 
 import {
-    SeaDropErrorsAndEvents
-} from "../../src/lib/SeaDropErrorsAndEvents.sol";
+    ERC1155SeaDropErrorsAndEvents
+} from "seadrop/lib/ERC1155SeaDropErrorsAndEvents.sol";
 
-import { IERC1155SeaDrop } from "../../src/interfaces/IERC1155SeaDrop.sol";
-
-import { ERC1155SeaDrop } from "../../src/ERC1155SeaDrop.sol";
+import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
 import { PublicDrop } from "seadrop/lib/ERC1155SeaDropStructs.sol";
 
-import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
-
 import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
-
-import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
 
 contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
     ERC1155SeaDropCloneFactory factory;
@@ -52,7 +48,7 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         assertEq(token.owner(), address(this), "owner should be set");
 
         address creator = makeAddr("creator");
-        setSingleCreatorPayout(creator);
+        _setSingleCreatorPayout(address(token), creator);
 
         assertEq(token.totalSupply(0), 0);
         assertEq(token.totalSupply(1), 0);
@@ -77,58 +73,43 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         });
         IERC1155SeaDrop(clone).updatePublicDrop(publicDrop, 0);
 
-        addSeaDropOfferItem(1, 3); // token id 1, 3 mints
-        addSeaDropOfferItem(3, 1); // token id 3, 1 mint
-        addSeaDropConsiderationItems(feeRecipient, feeBps, 4 ether);
-        configureSeaDropOrderParameters();
-
+        // Token id 1 x3 and token id 3 x1.
         address minter = address(this);
-        bytes memory extraData = bytes.concat(
-            bytes1(0x00), // SIP-6 version byte
-            bytes1(0x00), // substandard version byte: public mint
-            bytes20(feeRecipient),
-            bytes20(minter),
-            bytes1(0x00) // public drop index 0
+        (AdvancedOrder memory order, uint256 value) = _createMintOrder(
+            _publicMint(
+                clone,
+                _uints(1, 3),
+                _uints(3, 1),
+                feeRecipient,
+                feeBps,
+                1 ether,
+                minter,
+                0
+            )
         );
-
-        AdvancedOrder memory order = AdvancedOrder({
-            parameters: baseOrderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: extraData
-        });
+        assertEq(value, 4 ether);
 
         vm.deal(address(this), 10 ether);
-
-        vm.expectEmit(true, true, true, true, address(token));
-        emit SeaDropMint(address(this), 0);
-
-        consideration.fulfillAdvancedOrder{ value: 4 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        _fulfillAndExpectMint(order, minter, value, 0);
 
         assertEq(token.balanceOf(minter, 1), 3);
         assertEq(token.balanceOf(minter, 3), 1);
         assertEq(creator.balance, 4 ether * 0.95);
 
-        // Minting any more should exceed maxTotalMintableByWalletPerToken
-        vm.expectRevert(
+        // Minting the same again exceeds maxTotalMintableByWalletPerToken for
+        // token id 1: 3 minted of it plus 3 (not the wallet's 4 overall).
+        _assertMintReverts(
+            order,
+            minter,
+            value,
             abi.encodeWithSelector(
-                InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96)
-                    + consideration.getContractOffererNonce(address(token))
+                ERC1155SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWalletForTokenId
+                    .selector,
+                1,
+                6,
+                5
             )
         );
-        consideration.fulfillAdvancedOrder({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
 
         assertEq(token.uri(1), "", "tokenURI should be blank at first");
         assertEq(token.baseURI(), "", "baseURI should be blank at first");
@@ -144,6 +125,46 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         vm.expectRevert("Initializable: contract is already initialized");
         token.initialize(
             address(0), address(0), "name", "symbol", address(this)
+        );
+    }
+
+    /// @dev Nobody can initialize the implementation the clones point at,
+    ///      and it holds no owner or configuration of its own.
+    function testCannotInitializeImplementation() public {
+        ERC1155SeaDropCloneable implementation =
+            ERC1155SeaDropCloneable(factory.cloneableImplementation());
+        assertEq(implementation.owner(), address(0));
+        assertEq(implementation.name(), "");
+
+        address attacker = makeAddr("attacker");
+        vm.expectRevert("Initializable: contract is already initialized");
+        vm.prank(attacker);
+        implementation.initialize(
+            attacker, address(consideration), "name", "symbol", attacker
+        );
+        assertEq(implementation.owner(), address(0));
+
+        // The same holds for an implementation deployed outside the factory.
+        ERC1155SeaDropCloneable standalone = new ERC1155SeaDropCloneable();
+        vm.expectRevert("Initializable: contract is already initialized");
+        vm.prank(attacker);
+        standalone.initialize(
+            attacker, address(consideration), "name", "symbol", attacker
+        );
+    }
+
+    /// @dev Clones of the locked implementation still initialize, once.
+    function testClonesOfLockedImplementationInitialize() public {
+        address first = factory.createClone("first", "ONE", bytes32("1"));
+        address second = factory.createClone("second", "TWO", bytes32("2"));
+        assertTrue(first != second);
+        assertEq(ERC1155SeaDrop(first).name(), "first");
+        assertEq(ERC1155SeaDrop(second).name(), "second");
+        assertEq(ERC1155SeaDrop(first).owner(), address(this));
+        assertEq(IERC1155SeaDrop(first).configurer(), factory.configurer());
+        assertEq(
+            IERC1155SeaDrop(first).getAllowedSeaport(),
+            _addrs(address(consideration))
         );
     }
 }

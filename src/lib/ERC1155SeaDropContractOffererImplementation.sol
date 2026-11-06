@@ -230,13 +230,19 @@ contract ERC1155SeaDropContractOffererImplementation is
      *         Do not use this method directly.
      *
      * @param publicDrop The public drop data.
-     * @param index      The index of the public drop.
+     * @param index      The index of the public drop, at most 255.
      */
     function updatePublicDrop(PublicDrop calldata publicDrop, uint256 index)
         external
     {
         // Ensure this contract is only called into with delegatecall.
         _onlyDelegateCalled();
+
+        // Revert if the index doesn't fit the one-byte drop index of a
+        // public mint order, so no drop is set that can never be minted.
+        if (index > type(uint8).max) {
+            revert InvalidPublicDropIndex(index);
+        }
 
         // Revert if the fee basis points is greater than 10_000.
         if (publicDrop.feeBps > 10_000) {
@@ -438,8 +444,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         SpentItem[] calldata minimumReceived,
         bytes calldata context
     ) internal view returns (uint8 substandard) {
-        // Declare an error buffer; first check minimumReceived is not length
-        // zero and every minimumReceived has this address for token.
+        // Declare an error buffer. Bit 0 flags an empty minimumReceived or an
+        // item that is not an ERC-1155 item of this token.
         uint256 errorBuffer;
         uint256 minimumReceivedLength = minimumReceived.length;
         errorBuffer |= _castAndInvert(minimumReceivedLength > 0);
@@ -452,36 +458,45 @@ contract ERC1155SeaDropContractOffererImplementation is
             }
         }
 
-        // Set the substandard version.
-        substandard = uint8(context[1]);
+        // Read the SIP-6 version byte and the substandard byte. A context too
+        // short to hold them leaves them zero, and fails the length check.
+        uint256 contextLength = context.length;
+        uint8 version;
+        if (contextLength != 0) {
+            version = uint8(context[0]);
+        }
+        if (contextLength > 1) {
+            substandard = uint8(context[1]);
+        }
 
-        // Next, check for SIP-6 version byte.
-        errorBuffer |= _castAndInvert(context[0] == bytes1(0x00)) << 1;
+        // Bit 1: unsupported SIP-6 version byte.
+        errorBuffer |= _castAndInvert(version == 0) << 1;
 
-        // Next, check for supported substandard.
+        // Bit 2: unsupported substandard.
         errorBuffer |= _castAndInvert(substandard < 3) << 2;
 
-        // Next, check for correct context length. Minimum is 43 bytes
-        // (version byte, substandard byte, feeRecipient, minter,
-        //  publicDropIndex OR other substandard mint params)
-        unchecked {
-            errorBuffer |= _castAndInvert(context.length > 42) << 3;
-        }
+        // Bit 3: context too short for the substandard. Every context starts
+        // with the version byte, substandard byte, feeRecipient and minter
+        // (42 bytes). Public mints add the public drop index (1 byte), allow
+        // list mints the mint params (416 bytes, then the proof), and signed
+        // mints the mint params, salt and signature (512 bytes).
+        uint256 minimumContextLength =
+            substandard == 1 ? 458 : (substandard == 2 ? 554 : 43);
+        bool contextLongEnough = contextLength >= minimumContextLength;
+        errorBuffer |= _castAndInvert(contextLongEnough) << 3;
 
         // Handle decoding errors.
         if (errorBuffer != 0) {
-            uint8 version = uint8(context[0]);
-
-            // We'll first revert with SIP-6 errors to follow spec.
-            // (`UnsupportedExtraDataVersion` and `InvalidExtraDataEncoding`)
-            if (errorBuffer << 254 != 0) {
+            // Revert with the SIP-6 errors first to follow spec
+            // (`UnsupportedExtraDataVersion`, then `InvalidExtraDataEncoding`),
+            // then the substandard, then the minimumReceived.
+            if ((errorBuffer & 2) != 0) {
                 revert UnsupportedExtraDataVersion(version);
-            } else if (errorBuffer << 252 != 0) {
+            } else if ((errorBuffer & 8) != 0) {
                 revert InvalidExtraDataEncoding(version);
-            } else if (errorBuffer << 253 != 0) {
+            } else if ((errorBuffer & 4) != 0) {
                 revert InvalidSubstandard(substandard);
             } else {
-                // errorBuffer << 255 != 0
                 revert MustSpecifyERC1155ConsiderationItemForSeaDropMint();
             }
         }
@@ -1023,12 +1038,12 @@ contract ERC1155SeaDropContractOffererImplementation is
             // Add to total mint quantity.
             totalQuantity += quantity;
 
-            // Check the mint quantities.
+            // Check the mint quantities, with the running total of the
+            // order's items so far for maxTotalMintableByWallet.
             _checkMintQuantity(
                 tokenId,
                 quantity,
-                // Only check totalQuantity on the last iteration.
-                i == tokenIdsLength - 1 ? totalQuantity : 0,
+                totalQuantity,
                 minter,
                 maxTotalMintableByWallet,
                 maxTotalMintableByWalletPerToken,
@@ -1046,8 +1061,10 @@ contract ERC1155SeaDropContractOffererImplementation is
      *
      * @param tokenId                  The token id.
      * @param quantity                 The number of tokens to mint.
-     * @param totalQuantity            When provided as a nonzero value ensures
-     *                                 doesn't exceed maxTotalMintableByWallet.
+     * @param totalQuantity            The running total quantity of the
+     *                                 order's items up to and including this
+     *                                 one, checked against
+     *                                 maxTotalMintableByWallet.
      * @param minter                   The mint recipient.
      * @param maxTotalMintableByWallet The max allowed mints per wallet.
      * @param maxTotalMintableByWalletPerToken The max allowed mints per wallet per token.
@@ -1077,7 +1094,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         ) {
             revert MintQuantityExceedsMaxMintedPerWalletForTokenId(
                 tokenId,
-                quantity + minterNumMinted,
+                quantity + minterNumMintedForTokenId,
                 maxTotalMintableByWalletPerToken
             );
         }
@@ -1098,24 +1115,12 @@ contract ERC1155SeaDropContractOffererImplementation is
             );
         }
 
-        // If totalQuantity is provided, ensure it doesn't exceed maxTotalMintableByWallet.
-        if (totalQuantity != 0) {
-            // Ensure total mint quantity doesn't exceed maxTotalMintableByWallet.
-            if (totalQuantity + minterNumMinted > maxTotalMintableByWallet) {
-                revert MintQuantityExceedsMaxMintedPerWallet(
-                    totalQuantity + minterNumMinted,
-                    maxTotalMintableByWallet
-                );
-            }
-        } else {
-            // Otherwise, just check the quantity.
-            // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
-            if (quantity + minterNumMinted > maxTotalMintableByWallet) {
-                revert MintQuantityExceedsMaxMintedPerWallet(
-                    quantity + minterNumMinted,
-                    maxTotalMintableByWallet
-                );
-            }
+        // Ensure the running total doesn't exceed maxTotalMintableByWallet.
+        if (totalQuantity + minterNumMinted > maxTotalMintableByWallet) {
+            revert MintQuantityExceedsMaxMintedPerWallet(
+                totalQuantity + minterNumMinted,
+                maxTotalMintableByWallet
+            );
         }
     }
 

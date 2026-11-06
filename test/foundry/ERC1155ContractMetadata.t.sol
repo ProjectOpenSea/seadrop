@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { SeaDrop1155MintHelpers } from "./utils/SeaDrop1155MintHelpers.sol";
+import { SeaDrop1155Test } from "./utils/SeaDrop1155Test.sol";
 
 import {
     ERC1155SeaDropWithBatchMint
@@ -19,8 +19,8 @@ import { Ownable } from "solady/src/auth/Ownable.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
-/// @dev Port of test/ERC1155ContractMetadata.spec.ts.
-contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
+/// @dev Owner-only metadata, supply, royalty and provenance settings.
+contract ERC1155ContractMetadataTest is SeaDrop1155Test {
     // Events declared locally so they can be emitted for vm.expectEmit.
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
     event ContractURIUpdated(string newContractURI);
@@ -29,17 +29,17 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
     event MaxSupplyUpdated(uint256 tokenId, uint256 newMaxSupply);
     event URI(string value, uint256 indexed id);
 
-    /// @dev The token owner (the deployer), `owner` in the spec.
+    /// @dev The token owner (the deployer).
     address owner;
 
     function setUp() public override {
         super.setUp();
-        token = _deployERC1155SeaDrop();
+        token = _deployToken();
         owner = address(this);
-        // `bob` is inherited from Seaport's TestTokenMinter.
+        // `bob` (from SeaDropTest) is a non-owner.
     }
 
-    function testNameAndSymbol() public {
+    function testNameAndSymbol() public view {
         assertEq(token.name(), "Test1155");
         assertEq(token.symbol(), "T1155");
     }
@@ -127,7 +127,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
         emit BatchMetadataUpdate(5, 10);
         token.emitBatchMetadataUpdate(5, 10);
 
-        // Should emit URI() event from 1155 spec if only one token id.
+        // Should emit the ERC-1155 URI event if only one token id.
         vm.expectEmit(true, true, true, true, address(token));
         emit URI("", 0);
         token.emitBatchMetadataUpdate(0, 0);
@@ -199,8 +199,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
     }
 
     function testIncrementsCountsOnBatchMint() public {
-        // Deploy a token exposing batchMint, with a zero configurer as in
-        // the spec.
+        // Deploy a token exposing batchMint, with a zero configurer.
         ERC1155SeaDropWithBatchMint batchToken = new ERC1155SeaDropWithBatchMint(
             address(0), address(consideration), "Test1155", "T1155"
         );
@@ -210,7 +209,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
         assertEq(batchToken.totalMinted(0), 0);
         assertEq(batchToken.totalMinted(1), 0);
 
-        batchToken.batchMint(owner, _pair(0, 1), _pair(1, 1), "");
+        batchToken.batchMint(owner, _uints(0, 1), _uints(1, 1), "");
 
         assertEq(batchToken.totalMinted(0), 1);
         assertEq(batchToken.totalMinted(1), 1);
@@ -220,7 +219,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155MintHelpers {
                 IERC1155ContractMetadata.MintExceedsMaxSupply.selector, 2, 1
             )
         );
-        batchToken.batchMint(owner, _pair(0, 1), _pair(1, 1), "");
+        batchToken.batchMint(owner, _uints(0, 1), _uints(1, 1), "");
 
         assertEq(batchToken.totalMinted(0), 1);
         assertEq(batchToken.totalMinted(1), 1);

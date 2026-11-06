@@ -11,6 +11,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   FOUNDRY_VERSION: v1.9.0
 
@@ -72,3 +75,39 @@ jobs:
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
+
+  forge-coverage:
+    name: Run Forge Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      # The tests deploy Seaport from these artifacts, so the coverage build
+      # never compiles Seaport's OrderCombiner, which is stack too deep
+      # without the optimizer. The 1155 implementation needs viaIR too,
+      # hence --ir-minimum.
+      - name: Build Seaport artifacts
+        run: ./scripts/build_seaport.sh
+
+      - name: Run coverage
+        run: >-
+          forge coverage --ir-minimum --report summary --report lcov
+          --no-match-coverage 'test/|script/'
+        env:
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
+
+      - name: Submit coverage to Coveralls
+        if: github.repository == 'ProjectOpenSea/seadrop'
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./lcov.info
+          flag-name: foundry

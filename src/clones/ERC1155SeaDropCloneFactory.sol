@@ -27,9 +27,8 @@ contract ERC1155SeaDropCloneFactory {
         ERC1155SeaDropConfigurer config = new ERC1155SeaDropConfigurer();
         configurer = address(config);
 
-        ERC1155SeaDropCloneable impl = new ERC1155SeaDropCloneable();
-        impl.initialize(configurer, seaport, "", "", address(this));
-        cloneableImplementation = address(impl);
+        // The implementation disables its own initializers on deployment.
+        cloneableImplementation = address(new ERC1155SeaDropCloneable());
     }
 
     function createClone(string memory name, string memory symbol, bytes32 salt)

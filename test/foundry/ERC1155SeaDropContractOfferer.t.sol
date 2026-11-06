@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    ERC1155SeaDropContractOffererTestBase
-} from "./utils/ContractOfferer1155Helpers.sol";
+import { SeaDrop1155OffererFixture } from "./utils/SeaDrop1155Test.sol";
 
 import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
@@ -42,6 +40,7 @@ import {
 } from "seaport-types/src/interfaces/ContractOffererInterface.sol";
 
 import {
+    AdvancedOrder,
     Schema,
     SpentItem
 } from "seaport-types/src/lib/ConsiderationStructs.sol";
@@ -49,13 +48,11 @@ import {
 import { Vm } from "forge-std/Vm.sol";
 
 /**
- * @dev Port of the admin, configuration and introspection cases of
- *      test/ERC1155SeaDropContractOfferer.spec.ts. The minting cases are in
+ * @dev Admin, configuration and introspection cases of the 1155 contract
+ *      offerer. The Seaport mint order cases are in
  *      ERC1155SeaDropContractOffererMint.t.sol.
  */
-contract ERC1155SeaDropContractOffererTest is
-    ERC1155SeaDropContractOffererTestBase
-{
+contract ERC1155SeaDropContractOffererTest is SeaDrop1155OffererFixture {
     event TransferBatch(
         address indexed operator,
         address indexed from,
@@ -85,7 +82,7 @@ contract ERC1155SeaDropContractOffererTest is
     bytes32 internal constant _PROVENANCE_HASH =
         0x3333333333333333333333333333333333333333333333333333333333333333;
 
-    /// @dev "Should emit an event when the contract is deployed"
+    /// @dev Should emit an event when the contract is deployed.
     function testEmitsEventOnDeployAndRejectsZeroAllowedSeaport() public {
         address expected =
             computeCreateAddress(address(this), vm.getNonce(address(this)));
@@ -99,13 +96,13 @@ contract ERC1155SeaDropContractOffererTest is
         new ERC1155SeaDrop(address(0), address(0), "", "");
     }
 
-    /// @dev "Should return the configurer contact"
-    function testReturnsConfigurer() public {
-        assertEq(sd.configurer(), address(configurer));
+    /// @dev Should return the configurer contact.
+    function testReturnsConfigurer() public view {
+        assertEq(_seaDrop().configurer(), address(configurer));
     }
 
-    /// @dev "Should not be able to call into the implementation contract
-    ///      without delegatecall"
+    /// @dev Should not be able to call into the implementation contract
+    ///      without delegatecall.
     function testImplementationRequiresDelegatecall() public {
         // Fallback
         (bool success, bytes memory returnData) =
@@ -160,34 +157,34 @@ contract ERC1155SeaDropContractOffererTest is
         configurer.updatePayer(address(0), true);
     }
 
-    /// @dev "Should only let the token owner update the drop URI"
+    /// @dev Should only let the token owner update the drop URI.
     function testOnlyOwnerCanUpdateDropURI() public {
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateDropURI("http://test.com");
+        _seaDrop().updateDropURI("http://test.com");
 
         vm.expectEmit(true, true, true, true, address(token));
         emit DropURIUpdated("http://test.com");
-        sd.updateDropURI("http://test.com");
+        _seaDrop().updateDropURI("http://test.com");
     }
 
-    /// @dev "Should only let the owner update the allowed fee recipients"
+    /// @dev Should only let the owner update the allowed fee recipients.
     function testUpdateAllowedFeeRecipients() public {
-        sd.updateAllowedFeeRecipient(feeRecipient, false);
-        assertEq(sd.getAllowedFeeRecipients().length, 0);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, false);
+        assertEq(_seaDrop().getAllowedFeeRecipients().length, 0);
 
         vm.expectRevert(FeeRecipientCannotBeZeroAddress.selector);
-        sd.updateAllowedFeeRecipient(address(0), true);
+        _seaDrop().updateAllowedFeeRecipient(address(0), true);
 
         vm.expectEmit(true, true, true, true, address(token));
         emit AllowedFeeRecipientUpdated(feeRecipient, true);
-        sd.updateAllowedFeeRecipient(feeRecipient, true);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, true);
 
         vm.expectRevert(DuplicateFeeRecipient.selector);
-        sd.updateAllowedFeeRecipient(feeRecipient, true);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, true);
 
         _assertEq(
-            sd.getAllowedFeeRecipients(),
+            _seaDrop().getAllowedFeeRecipients(),
             _addrs(feeRecipient),
             "allowed fee recipients"
         );
@@ -195,18 +192,18 @@ contract ERC1155SeaDropContractOffererTest is
         // Now let's disallow the feeRecipient
         vm.expectEmit(true, true, true, true, address(token));
         emit AllowedFeeRecipientUpdated(feeRecipient, false);
-        sd.updateAllowedFeeRecipient(feeRecipient, false);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, false);
 
-        assertEq(sd.getAllowedFeeRecipients().length, 0);
+        assertEq(_seaDrop().getAllowedFeeRecipients().length, 0);
 
         vm.expectRevert(FeeRecipientNotPresent.selector);
-        sd.updateAllowedFeeRecipient(feeRecipient, false);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, false);
     }
 
-    /// @dev "Should return supportsInterface true for supported interfaces"
-    function testSupportsInterface() public {
-        // The spec XORs each interface's full ABI with its parent's, which
-        // leaves only the interface's own selectors: `type(I).interfaceId`.
+    /// @dev Should return supportsInterface true for supported interfaces.
+    function testSupportsInterface() public view {
+        // Each id is the XOR of the interface's own selectors
+        // (`type(I).interfaceId`).
         // [IERC1155SeaDrop, ISeaDropToken]
         assertTrue(token.supportsInterface(type(IERC1155SeaDrop).interfaceId));
         // [IERC1155ContractMetadata, ISeaDropTokenContractMetadata]
@@ -250,21 +247,21 @@ contract ERC1155SeaDropContractOffererTest is
         assertFalse(token.supportsInterface(0x00000001));
     }
 
-    /// @dev "Should only let the token owner update the allowed Seaport
-    ///      addresses"
+    /// @dev Should only let the token owner update the allowed Seaport
+    ///      addresses.
     function testOnlyOwnerCanUpdateAllowedSeaport() public {
         address seaport = address(consideration);
 
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateAllowedSeaport(_addrs(seaport));
+        _seaDrop().updateAllowedSeaport(_addrs(seaport));
 
         vm.prank(minter);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateAllowedSeaport(_addrs(seaport));
+        _seaDrop().updateAllowedSeaport(_addrs(seaport));
 
         vm.expectRevert(AllowedSeaportCannotBeZeroAddress.selector);
-        sd.updateAllowedSeaport(_addrs(address(0)));
+        _seaDrop().updateAllowedSeaport(_addrs(address(0)));
 
         _updateAllowedSeaportAndCheck(_addrs(seaport));
         _updateAllowedSeaportAndCheck(_addrs(seaport, _ADDRESS_1));
@@ -278,120 +275,121 @@ contract ERC1155SeaDropContractOffererTest is
     function _updateAllowedSeaportAndCheck(address[] memory seaports) internal {
         vm.expectEmit(true, true, true, true, address(token));
         emit AllowedSeaportUpdated(seaports);
-        sd.updateAllowedSeaport(seaports);
-        _assertEq(sd.getAllowedSeaport(), seaports, "allowed seaport");
+        _seaDrop().updateAllowedSeaport(seaports);
+        _assertEq(_seaDrop().getAllowedSeaport(), seaports, "allowed seaport");
     }
 
-    /// @dev "Should let the token owner use admin methods"
+    /// @dev Should let the token owner use admin methods.
     function testOwnerCanUseAdminMethods() public {
         // Test `updateAllowList` for coverage.
-        sd.updateAllowList(_allowListData());
+        _seaDrop().updateAllowList(_allowListData(_ALLOW_LIST_MERKLE_ROOT));
 
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateAllowList(_allowListData());
+        _seaDrop().updateAllowList(_allowListData(_ALLOW_LIST_MERKLE_ROOT));
 
         // Test `updateSigner` for coverage.
-        sd.updateSigner(_ADDRESS_5, true);
+        _seaDrop().updateSigner(_ADDRESS_5, true);
 
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateSigner(_ADDRESS_5, false);
+        _seaDrop().updateSigner(_ADDRESS_5, false);
 
         // Test `updatePayer` for coverage.
-        sd.updatePayer(_ADDRESS_6, true);
+        _seaDrop().updatePayer(_ADDRESS_6, true);
 
-        // The spec calls updateSigner (not updatePayer) here; ported as is.
-        // updatePayer by a non-owner is covered in
-        // testOnlyOwnerCanCallUpdateFunctions.
+        // Only the owner can update payers and signers.
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateSigner(_ADDRESS_6, true);
+        _seaDrop().updatePayer(_ADDRESS_6, false);
+        vm.prank(creator);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        _seaDrop().updateSigner(_ADDRESS_6, true);
     }
 
-    /// @dev "Should be able to update the allowed payers"
+    /// @dev Should be able to update the allowed payers.
     function testUpdateAllowedPayers() public {
         address payer = makeAddr("payer");
         address payer2 = makeAddr("payer2");
 
         vm.expectRevert(PayerNotPresent.selector);
-        sd.updatePayer(payer, false);
+        _seaDrop().updatePayer(payer, false);
 
-        sd.updatePayer(payer, true);
+        _seaDrop().updatePayer(payer, true);
 
         // Ensure that the same payer cannot be added twice.
         vm.expectRevert(DuplicatePayer.selector);
-        sd.updatePayer(payer, true);
+        _seaDrop().updatePayer(payer, true);
 
         // Ensure that the zero address cannot be added as a payer.
         vm.expectRevert(PayerCannotBeZeroAddress.selector);
-        sd.updatePayer(address(0), true);
+        _seaDrop().updatePayer(address(0), true);
 
         // Remove the original payer for branch coverage.
-        sd.updatePayer(payer, false);
-        assertEq(sd.getPayers().length, 0);
+        _seaDrop().updatePayer(payer, false);
+        assertEq(_seaDrop().getPayers().length, 0);
 
         // Add two signers and remove the second for branch coverage.
-        sd.updatePayer(payer, true);
-        sd.updatePayer(payer2, true);
-        sd.updatePayer(payer2, false);
-        _assertEq(sd.getPayers(), _addrs(payer), "payers");
+        _seaDrop().updatePayer(payer, true);
+        _seaDrop().updatePayer(payer2, true);
+        _seaDrop().updatePayer(payer2, false);
+        _assertEq(_seaDrop().getPayers(), _addrs(payer), "payers");
     }
 
-    /// @dev "Should only let the owner call update functions"
+    /// @dev Should only let the owner call update functions.
     function testOnlyOwnerCanCallUpdateFunctions() public {
         // updateAllowedSeaport
-        sd.updateAllowedSeaport(_addrs(address(token)));
+        _seaDrop().updateAllowedSeaport(_addrs(address(token)));
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateAllowedSeaport(_addrs(address(token)));
+        _seaDrop().updateAllowedSeaport(_addrs(address(token)));
 
         // updatePublicDrop
-        sd.updatePublicDrop(publicDrop, 0);
+        _seaDrop().updatePublicDrop(publicDrop, 0);
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updatePublicDrop(publicDrop, 0);
+        _seaDrop().updatePublicDrop(publicDrop, 0);
 
         // updateAllowList
-        sd.updateAllowList(_allowListData());
+        _seaDrop().updateAllowList(_allowListData(_ALLOW_LIST_MERKLE_ROOT));
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateAllowList(_allowListData());
+        _seaDrop().updateAllowList(_allowListData(_ALLOW_LIST_MERKLE_ROOT));
 
         // updateDropURI
-        sd.updateDropURI("http://test.com");
+        _seaDrop().updateDropURI("http://test.com");
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateDropURI("http://test.com");
+        _seaDrop().updateDropURI("http://test.com");
 
         // updateCreatorPayouts
-        sd.updateCreatorPayouts(_payouts(_ADDRESS_4, 10_000));
+        _seaDrop().updateCreatorPayouts(_payouts(_ADDRESS_4, 10_000));
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateCreatorPayouts(_payouts(_ADDRESS_4, 10_000));
+        _seaDrop().updateCreatorPayouts(_payouts(_ADDRESS_4, 10_000));
 
         // updateAllowedFeeRecipient
-        sd.updateAllowedFeeRecipient(_ADDRESS_4, true);
+        _seaDrop().updateAllowedFeeRecipient(_ADDRESS_4, true);
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateAllowedFeeRecipient(_ADDRESS_4, true);
+        _seaDrop().updateAllowedFeeRecipient(_ADDRESS_4, true);
 
         // updateSigner
-        sd.updateSigner(_ADDRESS_4, true);
+        _seaDrop().updateSigner(_ADDRESS_4, true);
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updateSigner(_ADDRESS_4, true);
+        _seaDrop().updateSigner(_ADDRESS_4, true);
 
         // updatePayer
-        sd.updatePayer(_ADDRESS_4, true);
+        _seaDrop().updatePayer(_ADDRESS_4, true);
         vm.prank(creator);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.updatePayer(_ADDRESS_4, true);
+        _seaDrop().updatePayer(_ADDRESS_4, true);
     }
 
-    /// @dev "Should be able to use the multiConfigure method"
+    /// @dev Should be able to use the multiConfigure method.
     function testMultiConfigure() public {
-        sd.updateAllowedFeeRecipient(feeRecipient, false);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, false);
 
         MultiConfigureStruct memory config = _multiConfig();
 
@@ -449,7 +447,7 @@ contract ERC1155SeaDropContractOffererTest is
         configurer.multiConfigure(address(token), unsetConfig);
 
         address[] memory allowedPayers = _addrs(_ADDRESS_4, _ADDRESS_5);
-        _assertEq(sd.getPayers(), allowedPayers, "payers before unset");
+        _assertEq(_seaDrop().getPayers(), allowedPayers, "payers before unset");
         for (uint256 i = 0; i < allowedPayers.length; i++) {
             unsetConfig = _zeroedMultiConfig();
             unsetConfig.disallowedPayers = _addrs(allowedPayers[i]);
@@ -457,10 +455,12 @@ contract ERC1155SeaDropContractOffererTest is
             emit PayerUpdated(allowedPayers[i], false);
             configurer.multiConfigure(address(token), unsetConfig);
         }
-        assertEq(sd.getPayers().length, 0);
+        assertEq(_seaDrop().getPayers().length, 0);
 
         address[] memory allowedSigners = _addrs(_ADDRESS_8, _ADDRESS_9);
-        _assertEq(sd.getSigners(), allowedSigners, "signers before unset");
+        _assertEq(
+            _seaDrop().getSigners(), allowedSigners, "signers before unset"
+        );
         for (uint256 i = 0; i < allowedSigners.length; i++) {
             unsetConfig = _zeroedMultiConfig();
             unsetConfig.disallowedSigners = _addrs(allowedSigners[i]);
@@ -468,7 +468,7 @@ contract ERC1155SeaDropContractOffererTest is
             emit SignerUpdated(allowedSigners[i], false);
             configurer.multiConfigure(address(token), unsetConfig);
         }
-        assertEq(sd.getSigners().length, 0);
+        assertEq(_seaDrop().getSigners().length, 0);
     }
 
     function _multiConfigureMints() internal {
@@ -497,7 +497,7 @@ contract ERC1155SeaDropContractOffererTest is
         // configurer.
         vm.prank(minter);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        sd.multiConfigureMint(minter, _uints(0), _uints(1));
+        _seaDrop().multiConfigureMint(minter, _uints(0), _uints(1));
     }
 
     function _multiConfig()
@@ -515,7 +515,7 @@ contract ERC1155SeaDropContractOffererTest is
         config.publicDrops = publicDrops;
         config.publicDropsIndexes = _uints(0);
         config.dropURI = "https://example3.com";
-        config.allowListData = _allowListData();
+        config.allowListData = _allowListData(_ALLOW_LIST_MERKLE_ROOT);
         config.creatorPayouts = _payouts(creator, 10_000);
         config.provenanceHash = _PROVENANCE_HASH;
         config.allowedFeeRecipients = _addrs(feeRecipient);
@@ -536,8 +536,8 @@ contract ERC1155SeaDropContractOffererTest is
         pure
         returns (MultiConfigureStruct memory config)
     {
-        // Memory structs are zero-initialized; spell out the non-trivial
-        // fields for parity with the spec's `zeroedConfig`.
+        // Memory structs are zero-initialized; spell out the fields that
+        // multiConfigure skips when zero.
         config.allowListData = AllowListData({
             merkleRoot: bytes32(0),
             publicKeyURIs: new string[](0),
@@ -549,16 +549,14 @@ contract ERC1155SeaDropContractOffererTest is
         config.mintRecipient = address(0);
     }
 
-    function _checkMultiConfigureResults() internal {
+    function _checkMultiConfigureResults() internal view {
         assertEq(token.maxSupply(0), 100);
         assertEq(token.maxSupply(1), 101);
         assertEq(token.baseURI(), "https://example1.com");
         assertEq(token.contractURI(), "https://example2.com");
         assertEq(token.provenanceHash(), _PROVENANCE_HASH);
 
-        // The spec compares the returned public drop against its own fields
-        // (a shadowed variable); compare against the configured drop here.
-        PublicDrop memory got = sd.getPublicDrop(0);
+        PublicDrop memory got = _seaDrop().getPublicDrop(0);
         assertEq(got.startPrice, publicDrop.startPrice, "startPrice");
         assertEq(got.endPrice, publicDrop.endPrice, "endPrice");
         assertEq(got.startTime, publicDrop.startTime, "startTime");
@@ -583,25 +581,71 @@ contract ERC1155SeaDropContractOffererTest is
         );
         assertEq(got.feeBps, publicDrop.feeBps, "feeBps");
 
-        _assertEq(sd.getCreatorPayouts(), _payouts(creator, 10_000));
-        assertEq(sd.getAllowListMerkleRoot(), _ALLOW_LIST_MERKLE_ROOT);
+        _assertEq(_seaDrop().getCreatorPayouts(), _payouts(creator, 10_000));
+        assertEq(_seaDrop().getAllowListMerkleRoot(), _ALLOW_LIST_MERKLE_ROOT);
         _assertEq(
-            sd.getAllowedFeeRecipients(),
+            _seaDrop().getAllowedFeeRecipients(),
             _addrs(feeRecipient),
             "allowed fee recipients"
         );
-        _assertEq(sd.getPayers(), _addrs(_ADDRESS_4, _ADDRESS_5), "payers");
-        _assertEq(sd.getSigners(), _addrs(_ADDRESS_8, _ADDRESS_9), "signers");
+        _assertEq(
+            _seaDrop().getPayers(), _addrs(_ADDRESS_4, _ADDRESS_5), "payers"
+        );
+        _assertEq(
+            _seaDrop().getSigners(), _addrs(_ADDRESS_8, _ADDRESS_9), "signers"
+        );
 
         (address receiver, uint256 royaltyAmount) = token.royaltyInfo(0, 100);
         assertEq(receiver, _ROYALTY_RECEIVER);
         assertEq(royaltyAmount, (1_000 * 100) / 10_000);
     }
 
-    /// @dev "Should allow multiple creator payout addresses"
+    /// @dev A public mint order carries its drop index as one byte, so a
+    ///      public drop above index 255 could never be minted and can't be
+    ///      set, directly or through multiConfigure. Index 255 works.
+    function testPublicDropIndexMustFitInOneByte() public {
+        bytes memory invalidIndex = abi.encodeWithSelector(
+            ERC1155SeaDropErrorsAndEvents.InvalidPublicDropIndex.selector, 256
+        );
+        vm.expectRevert(invalidIndex);
+        _seaDrop().updatePublicDrop(publicDrop, 256);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC1155SeaDropErrorsAndEvents.InvalidPublicDropIndex.selector,
+                type(uint256).max
+            )
+        );
+        _seaDrop().updatePublicDrop(publicDrop, type(uint256).max);
+
+        MultiConfigureStruct memory config = _zeroedMultiConfig();
+        config.publicDrops = new PublicDrop[](1);
+        config.publicDrops[0] = publicDrop;
+        config.publicDropsIndexes = _uints(256);
+        vm.expectRevert(invalidIndex);
+        configurer.multiConfigure(address(token), config);
+
+        assertEq(_seaDrop().getPublicDropIndexes(), _uints(0));
+
+        _seaDrop().updatePublicDrop(publicDrop, 255);
+        assertEq(_seaDrop().getPublicDropIndexes(), _uints(0, 255));
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
+            address(token),
+            0,
+            1,
+            feeRecipient,
+            publicDrop.feeBps,
+            publicDrop.startPrice,
+            minter,
+            255
+        );
+        _fulfillAndExpectMint(order, minter, value, 255);
+        assertEq(token.balanceOf(minter, 0), 1);
+    }
+
+    /// @dev Should allow multiple creator payout addresses.
     function testMultipleCreatorPayoutAddresses() public {
-        // Valid cases. The spec could not check the event args
-        // (hardhat#3833); they are checked here.
+        // Valid cases, checking the CreatorPayoutsUpdated event args.
         _updateCreatorPayoutsAndCheck(_payouts(creator, 10_000));
         _updateCreatorPayoutsAndCheck(_payouts(creator, 5_000, owner, 5_000));
         _updateCreatorPayoutsAndCheck(
@@ -627,31 +671,35 @@ contract ERC1155SeaDropContractOffererTest is
         withZeroAddress[2] = CreatorPayout(minter, 9_700);
         withZeroAddress[3] = CreatorPayout(address(0), 100);
         vm.expectRevert(CreatorPayoutAddressCannotBeZeroAddress.selector);
-        sd.updateCreatorPayouts(withZeroAddress);
+        _seaDrop().updateCreatorPayouts(withZeroAddress);
 
         vm.expectRevert(CreatorPayoutBasisPointsCannotBeZero.selector);
-        sd.updateCreatorPayouts(_payouts(creator, 100, owner, 0, minter, 9_900));
+        _seaDrop()
+            .updateCreatorPayouts(
+                _payouts(creator, 100, owner, 0, minter, 9_900)
+            );
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidCreatorPayoutTotalBasisPoints.selector, 111
             )
         );
-        sd.updateCreatorPayouts(_payouts(creator, 100, owner, 10, minter, 1));
+        _seaDrop()
+            .updateCreatorPayouts(_payouts(creator, 100, owner, 10, minter, 1));
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidCreatorPayoutTotalBasisPoints.selector, 10_001
             )
         );
-        sd.updateCreatorPayouts(_payouts(creator, 10_001));
+        _seaDrop().updateCreatorPayouts(_payouts(creator, 10_001));
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidCreatorPayoutTotalBasisPoints.selector, 9_999
             )
         );
-        sd.updateCreatorPayouts(_payouts(creator, 9_998, owner, 1));
+        _seaDrop().updateCreatorPayouts(_payouts(creator, 9_998, owner, 1));
     }
 
     function _updateCreatorPayoutsAndCheck(CreatorPayout[] memory payouts)
@@ -659,11 +707,11 @@ contract ERC1155SeaDropContractOffererTest is
     {
         vm.expectEmit(true, true, true, true, address(token));
         emit CreatorPayoutsUpdated(payouts);
-        sd.updateCreatorPayouts(payouts);
-        _assertEq(sd.getCreatorPayouts(), payouts);
+        _seaDrop().updateCreatorPayouts(payouts);
+        _assertEq(_seaDrop().getCreatorPayouts(), payouts);
     }
 
-    /// @dev "Should return the expected values for getSeaportMetadata"
+    /// @dev Should return the expected values for getSeaportMetadata.
     function testGetSeaportMetadata() public {
         bytes4 getSeaportMetadataSelector = 0x2e778efc;
         assertEq(
@@ -688,7 +736,7 @@ contract ERC1155SeaDropContractOffererTest is
         assertEq(schemas[0].metadata, metadata);
     }
 
-    /// @dev "Should revert on unsupported function selector"
+    /// @dev Should revert on unsupported function selector.
     function testRevertsOnUnsupportedFunctionSelector() public {
         (bool success, bytes memory returnData) =
             address(token).call(hex"12345678");

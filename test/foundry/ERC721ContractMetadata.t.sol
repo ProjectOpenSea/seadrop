@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { SeaDrop721MintHelpers } from "./utils/SeaDrop721MintHelpers.sol";
+import { SeaDrop721Test } from "./utils/SeaDrop721Test.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
@@ -18,10 +18,10 @@ import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 import { Vm } from "forge-std/Vm.sol";
 
 /**
- * @dev Port of test/ERC721ContractMetadata.spec.ts.
- *      The test contract deploys the token, so it plays the spec's `owner`.
+ * @dev Owner-only metadata, supply, royalty and provenance settings. The
+ *      test contract deploys the token, so it is the owner.
  */
-contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
+contract ERC721ContractMetadataTest is SeaDrop721Test {
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
     event ContractURIUpdated(string newContractURI);
     event ProvenanceHashUpdated(bytes32 previousHash, bytes32 newHash);
@@ -30,12 +30,10 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
 
     function setUp() public override {
         super.setUp();
-        token = new ERC721SeaDrop(
-            address(configurer), allowedSeaport, "Test721", "T721"
-        );
+        token = _deployToken();
     }
 
-    /// @dev "Should only let the owner set and get the base URI"
+    /// @dev Should only let the owner set and get the base URI.
     function testOnlyOwnerCanSetBaseURI() public {
         assertEq(token.baseURI(), "");
 
@@ -65,7 +63,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         assertEq(token.baseURI(), "http://example.com");
     }
 
-    /// @dev "Should only let the owner set and get the contract URI"
+    /// @dev Should only let the owner set and get the contract URI.
     function testOnlyOwnerCanSetContractURI() public {
         assertEq(token.contractURI(), "");
 
@@ -80,7 +78,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         assertEq(token.contractURI(), "http://example.com");
     }
 
-    /// @dev "Should only let the owner set and get the max supply"
+    /// @dev Should only let the owner set and get the max supply.
     function testOnlyOwnerCanSetMaxSupply() public {
         assertEq(token.maxSupply(), 0);
 
@@ -95,7 +93,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         assertEq(token.maxSupply(), 25);
     }
 
-    /// @dev "Should not let the owner set the max supply over 2**64"
+    /// @dev Should not let the owner set the max supply over 2**64.
     function testMaxSupplyCannotExceedUint64() public {
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -107,7 +105,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         token.setMaxSupply(2 ** 70);
     }
 
-    /// @dev "Should not let the owner set the max supply over the totalMinted"
+    /// @dev Should not let the owner set the max supply over the totalMinted.
     function testMaxSupplyCannotBeLessThanTotalMinted() public {
         token.setMaxSupply(3);
         _mintTokens(address(this), 3);
@@ -124,7 +122,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         token.setMaxSupply(2);
     }
 
-    /// @dev "Should only let the owner notify update of batch token URIs"
+    /// @dev Should only let the owner notify update of batch token URIs.
     function testOnlyOwnerCanEmitBatchMetadataUpdate() public {
         vm.expectRevert(Ownable.Unauthorized.selector);
         vm.prank(bob);
@@ -135,8 +133,8 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         token.emitBatchMetadataUpdate(5, 10);
     }
 
-    /// @dev "Should only let the owner update the royalties address and
-    ///      basis points"
+    /// @dev Should only let the owner update the royalties address and
+    ///      basis points.
     function testOnlyOwnerCanSetDefaultRoyalty() public {
         (address receiver, uint256 amount) = token.royaltyInfo(0, 100);
         assertEq(receiver, address(0));
@@ -169,8 +167,8 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         assertTrue(token.supportsInterface(0x2a55205a));
     }
 
-    /// @dev "Should return the correct tokenURI based on baseURI's last
-    ///      character"
+    /// @dev Should return the correct tokenURI based on baseURI's last
+    ///      character.
     function testTokenURIDependsOnBaseURILastCharacter() public {
         token.setMaxSupply(2);
         _mintTokens(address(this), 2);
@@ -207,7 +205,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         assertEq(token.tokenURI(2), "http://example.com");
     }
 
-    /// @dev "Should only let the owner set the provenance hash"
+    /// @dev Should only let the owner set the provenance hash.
     function testOnlyOwnerCanSetProvenanceHash() public {
         assertEq(token.provenanceHash(), bytes32(0));
 
@@ -241,7 +239,7 @@ contract ERC721ContractMetadataTest is SeaDrop721MintHelpers {
         assertEq(token.provenanceHash(), firstProvenanceHash);
     }
 
-    /// @dev "Should revert on unsupported function selector"
+    /// @dev Should revert on unsupported function selector.
     function testRevertsOnUnsupportedFunctionSelector() public {
         (bool success, bytes memory returnData) =
             address(token).call{ gas: 50_000 }(hex"12345678");

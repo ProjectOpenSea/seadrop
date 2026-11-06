@@ -336,7 +336,7 @@ contract ERC1155ContractMetadata is
         returns (bytes4 functionSignature, bool isViewFunction)
     {
         functionSignature = ITransferValidator1155.validateTransfer.selector;
-        isViewFunction = true;
+        isViewFunction = false;
     }
 
     /**
