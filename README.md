@@ -17,7 +17,6 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
   - [Table of Contents](#table-of-contents)
   - [Background](#background)
   - [Deployments](#deployments)
-  - [Diagram](#diagram)
   - [Docs](#docs)
   - [Install](#install)
   - [Usage](#usage)
@@ -30,6 +29,19 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
 SeaDrop is a protocol to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, and server-side signed mints.
 
 SeaDrop v2 tokens are [Seaport][seaport-link] contract offerers. Mints are executed by fulfilling Seaport orders with `OrderType.CONTRACT`.
+
+## Deployments
+
+On OpenSea, ERC-1155 drops use SeaDrop v2 from this branch. Each collection is a clone from `ERC1155SeaDropCloneFactory` at [`0x00b19A5200A100e5fc4c9800772f4d002f218400`](https://etherscan.io/address/0x00b19A5200A100e5fc4c9800772f4d002f218400#code), and mints fill Seaport 1.6 orders. ERC-721 drops use SeaDrop v1 from the [`main`](https://github.com/ProjectOpenSea/seadrop/tree/main) branch; OpenSea doesn't create v2 ERC-721 drops.
+
+See [Deployments](docs/Deployments.md) for every network, the v1 contracts, and the legacy factories.
+
+## Docs
+
+- [Deployments](docs/Deployments.md)
+- [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
+- [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
+- [Provenance Hash](docs/ProvenanceHash.md)
 
 ## Install
 
