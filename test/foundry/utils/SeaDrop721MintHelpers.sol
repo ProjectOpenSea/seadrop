@@ -379,6 +379,58 @@ abstract contract SeaDrop721MintHelpers is SeaDrop721Test {
     }
 
     /**
+     * @dev Assert that previewOrder on the token, called by the fulfiller with
+     *      a zero caller as in helpers.ts txDataForPreviewOrder, returns the
+     *      order's own offer as the offer and its consideration (with
+     *      recipients) as the consideration.
+     */
+    function _assertPreviewOrderEchoesOrder(
+        AdvancedOrder memory order,
+        address fulfiller
+    ) internal {
+        (
+            SpentItem[] memory minimumReceived,
+            SpentItem[] memory maximumSpent
+        ) = _previewItems(order);
+
+        vm.prank(fulfiller);
+        (
+            SpentItem[] memory offer,
+            ReceivedItem[] memory received
+        ) = ContractOffererInterface(order.parameters.offerer).previewOrder(
+                address(0),
+                fulfiller,
+                minimumReceived,
+                maximumSpent,
+                order.extraData
+            );
+
+        assertEq(offer.length, minimumReceived.length);
+        for (uint256 i = 0; i < offer.length; i++) {
+            assertEq(
+                uint256(offer[i].itemType),
+                uint256(minimumReceived[i].itemType)
+            );
+            assertEq(offer[i].token, minimumReceived[i].token);
+            assertEq(offer[i].identifier, minimumReceived[i].identifier);
+            assertEq(offer[i].amount, minimumReceived[i].amount);
+        }
+
+        ConsiderationItem[] memory items = order.parameters.consideration;
+        assertEq(received.length, maximumSpent.length);
+        for (uint256 i = 0; i < received.length; i++) {
+            assertEq(
+                uint256(received[i].itemType),
+                uint256(maximumSpent[i].itemType)
+            );
+            assertEq(received[i].token, maximumSpent[i].token);
+            assertEq(received[i].identifier, maximumSpent[i].identifier);
+            assertEq(received[i].amount, maximumSpent[i].amount);
+            assertEq(received[i].recipient, items[i].recipient);
+        }
+    }
+
+    /**
      * Allow list
      */
 
