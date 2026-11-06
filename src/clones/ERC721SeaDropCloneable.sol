@@ -485,6 +485,18 @@ contract ERC721SeaDropCloneable is
         external
         onlyOwner
     {
+        // Revert if the paired arrays differ in length, including when one
+        // of them is empty, so no token gated or signer config is dropped.
+        if (
+            config.tokenGatedAllowedNftTokens.length
+                != config.tokenGatedDropStages.length
+        ) {
+            revert TokenGatedMismatch();
+        }
+        if (config.signers.length != config.signedMintValidationParams.length) {
+            revert SignersMismatch();
+        }
+
         if (config.maxSupply > 0) {
             this.setMaxSupply(config.maxSupply);
         }
@@ -555,12 +567,6 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.tokenGatedDropStages.length > 0) {
-            if (
-                config.tokenGatedDropStages.length
-                    != config.tokenGatedAllowedNftTokens.length
-            ) {
-                revert TokenGatedMismatch();
-            }
             for (uint256 i = 0; i < config.tokenGatedDropStages.length;) {
                 this.updateTokenGatedDrop(
                     config.seaDropImpl,
@@ -590,12 +596,6 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.signedMintValidationParams.length > 0) {
-            if (
-                config.signedMintValidationParams.length
-                    != config.signers.length
-            ) {
-                revert SignersMismatch();
-            }
             for (uint256 i = 0; i < config.signedMintValidationParams.length;) {
                 this.updateSignedMintValidationParams(
                     config.seaDropImpl,

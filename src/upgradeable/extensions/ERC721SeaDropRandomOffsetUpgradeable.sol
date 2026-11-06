@@ -40,7 +40,7 @@ contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
         string memory symbol,
         address[] memory allowedSeaDrop
     ) internal onlyInitializing {
-        __ERC721SeaDrop_init_unchained(name, symbol, allowedSeaDrop);
+        __ERC721SeaDrop_init(name, symbol, allowedSeaDrop);
     }
 
     /**
@@ -54,17 +54,27 @@ contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
             revert AlreadyRevealed();
         }
 
-        if (_totalMinted() != ERC721ContractMetadataStorage.layout()._maxSupply)
-        {
+        uint256 maxSupply = ERC721ContractMetadataStorage.layout()._maxSupply;
+
+        // Revert if the collection is not yet fully minted, or has no
+        // tokens to reveal.
+        if (maxSupply == 0 || _totalMinted() != maxSupply) {
             revert NotFullyMinted();
         }
+
+        // tokenURI shifts each token's metadata id by randomOffset + 1
+        // (mod maxSupply), so randomOffset = maxSupply - 1 would leave every
+        // token on its own metadata. Draw randomOffset from
+        // [0, maxSupply - 2] so the shift is uniform over the maxSupply - 1
+        // shifts that move every token. A single token can only keep its
+        // own metadata.
         // block.difficulty returns PREVRANDAO on Ethereum post-merge
         // NOTE: do not use this on other chains
-        // randomOffset returns between 1 and MAX_SUPPLY
-        ERC721SeaDropRandomOffsetStorage.layout().randomOffset =
-            (uint256(keccak256(abi.encode(block.difficulty)))
-                    % (ERC721ContractMetadataStorage.layout()._maxSupply - 1))
-                + 1;
+        if (maxSupply > 1) {
+            ERC721SeaDropRandomOffsetStorage.layout().randomOffset = uint256(
+                keccak256(abi.encode(block.difficulty))
+            ) % (maxSupply - 1);
+        }
 
         ERC721SeaDropRandomOffsetStorage.layout().revealed = true;
     }
