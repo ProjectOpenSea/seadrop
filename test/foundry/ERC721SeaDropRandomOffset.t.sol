@@ -7,6 +7,8 @@ import {
     ERC721SeaDropRandomOffset
 } from "seadrop/extensions/ERC721SeaDropRandomOffset.sol";
 
+import { MultiConfigureStruct } from "seadrop/lib/ERC721SeaDropStructs.sol";
+
 import { IERC721A } from "ERC721A/IERC721A.sol";
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
@@ -128,6 +130,29 @@ contract ERC721SeaDropRandomOffsetTest is SeaDrop721Test {
                 string.concat("http://example.com/", vm.toString(metadataId))
             );
         }
+    }
+
+    /// @dev The token URIs wrap at the max supply, so changing it after the
+    ///      reveal (directly or through the configurer) would reshuffle
+    ///      them; it reverts instead. Before the reveal it can change.
+    function testCannotChangeMaxSupplyAfterReveal() public {
+        randomOffsetToken.setMaxSupply(9);
+        randomOffsetToken.setMaxSupply(10);
+        _mintAndReveal(10, 1);
+        uint256 randomOffset = randomOffsetToken.randomOffset();
+
+        vm.expectRevert(ERC721SeaDropRandomOffset.AlreadyRevealed.selector);
+        randomOffsetToken.setMaxSupply(11);
+        vm.expectRevert(ERC721SeaDropRandomOffset.AlreadyRevealed.selector);
+        randomOffsetToken.setMaxSupply(10);
+
+        MultiConfigureStruct memory config;
+        config.maxSupply = 11;
+        vm.expectRevert(ERC721SeaDropRandomOffset.AlreadyRevealed.selector);
+        configurer.multiConfigure(address(randomOffsetToken), config);
+
+        assertEq(randomOffsetToken.maxSupply(), 10);
+        _assertRevealIsDerangement(10, randomOffset);
     }
 
     /// @dev Revealing before any max supply is set would lock the offset,

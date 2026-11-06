@@ -28,7 +28,8 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
     uint256 private constant _REVEALED_FALSE = 1;
     uint256 private constant _REVEALED_TRUE = 2;
 
-    /// @notice Revert when setting the randomOffset if already set.
+    /// @notice Revert when setting the randomOffset, or changing the max
+    ///         supply (which the offset wraps at), after the reveal.
     error AlreadyRevealed();
 
     /// @notice Revert when setting the randomOffset if the collection is
@@ -94,6 +95,19 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
 
         // Emit an event with the update.
         emit BatchMetadataUpdate(1, _nextTokenId() - 1);
+    }
+
+    /**
+     * @notice Sets the max token supply. Reverts after the reveal, since the
+     *         token URIs wrap at the max supply and would reshuffle.
+     *
+     * @param newMaxSupply The new max supply to set.
+     */
+    function setMaxSupply(uint256 newMaxSupply) public override {
+        if (revealed == _REVEALED_TRUE) {
+            revert AlreadyRevealed();
+        }
+        super.setMaxSupply(newMaxSupply);
     }
 
     /**
