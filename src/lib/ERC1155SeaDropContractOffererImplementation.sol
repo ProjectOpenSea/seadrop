@@ -46,7 +46,8 @@ import { ECDSA } from "solady/src/utils/ECDSA.sol";
 contract ERC1155SeaDropContractOffererImplementation is
     ERC1155SeaDropErrorsAndEvents
 {
-    using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage.Layout;
+    using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage
+        .Layout;
 
     /// @notice The delegation registry.
     IDelegationRegistry public constant DELEGATION_REGISTRY =
@@ -59,59 +60,34 @@ contract ERC1155SeaDropContractOffererImplementation is
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "SignedMint("
-                "address minter,"
-                "address feeRecipient,"
-                "MintParams mintParams,"
-                "uint256 salt"
-            ")"
-            "MintParams("
-                "uint256 startPrice,"
-                "uint256 endPrice,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "address paymentToken,"
-                "uint256 fromTokenId,"
-                "uint256 toTokenId,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 maxTotalMintableByWalletPerToken,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 dropStageIndex,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "SignedMint(" "address minter," "address feeRecipient,"
+        "MintParams mintParams," "uint256 salt" ")" "MintParams("
+        "uint256 startPrice," "uint256 endPrice," "uint256 startTime,"
+        "uint256 endTime," "address paymentToken," "uint256 fromTokenId,"
+        "uint256 toTokenId," "uint256 maxTotalMintableByWallet,"
+        "uint256 maxTotalMintableByWalletPerToken,"
+        "uint256 maxTokenSupplyForStage," "uint256 dropStageIndex,"
+        "uint256 feeBps," "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "MintParams("
-                "uint256 startPrice,"
-                "uint256 endPrice,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "address paymentToken,"
-                "uint256 fromTokenId,"
-                "uint256 toTokenId,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 maxTotalMintableByWalletPerToken,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 dropStageIndex,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "MintParams(" "uint256 startPrice," "uint256 endPrice,"
+        "uint256 startTime," "uint256 endTime," "address paymentToken,"
+        "uint256 fromTokenId," "uint256 toTokenId,"
+        "uint256 maxTotalMintableByWallet,"
+        "uint256 maxTotalMintableByWalletPerToken,"
+        "uint256 maxTokenSupplyForStage," "uint256 dropStageIndex,"
+        "uint256 feeBps," "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "EIP712Domain("
-                "string name,"
-                "string version,"
-                "uint256 chainId,"
-                "address verifyingContract"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "EIP712Domain(" "string name," "string version," "uint256 chainId,"
+        "address verifyingContract" ")"
+    );
     bytes32 internal constant _NAME_HASH = keccak256("ERC1155SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("2.0");
 
@@ -126,7 +102,7 @@ contract ERC1155SeaDropContractOffererImplementation is
     /**
      * @dev Constructor for contract deployment.
      */
-    constructor() {}
+    constructor() { }
 
     /**
      * @notice The fallback function is used as a dispatcher for SeaDrop
@@ -147,79 +123,58 @@ contract ERC1155SeaDropContractOffererImplementation is
             uint256 publicDropIndex = uint256(bytes32(data[:32]));
 
             // Return the public drop.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
-                        publicDropIndex
-                    ]
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._publicDrops[publicDropIndex]
+            );
         } else if (selector == IERC1155SeaDrop.getPublicDropIndexes.selector) {
             // Return the public drop indexes.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedPublicDropIndexes
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._enumeratedPublicDropIndexes
+            );
         } else if (selector == ISeaDropToken.getAllowedSeaport.selector) {
             // Return the allowed Seaport.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedAllowedSeaport
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._enumeratedAllowedSeaport
+            );
         } else if (selector == ISeaDropToken.getCreatorPayouts.selector) {
             // Return the creator payouts.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._creatorPayouts
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()._creatorPayouts
+            );
         } else if (selector == ISeaDropToken.getAllowListMerkleRoot.selector) {
             // Return the creator payouts.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._allowListMerkleRoot
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._allowListMerkleRoot
+            );
         } else if (selector == ISeaDropToken.getAllowedFeeRecipients.selector) {
             // Return the allowed fee recipients.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedFeeRecipients
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._enumeratedFeeRecipients
+            );
         } else if (selector == ISeaDropToken.getSigners.selector) {
             // Return the allowed signers.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedSigners
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()._enumeratedSigners
+            );
         } else if (selector == ISeaDropToken.getDigestIsUsed.selector) {
             // Get the digest.
             bytes32 digest = bytes32(data[0:32]);
 
             // Return if the digest is used.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage.layout()._usedDigests[
-                        digest
-                    ]
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._usedDigests[digest]
+            );
         } else if (selector == ISeaDropToken.getPayers.selector) {
             // Return the allowed signers.
-            return
-                abi.encode(
-                    ERC1155SeaDropContractOffererStorage
-                        .layout()
-                        ._enumeratedPayers
-                );
+            return abi.encode(
+                ERC1155SeaDropContractOffererStorage.layout()._enumeratedPayers
+            );
         } else {
             // Revert if the function selector is not supported.
             revert UnsupportedFunctionSelector(selector);
@@ -277,10 +232,9 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @param publicDrop The public drop data.
      * @param index      The index of the public drop.
      */
-    function updatePublicDrop(
-        PublicDrop calldata publicDrop,
-        uint256 index
-    ) external {
+    function updatePublicDrop(PublicDrop calldata publicDrop, uint256 index)
+        external
+    {
         // Ensure this contract is only called into with delegatecall.
         _onlyDelegateCalled();
 
@@ -310,14 +264,11 @@ contract ERC1155SeaDropContractOffererImplementation is
         bool addOrUpdateDropStage = publicDrop.maxTotalMintableByWallet != 0;
 
         // Get pointers to the token gated drop data and enumerated addresses.
-        PublicDrop
-            storage existingDropStageData = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._publicDrops[index];
-        uint256[]
-            storage enumeratedIndexes = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._enumeratedPublicDropIndexes;
+        PublicDrop storage existingDropStageData =
+            ERC1155SeaDropContractOffererStorage.layout()._publicDrops[index];
+        uint256[] storage enumeratedIndexes =
+        ERC1155SeaDropContractOffererStorage.layout()
+        ._enumeratedPublicDropIndexes;
 
         // Stage struct packs to two slots, so load it
         // as a uint256; if it is 0, it is empty.
@@ -332,9 +283,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         if (addOrUpdateDropStage) {
-            ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
-                index
-            ] = publicDrop;
+            ERC1155SeaDropContractOffererStorage.layout()
+            ._publicDrops[index] = publicDrop;
             // Add to enumeration if it does not exist already.
             if (dropStageDoesNotExist) {
                 enumeratedIndexes.push(index);
@@ -345,9 +295,8 @@ contract ERC1155SeaDropContractOffererImplementation is
                 revert PublicDropStageNotPresent();
             }
             // Clear storage slot and remove from enumeration.
-            delete ERC1155SeaDropContractOffererStorage.layout()._publicDrops[
-                index
-            ];
+            delete ERC1155SeaDropContractOffererStorage.layout()
+            ._publicDrops[index];
             _removeFromEnumeration(index, enumeratedIndexes);
         }
 
@@ -368,14 +317,12 @@ contract ERC1155SeaDropContractOffererImplementation is
         _onlyDelegateCalled();
 
         // Put the previous root on the stack to use for the event.
-        bytes32 prevRoot = ERC1155SeaDropContractOffererStorage
-            .layout()
-            ._allowListMerkleRoot;
+        bytes32 prevRoot =
+            ERC1155SeaDropContractOffererStorage.layout()._allowListMerkleRoot;
 
         // Update the merkle root.
-        ERC1155SeaDropContractOffererStorage
-            .layout()
-            ._allowListMerkleRoot = allowListData.merkleRoot;
+        ERC1155SeaDropContractOffererStorage.layout()._allowListMerkleRoot =
+        allowListData.merkleRoot;
 
         // Emit an event with the update.
         emit AllowListUpdated(
@@ -408,7 +355,8 @@ contract ERC1155SeaDropContractOffererImplementation is
     function generateOrder(
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata /* maximumSpent */,
+        SpentItem[] calldata,
+        /* maximumSpent */
         bytes calldata context // encoded based on the schemaID
     )
         external
@@ -418,21 +366,14 @@ contract ERC1155SeaDropContractOffererImplementation is
         _onlyDelegateCalled();
 
         // Only an allowed Seaport can call this function.
-        if (
-            !ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                msg.sender
-            ]
-        ) {
+        if (!ERC1155SeaDropContractOffererStorage.layout()
+            ._allowedSeaport[msg.sender]) {
             revert InvalidCallerOnlyAllowedSeaport(msg.sender);
         }
 
         // Derive the offer and consideration with effects.
-        (offer, consideration) = _createOrder(
-            fulfiller,
-            minimumReceived,
-            context,
-            true
-        );
+        (offer, consideration) =
+            _createOrder(fulfiller, minimumReceived, context, true);
     }
 
     /**
@@ -453,10 +394,12 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @return consideration An array containing the consideration items.
      */
     function previewOrder(
-        address /* caller */,
+        address,
+        /* caller */
         address fulfiller,
         SpentItem[] calldata minimumReceived,
-        SpentItem[] calldata /* maximumSpent */,
+        SpentItem[] calldata,
+        /* maximumSpent */
         bytes calldata context
     )
         external
@@ -472,14 +415,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         // withEffects=false.
         function(address, SpentItem[] calldata, bytes calldata, bool)
             internal
-            view
-            returns (SpentItem[] memory, ReceivedItem[] memory) fn;
+            view returns (SpentItem[] memory, ReceivedItem[] memory) fn;
         function(address, SpentItem[] calldata, bytes calldata, bool)
-            internal
-            returns (
-                SpentItem[] memory,
-                ReceivedItem[] memory
-            ) fn2 = _createOrder;
+            internal returns (SpentItem[] memory, ReceivedItem[] memory)
+            fn2 = _createOrder;
         assembly {
             fn := fn2
         }
@@ -504,12 +443,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 errorBuffer;
         uint256 minimumReceivedLength = minimumReceived.length;
         errorBuffer |= _castAndInvert(minimumReceivedLength > 0);
-        for (uint256 i = 0; i < minimumReceivedLength; ) {
-            errorBuffer |=
-                _castAndInvert(
-                    minimumReceived[i].itemType == ItemType.ERC1155
-                ) |
-                _castAndInvert(minimumReceived[i].token == address(this));
+        for (uint256 i = 0; i < minimumReceivedLength;) {
+            errorBuffer |= _castAndInvert(
+                minimumReceived[i].itemType == ItemType.ERC1155
+            ) | _castAndInvert(minimumReceived[i].token == address(this));
             unchecked {
                 ++i;
             }
@@ -599,7 +536,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         });
 
         // Set the token ids and quantities.
-        for (uint256 i = 0; i < minimumReceivedLength; ) {
+        for (uint256 i = 0; i < minimumReceivedLength;) {
             mintDetails.tokenIds[i] = minimumReceived[i].identifier;
             mintDetails.quantities[i] = minimumReceived[i].amount;
             unchecked {
@@ -613,34 +550,22 @@ contract ERC1155SeaDropContractOffererImplementation is
             consideration = _mintPublic(mintDetails, publicDropIndex);
         } else if (substandard == 1) {
             // 1: Allow list mint
-            MintParams memory mintParams = abi.decode(
-                context[42:458],
-                (MintParams)
-            );
+            MintParams memory mintParams =
+                abi.decode(context[42:458], (MintParams));
             // Instead of putting the proof in memory, pass context and offset
             // to use it directly from calldata.
-            consideration = _mintAllowList(
-                mintDetails,
-                mintParams,
-                context,
-                458
-            );
+            consideration =
+                _mintAllowList(mintDetails, mintParams, context, 458);
         } else {
             // substandard == 2
             // 2: Signed mint
-            MintParams memory mintParams = abi.decode(
-                context[42:458],
-                (MintParams)
-            );
+            MintParams memory mintParams =
+                abi.decode(context[42:458], (MintParams));
             uint256 salt = uint256(bytes32(context[458:490]));
             bytes32 signatureR = bytes32(context[490:522]);
             bytes32 signatureVS = bytes32(context[522:554]);
             consideration = _mintSigned(
-                mintDetails,
-                mintParams,
-                salt,
-                signatureR,
-                signatureVS
+                mintDetails, mintParams, salt, signatureR, signatureVS
             );
         }
     }
@@ -651,20 +576,17 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @param mintDetails     The mint details.
      * @param publicDropIndex The public drop index to mint.
      */
-    function _mintPublic(
-        MintDetails memory mintDetails,
-        uint8 publicDropIndex
-    ) internal returns (ReceivedItem[] memory consideration) {
+    function _mintPublic(MintDetails memory mintDetails, uint8 publicDropIndex)
+        internal
+        returns (ReceivedItem[] memory consideration)
+    {
         // Get the public drop.
-        PublicDrop memory publicDrop = ERC1155SeaDropContractOffererStorage
-            .layout()
-            ._publicDrops[publicDropIndex];
+        PublicDrop memory publicDrop = ERC1155SeaDropContractOffererStorage.layout()
+        ._publicDrops[publicDropIndex];
 
         // Check that the tokenIds are within the range of the stage.
         _checkTokenIds(
-            mintDetails.tokenIds,
-            publicDrop.fromTokenId,
-            publicDrop.toTokenId
+            mintDetails.tokenIds, publicDrop.fromTokenId, publicDrop.toTokenId
         );
 
         // Check the number of mints are available
@@ -714,24 +636,19 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 proofOffsetInContext
     ) internal returns (ReceivedItem[] memory consideration) {
         // Verify the proof.
-        if (
-            !_verifyProof(
+        if (!_verifyProof(
                 context,
                 proofOffsetInContext,
-                ERC1155SeaDropContractOffererStorage
-                    .layout()
-                    ._allowListMerkleRoot,
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._allowListMerkleRoot,
                 keccak256(abi.encode(mintDetails.minter, mintParams))
-            )
-        ) {
+            )) {
             revert InvalidProof();
         }
 
         // Check that the tokenIds are within the range of the stage.
         _checkTokenIds(
-            mintDetails.tokenIds,
-            mintParams.fromTokenId,
-            mintParams.toTokenId
+            mintDetails.tokenIds, mintParams.fromTokenId, mintParams.toTokenId
         );
 
         // Check the number of mints are available.
@@ -784,29 +701,22 @@ contract ERC1155SeaDropContractOffererImplementation is
     ) internal returns (ReceivedItem[] memory consideration) {
         // Get the digest to verify the EIP-712 signature.
         bytes32 digest = _getDigest(
-            mintDetails.minter,
-            mintDetails.feeRecipient,
-            mintParams,
-            salt
+            mintDetails.minter, mintDetails.feeRecipient, mintParams, salt
         );
 
         // Ensure the digest has not already been used.
-        if (
-            ERC1155SeaDropContractOffererStorage.layout()._usedDigests[digest]
-        ) {
+        if (ERC1155SeaDropContractOffererStorage.layout()._usedDigests[digest])
+        {
             revert SignatureAlreadyUsed();
         } else if (mintDetails.withEffects) {
             // Mark the digest as used.
-            ERC1155SeaDropContractOffererStorage.layout()._usedDigests[
-                digest
-            ] = true;
+            ERC1155SeaDropContractOffererStorage.layout()
+            ._usedDigests[digest] = true;
         }
 
         // Check that the tokenId is within the range of the stage.
         _checkTokenIds(
-            mintDetails.tokenIds,
-            mintParams.fromTokenId,
-            mintParams.toTokenId
+            mintDetails.tokenIds, mintParams.fromTokenId, mintParams.toTokenId
         );
 
         // Check the number of mints are available.
@@ -843,16 +753,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         // the signature on this data.
         // Note that if the digest doesn't exactly match what was signed we'll
         // get a random recovered address.
-        address recoveredAddress = ECDSA.recover(
-            digest,
-            signatureR,
-            signatureVS
-        );
-        if (
-            !ERC1155SeaDropContractOffererStorage.layout()._allowedSigners[
-                recoveredAddress
-            ]
-        ) {
+        address recoveredAddress =
+            ECDSA.recover(digest, signatureR, signatureVS);
+        if (!ERC1155SeaDropContractOffererStorage.layout()
+            ._allowedSigners[recoveredAddress]) {
             revert ECDSA.InvalidSignature();
         }
     }
@@ -883,8 +787,7 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         // Check that the fee recipient is allowed if restricted.
         _checkFeeRecipientIsAllowed(
-            mintDetails.feeRecipient,
-            restrictFeeRecipients
+            mintDetails.feeRecipient, restrictFeeRecipients
         );
 
         // Set the required consideration items.
@@ -955,8 +858,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Aggregate new amounts weighted by time with rounding factor.
-        uint256 totalBeforeDivision = ((startPrice * remaining) +
-            (endPrice * elapsed));
+        uint256 totalBeforeDivision =
+            ((startPrice * remaining) + (endPrice * elapsed));
 
         // Use assembly to combine operations and skip divide-by-zero check.
         assembly {
@@ -987,11 +890,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256 toTokenId
     ) internal pure {
         uint256 tokenIdsLength = tokenIds.length;
-        for (uint256 i = 0; i < tokenIdsLength; ) {
+        for (uint256 i = 0; i < tokenIdsLength;) {
             if (
-                _cast(tokenIds[i] < fromTokenId) |
-                    _cast(tokenIds[i] > toTokenId) ==
-                1
+                _cast(tokenIds[i] < fromTokenId)
+                        | _cast(tokenIds[i] > toTokenId) == 1
             ) {
                 // Revert if the token id is not within range.
                 revert TokenIdNotWithinDropStageRange(
@@ -1047,14 +949,12 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Revert if the fee recipient is restricted and not allowed.
-        if (restrictFeeRecipients)
-            if (
-                !ERC1155SeaDropContractOffererStorage
-                    .layout()
-                    ._allowedFeeRecipients[feeRecipient]
-            ) {
+        if (restrictFeeRecipients) {
+            if (!ERC1155SeaDropContractOffererStorage.layout()
+                ._allowedFeeRecipients[feeRecipient]) {
                 revert FeeRecipientNotAllowed(feeRecipient);
             }
+        }
     }
 
     /**
@@ -1067,11 +967,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         if (
             // Note: not using _cast pattern here to short-circuit
             // and skip loading the allowed payers or delegation registry.
-            payer != minter &&
-            !ERC1155SeaDropContractOffererStorage.layout()._allowedPayers[
-                payer
-            ] &&
-            !DELEGATION_REGISTRY.checkDelegateForAll(payer, minter)
+            payer != minter
+                && !ERC1155SeaDropContractOffererStorage.layout()
+                ._allowedPayers[payer]
+                && !DELEGATION_REGISTRY.checkDelegateForAll(payer, minter)
         ) {
             revert PayerNotAllowed(payer);
         }
@@ -1102,13 +1001,13 @@ contract ERC1155SeaDropContractOffererImplementation is
         uint256[] memory seenTokenIds = new uint256[](tokenIdsLength);
         uint256 seenTokenIdsCurrentLength;
 
-        for (uint256 i = 0; i < tokenIdsLength; ) {
+        for (uint256 i = 0; i < tokenIdsLength;) {
             // Put the tokenId and quantity on the stack.
             uint256 tokenId = tokenIds[i];
             uint256 quantity = quantities[i];
 
             // Revert if the offer contains duplicate token ids.
-            for (uint256 j = 0; j < seenTokenIdsCurrentLength; ) {
+            for (uint256 j = 0; j < seenTokenIdsCurrentLength;) {
                 if (tokenId == seenTokenIds[j]) {
                     revert OfferContainsDuplicateTokenId(tokenId);
                 }
@@ -1173,8 +1072,8 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         // Ensure mint quantity doesn't exceed maxTotalMintableByWalletPerToken.
         if (
-            quantity + minterNumMintedForTokenId >
-            maxTotalMintableByWalletPerToken
+            quantity + minterNumMintedForTokenId
+                > maxTotalMintableByWalletPerToken
         ) {
             revert MintQuantityExceedsMaxMintedPerWalletForTokenId(
                 tokenId,
@@ -1249,9 +1148,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Set the itemType.
-        ItemType itemType = paymentToken == address(0)
-            ? ItemType.NATIVE
-            : ItemType.ERC20;
+        ItemType itemType =
+            paymentToken == address(0) ? ItemType.NATIVE : ItemType.ERC20;
 
         // Put the total mint price on the stack.
         uint256 totalPrice = quantity * currentPrice;
@@ -1268,10 +1166,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Put the creator payouts on the stack.
-        CreatorPayout[]
-            storage creatorPayouts = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._creatorPayouts;
+        CreatorPayout[] storage creatorPayouts =
+        ERC1155SeaDropContractOffererStorage.layout()._creatorPayouts;
 
         // Put the length of total creator payouts on the stack.
         uint256 creatorPayoutsLength = creatorPayouts.length;
@@ -1302,14 +1198,14 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         // Add a consideration item for each creator payout.
         if (payoutAmount != 0) {
-            for (uint256 i = 0; i < creatorPayoutsLength; ) {
+            for (uint256 i = 0; i < creatorPayoutsLength;) {
                 // Put the creator payout on the stack.
                 CreatorPayout memory creatorPayout = creatorPayouts[i];
 
                 // Get the creator payout amount.
                 // Note that the payout amount is rounded down.
-                uint256 creatorPayoutAmount = (payoutAmount *
-                    creatorPayout.basisPoints) / 10_000;
+                uint256 creatorPayoutAmount =
+                    (payoutAmount * creatorPayout.basisPoints) / 10_000;
 
                 receivedItems[startIndexWithFee + i] = ReceivedItem({
                     itemType: itemType,
@@ -1357,17 +1253,17 @@ contract ERC1155SeaDropContractOffererImplementation is
 
         // Put the lengths on the stack for more efficient access.
         uint256 allowedSeaportLength = allowedSeaport.length;
-        uint256 enumeratedAllowedSeaportLength = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._enumeratedAllowedSeaport
-                .length;
+        uint256 enumeratedAllowedSeaportLength =
+            ERC1155SeaDropContractOffererStorage.layout()
+            ._enumeratedAllowedSeaport
+            .length;
 
         // Reset the old mapping.
-        for (uint256 i = 0; i < enumeratedAllowedSeaportLength; ) {
-            ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                ERC1155SeaDropContractOffererStorage
-                    .layout()
-                    ._enumeratedAllowedSeaport[i]
+        for (uint256 i = 0; i < enumeratedAllowedSeaportLength;) {
+            ERC1155SeaDropContractOffererStorage.layout()
+            ._allowedSeaport[
+                ERC1155SeaDropContractOffererStorage.layout()
+                ._enumeratedAllowedSeaport[i]
             ] = false;
             unchecked {
                 ++i;
@@ -1375,24 +1271,22 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Set the new mapping for allowed Seaport contracts.
-        for (uint256 i = 0; i < allowedSeaportLength; ) {
+        for (uint256 i = 0; i < allowedSeaportLength;) {
             // Ensure the allowed Seaport address is not the zero address.
             if (allowedSeaport[i] == address(0)) {
                 revert AllowedSeaportCannotBeZeroAddress();
             }
 
-            ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                allowedSeaport[i]
-            ] = true;
+            ERC1155SeaDropContractOffererStorage.layout()
+            ._allowedSeaport[allowedSeaport[i]] = true;
             unchecked {
                 ++i;
             }
         }
 
         // Set the enumeration.
-        ERC1155SeaDropContractOffererStorage
-            .layout()
-            ._enumeratedAllowedSeaport = allowedSeaport;
+        ERC1155SeaDropContractOffererStorage.layout()
+        ._enumeratedAllowedSeaport = allowedSeaport;
 
         // Emit an event for the update.
         emit AllowedSeaportUpdated(allowedSeaport);
@@ -1404,9 +1298,9 @@ contract ERC1155SeaDropContractOffererImplementation is
      *
      * @param creatorPayouts The creator payout address and basis points.
      */
-    function updateCreatorPayouts(
-        CreatorPayout[] calldata creatorPayouts
-    ) external {
+    function updateCreatorPayouts(CreatorPayout[] calldata creatorPayouts)
+        external
+    {
         // Ensure this contract is only called into with delegatecall.
         _onlyDelegateCalled();
 
@@ -1424,7 +1318,7 @@ contract ERC1155SeaDropContractOffererImplementation is
             revert CreatorPayoutsNotSet();
         }
 
-        for (uint256 i; i < creatorPayoutsLength; ) {
+        for (uint256 i; i < creatorPayoutsLength;) {
             // Get the creator payout.
             CreatorPayout memory creatorPayout = creatorPayouts[i];
 
@@ -1442,9 +1336,9 @@ contract ERC1155SeaDropContractOffererImplementation is
             totalBasisPoints += creatorPayout.basisPoints;
 
             // Push to storage.
-            ERC1155SeaDropContractOffererStorage.layout()._creatorPayouts.push(
-                creatorPayout
-            );
+            ERC1155SeaDropContractOffererStorage.layout()
+                ._creatorPayouts
+                .push(creatorPayout);
 
             unchecked {
                 ++i;
@@ -1466,10 +1360,9 @@ contract ERC1155SeaDropContractOffererImplementation is
      * @param feeRecipient The fee recipient.
      * @param allowed      If the fee recipient is allowed.
      */
-    function updateAllowedFeeRecipient(
-        address feeRecipient,
-        bool allowed
-    ) external {
+    function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
+        external
+    {
         // Ensure this contract is only called into with delegatecall.
         _onlyDelegateCalled();
 
@@ -1478,14 +1371,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Track the enumerated storage.
-        address[]
-            storage enumeratedStorage = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._enumeratedFeeRecipients;
-        mapping(address => bool)
-            storage feeRecipientsMap = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._allowedFeeRecipients;
+        address[] storage enumeratedStorage =
+        ERC1155SeaDropContractOffererStorage.layout()._enumeratedFeeRecipients;
+        mapping(address => bool) storage feeRecipientsMap =
+            ERC1155SeaDropContractOffererStorage.layout()._allowedFeeRecipients;
 
         if (allowed) {
             if (feeRecipientsMap[feeRecipient]) {
@@ -1497,13 +1386,11 @@ contract ERC1155SeaDropContractOffererImplementation is
             if (!feeRecipientsMap[feeRecipient]) {
                 revert FeeRecipientNotPresent();
             }
-            delete ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._allowedFeeRecipients[feeRecipient];
-            _asAddressArray(_removeFromEnumeration)(
-                feeRecipient,
-                enumeratedStorage
-            );
+            delete ERC1155SeaDropContractOffererStorage.layout()
+            ._allowedFeeRecipients[feeRecipient];
+            _asAddressArray(
+                _removeFromEnumeration
+            )(feeRecipient, enumeratedStorage);
         }
 
         // Emit an event with the update.
@@ -1525,14 +1412,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Track the enumerated storage.
-        address[]
-            storage enumeratedStorage = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._enumeratedSigners;
-        mapping(address => bool)
-            storage signersMap = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._allowedSigners;
+        address[] storage enumeratedStorage =
+        ERC1155SeaDropContractOffererStorage.layout()._enumeratedSigners;
+        mapping(address => bool) storage signersMap =
+            ERC1155SeaDropContractOffererStorage.layout()._allowedSigners;
 
         if (allowed) {
             if (signersMap[signer]) {
@@ -1544,9 +1427,8 @@ contract ERC1155SeaDropContractOffererImplementation is
             if (!signersMap[signer]) {
                 revert SignerNotPresent();
             }
-            delete ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._allowedSigners[signer];
+            delete ERC1155SeaDropContractOffererStorage.layout()
+            ._allowedSigners[signer];
             _asAddressArray(_removeFromEnumeration)(signer, enumeratedStorage);
         }
 
@@ -1569,14 +1451,10 @@ contract ERC1155SeaDropContractOffererImplementation is
         }
 
         // Track the enumerated storage.
-        address[]
-            storage enumeratedStorage = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._enumeratedPayers;
-        mapping(address => bool)
-            storage payersMap = ERC1155SeaDropContractOffererStorage
-                .layout()
-                ._allowedPayers;
+        address[] storage enumeratedStorage =
+        ERC1155SeaDropContractOffererStorage.layout()._enumeratedPayers;
+        mapping(address => bool) storage payersMap =
+            ERC1155SeaDropContractOffererStorage.layout()._allowedPayers;
 
         if (allowed) {
             if (payersMap[payer]) {
@@ -1588,9 +1466,8 @@ contract ERC1155SeaDropContractOffererImplementation is
             if (!payersMap[payer]) {
                 revert PayerNotPresent();
             }
-            delete ERC1155SeaDropContractOffererStorage.layout()._allowedPayers[
-                payer
-            ];
+            delete ERC1155SeaDropContractOffererStorage.layout()
+            ._allowedPayers[payer];
             _asAddressArray(_removeFromEnumeration)(payer, enumeratedStorage);
         }
 
@@ -1665,7 +1542,7 @@ contract ERC1155SeaDropContractOffererImplementation is
     ) internal {
         // Cache the length.
         uint256 enumerationLength = enumeration.length;
-        for (uint256 i = 0; i < enumerationLength; ) {
+        for (uint256 i = 0; i < enumerationLength;) {
             // Check if the enumerated element is the one we are deleting.
             if (enumeration[i] == toRemove) {
                 // Swap with the last element.
@@ -1690,9 +1567,7 @@ contract ERC1155SeaDropContractOffererImplementation is
      *
      * @return fnOut The fn with address input.
      */
-    function _asAddressArray(
-        function(uint256, uint256[] storage) internal fnIn
-    )
+    function _asAddressArray(function(uint256, uint256[] storage) internal fnIn)
         internal
         pure
         returns (function(address, address[] storage) internal fnOut)
@@ -1721,13 +1596,11 @@ contract ERC1155SeaDropContractOffererImplementation is
             if sub(context.length, proofOffsetInContext) {
                 // Initialize `offset` to the offset of `proof` in the calldata.
                 let offset := add(context.offset, proofOffsetInContext)
-                let end := add(
-                    offset,
-                    sub(context.length, proofOffsetInContext)
-                )
+                let end :=
+                    add(offset, sub(context.length, proofOffsetInContext))
                 // Iterate over proof elements to compute root hash.
                 // prettier-ignore
-                for {} 1 {} {
+                for { } 1 { } {
                     // Slot of `leaf` in scratch space.
                     // If the condition is true: 0x20, otherwise: 0x00.
                     let scratch := shl(5, gt(leaf, calldataload(offset)))

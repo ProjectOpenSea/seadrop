@@ -64,10 +64,10 @@ contract MaliciousRecipient is ERC1155TokenReceiver {
         startAttack = true;
     }
 
-    function attack(
-        ConsiderationInterface _seaport,
-        address _token
-    ) external payable {
+    function attack(ConsiderationInterface _seaport, address _token)
+        external
+        payable
+    {
         token = _token;
         seaport = _seaport;
 
@@ -104,13 +104,10 @@ contract MaliciousRecipient is ERC1155TokenReceiver {
         (, bytes memory data) = token.staticcall(
             abi.encode(ISeaDropToken.getCreatorPayouts.selector)
         );
-        CreatorPayout[] memory creatorPayouts = abi.decode(
-            data,
-            (CreatorPayout[])
-        );
-        ConsiderationItem[] memory considerationItems = new ConsiderationItem[](
-            creatorPayouts.length + 1
-        );
+        CreatorPayout[] memory creatorPayouts =
+            abi.decode(data, (CreatorPayout[]));
+        ConsiderationItem[] memory considerationItems =
+            new ConsiderationItem[](creatorPayouts.length + 1);
 
         // Add consideration item for fee recipient.
         uint256 feeAmount = (totalValue * feeBps) / 10_000;
@@ -126,8 +123,8 @@ contract MaliciousRecipient is ERC1155TokenReceiver {
 
         // Add consideration items for creator payouts.
         for (uint256 i = 0; i < creatorPayouts.length; i++) {
-            uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /
-                10_000;
+            uint256 amount =
+                (creatorAmount * creatorPayouts[i].basisPoints) / 10_000;
             considerationItems[i + 1] = ConsiderationItem({
                 itemType: ItemType.NATIVE,
                 token: address(0),

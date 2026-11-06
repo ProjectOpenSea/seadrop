@@ -35,12 +35,10 @@ library ERC1155SeaDropContractOffererStorage {
         address[] _enumeratedPayers;
     }
 
-    bytes32 internal constant STORAGE_SLOT =
-        bytes32(
-            uint256(
-                keccak256("contracts.storage.ERC1155SeaDropContractOfferer")
-            ) - 1
-        );
+    bytes32 internal constant STORAGE_SLOT = bytes32(
+        uint256(keccak256("contracts.storage.ERC1155SeaDropContractOfferer"))
+            - 1
+    );
 
     function layout() internal pure returns (Layout storage l) {
         bytes32 slot = STORAGE_SLOT;

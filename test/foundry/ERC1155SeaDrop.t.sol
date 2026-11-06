@@ -51,14 +51,13 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         token = new ERC1155SeaDrop(address(configurer), allowedSeaport, "", "");
     }
 
-    function testMintPublic(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintPublic(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         token.setMaxSupply(3, 10);
         setSingleCreatorPayout(context.args.creator);
@@ -120,8 +119,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -132,14 +131,13 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         });
     }
 
-    function testMintAllowList(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintAllowList(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -162,11 +160,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         address[] memory allowList = new address[](2);
         allowList[0] = address(this);
         allowList[1] = makeAddr("fred");
-        bytes32[] memory proof = setAllowListMerkleRootAndReturnProof(
-            allowList,
-            0,
-            mintParams
-        );
+        bytes32[] memory proof =
+            setAllowListMerkleRootAndReturnProof(allowList, 0, mintParams);
 
         addSeaDropOfferItem(1, 3); // token id 1, 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -209,8 +204,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -221,14 +216,13 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         });
     }
 
-    function testMintSigned(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintSigned(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -305,8 +299,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -339,8 +333,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -355,10 +349,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         // This test ensures that an empty minimumReceived is not allowed.
         address feeRecipient = address(0xfee);
         address creator = address(0xc1ea101);
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         token.setMaxSupply(3, 10);
         setSingleCreatorPayout(creator);
@@ -401,8 +393,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder{ value: 0 ether }({

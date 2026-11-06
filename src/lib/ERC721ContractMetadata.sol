@@ -129,10 +129,9 @@ contract ERC721ContractMetadata is
      * @param fromTokenId The start token id.
      * @param toTokenId   The end token id.
      */
-    function emitBatchMetadataUpdate(
-        uint256 fromTokenId,
-        uint256 toTokenId
-    ) external {
+    function emitBatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId)
+        external
+    {
         // Ensure the sender is only the owner or configurer contract.
         _onlyOwnerOrConfigurer();
 
@@ -265,9 +264,13 @@ contract ERC721ContractMetadata is
      *
      * @param tokenId The token id to get the token URI for.
      */
-    function tokenURI(
-        uint256 tokenId
-    ) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
         // Revert if the tokenId doesn't exist.
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
 
@@ -324,12 +327,8 @@ contract ERC721ContractMetadata is
             // Call the transfer validator if one is set.
             address transferValidator = _transferValidator;
             if (transferValidator != address(0)) {
-                ITransferValidator721(transferValidator).validateTransfer(
-                    msg.sender,
-                    from,
-                    to,
-                    startTokenId
-                );
+                ITransferValidator721(transferValidator)
+                    .validateTransfer(msg.sender, from, to, startTokenId);
             }
         }
     }
@@ -339,15 +338,18 @@ contract ERC721ContractMetadata is
      *
      * @param interfaceId The interface id to check against.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC721A, ERC2981) returns (bool) {
-        return
-            interfaceId == type(IERC721ContractMetadata).interfaceId ||
-            interfaceId == type(ICreatorToken).interfaceId ||
-            interfaceId == type(ILegacyCreatorToken).interfaceId ||
-            interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
-            ERC2981.supportsInterface(interfaceId) ||
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721A, ERC2981)
+        returns (bool)
+    {
+        return interfaceId == type(IERC721ContractMetadata).interfaceId
+            || interfaceId == type(ICreatorToken).interfaceId
+            || interfaceId == type(ILegacyCreatorToken).interfaceId
+            || interfaceId == 0x49064906 // ERC-4906 (MetadataUpdate)
+            || ERC2981.supportsInterface(interfaceId) || 
             // ERC721A returns supportsInterface true for
             //     ERC165, ERC721, ERC721Metadata
             ERC721A.supportsInterface(interfaceId);

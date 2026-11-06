@@ -21,7 +21,7 @@ contract ERC721SeaDropPlusRegularMint is ERC721SeaDrop {
         address allowedSeaport,
         string memory name,
         string memory symbol
-    ) ERC721SeaDrop(allowedConfigurer, allowedSeaport, name, symbol) {}
+    ) ERC721SeaDrop(allowedConfigurer, allowedSeaport, name, symbol) { }
 
     function mint(address recipient, uint256 quantity) public payable {
         _mint(recipient, quantity);
@@ -46,28 +46,19 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
         super.setUp();
 
         token = new ERC721SeaDropPlusRegularMint(
-            address(configurer),
-            allowedSeaport,
-            "",
-            ""
+            address(configurer), allowedSeaport, "", ""
         );
         token.setMaxSupply(1000);
         setSingleCreatorPayout(creator);
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
 
         _configurePublic();
         _configureAllowList();
         _configureSigned();
 
         addSeaDropOfferItem(numMints);
-        addSeaDropConsiderationItems(
-            feeRecipient,
-            feeBps,
-            mintPrice * numMints
-        );
+        addSeaDropConsiderationItems(feeRecipient, feeBps, mintPrice * numMints);
         configureSeaDropOrderParameters();
 
         vm.deal(address(this), 100 ether);
@@ -118,11 +109,8 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
             allowList[i] = makeAddr("fred");
         }
         allowList[25] = address(this);
-        bytes32[] memory proof = setAllowListMerkleRootAndReturnProof(
-            allowList,
-            25,
-            mintParams
-        );
+        bytes32[] memory proof =
+            setAllowListMerkleRootAndReturnProof(allowList, 25, mintParams);
 
         address minter = address(0);
         extraDataAllowList = bytes.concat(
@@ -177,8 +165,7 @@ contract TestSeaDropSnapshot is SeaDrop721Test {
 
     function testRegularMint_snapshot() public {
         ERC721SeaDropPlusRegularMint(address(token)).mint{ value: 0.1 ether }(
-            address(this),
-            1
+            address(this), 1
         );
     }
 

@@ -9,7 +9,7 @@ contract ERC1155SeaDropWithBatchMint is ERC1155SeaDrop {
         address allowedSeaport,
         string memory name_,
         string memory symbol_
-    ) ERC1155SeaDrop(allowedConfigurer, allowedSeaport, name_, symbol_) {}
+    ) ERC1155SeaDrop(allowedConfigurer, allowedSeaport, name_, symbol_) { }
 
     function batchMint(
         address to,

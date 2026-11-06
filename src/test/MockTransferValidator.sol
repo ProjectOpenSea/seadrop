@@ -24,19 +24,29 @@ contract MockTransferValidator is
         address,
         /* to */
         uint256 /* tokenId */
-    ) external view {
+    )
+        external
+        view
+    {
         if (_revertOnValidate) {
             revert("MockTransferValidator: always reverts");
         }
     }
 
     function validateTransfer(
-        address /* caller */,
-        address /* from */,
-        address /* to */,
-        uint256 /* tokenId */,
+        address,
+        /* caller */
+        address,
+        /* from */
+        address,
+        /* to */
+        uint256,
+        /* tokenId */
         uint256 /* amount */
-    ) external view {
+    )
+        external
+        view
+    {
         if (_revertOnValidate) {
             revert("MockTransferValidator: always reverts");
         }

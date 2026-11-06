@@ -50,7 +50,8 @@ contract ERC1155SeaDropContractOffererCloneable is
     ERC1155ContractMetadataCloneable,
     ERC1155SeaDropErrorsAndEvents
 {
-    using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage.Layout;
+    using ERC1155SeaDropContractOffererStorage for ERC1155SeaDropContractOffererStorage
+        .Layout;
 
     /**
      * @notice Initialize the token contract.
@@ -73,25 +74,21 @@ contract ERC1155SeaDropContractOffererCloneable is
         if (allowedSeaport == address(0)) {
             revert AllowedSeaportCannotBeZeroAddress();
         }
-        ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-            allowedSeaport
-        ] = true;
+        ERC1155SeaDropContractOffererStorage.layout()
+        ._allowedSeaport[allowedSeaport] = true;
 
         // Set the allowed Seaport enumeration.
         address[] memory enumeratedAllowedSeaport = new address[](1);
         enumeratedAllowedSeaport[0] = allowedSeaport;
-        ERC1155SeaDropContractOffererStorage
-            .layout()
-            ._enumeratedAllowedSeaport = enumeratedAllowedSeaport;
+        ERC1155SeaDropContractOffererStorage.layout()
+        ._enumeratedAllowedSeaport = enumeratedAllowedSeaport;
 
         // Emit an event noting the contract deployment.
         emit SeaDropTokenDeployed(SEADROP_TOKEN_TYPE.ERC1155_CLONE);
 
         // Initialize ERC1155ContractMetadataCloneable.
         __ERC1155ContractMetadataCloneable_init(
-            allowedConfigurer,
-            name_,
-            symbol_
+            allowedConfigurer, name_, symbol_
         );
     }
 
@@ -108,37 +105,38 @@ contract ERC1155SeaDropContractOffererCloneable is
 
         // Determine if we should forward the call to the implementation
         // contract with SeaDrop logic.
-        bool callSeaDropImplementation = selector ==
-            ISeaDropToken.updateAllowedSeaport.selector ||
-            selector == ISeaDropToken.updateDropURI.selector ||
-            selector == ISeaDropToken.updateAllowList.selector ||
-            selector == ISeaDropToken.updateCreatorPayouts.selector ||
-            selector == ISeaDropToken.updatePayer.selector ||
-            selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
-            selector == ISeaDropToken.updateSigner.selector ||
-            selector == IERC1155SeaDrop.updatePublicDrop.selector ||
-            selector == ContractOffererInterface.previewOrder.selector ||
-            selector == ContractOffererInterface.generateOrder.selector ||
-            selector == ContractOffererInterface.getSeaportMetadata.selector ||
-            selector == IERC1155SeaDrop.getPublicDrop.selector ||
-            selector == IERC1155SeaDrop.getPublicDropIndexes.selector ||
-            selector == ISeaDropToken.getAllowedSeaport.selector ||
-            selector == ISeaDropToken.getCreatorPayouts.selector ||
-            selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
-            selector == ISeaDropToken.getAllowedFeeRecipients.selector ||
-            selector == ISeaDropToken.getSigners.selector ||
-            selector == ISeaDropToken.getDigestIsUsed.selector ||
-            selector == ISeaDropToken.getPayers.selector;
+        bool callSeaDropImplementation =
+            selector == ISeaDropToken.updateAllowedSeaport.selector
+                || selector == ISeaDropToken.updateDropURI.selector
+                || selector == ISeaDropToken.updateAllowList.selector
+                || selector == ISeaDropToken.updateCreatorPayouts.selector
+                || selector == ISeaDropToken.updatePayer.selector
+                || selector == ISeaDropToken.updateAllowedFeeRecipient.selector
+                || selector == ISeaDropToken.updateSigner.selector
+                || selector == IERC1155SeaDrop.updatePublicDrop.selector
+                || selector == ContractOffererInterface.previewOrder.selector
+                || selector == ContractOffererInterface.generateOrder.selector
+                || selector
+                    == ContractOffererInterface.getSeaportMetadata.selector
+                || selector == IERC1155SeaDrop.getPublicDrop.selector
+                || selector == IERC1155SeaDrop.getPublicDropIndexes.selector
+                || selector == ISeaDropToken.getAllowedSeaport.selector
+                || selector == ISeaDropToken.getCreatorPayouts.selector
+                || selector == ISeaDropToken.getAllowListMerkleRoot.selector
+                || selector == ISeaDropToken.getAllowedFeeRecipients.selector
+                || selector == ISeaDropToken.getSigners.selector
+                || selector == ISeaDropToken.getDigestIsUsed.selector
+                || selector == ISeaDropToken.getPayers.selector;
 
         // Determine if we should require only the owner or configurer calling.
-        bool requireOnlyOwnerOrConfigurer = selector ==
-            ISeaDropToken.updateAllowedSeaport.selector ||
-            selector == ISeaDropToken.updateDropURI.selector ||
-            selector == ISeaDropToken.updateAllowList.selector ||
-            selector == ISeaDropToken.updateCreatorPayouts.selector ||
-            selector == ISeaDropToken.updatePayer.selector ||
-            selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
-            selector == IERC1155SeaDrop.updatePublicDrop.selector;
+        bool requireOnlyOwnerOrConfigurer =
+            selector == ISeaDropToken.updateAllowedSeaport.selector
+                || selector == ISeaDropToken.updateDropURI.selector
+                || selector == ISeaDropToken.updateAllowList.selector
+                || selector == ISeaDropToken.updateCreatorPayouts.selector
+                || selector == ISeaDropToken.updatePayer.selector
+                || selector == ISeaDropToken.updateAllowedFeeRecipient.selector
+                || selector == IERC1155SeaDrop.updatePublicDrop.selector;
 
         if (callSeaDropImplementation) {
             // For update calls, ensure the sender is only the owner
@@ -152,10 +150,9 @@ contract ERC1155SeaDropContractOffererCloneable is
                 // If the signer is not allowed, ensure sender is only owner
                 // or configurer.
                 if (
-                    msg.sender != signer ||
-                    (msg.sender == signer &&
-                        !ERC1155SeaDropContractOffererStorage
-                            .layout()
+                    msg.sender != signer
+                        || (msg.sender == signer
+                            && !ERC1155SeaDropContractOffererStorage.layout()
                             ._allowedSigners[signer])
                 ) {
                     _onlyOwnerOrConfigurer();
@@ -163,8 +160,8 @@ contract ERC1155SeaDropContractOffererCloneable is
             }
 
             // Forward the call to the implementation contract.
-            (bool success, bytes memory returnedData) = _CONFIGURER
-                .delegatecall(msg.data);
+            (bool success, bytes memory returnedData) =
+                _CONFIGURER.delegatecall(msg.data);
 
             // Require that the call was successful.
             if (!success) {
@@ -183,10 +180,8 @@ contract ERC1155SeaDropContractOffererCloneable is
             return returnedData;
         } else if (selector == IERC1155SeaDrop.getMintStats.selector) {
             // Get the minter and token id.
-            (address minter, uint256 tokenId) = abi.decode(
-                data,
-                (address, uint256)
-            );
+            (address minter, uint256 tokenId) =
+                abi.decode(data, (address, uint256));
 
             // Get the mint stats.
             (
@@ -197,13 +192,12 @@ contract ERC1155SeaDropContractOffererCloneable is
             ) = _getMintStats(minter, tokenId);
 
             // Encode the return data.
-            return
-                abi.encode(
-                    minterNumMinted,
-                    minterNumMintedForTokenId,
-                    totalMintedForTokenId,
-                    maxSupply
-                );
+            return abi.encode(
+                minterNumMinted,
+                minterNumMintedForTokenId,
+                totalMintedForTokenId,
+                maxSupply
+            );
         } else if (selector == ContractOffererInterface.ratifyOrder.selector) {
             // This function is a no-op, nothing additional needs to happen here.
             // Utilize assembly to efficiently return the ratifyOrder magic value.
@@ -238,10 +232,7 @@ contract ERC1155SeaDropContractOffererCloneable is
      * @param minter  The minter address.
      * @param tokenId The token id to return the stats for.
      */
-    function _getMintStats(
-        address minter,
-        uint256 tokenId
-    )
+    function _getMintStats(address minter, uint256 tokenId)
         internal
         view
         returns (
@@ -282,10 +273,9 @@ contract ERC1155SeaDropContractOffererCloneable is
             // Only Seaport or the conduit can use this function
             // when "from" is this contract.
             if (
-                msg.sender != _CONDUIT &&
-                !ERC1155SeaDropContractOffererStorage.layout()._allowedSeaport[
-                    msg.sender
-                ]
+                msg.sender != _CONDUIT
+                    && !ERC1155SeaDropContractOffererStorage.layout()
+                    ._allowedSeaport[msg.sender]
             ) {
                 revert InvalidCallerOnlyAllowedSeaport(msg.sender);
             }
@@ -300,19 +290,17 @@ contract ERC1155SeaDropContractOffererCloneable is
      *
      * @param interfaceId The interface id to check against.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    )
+    function supportsInterface(bytes4 interfaceId)
         public
         view
         virtual
         override(ERC1155ContractMetadataCloneable)
         returns (bool)
     {
-        return
-            interfaceId == type(IERC1155SeaDrop).interfaceId ||
-            interfaceId == type(ContractOffererInterface).interfaceId ||
-            interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
+        return interfaceId == type(IERC1155SeaDrop).interfaceId
+            || interfaceId == type(ContractOffererInterface).interfaceId
+            || interfaceId == 0x2e778efc // SIP-5 (getSeaportMetadata)
+            || 
             // ERC1155ContractMetadata returns supportsInterface true for
             //     IERC1155ContractMetadata, ERC-4906, ERC-2981
             // ERC1155A returns supportsInterface true for
@@ -330,8 +318,7 @@ contract ERC1155SeaDropContractOffererCloneable is
         // Decode fulfiller, minimumReceived, and context from calldata.
         (
             address fulfiller,
-            SpentItem[] memory minimumReceived,
-            ,
+            SpentItem[] memory minimumReceived,,
             bytes memory context
         ) = abi.decode(data, (address, SpentItem[], SpentItem[], bytes));
 
@@ -351,7 +338,7 @@ contract ERC1155SeaDropContractOffererCloneable is
         uint256 minimumReceivedLength = minimumReceived.length;
         uint256[] memory tokenIds = new uint256[](minimumReceivedLength);
         uint256[] memory quantities = new uint256[](minimumReceivedLength);
-        for (uint256 i = 0; i < minimumReceivedLength; ) {
+        for (uint256 i = 0; i < minimumReceivedLength;) {
             tokenIds[i] = minimumReceived[i].identifier;
             quantities[i] = minimumReceived[i].amount;
             unchecked {

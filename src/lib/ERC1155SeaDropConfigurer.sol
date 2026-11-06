@@ -58,25 +58,24 @@ contract ERC1155SeaDropConfigurer is
      * @param token  The ERC1155SeaDrop contract address.
      * @param config The configuration struct.
      */
-    function multiConfigure(
-        address token,
-        MultiConfigureStruct calldata config
-    ) external {
+    function multiConfigure(address token, MultiConfigureStruct calldata config)
+        external
+    {
         // Ensure the sender is the owner of the token.
         _onlyOwner(token);
 
         if (config.maxSupplyTokenIds.length != 0) {
             if (
-                config.maxSupplyTokenIds.length !=
-                config.maxSupplyAmounts.length
+                config.maxSupplyTokenIds.length
+                    != config.maxSupplyAmounts.length
             ) {
                 revert MaxSupplyMismatch();
             }
-            for (uint256 i = 0; i < config.maxSupplyTokenIds.length; ) {
-                IERC1155ContractMetadata(token).setMaxSupply(
-                    config.maxSupplyTokenIds[i],
-                    config.maxSupplyAmounts[i]
-                );
+            for (uint256 i = 0; i < config.maxSupplyTokenIds.length;) {
+                IERC1155ContractMetadata(token)
+                    .setMaxSupply(
+                        config.maxSupplyTokenIds[i], config.maxSupplyAmounts[i]
+                    );
                 unchecked {
                     ++i;
                 }
@@ -89,30 +88,26 @@ contract ERC1155SeaDropConfigurer is
             IERC1155ContractMetadata(token).setContractURI(config.contractURI);
         }
         if (config.provenanceHash != bytes32(0)) {
-            IERC1155ContractMetadata(token).setProvenanceHash(
-                config.provenanceHash
-            );
+            IERC1155ContractMetadata(token)
+                .setProvenanceHash(config.provenanceHash);
         }
         if (
-            _cast(config.royaltyReceiver != address(0)) &
-                _cast(config.royaltyBps != 0) ==
-            1
+            _cast(config.royaltyReceiver != address(0))
+                    & _cast(config.royaltyBps != 0) == 1
         ) {
-            IERC1155ContractMetadata(token).setDefaultRoyalty(
-                config.royaltyReceiver,
-                config.royaltyBps
-            );
+            IERC1155ContractMetadata(token)
+                .setDefaultRoyalty(config.royaltyReceiver, config.royaltyBps);
         }
 
         if (config.publicDrops.length != 0) {
             if (config.publicDrops.length != config.publicDropsIndexes.length) {
                 revert PublicDropsMismatch();
             }
-            for (uint256 i = 0; i < config.publicDrops.length; ) {
-                IERC1155SeaDrop(address(token)).updatePublicDrop(
-                    config.publicDrops[i],
-                    config.publicDropsIndexes[i]
-                );
+            for (uint256 i = 0; i < config.publicDrops.length;) {
+                IERC1155SeaDrop(address(token))
+                    .updatePublicDrop(
+                        config.publicDrops[i], config.publicDropsIndexes[i]
+                    );
                 unchecked {
                     ++i;
                 }
@@ -122,76 +117,66 @@ contract ERC1155SeaDropConfigurer is
             IERC1155SeaDrop(address(token)).updateDropURI(config.dropURI);
         }
         if (config.allowListData.merkleRoot != bytes32(0)) {
-            IERC1155SeaDrop(address(token)).updateAllowList(
-                config.allowListData
-            );
+            IERC1155SeaDrop(address(token))
+                .updateAllowList(config.allowListData);
         }
         if (config.creatorPayouts.length != 0) {
-            IERC1155SeaDrop(address(token)).updateCreatorPayouts(
-                config.creatorPayouts
-            );
+            IERC1155SeaDrop(address(token))
+                .updateCreatorPayouts(config.creatorPayouts);
         }
         if (config.allowedFeeRecipients.length != 0) {
-            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
-                IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-                    config.allowedFeeRecipients[i],
-                    true
-                );
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length;) {
+                IERC1155SeaDrop(address(token))
+                    .updateAllowedFeeRecipient(
+                        config.allowedFeeRecipients[i], true
+                    );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedFeeRecipients.length != 0) {
-            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
-                IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-                    config.disallowedFeeRecipients[i],
-                    false
-                );
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length;) {
+                IERC1155SeaDrop(address(token))
+                    .updateAllowedFeeRecipient(
+                        config.disallowedFeeRecipients[i], false
+                    );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.allowedPayers.length != 0) {
-            for (uint256 i = 0; i < config.allowedPayers.length; ) {
-                IERC1155SeaDrop(address(token)).updatePayer(
-                    config.allowedPayers[i],
-                    true
-                );
+            for (uint256 i = 0; i < config.allowedPayers.length;) {
+                IERC1155SeaDrop(address(token))
+                    .updatePayer(config.allowedPayers[i], true);
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedPayers.length != 0) {
-            for (uint256 i = 0; i < config.disallowedPayers.length; ) {
-                IERC1155SeaDrop(address(token)).updatePayer(
-                    config.disallowedPayers[i],
-                    false
-                );
+            for (uint256 i = 0; i < config.disallowedPayers.length;) {
+                IERC1155SeaDrop(address(token))
+                    .updatePayer(config.disallowedPayers[i], false);
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.allowedSigners.length != 0) {
-            for (uint256 i = 0; i < config.allowedSigners.length; ) {
-                IERC1155SeaDrop(address(token)).updateSigner(
-                    config.allowedSigners[i],
-                    true
-                );
+            for (uint256 i = 0; i < config.allowedSigners.length;) {
+                IERC1155SeaDrop(address(token))
+                    .updateSigner(config.allowedSigners[i], true);
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedSigners.length != 0) {
-            for (uint256 i = 0; i < config.disallowedSigners.length; ) {
-                IERC1155SeaDrop(address(token)).updateSigner(
-                    config.disallowedSigners[i],
-                    false
-                );
+            for (uint256 i = 0; i < config.disallowedSigners.length;) {
+                IERC1155SeaDrop(address(token))
+                    .updateSigner(config.disallowedSigners[i], false);
                 unchecked {
                     ++i;
                 }
@@ -201,11 +186,12 @@ contract ERC1155SeaDropConfigurer is
             if (config.mintTokenIds.length != config.mintAmounts.length) {
                 revert MintAmountsMismatch();
             }
-            IERC1155SeaDrop(token).multiConfigureMint(
-                config.mintRecipient,
-                config.mintTokenIds,
-                config.mintAmounts
-            );
+            IERC1155SeaDrop(token)
+                .multiConfigureMint(
+                    config.mintRecipient,
+                    config.mintTokenIds,
+                    config.mintAmounts
+                );
         }
     }
 }

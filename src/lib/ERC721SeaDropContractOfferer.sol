@@ -44,7 +44,8 @@ contract ERC721SeaDropContractOfferer is
     ERC721ContractMetadata,
     ERC721SeaDropErrorsAndEvents
 {
-    using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage.Layout;
+    using ERC721SeaDropContractOffererStorage for ERC721SeaDropContractOffererStorage
+        .Layout;
 
     /**
      * @notice Deploy the token contract.
@@ -67,16 +68,14 @@ contract ERC721SeaDropContractOfferer is
         if (allowedSeaport == address(0)) {
             revert AllowedSeaportCannotBeZeroAddress();
         }
-        ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
-            allowedSeaport
-        ] = true;
+        ERC721SeaDropContractOffererStorage.layout()
+        ._allowedSeaport[allowedSeaport] = true;
 
         // Set the allowed Seaport enumeration.
         address[] memory enumeratedAllowedSeaport = new address[](1);
         enumeratedAllowedSeaport[0] = allowedSeaport;
-        ERC721SeaDropContractOffererStorage
-            .layout()
-            ._enumeratedAllowedSeaport = enumeratedAllowedSeaport;
+        ERC721SeaDropContractOffererStorage.layout()._enumeratedAllowedSeaport =
+            enumeratedAllowedSeaport;
 
         // Emit an event noting the contract deployment.
         emit SeaDropTokenDeployed(SEADROP_TOKEN_TYPE.ERC721_STANDARD);
@@ -95,36 +94,37 @@ contract ERC721SeaDropContractOfferer is
 
         // Determine if we should forward the call to the implementation
         // contract with SeaDrop logic.
-        bool callSeaDropImplementation = selector ==
-            ISeaDropToken.updateAllowedSeaport.selector ||
-            selector == ISeaDropToken.updateDropURI.selector ||
-            selector == ISeaDropToken.updateAllowList.selector ||
-            selector == ISeaDropToken.updateCreatorPayouts.selector ||
-            selector == ISeaDropToken.updatePayer.selector ||
-            selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
-            selector == ISeaDropToken.updateSigner.selector ||
-            selector == IERC721SeaDrop.updatePublicDrop.selector ||
-            selector == ContractOffererInterface.previewOrder.selector ||
-            selector == ContractOffererInterface.generateOrder.selector ||
-            selector == ContractOffererInterface.getSeaportMetadata.selector ||
-            selector == IERC721SeaDrop.getPublicDrop.selector ||
-            selector == ISeaDropToken.getAllowedSeaport.selector ||
-            selector == ISeaDropToken.getCreatorPayouts.selector ||
-            selector == ISeaDropToken.getAllowListMerkleRoot.selector ||
-            selector == ISeaDropToken.getAllowedFeeRecipients.selector ||
-            selector == ISeaDropToken.getSigners.selector ||
-            selector == ISeaDropToken.getDigestIsUsed.selector ||
-            selector == ISeaDropToken.getPayers.selector;
+        bool callSeaDropImplementation =
+            selector == ISeaDropToken.updateAllowedSeaport.selector
+                || selector == ISeaDropToken.updateDropURI.selector
+                || selector == ISeaDropToken.updateAllowList.selector
+                || selector == ISeaDropToken.updateCreatorPayouts.selector
+                || selector == ISeaDropToken.updatePayer.selector
+                || selector == ISeaDropToken.updateAllowedFeeRecipient.selector
+                || selector == ISeaDropToken.updateSigner.selector
+                || selector == IERC721SeaDrop.updatePublicDrop.selector
+                || selector == ContractOffererInterface.previewOrder.selector
+                || selector == ContractOffererInterface.generateOrder.selector
+                || selector
+                    == ContractOffererInterface.getSeaportMetadata.selector
+                || selector == IERC721SeaDrop.getPublicDrop.selector
+                || selector == ISeaDropToken.getAllowedSeaport.selector
+                || selector == ISeaDropToken.getCreatorPayouts.selector
+                || selector == ISeaDropToken.getAllowListMerkleRoot.selector
+                || selector == ISeaDropToken.getAllowedFeeRecipients.selector
+                || selector == ISeaDropToken.getSigners.selector
+                || selector == ISeaDropToken.getDigestIsUsed.selector
+                || selector == ISeaDropToken.getPayers.selector;
 
         // Determine if we should require only the owner or configurer calling.
-        bool requireOnlyOwnerOrConfigurer = selector ==
-            ISeaDropToken.updateAllowedSeaport.selector ||
-            selector == ISeaDropToken.updateDropURI.selector ||
-            selector == ISeaDropToken.updateAllowList.selector ||
-            selector == ISeaDropToken.updateCreatorPayouts.selector ||
-            selector == ISeaDropToken.updatePayer.selector ||
-            selector == ISeaDropToken.updateAllowedFeeRecipient.selector ||
-            selector == IERC721SeaDrop.updatePublicDrop.selector;
+        bool requireOnlyOwnerOrConfigurer =
+            selector == ISeaDropToken.updateAllowedSeaport.selector
+                || selector == ISeaDropToken.updateDropURI.selector
+                || selector == ISeaDropToken.updateAllowList.selector
+                || selector == ISeaDropToken.updateCreatorPayouts.selector
+                || selector == ISeaDropToken.updatePayer.selector
+                || selector == ISeaDropToken.updateAllowedFeeRecipient.selector
+                || selector == IERC721SeaDrop.updatePublicDrop.selector;
 
         if (callSeaDropImplementation) {
             // For update calls, ensure the sender is only the owner
@@ -138,10 +138,9 @@ contract ERC721SeaDropContractOfferer is
                 // If the signer is not allowed, ensure sender is only owner
                 // or configurer.
                 if (
-                    msg.sender != signer ||
-                    (msg.sender == signer &&
-                        !ERC721SeaDropContractOffererStorage
-                            .layout()
+                    msg.sender != signer
+                        || (msg.sender == signer
+                            && !ERC721SeaDropContractOffererStorage.layout()
                             ._allowedSigners[signer])
                 ) {
                     _onlyOwnerOrConfigurer();
@@ -149,8 +148,8 @@ contract ERC721SeaDropContractOfferer is
             }
 
             // Forward the call to the implementation contract.
-            (bool success, bytes memory returnedData) = _CONFIGURER
-                .delegatecall(msg.data);
+            (bool success, bytes memory returnedData) =
+                _CONFIGURER.delegatecall(msg.data);
 
             // Require that the call was successful.
             if (!success) {
@@ -184,11 +183,8 @@ contract ERC721SeaDropContractOfferer is
             address minter = abi.decode(data, (address));
 
             // Get the mint stats.
-            (
-                uint256 minterNumMinted,
-                uint256 totalMinted,
-                uint256 maxSupply
-            ) = _getMintStats(minter);
+            (uint256 minterNumMinted, uint256 totalMinted, uint256 maxSupply) =
+                _getMintStats(minter);
 
             // Encode the return data.
             return abi.encode(minterNumMinted, totalMinted, maxSupply);
@@ -225,9 +221,7 @@ contract ERC721SeaDropContractOfferer is
      *
      * @param minter The minter address.
      */
-    function _getMintStats(
-        address minter
-    )
+    function _getMintStats(address minter)
         internal
         view
         returns (
@@ -254,17 +248,19 @@ contract ERC721SeaDropContractOfferer is
      */
     function _safeTransferFrom(
         address from,
-        address /* to */,
-        uint256 /* id */,
-        uint256 /* amount */,
+        address,
+        /* to */
+        uint256,
+        /* id */
+        uint256,
+        /* amount */
         bytes memory /* data */
     ) internal view {
         // Only Seaport or the conduit can use this function.
         if (
-            (msg.sender != _CONDUIT &&
-                !ERC721SeaDropContractOffererStorage.layout()._allowedSeaport[
-                    msg.sender
-                ]) || from != address(this)
+            (msg.sender != _CONDUIT
+                    && !ERC721SeaDropContractOffererStorage.layout()
+                    ._allowedSeaport[msg.sender]) || from != address(this)
         ) {
             revert InvalidCallerOnlyAllowedSeaport(msg.sender);
         }
@@ -277,13 +273,17 @@ contract ERC721SeaDropContractOfferer is
      *
      * @param interfaceId The interface id to check against.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC721ContractMetadata) returns (bool) {
-        return
-            interfaceId == type(IERC721SeaDrop).interfaceId ||
-            interfaceId == type(ContractOffererInterface).interfaceId ||
-            interfaceId == 0x2e778efc || // SIP-5 (getSeaportMetadata)
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721ContractMetadata)
+        returns (bool)
+    {
+        return interfaceId == type(IERC721SeaDrop).interfaceId
+            || interfaceId == type(ContractOffererInterface).interfaceId
+            || interfaceId == 0x2e778efc // SIP-5 (getSeaportMetadata)
+            || 
             // ERC721ContractMetadata returns supportsInterface true for
             //     IERC721ContractMetadata, ERC-4906, ERC-2981
             // ERC721A returns supportsInterface true for
@@ -301,8 +301,7 @@ contract ERC721SeaDropContractOfferer is
         // Decode fulfiller, minimumReceived, and context from calldata.
         (
             address fulfiller,
-            SpentItem[] memory minimumReceived,
-            ,
+            SpentItem[] memory minimumReceived,,
             bytes memory context
         ) = abi.decode(data, (address, SpentItem[], SpentItem[], bytes));
 
@@ -333,10 +332,8 @@ contract ERC721SeaDropContractOfferer is
      */
     function _multiConfigureMint(bytes calldata data) internal {
         // Decode the calldata.
-        (address recipient, uint256 quantity) = abi.decode(
-            data,
-            (address, uint256)
-        );
+        (address recipient, uint256 quantity) =
+            abi.decode(data, (address, uint256));
 
         _mint(recipient, quantity);
     }

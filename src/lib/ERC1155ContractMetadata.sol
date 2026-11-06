@@ -147,10 +147,9 @@ contract ERC1155ContractMetadata is
      * @param fromTokenId The start token id.
      * @param toTokenId   The end token id.
      */
-    function emitBatchMetadataUpdate(
-        uint256 fromTokenId,
-        uint256 toTokenId
-    ) external {
+    function emitBatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId)
+        external
+    {
         // Ensure the sender is only the owner or configurer contract.
         _onlyOwnerOrConfigurer();
 
@@ -317,7 +316,13 @@ contract ERC1155ContractMetadata is
      */
     function uri(
         uint256 /* tokenId */
-    ) public view virtual override returns (string memory) {
+    )
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
         // Return the base URI.
         return _baseURI;
     }
@@ -369,13 +374,10 @@ contract ERC1155ContractMetadata is
             address transferValidator = _transferValidator;
             if (transferValidator != address(0)) {
                 for (uint256 i = 0; i < ids.length; i++) {
-                    ITransferValidator1155(transferValidator).validateTransfer(
-                        msg.sender,
-                        from,
-                        to,
-                        ids[i],
-                        amounts[i]
-                    );
+                    ITransferValidator1155(transferValidator)
+                        .validateTransfer(
+                            msg.sender, from, to, ids[i], amounts[i]
+                        );
                 }
             }
         }
@@ -386,15 +388,18 @@ contract ERC1155ContractMetadata is
      *
      * @param interfaceId The interface id to check against.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC1155, ERC2981) returns (bool) {
-        return
-            interfaceId == type(IERC1155ContractMetadata).interfaceId ||
-            interfaceId == type(ICreatorToken).interfaceId ||
-            interfaceId == type(ILegacyCreatorToken).interfaceId ||
-            interfaceId == 0x49064906 || // ERC-4906 (MetadataUpdate)
-            ERC2981.supportsInterface(interfaceId) ||
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC1155, ERC2981)
+        returns (bool)
+    {
+        return interfaceId == type(IERC1155ContractMetadata).interfaceId
+            || interfaceId == type(ICreatorToken).interfaceId
+            || interfaceId == type(ILegacyCreatorToken).interfaceId
+            || interfaceId == 0x49064906 // ERC-4906 (MetadataUpdate)
+            || ERC2981.supportsInterface(interfaceId) || 
             // ERC1155 returns supportsInterface true for
             //     ERC165, ERC1155, ERC1155MetadataURI
             ERC1155.supportsInterface(interfaceId);
@@ -408,12 +413,11 @@ contract ERC1155ContractMetadata is
      * @param amount The quantity to mint.
      * @param data   The data to pass if receiver is a contract.
      */
-    function _mint(
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) internal virtual override {
+    function _mint(address to, uint256 id, uint256 amount, bytes memory data)
+        internal
+        virtual
+        override
+    {
         // Increment mint counts.
         _incrementMintCounts(to, id, amount);
 
@@ -437,7 +441,7 @@ contract ERC1155ContractMetadata is
         // Put ids length on the stack to save MLOADs.
         uint256 idsLength = ids.length;
 
-        for (uint256 i = 0; i < idsLength; ) {
+        for (uint256 i = 0; i < idsLength;) {
             // Increment mint counts.
             _incrementMintCounts(to, ids[i], amounts[i]);
 
@@ -457,12 +461,11 @@ contract ERC1155ContractMetadata is
      * @param id     The token id to burn.
      * @param amount The amount to burn.
      */
-    function _burn(
-        address by,
-        address from,
-        uint256 id,
-        uint256 amount
-    ) internal virtual override {
+    function _burn(address by, address from, uint256 id, uint256 amount)
+        internal
+        virtual
+        override
+    {
         // Reduce the supply.
         _reduceSupplyOnBurn(id, amount);
 
@@ -486,7 +489,7 @@ contract ERC1155ContractMetadata is
         // Put ids length on the stack to save MLOADs.
         uint256 idsLength = ids.length;
 
-        for (uint256 i = 0; i < idsLength; ) {
+        for (uint256 i = 0; i < idsLength;) {
             // Reduce the supply.
             _reduceSupplyOnBurn(ids[i], amounts[i]);
 
@@ -518,11 +521,9 @@ contract ERC1155ContractMetadata is
      * @param id     The token id to mint.
      * @param amount The quantity to mint.
      */
-    function _incrementMintCounts(
-        address to,
-        uint256 id,
-        uint256 amount
-    ) internal {
+    function _incrementMintCounts(address to, uint256 id, uint256 amount)
+        internal
+    {
         // Get the current token supply.
         TokenSupply storage tokenSupply = _tokenSupply[id];
 

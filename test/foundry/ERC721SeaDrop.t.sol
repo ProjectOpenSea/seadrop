@@ -51,14 +51,13 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         token = new ERC721SeaDrop(address(configurer), allowedSeaport, "", "");
     }
 
-    function testMintPublic(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintPublic(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -115,8 +114,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -127,14 +126,13 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         });
     }
 
-    function testMintAllowList(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintAllowList(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -154,11 +152,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         address[] memory allowList = new address[](2);
         allowList[0] = address(this);
         allowList[1] = makeAddr("fred");
-        bytes32[] memory proof = setAllowListMerkleRootAndReturnProof(
-            allowList,
-            0,
-            mintParams
-        );
+        bytes32[] memory proof =
+            setAllowListMerkleRootAndReturnProof(allowList, 0, mintParams);
 
         addSeaDropOfferItem(3); // 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -203,8 +198,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -215,14 +210,13 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         });
     }
 
-    function testMintSigned(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintSigned(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC721SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -297,8 +291,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -331,8 +325,8 @@ contract ERC721SeaDropTest is SeaDrop721Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
