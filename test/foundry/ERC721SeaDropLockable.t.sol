@@ -401,6 +401,41 @@ contract ERC721SeaDropLockableTest is TestHelper {
         _assertLockEvents(_lockEvents(), expected);
     }
 
+    function testLockPermanentlyRelocksEveryUnlockedId() public {
+        _setUp(LockMode.Locked);
+        token_.mint(holder, 2);
+
+        // Unlock tokens 1 to 5, then lock token 3 again.
+        uint256[] memory ids = new uint256[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            ids[i] = i + 1;
+        }
+        token_.setTokensLocked(ids, false);
+        token_.setTokensLocked(_asArray(3), true);
+
+        vm.recordLogs();
+        token_.lockPermanently();
+        LockEvent[] memory events = _lockEvents();
+
+        // Tokens 1, 2, 4, and 5 are each locked again, in any order, before
+        // PermanentlyLocked.
+        assertEq(events.length, 5, "lock event count");
+        bool[6] memory relocked;
+        for (uint256 i = 0; i < 4; i++) {
+            assertEq(events[i].topic, LOCKED, "lock event topic");
+            assertTrue(events[i].isLocked, "lock event status");
+            assertFalse(relocked[events[i].tokenId], "duplicate token id");
+            relocked[events[i].tokenId] = true;
+        }
+        assertTrue(relocked[1] && relocked[2] && relocked[4] && relocked[5]);
+        assertFalse(relocked[3]);
+        assertEq(events[4].topic, PERMANENTLY_LOCKED, "last lock event");
+
+        for (uint256 id = 1; id <= 5; id++) {
+            assertTrue(token_.locked(id));
+        }
+    }
+
     function testPerTokenLockWhileDefaultUnlocked() public {
         _setUp(LockMode.Unlocked);
 
