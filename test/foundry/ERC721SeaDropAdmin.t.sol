@@ -605,7 +605,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
     function _checkMultiConfigureResults(
         ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config,
         address feeRecipient
-    ) internal {
+    ) internal view {
         assertEq(token.maxSupply(), 100);
         assertEq(token.baseURI(), "https://example1.com");
         assertEq(token.contractURI(), "https://example2.com");
