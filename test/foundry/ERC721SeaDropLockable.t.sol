@@ -19,6 +19,8 @@ import { MockTransferValidator } from "seadrop/test/MockTransferValidator.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
+import { IERC721A } from "ERC721A/IERC721A.sol";
+
 contract ERC721SeaDropLockableWithMint is ERC721SeaDropLockable {
     constructor(
         string memory name,
@@ -43,6 +45,9 @@ contract ERC721SeaDropLockableTest is TestHelper {
     bytes32 constant DEFAULT_LOCKED = keccak256("DefaultLocked(bool)");
     bytes32 constant LOCKED = keccak256("Locked(uint256,bool)");
     bytes32 constant PERMANENTLY_LOCKED = keccak256("PermanentlyLocked()");
+
+    /// @dev The OpenSea conduit, which ERC721SeaDrop preapproves.
+    address constant CONDUIT = 0x1E0049783F008A0085193E00003D00cd54003c71;
 
     ERC721SeaDropLockableWithMint token_;
 
@@ -140,7 +145,8 @@ contract ERC721SeaDropLockableTest is TestHelper {
     }
 
     /// @dev Expect every holder transfer of `tokenId` to revert with
-    ///      `TokenLocked(tokenId)`, from the holder and from operators.
+    ///      `TokenLocked(tokenId)`, from the holder, from approved operators,
+    ///      and from the preapproved OpenSea conduit.
     function _assertHolderTransfersRevert(uint256 tokenId) internal {
         vm.startPrank(holder);
         vm.expectRevert(_tokenLocked(tokenId));
@@ -167,6 +173,11 @@ contract ERC721SeaDropLockableTest is TestHelper {
             token_.safeTransferFrom(holder, recipient, tokenId);
         }
 
+        // A Seaport sale transfers through the conduit.
+        vm.prank(CONDUIT);
+        vm.expectRevert(_tokenLocked(tokenId));
+        token_.transferFrom(holder, recipient, tokenId);
+
         assertEq(token_.ownerOf(tokenId), holder);
     }
 
@@ -175,7 +186,7 @@ contract ERC721SeaDropLockableTest is TestHelper {
         token_.transferFrom(holder, recipient, tokenId);
         assertEq(token_.ownerOf(tokenId), recipient);
 
-        vm.prank(recipient);
+        vm.prank(CONDUIT);
         token_.transferFrom(recipient, holder, tokenId);
         assertEq(token_.ownerOf(tokenId), holder);
     }
@@ -241,16 +252,20 @@ contract ERC721SeaDropLockableTest is TestHelper {
     }
 
     function testConstructorRejectsInvalidLockMode() public {
-        address[] memory allowedSeaDrop = new address[](0);
+        // The same init code deploys with the highest valid lock mode, so
+        // the failure below comes from the lock mode alone.
+        assertTrue(_create(2) != address(0));
+        assertEq(_create(3), address(0));
+    }
+
+    function _create(uint256 lockMode) internal returns (address deployed) {
         bytes memory initCode = abi.encodePacked(
             type(ERC721SeaDropLockableWithMint).creationCode,
-            abi.encode("", "", allowedSeaDrop, uint256(3))
+            abi.encode("", "", new address[](0), lockMode)
         );
-        address deployed;
         assembly {
             deployed := create(0, add(initCode, 0x20), mload(initCode))
         }
-        assertEq(deployed, address(0));
     }
 
     function testMintWhileLocked() public {
@@ -543,7 +558,7 @@ contract ERC721SeaDropLockableTest is TestHelper {
 
         // Without an approval, others cannot burn.
         vm.prank(operator);
-        vm.expectRevert();
+        vm.expectRevert(IERC721A.TransferCallerNotOwnerNorApproved.selector);
         token_.burn(2);
     }
 
