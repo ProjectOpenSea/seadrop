@@ -711,6 +711,18 @@ abstract contract SeaDropTest is
         arr[2] = c;
     }
 
+    function _uints(uint256 a, uint256 b, uint256 c, uint256 d)
+        internal
+        pure
+        returns (uint256[] memory arr)
+    {
+        arr = new uint256[](4);
+        arr[0] = a;
+        arr[1] = b;
+        arr[2] = c;
+        arr[3] = d;
+    }
+
     function _addrs(address a) internal pure returns (address[] memory arr) {
         arr = new address[](1);
         arr[0] = a;

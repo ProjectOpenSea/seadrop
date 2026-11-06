@@ -475,10 +475,15 @@ contract ERC1155SeaDropContractOffererImplementation is
         // Bit 2: unsupported substandard.
         errorBuffer |= _castAndInvert(substandard < 3) << 2;
 
-        // Bit 3: context too short. Minimum is 43 bytes
-        // (version byte, substandard byte, feeRecipient, minter,
-        //  publicDropIndex OR other substandard mint params).
-        errorBuffer |= _castAndInvert(contextLength > 42) << 3;
+        // Bit 3: context too short for the substandard. Every context starts
+        // with the version byte, substandard byte, feeRecipient and minter
+        // (42 bytes). Public mints add the public drop index (1 byte), allow
+        // list mints the mint params (416 bytes, then the proof), and signed
+        // mints the mint params, salt and signature (512 bytes).
+        uint256 minimumContextLength =
+            substandard == 1 ? 458 : (substandard == 2 ? 554 : 43);
+        bool contextLongEnough = contextLength >= minimumContextLength;
+        errorBuffer |= _castAndInvert(contextLongEnough) << 3;
 
         // Handle decoding errors.
         if (errorBuffer != 0) {

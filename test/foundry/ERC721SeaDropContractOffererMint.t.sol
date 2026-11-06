@@ -7,7 +7,7 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
-import { PublicDrop } from "seadrop/lib/ERC721SeaDropStructs.sol";
+import { MintParams, PublicDrop } from "seadrop/lib/ERC721SeaDropStructs.sol";
 
 import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
 
@@ -659,5 +659,94 @@ contract ERC721SeaDropContractOffererMintTest is SeaDrop721OffererFixture {
                 _expectPreviewRevert(order, minter, expected);
             }
         }
+    }
+
+    function _substandardMintParams()
+        internal
+        view
+        returns (MintParams memory)
+    {
+        return MintParams({
+            startPrice: 0.1 ether,
+            endPrice: 0.1 ether,
+            startTime: vm.getBlockTimestamp() - 1000,
+            endTime: vm.getBlockTimestamp() + 1000,
+            paymentToken: address(0),
+            maxTotalMintableByWallet: 10,
+            maxTokenSupplyForStage: 5,
+            dropStageIndex: 1,
+            feeBps: 1000,
+            restrictFeeRecipients: true
+        });
+    }
+
+    /// @dev Each context shorter than the order's own (at `lengths`)
+    ///      reverts with InvalidExtraDataEncoding; the full one mints.
+    function _assertShortContextsRejected(
+        AdvancedOrder memory order,
+        uint256 value,
+        uint256[] memory lengths
+    ) internal {
+        bytes memory extraData = order.extraData;
+        for (uint256 i = 0; i < lengths.length; i++) {
+            order.extraData = _slice(extraData, 0, lengths[i]);
+            _expectPreviewRevert(
+                order,
+                minter,
+                abi.encodeWithSelector(InvalidExtraDataEncoding.selector, 0)
+            );
+        }
+        order.extraData = extraData;
+        _fulfillAndExpectMint(order, minter, value, 1);
+    }
+
+    /// @dev An allow list mint context too short for its mint params
+    ///      reverts with InvalidExtraDataEncoding, not an out-of-bounds slice
+    ///      with no reason. The full context (here with an empty proof)
+    ///      mints.
+    function testDecodeOrderRejectsShortAllowListContext() public {
+        MintParams memory mintParams = _substandardMintParams();
+        (bytes32 root, bytes32[] memory proof) =
+            _allowListRootAndProof(minter, mintParams);
+        vm.prank(owner);
+        _updateAllowList(address(token), root);
+        (AdvancedOrder memory order, uint256 value) = _allowListMintOrder(
+            address(token),
+            1,
+            feeRecipient,
+            mintParams.feeBps,
+            mintParams.startPrice,
+            minter,
+            mintParams,
+            proof
+        );
+        assertEq(order.extraData.length, 362);
+        _assertShortContextsRejected(order, value, _uints(42, 361));
+    }
+
+    /// @dev A signed mint context too short for its mint params, salt and
+    ///      signature reverts with InvalidExtraDataEncoding. The full
+    ///      context mints.
+    function testDecodeOrderRejectsShortSignedContext() public {
+        MintParams memory mintParams = _substandardMintParams();
+        address signer = makeAddr("signer");
+        vm.prank(owner);
+        _seaDrop().updateSigner(signer, true);
+        (bytes memory signature,) = _signMint(
+            "signer", address(token), minter, feeRecipient, mintParams, 1
+        );
+        (AdvancedOrder memory order, uint256 value) = _signedMintOrder(
+            address(token),
+            1,
+            feeRecipient,
+            mintParams.feeBps,
+            mintParams.startPrice,
+            minter,
+            mintParams,
+            1,
+            signature
+        );
+        assertEq(order.extraData.length, 458);
+        _assertShortContextsRejected(order, value, _uints(42, 361, 457));
     }
 }
