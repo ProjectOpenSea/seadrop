@@ -33,39 +33,9 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 
 ## Deployments
 
-<table>
-<tr>
-<th>Network</th>
-<th>SeaDrop 1.0</th>
-</tr>
+`SeaDrop` 1.0 is deployed at [`0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code) on Ethereum and most other networks OpenSea supports. On OpenSea, ERC-721 drops use SeaDrop v1 from this branch, and ERC-1155 drops use SeaDrop v2 from the [`v2`](https://github.com/ProjectOpenSea/seadrop/tree/v2) branch.
 
-<tr><td>Ethereum</td><td rowspan="20">
-
-[0x00005EA00Ac477B1030CE78506496e8C2dE24bf5](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code)
-
-</td></tr>
-<tr><td>Sepolia</td></tr>
-<tr><td>Polygon</td></tr>
-<tr><td>Polygon Mumbai</td></tr>
-<tr><td>Arbitrum One</td></tr>
-<tr><td>Arbitrum Nova</td></tr>
-<tr><td>Arbitrum Sepolia</td></tr>
-<tr><td>Avalanche C-Chain</td></tr>
-<tr><td>Avalanche Fuji</td></tr>
-<tr><td>Optimism</td></tr>
-<tr><td>Optimism Sepolia</td></tr>
-<tr><td>Base</td></tr>
-<tr><td>Base Sepolia</td></tr>
-<tr><td>BSC</td></tr>
-<tr><td>BSC Testnet</td></tr>
-<tr><td>Klaytn</td></tr>
-<tr><td>Klaytn Baobab</td></tr>
-<tr><td>Gnosis Chain</td></tr>
-<tr><td>Zora</td></tr>
-<tr><td>Zora Sepolia</td></tr>
-</table>
-
-To deploy to a new EVM chain, follow the [steps outlined here](docs/SeaDropDeployment.md).
+See [Deployments](docs/Deployments.md) for the clone factories, every network, and the legacy contracts. To deploy to a new network, follow [SeaDrop Deployment](docs/SeaDropDeployment.md).
 
 ## Diagram
 
@@ -75,6 +45,7 @@ This diagram shows the logic flow in the case that a drop is hosted on OpenSea, 
 
 ## Docs
 
+- [Deployments](docs/Deployments.md)
 - [SeaDrop Deployment](docs/SeaDropDeployment.md)
 - [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
 - [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
