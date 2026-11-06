@@ -36,7 +36,8 @@ enum LockMode {
  *         `_revertIfTokenLocked` for every holder transfer, decide who can
  *         update the lock in `_authorizeLockUpdate`, define when a token
  *         exists in `_lockableTokenExists`, and return true from
- *         `supportsInterface` for IERC6982 and IERC8451.
+ *         `supportsInterface` for IERC6982 and IERC8451. It can limit when
+ *         the lock may become permanent in `_checkPermanentLockAllowed`.
  */
 abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     using EnumerableSet for EnumerableSet.UintSet;
@@ -133,14 +134,20 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
         for (uint256 i = 0; i < tokenIdsLength;) {
             uint256 tokenId = tokenIds[i];
 
-            _tokenLockOverrides[tokenId] = lockOverride;
+            // Skip the writes if the token already has this lock status.
+            TokenLockOverride previous = _tokenLockOverrides[tokenId];
+            if (previous != lockOverride) {
+                _tokenLockOverrides[tokenId] = lockOverride;
 
-            // Track unlocked tokens so they can be locked again before
-            // the lock becomes permanent.
-            if (isLocked) {
-                _unlockedTokenIds.remove(tokenId);
-            } else {
-                _unlockedTokenIds.add(tokenId);
+                // Track unlocked tokens so they can be locked again before
+                // the lock becomes permanent.
+                if (isLocked) {
+                    if (previous == TokenLockOverride.Unlocked) {
+                        _unlockedTokenIds.remove(tokenId);
+                    }
+                } else {
+                    _unlockedTokenIds.add(tokenId);
+                }
             }
 
             emit Locked(tokenId, isLocked);
@@ -167,6 +174,7 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     function lockPermanently() external {
         _authorizeLockUpdate();
         _revertIfPermanentlyLocked();
+        _checkPermanentLockAllowed();
 
         // ERC-8451 requires `defaultLocked()` to return true before
         // `PermanentlyLocked` is emitted.
@@ -176,8 +184,9 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
         }
 
         // ERC-8451 requires a `Locked(id, true)` for every token id whose
-        // most recent `Locked` event unlocked it. The set is left in place
-        // since `_isTokenLocked` ignores it once the lock is permanent.
+        // most recent `Locked` event unlocked it. The set and the overrides
+        // are left in place, since `_isTokenLocked` returns true for every
+        // token once the lock is permanent.
         uint256 unlockedLength = _unlockedTokenIds.length();
         for (uint256 i = 0; i < unlockedLength;) {
             emit Locked(_unlockedTokenIds.at(i), true);
@@ -268,6 +277,13 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
      * @dev Reverts if the caller cannot update the lock.
      */
     function _authorizeLockUpdate() internal view virtual;
+
+    /**
+     * @dev Reverts if the lock cannot become permanent now. Allows it at
+     *      any time by default. A contract that inherits this can limit it,
+     *      for example to before the first mint.
+     */
+    function _checkPermanentLockAllowed() internal view virtual { }
 
     /**
      * @dev Returns whether a token exists, for `locked`.

@@ -113,7 +113,7 @@ contract ERC721SeaDropLockable is ERC721SeaDrop, ERC8451Lockable {
     /**
      * @dev Only the owner can update the lock.
      */
-    function _authorizeLockUpdate() internal view override {
+    function _authorizeLockUpdate() internal view virtual override {
         _checkOwner();
     }
 
@@ -123,6 +123,7 @@ contract ERC721SeaDropLockable is ERC721SeaDrop, ERC8451Lockable {
     function _lockableTokenExists(uint256 tokenId)
         internal
         view
+        virtual
         override
         returns (bool)
     {

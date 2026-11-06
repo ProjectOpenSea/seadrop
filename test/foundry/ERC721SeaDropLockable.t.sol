@@ -34,6 +34,19 @@ contract ERC721SeaDropLockableWithMint is ERC721SeaDropLockable {
     }
 }
 
+/// @dev Limits permanence to before the first mint through the hook.
+contract ERC721SeaDropLockableBeforeMint is ERC721SeaDropLockableWithMint {
+    error MintStarted();
+
+    constructor(address[] memory allowedSeaDrop, LockMode lockMode)
+        ERC721SeaDropLockableWithMint("", "", allowedSeaDrop, lockMode)
+    { }
+
+    function _checkPermanentLockAllowed() internal view override {
+        if (_totalMinted() != 0) revert MintStarted();
+    }
+}
+
 contract ERC721SeaDropLockableTest is TestHelper {
     /// @dev A lock event, decoded from a log.
     struct LockEvent {
@@ -427,6 +440,70 @@ contract ERC721SeaDropLockableTest is TestHelper {
         for (uint256 id = 1; id <= 5; id++) {
             assertTrue(token_.locked(id));
         }
+    }
+
+    function testLockPermanentlyRelocksUnmintedUnlockedIds() public {
+        _setUp(LockMode.Locked);
+
+        // Unlock id 4 before it is minted, twice, and id 9, which is never
+        // minted. Locking id 2, which was never unlocked, adds nothing to
+        // re-lock.
+        token_.setTokensLocked(_asArray(4), false);
+        token_.setTokensLocked(_asArray(4), false);
+        token_.setTokensLocked(_asArray(9), false);
+        token_.setTokensLocked(_asArray(2), true);
+        token_.mint(holder, 1);
+        assertFalse(token_.locked(4));
+
+        vm.recordLogs();
+        token_.lockPermanently();
+
+        LockEvent[] memory expected = new LockEvent[](3);
+        expected[0] = LockEvent(LOCKED, 4, true);
+        expected[1] = LockEvent(LOCKED, 9, true);
+        expected[2] = LockEvent(PERMANENTLY_LOCKED, 0, false);
+        _assertLockEvents(_lockEvents(), expected);
+        assertTrue(token_.locked(4));
+    }
+
+    function testSetTokensLockedEmitsWhenStatusUnchanged() public {
+        _setUp(LockMode.Unlocked);
+
+        // Every call emits Locked, even when the status doesn't change.
+        vm.recordLogs();
+        token_.setTokensLocked(_asArray(1), true);
+        token_.setTokensLocked(_asArray(1), true);
+
+        LockEvent[] memory expected = new LockEvent[](2);
+        expected[0] = LockEvent(LOCKED, 1, true);
+        expected[1] = LockEvent(LOCKED, 1, true);
+        _assertLockEvents(_lockEvents(), expected);
+        assertTrue(token_.locked(1));
+    }
+
+    function testPermanentLockHookCanLimitPermanence() public {
+        address[] memory allowedSeaDrop = new address[](1);
+        allowedSeaDrop[0] = address(seadrop);
+
+        ERC721SeaDropLockableBeforeMint limited = new ERC721SeaDropLockableBeforeMint(
+            allowedSeaDrop, LockMode.Locked
+        );
+        limited.mint(holder, 1);
+        vm.expectRevert(ERC721SeaDropLockableBeforeMint.MintStarted.selector);
+        limited.lockPermanently();
+        assertFalse(limited.permanentlyLocked());
+
+        limited = new ERC721SeaDropLockableBeforeMint(
+            allowedSeaDrop, LockMode.Locked
+        );
+        limited.lockPermanently();
+        assertTrue(limited.permanentlyLocked());
+
+        // Starting permanently locked doesn't consult the hook.
+        limited = new ERC721SeaDropLockableBeforeMint(
+            allowedSeaDrop, LockMode.PermanentlyLocked
+        );
+        assertTrue(limited.permanentlyLocked());
     }
 
     function testPerTokenLockWhileDefaultUnlocked() public {
