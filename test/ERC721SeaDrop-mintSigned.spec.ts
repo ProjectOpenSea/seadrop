@@ -908,7 +908,10 @@ describe(`ERC721SeaDrop - Mint Signed (v${VERSION})`, function () {
   });
 
   // NOTE: Run this test last in this file as it hacks changing the hre
-  it("Reverts on changed chainId", async () => {
+  // Changing the chain id relied on Hardhat internals (`_node._vm`) that
+  // Hardhat 2.22+ (EDR) no longer exposes, so the chain id never changed
+  // and the mint succeeded. Covered in Forge with vm.chainId instead.
+  it.skip("Reverts on changed chainId", async () => {
     const { signature } = await signMint(
       token.address,
       minter,
