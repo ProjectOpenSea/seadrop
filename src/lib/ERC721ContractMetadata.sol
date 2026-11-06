@@ -302,7 +302,7 @@ contract ERC721ContractMetadata is
         returns (bytes4 functionSignature, bool isViewFunction)
     {
         functionSignature = ITransferValidator721.validateTransfer.selector;
-        isViewFunction = false;
+        isViewFunction = true;
     }
 
     /**

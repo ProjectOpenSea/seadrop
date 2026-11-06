@@ -8,6 +8,12 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
 import {
+    ERC1155SeaDropCloneFactory
+} from "seadrop/clones/ERC1155SeaDropCloneFactory.sol";
+
+import { ICreatorToken } from "seadrop/interfaces/ICreatorToken.sol";
+
+import {
     ITransferValidator721,
     ITransferValidator1155
 } from "seadrop/interfaces/ITransferValidator.sol";
@@ -170,21 +176,49 @@ contract TokenTransferValidatorTest is SeaDrop721Test {
         );
     }
 
+    /// @dev The 721 validator's validateTransfer is a view function (as
+    ///      ERC721C reports), the 1155 one is not (as ERC1155C reports).
     function testERC721GetTransferValidationFunction() public view {
         (bytes4 functionSignature, bool isViewFunction) =
             token721.getTransferValidationFunction();
         assertEq(
+            functionSignature,
+            bytes4(
+                keccak256("validateTransfer(address,address,address,uint256)")
+            )
+        );
+        assertEq(
             functionSignature, ITransferValidator721.validateTransfer.selector
         );
-        assertEq(isViewFunction, false);
+        assertTrue(isViewFunction);
     }
 
     function testERC1155GetTransferValidationFunction() public view {
         (bytes4 functionSignature, bool isViewFunction) =
             token1155.getTransferValidationFunction();
         assertEq(
+            functionSignature,
+            bytes4(
+                keccak256(
+                    "validateTransfer(address,address,address,uint256,uint256)"
+                )
+            )
+        );
+        assertEq(
             functionSignature, ITransferValidator1155.validateTransfer.selector
         );
-        assertEq(isViewFunction, true);
+        assertFalse(isViewFunction);
+    }
+
+    function testERC1155CloneGetTransferValidationFunction() public {
+        ERC1155SeaDropCloneFactory factory =
+            new ERC1155SeaDropCloneFactory(allowedSeaport);
+        address clone = factory.createClone("name", "symbol", bytes32("1"));
+        (bytes4 functionSignature, bool isViewFunction) =
+            ICreatorToken(clone).getTransferValidationFunction();
+        assertEq(
+            functionSignature, ITransferValidator1155.validateTransfer.selector
+        );
+        assertFalse(isViewFunction);
     }
 }
