@@ -599,8 +599,9 @@ contract ERC1155ContractMetadata is
         internal
     {
         // Record that minting has started, after which the lock cannot
-        // become permanent.
-        if (!_mintStarted) {
+        // become permanent. A zero-amount mint creates no token and does
+        // not count.
+        if (amount != 0 && !_mintStarted) {
             _mintStarted = true;
         }
 

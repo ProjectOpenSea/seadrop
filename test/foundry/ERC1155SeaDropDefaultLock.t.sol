@@ -251,6 +251,15 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         token_.safeTransferFrom(holder, recipient, 2, 1, "");
     }
 
+    function testZeroAmountMintDoesNotStartMinting() public {
+        // A mint of zero tokens creates no token, so the lock can still
+        // become permanent.
+        token_.mint(holder, 1, 0);
+        assertEq(token_.totalSupply(1), 0);
+        token_.lockPermanently();
+        assertTrue(token_.permanentlyLocked());
+    }
+
     function testLockFlagsShareTransferValidatorSlot() public {
         address validator = makeAddr("validator");
         token_.setTransferValidator(validator);
