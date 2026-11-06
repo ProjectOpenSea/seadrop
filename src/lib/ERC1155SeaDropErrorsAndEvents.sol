@@ -62,6 +62,12 @@ interface ERC1155SeaDropErrorsAndEvents is SeaDropErrorsAndEvents {
     error PublicDropsMismatch();
 
     /**
+     * @dev Revert if the public drop index is above 255, which a public mint
+     *      order (with its one-byte drop index) could never select.
+     */
+    error InvalidPublicDropIndex(uint256 index);
+
+    /**
      * @dev An event with updated public drop data.
      */
     event PublicDropUpdated(PublicDrop publicDrop, uint256 index);

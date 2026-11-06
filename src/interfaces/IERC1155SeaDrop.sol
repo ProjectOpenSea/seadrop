@@ -15,7 +15,8 @@ interface IERC1155SeaDrop is ISeaDropToken {
      * @notice Update the SeaDrop public drop parameters at a given index.
      *
      * @param publicDrop The new public drop parameters.
-     * @param index      The public drop index.
+     * @param index      The public drop index, at most 255 (public mint
+     *                   orders carry it as one byte).
      */
     function updatePublicDrop(PublicDrop calldata publicDrop, uint256 index)
         external;

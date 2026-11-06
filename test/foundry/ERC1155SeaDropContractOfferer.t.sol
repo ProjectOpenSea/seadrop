@@ -40,6 +40,7 @@ import {
 } from "seaport-types/src/interfaces/ContractOffererInterface.sol";
 
 import {
+    AdvancedOrder,
     Schema,
     SpentItem
 } from "seaport-types/src/lib/ConsiderationStructs.sol";
@@ -597,6 +598,49 @@ contract ERC1155SeaDropContractOffererTest is SeaDrop1155OffererFixture {
         (address receiver, uint256 royaltyAmount) = token.royaltyInfo(0, 100);
         assertEq(receiver, _ROYALTY_RECEIVER);
         assertEq(royaltyAmount, (1_000 * 100) / 10_000);
+    }
+
+    /// @dev A public mint order carries its drop index as one byte, so a
+    ///      public drop above index 255 could never be minted and can't be
+    ///      set, directly or through multiConfigure. Index 255 works.
+    function testPublicDropIndexMustFitInOneByte() public {
+        bytes memory invalidIndex = abi.encodeWithSelector(
+            ERC1155SeaDropErrorsAndEvents.InvalidPublicDropIndex.selector, 256
+        );
+        vm.expectRevert(invalidIndex);
+        _seaDrop().updatePublicDrop(publicDrop, 256);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC1155SeaDropErrorsAndEvents.InvalidPublicDropIndex.selector,
+                type(uint256).max
+            )
+        );
+        _seaDrop().updatePublicDrop(publicDrop, type(uint256).max);
+
+        MultiConfigureStruct memory config = _zeroedMultiConfig();
+        config.publicDrops = new PublicDrop[](1);
+        config.publicDrops[0] = publicDrop;
+        config.publicDropsIndexes = _uints(256);
+        vm.expectRevert(invalidIndex);
+        configurer.multiConfigure(address(token), config);
+
+        assertEq(_seaDrop().getPublicDropIndexes(), _uints(0));
+
+        _seaDrop().updatePublicDrop(publicDrop, 255);
+        assertEq(_seaDrop().getPublicDropIndexes(), _uints(0, 255));
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
+            address(token),
+            0,
+            1,
+            feeRecipient,
+            publicDrop.feeBps,
+            publicDrop.startPrice,
+            minter,
+            255
+        );
+        _fulfillAndExpectMint(order, minter, value, 255);
+        assertEq(token.balanceOf(minter, 0), 1);
     }
 
     /// @dev Should allow multiple creator payout addresses.

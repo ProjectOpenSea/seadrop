@@ -230,13 +230,19 @@ contract ERC1155SeaDropContractOffererImplementation is
      *         Do not use this method directly.
      *
      * @param publicDrop The public drop data.
-     * @param index      The index of the public drop.
+     * @param index      The index of the public drop, at most 255.
      */
     function updatePublicDrop(PublicDrop calldata publicDrop, uint256 index)
         external
     {
         // Ensure this contract is only called into with delegatecall.
         _onlyDelegateCalled();
+
+        // Revert if the index doesn't fit the one-byte drop index of a
+        // public mint order, so no drop is set that can never be minted.
+        if (index > type(uint8).max) {
+            revert InvalidPublicDropIndex(index);
+        }
 
         // Revert if the fee basis points is greater than 10_000.
         if (publicDrop.feeBps > 10_000) {
