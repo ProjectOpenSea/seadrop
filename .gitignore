@@ -1,17 +1,7 @@
 node_modules
 .env
-coverage
-coverage.json
-typechain-types
-yarn-error.log
 
-# Hardhat files
-artifacts/
-hh-cache/
-hh-cache-coverage/
-temp-coverage-*
-
-# Foundry test compilation files
+# Foundry
 cache
 out
 reference-working
@@ -19,11 +9,5 @@ broadcast
 lcov*.info
 
 .DS_Store
-
-# VScode
 .vscode
 __pycache__
-
-# Use typescript instead of javascript
-*.js
-*.txt

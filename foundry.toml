@@ -68,4 +68,36 @@ base-goerli = { key = "${BASESCAN_API_KEY}" }
 zora = { key = "${BLOCKSCOUT_API_KEY}" }
 zora-test = { key = "${BLOCKSCOUT_API_KEY}" }
 
+[fmt]
+line_length = 80
+tab_width = 4
+bracket_spacing = true
+int_types = "preserve"
+number_underscore = "preserve"
+quote_style = "double"
+prefer_compact = "none"
+ignore = ["src/seaport-contracts/**"]
+
+[lint]
+lint_on_build = false
+# Test mocks and Seaport shims aren't shipped.
+ignore = ["src/test/**", "src/shim/**", "src/seaport-contracts/**"]
+# These detectors only flag deliberate, audited patterns in the shipped
+# contracts (payouts to configured recipients, configurer loops, the contract
+# offerer's delegatecall to its implementation, events after Seaport calls,
+# clone initializers, the documented prevrandao offset). CI runs
+# `forge lint --deny warnings`, so every other rule still fails the build.
+exclude_lints = [
+    "arbitrary-send-eth",
+    "calls-loop",
+    "controlled-delegatecall",
+    "missing-zero-check",
+    "reentrancy-events",
+    "require-revert-in-loop",
+    "uninitialized-local",
+    "unprotected-initializer",
+    "unsafe-typecast",
+    "weak-prng",
+]
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
