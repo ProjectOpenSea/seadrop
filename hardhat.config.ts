@@ -62,6 +62,13 @@ const config: HardhatUserConfig = {
               line = line.replace(find, replace);
             }
           });
+          // `solady=lib/solady/` and Seaport's `interfaces//` import leave a
+          // doubled slash, which Hardhat >= 2.14 no longer normalizes.
+          line = line.replace(
+            /"([^"]*)"/,
+            (_match: string, path: string) =>
+              `"${path.replace(/\/{2,}/g, "/")}"`
+          );
         }
         return line;
       },
