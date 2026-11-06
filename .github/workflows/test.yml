@@ -86,18 +86,17 @@ jobs:
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
-      # The tests deploy Seaport from these artifacts. Skipping Seaport's
-      # sources keeps its OrderCombiner, which is stack too deep without the
-      # optimizer, out of the coverage build. The 1155 implementation also
-      # needs viaIR, hence --ir-minimum.
+      # The tests deploy Seaport from these artifacts, so the coverage build
+      # never compiles Seaport's OrderCombiner, which is stack too deep
+      # without the optimizer. The 1155 implementation needs viaIR too,
+      # hence --ir-minimum.
       - name: Build Seaport artifacts
         run: ./scripts/build_seaport.sh
 
       - name: Run coverage
         run: >-
           forge coverage --ir-minimum --report summary --report lcov
-          --skip 'src/seaport-contracts/**'
-          --no-match-coverage 'Shim|MaliciousRecipient|RevertedRecipient|test/|script/'
+          --no-match-coverage 'test/|script/'
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}

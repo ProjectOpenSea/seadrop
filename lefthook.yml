@@ -6,7 +6,6 @@ pre-commit:
       glob: "*.sol"
       exclude:
         - "lib/**"
-        - "src/seaport-contracts/**"
       run: forge fmt {staged_files}
       stage_fixed: true
     - name: biome
