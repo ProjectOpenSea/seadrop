@@ -445,6 +445,46 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         );
     }
 
+    function testLockPermanentlyRelocksUnmintedUnlockedIds() public {
+        _setUp(LockMode.Locked);
+
+        // Unlock id 4 before it is minted, twice, and id 9, which is never
+        // minted. Locking id 2, which was never unlocked, adds nothing to
+        // re-lock.
+        token_.setTokensLocked(_asArray(4), false);
+        token_.setTokensLocked(_asArray(4), false);
+        token_.setTokensLocked(_asArray(9), false);
+        token_.setTokensLocked(_asArray(2), true);
+        token_.mint(holder, 1);
+        assertFalse(token_.locked(4));
+
+        vm.recordLogs();
+        token_.lockPermanently();
+        _assertLockEvents(
+            _lockEvents(),
+            _events(
+                LockEvents.locked(4, true),
+                LockEvents.locked(9, true),
+                LockEvents.permanentlyLocked()
+            )
+        );
+        assertTrue(token_.locked(4));
+    }
+
+    function testSetTokensLockedEmitsWhenStatusUnchanged() public {
+        _setUp(LockMode.Unlocked);
+
+        // Every call emits Locked, even when the status doesn't change.
+        vm.recordLogs();
+        token_.setTokensLocked(_asArray(1), true);
+        token_.setTokensLocked(_asArray(1), true);
+        _assertLockEvents(
+            _lockEvents(),
+            _events(LockEvents.locked(1, true), LockEvents.locked(1, true))
+        );
+        assertTrue(token_.locked(1));
+    }
+
     function testLockPermanentlyRelocksEveryUnlockedId() public {
         _setUp(LockMode.Locked);
         token_.mint(holder, 2);

@@ -632,7 +632,7 @@ contract ERC1155ContractMetadata is
     /**
      * @dev Only the owner can update the lock.
      */
-    function _authorizeLockUpdate() internal view override {
+    function _authorizeLockUpdate() internal view virtual override {
         _checkOwner();
     }
 
@@ -642,6 +642,7 @@ contract ERC1155ContractMetadata is
     function _lockableTokenExists(uint256 tokenId)
         internal
         view
+        virtual
         override
         returns (bool)
     {

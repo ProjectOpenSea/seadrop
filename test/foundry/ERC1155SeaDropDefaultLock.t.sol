@@ -23,6 +23,8 @@ import {
 
 import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
+import { Ownable } from "solady/src/auth/Ownable.sol";
+
 contract ERC1155SeaDropDefaultWithMint is ERC1155SeaDrop {
     constructor(address allowedConfigurer, address allowedSeaport)
         ERC1155SeaDrop(allowedConfigurer, allowedSeaport, "", "")
@@ -249,15 +251,22 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     }
 
     function testCloneStartsUnlockedAndLocksPermanentlyBeforeMint() public {
+        vm.recordLogs();
         ERC1155SeaDropCloneFactory factory =
             new ERC1155SeaDropCloneFactory(allowedSeaport);
+
+        // The implementation contract emits its own DefaultLocked(false) at
+        // deployment.
+        LockEvent[] memory expected = new LockEvent[](1);
+        expected[0] = LockEvents.defaultLocked(false);
+        _assertLockEvents(
+            _lockEventsFrom(factory.cloneableImplementation()), expected
+        );
 
         vm.recordLogs();
         address clone = factory.createClone("", "", bytes32("1"));
 
         // The clone emits DefaultLocked(false) from its initializer.
-        LockEvent[] memory expected = new LockEvent[](1);
-        expected[0] = LockEvents.defaultLocked(false);
         _assertLockEvents(_lockEventsFrom(clone), expected);
 
         ERC1155SeaDrop cloneToken = ERC1155SeaDrop(clone);
@@ -324,5 +333,76 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         address clone = factory.createClone("", "", bytes32("3"));
         _mintThroughSeaport(clone, 1);
         _assertLockSetByValidatorApplies(ERC1155SeaDrop(clone), address(this));
+    }
+
+    /// @dev A new clone owned by this contract.
+    function _clone(bytes32 salt) internal returns (ERC1155SeaDrop) {
+        ERC1155SeaDropCloneFactory factory =
+            new ERC1155SeaDropCloneFactory(allowedSeaport);
+        return ERC1155SeaDrop(factory.createClone("", "", salt));
+    }
+
+    function testCloneOnlyOwnerCanUpdateLock() public {
+        ERC1155SeaDrop clone = _clone("4");
+        vm.startPrank(holder);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        clone.setDefaultLocked(true);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        clone.setTokensLocked(_asArray(1), true);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        clone.lockPermanently();
+        vm.stopPrank();
+    }
+
+    function testCloneApprovalsAfterPermanence() public {
+        ERC1155SeaDrop clone = _clone("5");
+        address operator = makeAddr("operator");
+        vm.prank(holder);
+        clone.setApprovalForAll(operator, true);
+        clone.lockPermanently();
+
+        vm.prank(holder);
+        vm.expectRevert(ERC8451Lockable.LockIsPermanent.selector);
+        clone.setApprovalForAll(recipient, true);
+
+        // Revoking always works.
+        vm.prank(holder);
+        clone.setApprovalForAll(operator, false);
+        assertFalse(clone.isApprovedForAll(holder, operator));
+    }
+
+    function testCloneBatchExistenceAndBurn() public {
+        ERC1155SeaDrop clone = _clone("6");
+        clone.setMaxSupply(1, 10);
+        clone.setMaxSupply(2, 10);
+        IERC1155SeaDrop(address(clone))
+            .multiConfigureMint(holder, _uints(1, 2), _uints(5, 5));
+
+        vm.expectRevert(ERC8451Lockable.LockQueryForNonexistentToken.selector);
+        clone.locked(3);
+
+        // The second id in the batch is the first locked one.
+        clone.setTokensLocked(_asArray(2), true);
+        vm.prank(holder);
+        vm.expectRevert(_tokenLocked(2));
+        clone.safeBatchTransferFrom(
+            holder, recipient, _uints(1, 2), _uints(1, 1), ""
+        );
+
+        // Burns continue while locked, and a burned-out id stops existing.
+        clone.setDefaultLocked(true);
+        vm.prank(holder);
+        clone.burn(holder, 1, 5);
+        vm.expectRevert(ERC8451Lockable.LockQueryForNonexistentToken.selector);
+        clone.locked(1);
+    }
+
+    function testCloneZeroAmountMintDoesNotStartMinting() public {
+        ERC1155SeaDrop clone = _clone("7");
+        clone.setMaxSupply(1, 10);
+        IERC1155SeaDrop(address(clone))
+            .multiConfigureMint(holder, _asArray(1), _asArray(0));
+        clone.lockPermanently();
+        assertTrue(clone.permanentlyLocked());
     }
 }

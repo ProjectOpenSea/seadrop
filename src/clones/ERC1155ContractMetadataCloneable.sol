@@ -107,6 +107,16 @@ contract ERC1155ContractMetadataCloneable is
     }
 
     /**
+     * @dev Emit the implementation contract's own `DefaultLocked`, which
+     *      ERC-6982 requires at deployment. Its lock flags start false, so
+     *      the event is all it needs. Clones don't run constructors, so each
+     *      clone emits its own from the initializer.
+     */
+    constructor() {
+        emit DefaultLocked(false);
+    }
+
+    /**
      * @notice Deploy the token contract.
      *
      * @param allowedConfigurer The address of the contract allowed to
@@ -634,7 +644,7 @@ contract ERC1155ContractMetadataCloneable is
     /**
      * @dev Only the owner can update the lock.
      */
-    function _authorizeLockUpdate() internal view override {
+    function _authorizeLockUpdate() internal view virtual override {
         _checkOwner();
     }
 
@@ -644,6 +654,7 @@ contract ERC1155ContractMetadataCloneable is
     function _lockableTokenExists(uint256 tokenId)
         internal
         view
+        virtual
         override
         returns (bool)
     {
