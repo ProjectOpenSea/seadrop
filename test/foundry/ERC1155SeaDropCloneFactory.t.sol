@@ -127,4 +127,44 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
             address(0), address(0), "name", "symbol", address(this)
         );
     }
+
+    /// @dev Nobody can initialize the implementation the clones point at,
+    ///      and it holds no owner or configuration of its own.
+    function testCannotInitializeImplementation() public {
+        ERC1155SeaDropCloneable implementation =
+            ERC1155SeaDropCloneable(factory.cloneableImplementation());
+        assertEq(implementation.owner(), address(0));
+        assertEq(implementation.name(), "");
+
+        address attacker = makeAddr("attacker");
+        vm.expectRevert("Initializable: contract is already initialized");
+        vm.prank(attacker);
+        implementation.initialize(
+            attacker, address(consideration), "name", "symbol", attacker
+        );
+        assertEq(implementation.owner(), address(0));
+
+        // The same holds for an implementation deployed outside the factory.
+        ERC1155SeaDropCloneable standalone = new ERC1155SeaDropCloneable();
+        vm.expectRevert("Initializable: contract is already initialized");
+        vm.prank(attacker);
+        standalone.initialize(
+            attacker, address(consideration), "name", "symbol", attacker
+        );
+    }
+
+    /// @dev Clones of the locked implementation still initialize, once.
+    function testClonesOfLockedImplementationInitialize() public {
+        address first = factory.createClone("first", "ONE", bytes32("1"));
+        address second = factory.createClone("second", "TWO", bytes32("2"));
+        assertTrue(first != second);
+        assertEq(ERC1155SeaDrop(first).name(), "first");
+        assertEq(ERC1155SeaDrop(second).name(), "second");
+        assertEq(ERC1155SeaDrop(first).owner(), address(this));
+        assertEq(IERC1155SeaDrop(first).configurer(), factory.configurer());
+        assertEq(
+            IERC1155SeaDrop(first).getAllowedSeaport(),
+            _addrs(address(consideration))
+        );
+    }
 }

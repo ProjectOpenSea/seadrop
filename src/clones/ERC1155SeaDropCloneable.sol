@@ -19,6 +19,14 @@ import {
  */
 contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
     /**
+     * @dev Lock the implementation contract so only its clones, which don't
+     *      run this constructor, can be initialized.
+     */
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
      * @notice Initialize the token contract.
      *
      * @param allowedConfigurer The address of the contract allowed to
