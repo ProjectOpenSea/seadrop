@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { SeaDrop721MintHelpers } from "./utils/SeaDrop721MintHelpers.sol";
+import { SeaDrop721Test } from "./utils/SeaDrop721Test.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
@@ -12,16 +12,12 @@ import { MintParams } from "seadrop/lib/ERC721SeaDropStructs.sol";
 import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 /**
- * @dev Port of test/ERC721SeaDrop-mintAllowList.spec.ts.
- *      The test contract deploys the token, so it plays the spec's `owner`.
- *      The spec draws feeBps from [1, 10_000) in beforeEach and quantities
- *      with randomInt; here they are fuzzed over the same ranges.
- *      Where the spec can only see Seaport's InvalidContractOrder, the inner
- *      SeaDrop error is also asserted through previewOrder (see
- *      _assertMintReverts). Where it differs from the error named in the
- *      spec's comment, the test says why.
+ * @dev Allow list (SIP-12 substandard 1) mints. The test contract deploys
+ *      the token, so it is the owner. The fee bps and quantities are fuzzed.
+ *      Failed mints assert both Seaport's InvalidContractOrder and the
+ *      SeaDrop error behind it.
  */
-contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
+contract ERC721SeaDropMintAllowListTest is SeaDrop721Test {
     address creator = makeAddr("creator");
     address minter = makeAddr("minter");
     address feeRecipient = makeAddr("feeRecipient");
@@ -31,18 +27,15 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
     function setUp() public override {
         super.setUp();
 
-        token = new ERC721SeaDrop(
-            address(configurer), allowedSeaport, "Test721", "T721"
-        );
+        token = _deployToken();
 
         vm.deal(address(this), 100 ether);
         vm.deal(minter, 100 ether);
 
         // Update the fee recipient and creator payout address for the token.
         token.setMaxSupply(1000);
-        IERC721SeaDrop(address(token))
-            .updateAllowedFeeRecipient(feeRecipient, true);
-        setSingleCreatorPayout(creator);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, true);
+        _setSingleCreatorPayout(address(token), creator);
 
         // Set the allow list mint params. feeBps is set per test.
         mintParams = MintParams({
@@ -59,7 +52,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         });
     }
 
-    /// @dev feeBps = randomInt(1, 10_000) in the spec's beforeEach.
+    /// @dev The allow list mint params with a fuzzed feeBps in [1, 9_999].
     function _mintParamsWithFeeBps(uint256 feeBpsSeed)
         internal
         returns (MintParams memory)
@@ -68,7 +61,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         return mintParams;
     }
 
-    /// @dev quantity = randomInt(1, maxTotalMintableByWallet) in the spec.
+    /// @dev A quantity below maxTotalMintableByWallet.
     function _quantity(uint256 quantitySeed) internal view returns (uint256) {
         return bound(quantitySeed, 1, mintParams.maxTotalMintableByWallet - 1);
     }
@@ -81,7 +74,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         MintParams memory params,
         bytes32[] memory proof
     ) internal view returns (AdvancedOrder memory, uint256) {
-        return _allowListOrder(
+        return _allowListMintOrder(
             tokenAddress,
             quantity,
             orderFeeRecipient,
@@ -101,14 +94,12 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
             bytes32[] memory proofSecondMinter
         )
     {
-        address[] memory minters = new address[](2);
-        minters[0] = minter;
-        minters[1] = secondMinter;
-        (root, proof) = _createAllowListAndGetProof(minters, params, 0);
-        (, proofSecondMinter) = _createAllowListAndGetProof(minters, params, 1);
+        address[] memory minters = _addrs(minter, secondMinter);
+        (root, proof) = _allowListRootAndProof(minters, params, 0);
+        (, proofSecondMinter) = _allowListRootAndProof(minters, params, 1);
     }
 
-    /// @dev "Should mint to a minter on the allow list"
+    /// @dev Should mint to a minter on the allow list.
     function testMintAllowList(uint256 feeBpsSeed, uint256 quantitySeed)
         public
     {
@@ -116,7 +107,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         uint256 quantity = _quantity(quantitySeed);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
 
         // Update the allow list of the token.
         _updateAllowList(address(token), root);
@@ -129,7 +120,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         _fulfillAndExpectMint(order, minter, value, params.dropStageIndex);
     }
 
-    /// @dev "Should mint a free mint allow list stage"
+    /// @dev Should mint a free mint allow list stage.
     function testMintFreeAllowListStage(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -143,10 +134,10 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         freeParams.endPrice = 0;
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, freeParams);
+            _allowListRootAndProof(minter, freeParams);
         _updateAllowList(address(token), root);
 
-        assertEq(IERC721SeaDrop(address(token)).getAllowListMerkleRoot(), root);
+        assertEq(_seaDrop().getAllowListMerkleRoot(), root);
 
         (AdvancedOrder memory order, uint256 value) = _order(
             address(token), quantity, feeRecipient, minter, freeParams, proof
@@ -154,8 +145,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         _fulfillAndExpectMint(order, minter, value, params.dropStageIndex);
     }
 
-    /// @dev "Should mint an allow list stage with a different payer than
-    ///      minter"
+    /// @dev Should mint an allow list stage with a different payer than
+    ///      minter.
     function testMintAllowListWithDifferentPayer(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -164,14 +155,14 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         uint256 quantity = _quantity(quantitySeed);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         (AdvancedOrder memory order, uint256 value) = _order(
             address(token), quantity, feeRecipient, minter, params, proof
         );
 
-        // The payer (the spec's owner) needs to be allowed first.
+        // The payer (the owner) needs to be allowed first.
         _assertMintReverts(
             order,
             address(this),
@@ -180,7 +171,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
 
         // Allow the payer.
-        IERC721SeaDrop(address(token)).updatePayer(address(this), true);
+        _seaDrop().updatePayer(address(this), true);
 
         // Mint an allow list stage with a different payer than minter.
         _fulfillAndExpectMint(
@@ -188,7 +179,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should revert if the minter is not on the allow list"
+    /// @dev Should revert if the minter is not on the allow list.
     function testCannotMintIfNotOnAllowList(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -197,7 +188,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         uint256 quantity = _quantity(quantitySeed);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         (AdvancedOrder memory order, uint256 value) = _order(
@@ -207,9 +198,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         address nonMinter = makeAddr("nonMinter");
         vm.deal(nonMinter, 100 ether);
 
-        // The spec comments InvalidProof, but this order names `minter`, so
-        // the proof verifies; nonMinter fails as a payer that is neither
-        // allowed nor delegated.
+        // The order names `minter`, so the proof verifies; nonMinter fails
+        // as a payer that is neither allowed nor delegated.
         _assertMintReverts(
             order,
             nonMinter,
@@ -230,8 +220,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint an allow list stage with an unknown fee
-    ///      recipient"
+    /// @dev Should not mint an allow list stage with an unknown fee
+    ///      recipient.
     function testCannotMintWithUnknownFeeRecipient(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -240,7 +230,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         uint256 quantity = _quantity(quantitySeed);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         address invalidFeeRecipient = makeAddr("invalidFeeRecipient");
@@ -258,8 +248,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint an allow list stage with a different token
-    ///      contract"
+    /// @dev Should not mint an allow list stage with a different token
+    ///      contract.
     function testCannotMintWithDifferentTokenContract(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -268,13 +258,11 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         uint256 quantity = _quantity(quantitySeed);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         // Deploy a new ERC721SeaDrop.
-        ERC721SeaDrop differentToken = new ERC721SeaDrop(
-            address(configurer), allowedSeaport, "Test721", "T721"
-        );
+        ERC721SeaDrop differentToken = _deployToken();
 
         // Update the fee recipient and creator payout address for the new
         // token.
@@ -296,7 +284,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint an allow list stage with different mint params"
+    /// @dev Should not mint an allow list stage with different mint params.
     function testCannotMintWithDifferentMintParams(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -305,7 +293,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         uint256 quantity = _quantity(quantitySeed);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         // Create different mint params to include in the mint.
@@ -325,19 +313,18 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint an allow list stage after exceeding max mints
-    ///      per wallet"
+    /// @dev Should not mint an allow list stage after exceeding max mints
+    ///      per wallet.
     function testCannotMintAfterExceedingMaxMintsPerWallet(
         uint256 feeBpsSeed,
         uint256 quantitySeed
     ) public {
         MintParams memory params = _mintParamsWithFeeBps(feeBpsSeed);
-        // quantity = randomInt(1, maxTotalMintableByWallet - 1) in the spec.
         uint256 quantity =
             bound(quantitySeed, 1, params.maxTotalMintableByWallet - 2);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         (AdvancedOrder memory order, uint256 value) = _order(
@@ -369,8 +356,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint an allow list stage after exceeding max token
-    ///      supply for stage"
+    /// @dev Should not mint an allow list stage after exceeding max token
+    ///      supply for stage.
     function testCannotMintAfterExceedingMaxTokenSupplyForStage(uint256 feeBpsSeed)
         public
     {
@@ -426,8 +413,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint an allow list stage after exceeding max token
-    ///      supply"
+    /// @dev Should not mint an allow list stage after exceeding max token
+    ///      supply.
     function testCannotMintAfterExceedingMaxTokenSupply(uint256 feeBpsSeed)
         public
     {
@@ -465,9 +452,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
             proofSecondMinter
         );
 
-        // The spec fulfills the second minter's order from `minter` and
-        // comments QuantityExceedsMaxTokenSupply, but the payer check runs
-        // before the supply check, so the inner error is PayerNotAllowed.
+        // Fulfilled by `minter`, the payer check runs before the supply
+        // check.
         _assertMintReverts(
             order,
             minter,
@@ -475,8 +461,8 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
             abi.encodeWithSelector(PayerNotAllowed.selector, minter)
         );
 
-        // The spec's intent: the second minter minting for themselves
-        // exceeds the token max supply.
+        // The second minter minting for themselves exceeds the token max
+        // supply.
         _assertMintReverts(
             order,
             secondMinter,
@@ -487,7 +473,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint with an uninitialized AllowList"
+    /// @dev Should not mint with an uninitialized AllowList.
     function testCannotMintWithUninitializedAllowList(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -495,12 +481,10 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         MintParams memory params = _mintParamsWithFeeBps(feeBpsSeed);
         uint256 quantity = _quantity(quantitySeed);
 
-        (, bytes32[] memory proof) = _createAllowListAndGetProof(minter, params);
+        (, bytes32[] memory proof) = _allowListRootAndProof(minter, params);
 
         // We are skipping updating the allow list, the root should be zero.
-        assertEq(
-            IERC721SeaDrop(address(token)).getAllowListMerkleRoot(), bytes32(0)
-        );
+        assertEq(_seaDrop().getAllowListMerkleRoot(), bytes32(0));
 
         (AdvancedOrder memory order, uint256 value) = _order(
             address(token), quantity, feeRecipient, minter, params, proof
@@ -521,7 +505,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         );
     }
 
-    /// @dev "Should not mint with feeBps > 10_000"
+    /// @dev Should not mint with feeBps > 10_000.
     function testCannotMintWithFeeBpsAbove10000(
         uint256 feeBpsSeed,
         uint256 quantitySeed
@@ -534,7 +518,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
 
         // Encode the minter address and mintParams.
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, invalidFeeBpsParams);
+            _allowListRootAndProof(minter, invalidFeeBpsParams);
 
         // Update the allow list of the token.
         _updateAllowList(address(token), root);
@@ -543,28 +527,30 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
             address(token), quantity, feeRecipient, minter, params, proof
         );
 
-        // The spec comments InvalidFeeBps(10100), but its order carries the
-        // valid mintParams, whose leaf is not under the root built from the
-        // 10_100 params, so the inner error is InvalidProof.
-        // InvalidFeeBps(10_001) is covered by
-        // testCannotMintWithFeeBpsOver10000.
+        // The order carries the valid mintParams, whose leaf is not under
+        // the root built from the 10_100 params, so the inner error is
+        // InvalidProof. testCannotMintWithFeeBpsOver10000 covers
+        // InvalidFeeBps.
         _assertMintReverts(
             order, minter, value, abi.encodeWithSelector(InvalidProof.selector)
         );
     }
 
-    /// @dev "Should allow delegated payers to mint via the DelegationRegistry"
+    /// @dev Should allow delegated payers to mint via the DelegationRegistry.
     function testDelegatedPayerCanMint(uint256 feeBpsSeed) public {
         MintParams memory params = _mintParamsWithFeeBps(feeBpsSeed);
 
         address payer = makeAddr("payer");
         vm.deal(payer, 100 ether);
 
-        _setCreatorPayouts(address(token), creator, 5_000, address(this), 5_000);
+        _seaDrop()
+            .updateCreatorPayouts(
+                _payouts(creator, 5_000, address(this), 5_000)
+            );
 
         // Allow list mint.
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         (AdvancedOrder memory order, uint256 value) =
@@ -588,22 +574,22 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         DELEGATION_REGISTRY.delegateForAll(payer, false);
     }
 
-    /// @dev "Should return the expected offer and consideration in
-    ///      previewOrder"
+    /// @dev Should return the expected offer and consideration in
+    ///      previewOrder.
     function testPreviewOrder(uint256 feeBpsSeed) public {
         MintParams memory params = _mintParamsWithFeeBps(feeBpsSeed);
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, params);
+            _allowListRootAndProof(minter, params);
         _updateAllowList(address(token), root);
 
         (AdvancedOrder memory order,) =
             _order(address(token), 1, feeRecipient, minter, params, proof);
 
-        _assertPreviewOrderEchoesOrder(order, minter);
+        _assertPreviewOrderMatches(order, minter);
     }
 
-    /// @dev "Should not allow feeBps over 10_000"
+    /// @dev Should not allow feeBps over 10_000.
     function testCannotMintWithFeeBpsOver10000(uint256 feeBpsSeed) public {
         MintParams memory params = _mintParamsWithFeeBps(feeBpsSeed);
 
@@ -611,7 +597,7 @@ contract ERC721SeaDropMintAllowListTest is SeaDrop721MintHelpers {
         feeBpsOver10kParams.feeBps = 10_001;
 
         (bytes32 root, bytes32[] memory proof) =
-            _createAllowListAndGetProof(minter, feeBpsOver10kParams);
+            _allowListRootAndProof(minter, feeBpsOver10kParams);
 
         // Update the allow list of the token.
         _updateAllowList(address(token), root);

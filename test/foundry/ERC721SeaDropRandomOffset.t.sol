@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { SeaDrop721MintHelpers } from "./utils/SeaDrop721MintHelpers.sol";
+import { SeaDrop721Test } from "./utils/SeaDrop721Test.sol";
 
 import {
     ERC721SeaDropRandomOffset
@@ -20,10 +20,10 @@ interface ERC721SeaDropRandomOffsetPrevrandaoCheat {
 }
 
 /**
- * @dev Port of test/ERC721SeaDropRandomOffset.spec.ts.
- *      The test contract deploys the token, so it plays the spec's `owner`.
+ * @dev The random offset reveal. The test contract deploys the token, so it
+ *      is the owner.
  */
-contract ERC721SeaDropRandomOffsetTest is SeaDrop721MintHelpers {
+contract ERC721SeaDropRandomOffsetTest is SeaDrop721Test {
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
     ERC721SeaDropRandomOffset randomOffsetToken;
@@ -39,8 +39,8 @@ contract ERC721SeaDropRandomOffsetTest is SeaDrop721MintHelpers {
         token = randomOffsetToken;
     }
 
-    /// @dev "Should only let the owner call setRandomOffset once the max
-    ///      supply is reached"
+    /// @dev Should only let the owner call setRandomOffset once the max
+    ///      supply is reached.
     function testOnlyOwnerCanSetRandomOffsetOnceFullyMinted() public {
         randomOffsetToken.setMaxSupply(100);
 
@@ -64,7 +64,7 @@ contract ERC721SeaDropRandomOffsetTest is SeaDrop721MintHelpers {
         assertTrue(randomOffsetToken.randomOffset() != 0);
     }
 
-    /// @dev "Should return the tokenURI correctly offset by randomOffset"
+    /// @dev Should return the tokenURI correctly offset by randomOffset.
     function testTokenURIOffsetByRandomOffset() public {
         randomOffsetToken.setMaxSupply(100);
 
@@ -80,10 +80,9 @@ contract ERC721SeaDropRandomOffsetTest is SeaDrop721MintHelpers {
 
         assertEq(randomOffsetToken.tokenURI(1), "http://example.com/");
 
-        // The offset is derived from PREVRANDAO. The spec's token ids below
+        // The offset is derived from PREVRANDAO. The token ids below
         // (98 - randomOffset at the lowest) only exist for offsets up to 97,
-        // so the Hardhat test was flaky for offsets 98 and 99. Pin
-        // PREVRANDAO so the offset is deterministic (1 gives 46).
+        // so pin PREVRANDAO to make the offset deterministic (1 gives 46).
         ERC721SeaDropRandomOffsetPrevrandaoCheat(address(vm))
             .prevrandao(bytes32(uint256(1)));
 

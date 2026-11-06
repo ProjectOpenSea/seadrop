@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    ERC721SeaDropContractOffererHelpers
-} from "./utils/ContractOfferer721Helpers.sol";
+import { SeaDrop721OffererFixture } from "./utils/SeaDrop721Test.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
@@ -41,17 +39,15 @@ import { Ownable } from "solady/src/auth/Ownable.sol";
 import { Vm } from "forge-std/Vm.sol";
 
 /**
- * @dev Port of the deployment, configuration and admin cases of
- *      test/ERC721SeaDropContractOfferer.spec.ts. The Seaport order cases
- *      live in ERC721SeaDropContractOffererMint.t.sol.
+ * @dev Deployment, configuration and admin cases of the 721 contract
+ *      offerer. The Seaport mint order cases are in
+ *      ERC721SeaDropContractOffererMint.t.sol.
  */
-contract ERC721SeaDropContractOffererTest is
-    ERC721SeaDropContractOffererHelpers
-{
+contract ERC721SeaDropContractOffererTest is SeaDrop721OffererFixture {
     /// @dev The token reverts with solady Ownable's `Unauthorized()`.
     bytes4 internal immutable _UNAUTHORIZED = Ownable.Unauthorized.selector;
 
-    /// @dev it("Should emit an event when the contract is deployed")
+    /// @dev Should emit an event when the contract is deployed.
     function testEmitsEventWhenDeployed() public {
         address expected = computeCreateAddress(owner, vm.getNonce(owner));
         vm.expectEmit(true, true, true, true, expected);
@@ -66,13 +62,13 @@ contract ERC721SeaDropContractOffererTest is
         new ERC721SeaDrop(address(0), address(0), "", "");
     }
 
-    /// @dev it("Should return the configurer contact")
-    function testReturnsConfigurer() public {
+    /// @dev Should return the configurer contact.
+    function testReturnsConfigurer() public view {
         assertEq(_seaDrop().configurer(), address(configurer));
     }
 
-    /// @dev it("Should not be able to call into the implementation contract
-    ///      without delegatecall")
+    /// @dev Should not be able to call into the implementation contract
+    ///      without delegatecall.
     function testImplementationRequiresDelegateCall() public {
         vm.startPrank(owner);
 
@@ -137,7 +133,7 @@ contract ERC721SeaDropContractOffererTest is
         vm.stopPrank();
     }
 
-    /// @dev it("Should only let the token owner update the drop URI")
+    /// @dev Should only let the token owner update the drop URI.
     function testOnlyOwnerCanUpdateDropURI() public {
         vm.expectRevert(_UNAUTHORIZED);
         vm.prank(creator);
@@ -149,7 +145,7 @@ contract ERC721SeaDropContractOffererTest is
         _seaDrop().updateDropURI("http://test.com");
     }
 
-    /// @dev it("Should only let the owner update the allowed fee recipients")
+    /// @dev Should only let the owner update the allowed fee recipients.
     function testUpdateAllowedFeeRecipients() public {
         vm.startPrank(owner);
 
@@ -181,12 +177,10 @@ contract ERC721SeaDropContractOffererTest is
         vm.stopPrank();
     }
 
-    /// @dev it("Should return supportsInterface true for supported interfaces")
-    ///
-    ///      The spec XORs every function selector in each typechain ABI
-    ///      (which includes inherited functions) and then XORs the parent
-    ///      interface's ABI out. Each id below is the same XOR, spelled out.
-    function testSupportsInterface() public {
+    /// @dev Should return supportsInterface true for supported interfaces.
+    ///      Each id below is the XOR of the interface's own selectors
+    ///      (excluding its parent interface's).
+    function testSupportsInterface() public view {
         // [IERC721SeaDrop, ISeaDropToken]
         assertTrue(
             token.supportsInterface(
@@ -256,8 +250,8 @@ contract ERC721SeaDropContractOffererTest is
         assertFalse(token.supportsInterface(0x00000001));
     }
 
-    /// @dev it("Should only let the token owner update the allowed Seaport
-    ///      addresses")
+    /// @dev Should only let the token owner update the allowed Seaport
+    ///      addresses.
     function testOnlyOwnerCanUpdateAllowedSeaport() public {
         address seaport = address(consideration);
 
@@ -298,15 +292,15 @@ contract ERC721SeaDropContractOffererTest is
         assertEq(_seaDrop().getAllowedSeaport(), seaports);
     }
 
-    /// @dev it("Should let the token owner use admin methods")
+    /// @dev Should let the token owner use admin methods.
     function testOwnerCanUseAdminMethods() public {
         // Test `updateAllowList` for coverage.
         vm.prank(owner);
-        _seaDrop().updateAllowList(_allowListData());
+        _seaDrop().updateAllowList(_allowListData(_ALLOW_LIST_MERKLE_ROOT));
 
         vm.expectRevert(_UNAUTHORIZED);
         vm.prank(creator);
-        _seaDrop().updateAllowList(_allowListData());
+        _seaDrop().updateAllowList(_allowListData(_ALLOW_LIST_MERKLE_ROOT));
 
         // Test `updateSigner` for coverage.
         address signer = 0x5555555555555555555555555555555555555555;
@@ -322,14 +316,16 @@ contract ERC721SeaDropContractOffererTest is
         vm.prank(owner);
         _seaDrop().updatePayer(payer, true);
 
-        // The spec calls `updateSigner` (not `updatePayer`) from the creator
-        // here; ported as written.
+        // Only the owner can update payers and signers.
+        vm.expectRevert(_UNAUTHORIZED);
+        vm.prank(creator);
+        _seaDrop().updatePayer(payer, false);
         vm.expectRevert(_UNAUTHORIZED);
         vm.prank(creator);
         _seaDrop().updateSigner(payer, true);
     }
 
-    /// @dev it("Should be able to update the allowed payers")
+    /// @dev Should be able to update the allowed payers.
     function testUpdateAllowedPayers() public {
         address payer = makeAddr("payer");
         address payer2 = makeAddr("payer2");
@@ -362,7 +358,7 @@ contract ERC721SeaDropContractOffererTest is
         vm.stopPrank();
     }
 
-    /// @dev it("Should only let the owner call update functions")
+    /// @dev Should only let the owner call update functions.
     function testOnlyOwnerCanCallUpdateFunctions() public {
         address four = 0x4444444444444444444444444444444444444444;
 
@@ -371,12 +367,14 @@ contract ERC721SeaDropContractOffererTest is
             ISeaDropToken.updateAllowedSeaport, (_addrs(address(token)))
         );
         calls[1] = abi.encodeCall(IERC721SeaDrop.updatePublicDrop, (publicDrop));
-        calls[2] =
-            abi.encodeCall(ISeaDropToken.updateAllowList, (_allowListData()));
+        calls[2] = abi.encodeCall(
+            ISeaDropToken.updateAllowList,
+            (_allowListData(_ALLOW_LIST_MERKLE_ROOT))
+        );
         calls[3] =
             abi.encodeCall(ISeaDropToken.updateDropURI, ("http://test.com"));
         calls[4] = abi.encodeCall(
-            ISeaDropToken.updateCreatorPayouts, (_singlePayout(four, 10_000))
+            ISeaDropToken.updateCreatorPayouts, (_payouts(four, 10_000))
         );
         calls[5] = abi.encodeCall(
             ISeaDropToken.updateAllowedFeeRecipient, (four, true)
@@ -397,7 +395,7 @@ contract ERC721SeaDropContractOffererTest is
         }
     }
 
-    /// @dev it("Should be able to use the multiConfigure method")
+    /// @dev Should be able to use the multiConfigure method.
     function testMultiConfigure() public {
         vm.prank(owner);
         _seaDrop().updateAllowedFeeRecipient(feeRecipient, false);
@@ -408,8 +406,8 @@ contract ERC721SeaDropContractOffererTest is
         config.contractURI = "https://example2.com";
         config.publicDrop = publicDrop;
         config.dropURI = "https://example3.com";
-        config.allowListData = _allowListData();
-        config.creatorPayouts = _singlePayout(creator, 10_000);
+        config.allowListData = _allowListData(_ALLOW_LIST_MERKLE_ROOT);
+        config.creatorPayouts = _payouts(creator, 10_000);
         config.provenanceHash =
         0x3333333333333333333333333333333333333333333333333333333333333333;
         config.allowedFeeRecipients = _addrs(feeRecipient);
@@ -515,11 +513,11 @@ contract ERC721SeaDropContractOffererTest is
         config.disallowedSigners = new address[](0);
     }
 
-    /// @dev `checkResults` in the spec. The spec's public drop assertion
-    ///      compares the fetched drop with itself (the local shadows the
-    ///      outer `publicDrop`); this compares it with the configured drop.
+    /// @dev Assert the token state after the multiConfigure in
+    ///      testMultiConfigure.
     function _checkMultiConfigureResults(MultiConfigureStruct memory config)
         internal
+        view
     {
         assertEq(token.maxSupply(), 100);
         assertEq(token.baseURI(), "https://example1.com");
@@ -532,7 +530,7 @@ contract ERC721SeaDropContractOffererTest is
         );
         assertEq(
             abi.encode(_seaDrop().getCreatorPayouts()),
-            abi.encode(_singlePayout(creator, 10_000))
+            abi.encode(_payouts(creator, 10_000))
         );
         assertEq(
             _seaDrop().getAllowListMerkleRoot(), config.allowListData.merkleRoot
@@ -546,15 +544,13 @@ contract ERC721SeaDropContractOffererTest is
         assertEq(royaltyAmount, (uint256(config.royaltyBps) * 100) / 10_000);
     }
 
-    /// @dev it("Should allow multiple creator payout addresses")
-    ///
-    ///      The spec could not assert the event args (hardhat#3833); they
-    ///      are asserted here.
+    /// @dev Should allow multiple creator payout addresses, emitting
+    ///      CreatorPayoutsUpdated with the payouts.
     function testMultipleCreatorPayouts() public {
         vm.startPrank(owner);
 
         // Valid cases
-        CreatorPayout[] memory payouts = _singlePayout(creator, 10_000);
+        CreatorPayout[] memory payouts = _payouts(creator, 10_000);
         _updateCreatorPayoutsAndCheck(payouts);
 
         payouts = new CreatorPayout[](2);
@@ -615,7 +611,7 @@ contract ERC721SeaDropContractOffererTest is
                 InvalidCreatorPayoutTotalBasisPoints.selector, 10_001
             )
         );
-        _seaDrop().updateCreatorPayouts(_singlePayout(creator, 10_001));
+        _seaDrop().updateCreatorPayouts(_payouts(creator, 10_001));
 
         payouts = new CreatorPayout[](2);
         payouts[0] = CreatorPayout(creator, 9_998);

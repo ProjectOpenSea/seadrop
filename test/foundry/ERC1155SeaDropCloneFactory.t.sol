@@ -5,27 +5,19 @@ import { SeaDrop1155Test } from "./utils/SeaDrop1155Test.sol";
 
 import {
     ERC1155SeaDropCloneFactory
-} from "../../src/clones/ERC1155SeaDropCloneFactory.sol";
+} from "seadrop/clones/ERC1155SeaDropCloneFactory.sol";
 
 import {
     ERC1155SeaDropCloneable
-} from "../../src/clones/ERC1155SeaDropCloneable.sol";
+} from "seadrop/clones/ERC1155SeaDropCloneable.sol";
 
-import {
-    SeaDropErrorsAndEvents
-} from "../../src/lib/SeaDropErrorsAndEvents.sol";
+import { IERC1155SeaDrop } from "seadrop/interfaces/IERC1155SeaDrop.sol";
 
-import { IERC1155SeaDrop } from "../../src/interfaces/IERC1155SeaDrop.sol";
-
-import { ERC1155SeaDrop } from "../../src/ERC1155SeaDrop.sol";
+import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
 import { PublicDrop } from "seadrop/lib/ERC1155SeaDropStructs.sol";
 
-import { CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
-
 import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
-
-import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
 
 contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
     ERC1155SeaDropCloneFactory factory;
@@ -52,7 +44,7 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         assertEq(token.owner(), address(this), "owner should be set");
 
         address creator = makeAddr("creator");
-        setSingleCreatorPayout(creator);
+        _setSingleCreatorPayout(address(token), creator);
 
         assertEq(token.totalSupply(0), 0);
         assertEq(token.totalSupply(1), 0);
@@ -77,58 +69,32 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         });
         IERC1155SeaDrop(clone).updatePublicDrop(publicDrop, 0);
 
-        addSeaDropOfferItem(1, 3); // token id 1, 3 mints
-        addSeaDropOfferItem(3, 1); // token id 3, 1 mint
-        addSeaDropConsiderationItems(feeRecipient, feeBps, 4 ether);
-        configureSeaDropOrderParameters();
-
+        // Token id 1 x3 and token id 3 x1.
         address minter = address(this);
-        bytes memory extraData = bytes.concat(
-            bytes1(0x00), // SIP-6 version byte
-            bytes1(0x00), // substandard version byte: public mint
-            bytes20(feeRecipient),
-            bytes20(minter),
-            bytes1(0x00) // public drop index 0
+        (AdvancedOrder memory order, uint256 value) = _createMintOrder(
+            _publicMint(
+                clone,
+                _uints(1, 3),
+                _uints(3, 1),
+                feeRecipient,
+                feeBps,
+                1 ether,
+                minter,
+                0
+            )
         );
-
-        AdvancedOrder memory order = AdvancedOrder({
-            parameters: baseOrderParameters,
-            numerator: 1,
-            denominator: 1,
-            signature: "",
-            extraData: extraData
-        });
+        assertEq(value, 4 ether);
 
         vm.deal(address(this), 10 ether);
-
-        vm.expectEmit(true, true, true, true, address(token));
-        emit SeaDropMint(address(this), 0);
-
-        consideration.fulfillAdvancedOrder{ value: 4 ether }({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        _fulfillAndExpectMint(order, minter, value, 0);
 
         assertEq(token.balanceOf(minter, 1), 3);
         assertEq(token.balanceOf(minter, 3), 1);
         assertEq(creator.balance, 4 ether * 0.95);
 
-        // Minting any more should exceed maxTotalMintableByWalletPerToken
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96)
-                    + consideration.getContractOffererNonce(address(token))
-            )
-        );
-        consideration.fulfillAdvancedOrder({
-            advancedOrder: order,
-            criteriaResolvers: criteriaResolvers,
-            fulfillerConduitKey: bytes32(0),
-            recipient: address(0)
-        });
+        // Minting the same again exceeds maxTotalMintableByWalletPerToken.
+        _expectInvalidContractOrder(clone);
+        _fulfill(order, minter, value);
 
         assertEq(token.uri(1), "", "tokenURI should be blank at first");
         assertEq(token.baseURI(), "", "baseURI should be blank at first");

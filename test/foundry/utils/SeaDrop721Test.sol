@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { DelegationRegistry } from "seadrop/test/DelegationRegistry.sol";
+import { SeaDropTest } from "./SeaDropTest.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
@@ -11,174 +11,250 @@ import {
 
 import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
-import { MintParams } from "seadrop/lib/ERC721SeaDropStructs.sol";
-
-import { AllowListData, CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
-
-import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
-
-import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
+import { MintParams, PublicDrop } from "seadrop/lib/ERC721SeaDropStructs.sol";
 
 import {
-    CriteriaResolver,
-    ItemType
+    AdvancedOrder,
+    OfferItem
 } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
-import { OrderType } from "seaport-types/src/lib/ConsiderationEnums.sol";
+import { ItemType } from "seaport-types/src/lib/ConsiderationEnums.sol";
 
-import {
-    ZoneInteractionErrors
-} from "../../../lib/seaport/contracts/interfaces/ZoneInteractionErrors.sol";
+/**
+ * @dev Base for the ERC721SeaDrop Forge tests: deploys the configurer and
+ *      builds SIP-12 mint orders, allow list proofs and signed mints for
+ *      `token`. The offer of a 721 mint order is a single ERC-1155 item of
+ *      the token with identifier 0 and the quantity as the amount.
+ */
+abstract contract SeaDrop721Test is SeaDropTest {
+    /// @dev Inputs of a mint order. Fields a substandard doesn't use are
+    ///      ignored.
+    struct MintOrder {
+        address token;
+        uint256 identifier;
+        uint256 quantity;
+        address feeRecipient;
+        uint256 feeBps;
+        uint256 price;
+        address paymentToken;
+        address minter;
+        uint8 mintType;
+        MintParams mintParams;
+        bytes32[] proof;
+        uint256 salt;
+        bytes signature;
+    }
 
-import { Merkle } from "murky/Merkle.sol";
+    bytes32 internal constant _SIGNED_MINT_TYPEHASH = keccak256(
+        "SignedMint(address minter,address feeRecipient,MintParams mintParams,"
+        "uint256 salt)MintParams(uint256 startPrice,uint256 endPrice,"
+        "uint256 startTime,uint256 endTime,address paymentToken,"
+        "uint256 maxTotalMintableByWallet,uint256 maxTokenSupplyForStage,"
+        "uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
+    );
+    bytes32 internal constant _MINT_PARAMS_TYPEHASH = keccak256(
+        "MintParams(uint256 startPrice,uint256 endPrice,uint256 startTime,"
+        "uint256 endTime,address paymentToken,"
+        "uint256 maxTotalMintableByWallet,uint256 maxTokenSupplyForStage,"
+        "uint256 dropStageIndex,uint256 feeBps,bool restrictFeeRecipients)"
+    );
+    bytes32 internal constant _NAME_HASH = keccak256("ERC721SeaDrop");
 
-contract SeaDrop721Test is
-    BaseOrderTest,
-    SeaDropErrorsAndEvents,
-    ZoneInteractionErrors
-{
-    /// @dev The SeaDrop token.
+    /// @dev The SeaDrop token under test.
     ERC721SeaDrop token;
 
     /// @dev The configurer contract.
     ERC721SeaDropConfigurer configurer;
 
-    /// @dev The allowed Seaport address to interact with the contract token.
-    address internal allowedSeaport;
-
-    /// @dev SeaDrop doesn't use criteria resolvers.
-    CriteriaResolver[] internal criteriaResolvers;
-
-    /// @notice Internal constants for EIP-712: Typed structured
-    ///         data hashing and signing
-    bytes32 internal constant _SIGNED_MINT_TYPEHASH =
-    // prettier-ignore
-    keccak256(
-        "SignedMint(" "address minter," "address feeRecipient,"
-        "MintParams mintParams," "uint256 salt" ")" "MintParams("
-        "uint256 startPrice," "uint256 endPrice," "uint256 startTime,"
-        "uint256 endTime," "address paymentToken,"
-        "uint256 maxTotalMintableByWallet," "uint256 maxTokenSupplyForStage,"
-        "uint256 dropStageIndex," "uint256 feeBps," "bool restrictFeeRecipients"
-        ")"
-    );
-    bytes32 internal constant _MINT_PARAMS_TYPEHASH =
-    // prettier-ignore
-    keccak256(
-        "MintParams(" "uint256 startPrice," "uint256 endPrice,"
-        "uint256 startTime," "uint256 endTime," "address paymentToken,"
-        "uint256 maxTotalMintableByWallet," "uint256 maxTokenSupplyForStage,"
-        "uint256 dropStageIndex," "uint256 feeBps," "bool restrictFeeRecipients"
-        ")"
-    );
-    bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
-    // prettier-ignore
-    keccak256(
-        "EIP712Domain(" "string name," "string version," "uint256 chainId,"
-        "address verifyingContract" ")"
-    );
-    bytes32 internal constant _NAME_HASH = keccak256("ERC721SeaDrop");
-    bytes32 internal constant _VERSION_HASH = keccak256("2.0");
-    uint256 internal immutable _CHAIN_ID = block.chainid;
-
     function setUp() public virtual override {
         super.setUp();
-
-        // Set configurer
         configurer = new ERC721SeaDropConfigurer();
+    }
 
-        // Set allowedSeaport
-        allowedSeaport = address(consideration);
+    /// @dev Deploy an ERC721SeaDrop owned by the caller (or a pranked
+    ///      sender).
+    function _deployToken() internal returns (ERC721SeaDrop) {
+        return new ERC721SeaDrop(
+            address(configurer), allowedSeaport, "Test721", "T721"
+        );
+    }
 
-        // Deploy DelegationRegistry to the expected address.
-        address registryAddress = 0x00000000000076A84feF008CDAbe6409d2FE638B;
-        address deployedRegistry = address(new DelegationRegistry());
-        vm.etch(registryAddress, deployedRegistry.code);
+    /// @dev `token` cast to its SeaDrop interface.
+    function _seaDrop() internal view returns (IERC721SeaDrop) {
+        return IERC721SeaDrop(address(token));
     }
 
     /**
-     * Drop configuration
+     * Mint orders
      */
-    function setSingleCreatorPayout(address creator) internal {
-        CreatorPayout[] memory creatorPayouts = new CreatorPayout[](1);
-        creatorPayouts[0] =
-            CreatorPayout({ payoutAddress: creator, basisPoints: 10_000 });
-        IERC721SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
-    }
-
-    function setAllowListMerkleRootAndReturnProof(
-        address[] memory allowList,
-        uint256 proofIndex,
-        MintParams memory mintParams
-    ) internal returns (bytes32[] memory) {
-        (bytes32 root, bytes32[] memory proof) =
-            _createMerkleRootAndProof(allowList, proofIndex, mintParams);
-        AllowListData memory allowListData = AllowListData({
-            merkleRoot: root,
-            publicKeyURIs: new string[](0),
-            allowListURI: ""
-        });
-        IERC721SeaDrop(address(token)).updateAllowList(allowListData);
-        return proof;
-    }
-
-    function _createMerkleRootAndProof(
-        address[] memory allowList,
-        uint256 proofIndex,
-        MintParams memory mintParams
-    ) internal returns (bytes32 root, bytes32[] memory proof) {
-        require(proofIndex < allowList.length);
-
-        // Declare a bytes32 array for the allowlist tuples.
-        bytes32[] memory allowListTuples = new bytes32[](allowList.length);
-
-        // Create allowList tuples using allowList addresses and mintParams.
-        for (uint256 i = 0; i < allowList.length; i++) {
-            allowListTuples[i] = keccak256(abi.encode(allowList[i], mintParams));
-        }
-
-        // Initialize Merkle.
-        Merkle m = new Merkle();
-
-        // Get the merkle root of the allowlist tuples.
-        root = m.getRoot(allowListTuples);
-
-        // Get the merkle proof of the tuple at proofIndex.
-        proof = m.getProof(allowListTuples, proofIndex);
-
-        // Verify that the merkle root can be obtained from the proof.
-        bool verified = m.verifyProof(root, proof, allowListTuples[proofIndex]);
-        assertTrue(verified);
-    }
-
-    function getSignedMint(
-        string memory signerName,
-        address seadrop,
-        address minter,
+    function _publicMint(
+        address tokenAddress,
+        uint256 quantity,
         address feeRecipient,
+        uint256 feeBps,
+        uint256 price,
+        address minter
+    ) internal pure returns (MintOrder memory m) {
+        m.token = tokenAddress;
+        m.quantity = quantity;
+        m.feeRecipient = feeRecipient;
+        m.feeBps = feeBps;
+        m.price = price;
+        m.minter = minter;
+        m.mintType = MINT_TYPE_PUBLIC;
+    }
+
+    function _publicMintOrder(
+        address tokenAddress,
+        uint256 quantity,
+        address feeRecipient,
+        uint256 feeBps,
+        uint256 price,
+        address minter
+    ) internal view returns (AdvancedOrder memory order, uint256 value) {
+        return _createMintOrder(
+            _publicMint(
+                tokenAddress, quantity, feeRecipient, feeBps, price, minter
+            )
+        );
+    }
+
+    function _allowListMintOrder(
+        address tokenAddress,
+        uint256 quantity,
+        address feeRecipient,
+        uint256 feeBps,
+        uint256 price,
+        address minter,
+        MintParams memory mintParams,
+        bytes32[] memory proof
+    ) internal view returns (AdvancedOrder memory order, uint256 value) {
+        MintOrder memory m = _publicMint(
+            tokenAddress, quantity, feeRecipient, feeBps, price, minter
+        );
+        m.mintType = MINT_TYPE_ALLOW_LIST;
+        m.mintParams = mintParams;
+        m.proof = proof;
+        return _createMintOrder(m);
+    }
+
+    function _signedMintOrder(
+        address tokenAddress,
+        uint256 quantity,
+        address feeRecipient,
+        uint256 feeBps,
+        uint256 price,
+        address minter,
         MintParams memory mintParams,
         uint256 salt,
-        bool compact2098
-    ) internal returns (bytes memory signature) {
-        bytes32 digest = _getDigest(
-            seadrop, minter, feeRecipient, mintParams, salt
+        bytes memory signature
+    ) internal view returns (AdvancedOrder memory order, uint256 value) {
+        MintOrder memory m = _publicMint(
+            tokenAddress, quantity, feeRecipient, feeBps, price, minter
         );
-        (, uint256 pk) = makeAddrAndKey(signerName);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
-        if (compact2098) {
-            signature = _encodeSignature2098(r, s, v);
-        } else {
-            signature = abi.encodePacked(r, s, v);
+        m.mintType = MINT_TYPE_SIGNED;
+        m.mintParams = mintParams;
+        m.salt = salt;
+        m.signature = signature;
+        return _createMintOrder(m);
+    }
+
+    /// @dev Build the mint order and the native or ERC20 value to pay
+    ///      (price * quantity).
+    function _createMintOrder(MintOrder memory m)
+        internal
+        view
+        returns (AdvancedOrder memory order, uint256 value)
+    {
+        OfferItem[] memory offer = new OfferItem[](1);
+        offer[0] = OfferItem({
+            itemType: ItemType.ERC1155,
+            token: m.token,
+            identifierOrCriteria: m.identifier,
+            startAmount: m.quantity,
+            endAmount: m.quantity
+        });
+
+        value = m.price * m.quantity;
+        order = _contractOrder(
+            m.token,
+            offer,
+            _mintConsideration(
+                m.token, m.feeRecipient, m.feeBps, value, m.paymentToken
+            ),
+            _mintExtraData(m)
+        );
+    }
+
+    /// @dev SIP-6 version byte, substandard byte, fee recipient and minter,
+    ///      then the substandard's own data.
+    function _mintExtraData(MintOrder memory m)
+        internal
+        pure
+        returns (bytes memory extraData)
+    {
+        extraData = bytes.concat(
+            bytes1(0x00),
+            bytes1(m.mintType),
+            bytes20(m.feeRecipient),
+            bytes20(m.minter)
+        );
+        if (m.mintType == MINT_TYPE_ALLOW_LIST) {
+            extraData = bytes.concat(
+                extraData, abi.encode(m.mintParams), abi.encodePacked(m.proof)
+            );
+        } else if (m.mintType == MINT_TYPE_SIGNED) {
+            extraData = bytes.concat(
+                extraData,
+                abi.encode(m.mintParams),
+                bytes32(m.salt),
+                m.signature
+            );
         }
     }
 
+    /**
+     * Allow list
+     */
+    function _allowListRootAndProof(
+        address[] memory minters,
+        MintParams memory mintParams,
+        uint256 minterIndexForProof
+    ) internal returns (bytes32 root, bytes32[] memory proof) {
+        bytes32[] memory leaves = new bytes32[](minters.length);
+        for (uint256 i = 0; i < minters.length; i++) {
+            leaves[i] = keccak256(abi.encode(minters[i], mintParams));
+        }
+        return _merkleRootAndProof(leaves, minterIndexForProof);
+    }
+
+    function _allowListRootAndProof(
+        address minter,
+        MintParams memory mintParams
+    ) internal returns (bytes32 root, bytes32[] memory proof) {
+        return _allowListRootAndProof(_addrs(minter), mintParams, 0);
+    }
+
+    /// @dev A copy of mint params, since assigning a memory struct aliases
+    ///      it.
+    function _copyMintParams(MintParams memory mintParams)
+        internal
+        pure
+        returns (MintParams memory)
+    {
+        return abi.decode(abi.encode(mintParams), (MintParams));
+    }
+
+    /**
+     * Signed mint
+     */
     function _getDigest(
-        address seadrop,
+        address tokenAddress,
         address minter,
         address feeRecipient,
         MintParams memory mintParams,
         uint256 salt
-    ) internal view returns (bytes32 digest) {
+    ) internal view returns (bytes32) {
         bytes32 mintParamsHashStruct = keccak256(
             abi.encode(
                 _MINT_PARAMS_TYPEHASH,
@@ -194,10 +270,10 @@ contract SeaDrop721Test is
                 mintParams.restrictFeeRecipients
             )
         );
-        digest = keccak256(
+        return keccak256(
             bytes.concat(
                 bytes2(0x1901),
-                _deriveDomainSeparator(seadrop),
+                _domainSeparator(_NAME_HASH, tokenAddress),
                 keccak256(
                     abi.encode(
                         _SIGNED_MINT_TYPEHASH,
@@ -211,90 +287,110 @@ contract SeaDrop721Test is
         );
     }
 
-    /**
-     * Order helpers
-     */
-    function addSeaDropOfferItem(uint256 quantity) internal {
-        addOfferItem(ItemType.ERC1155, address(token), 0, quantity);
-    }
-
-    function addSeaDropConsiderationItems(
+    /// @dev Sign a mint with `signerName`'s key, returning the EIP-2098
+    ///      compact signature and the signed digest.
+    function _signMint(
+        string memory signerName,
+        address tokenAddress,
+        address minter,
         address feeRecipient,
-        uint256 feeBps,
-        uint256 totalValue
-    ) internal {
-        // Add consideration item for fee recipient.
-        uint256 feeAmount = (totalValue * feeBps) / 10_000;
-        uint256 creatorAmount = totalValue - feeAmount;
-        addConsiderationItem(
-            payable(feeRecipient),
-            ItemType.NATIVE,
-            address(0),
+        MintParams memory mintParams,
+        uint256 salt
+    ) internal returns (bytes memory signature, bytes32 digest) {
+        digest =
+            _getDigest(tokenAddress, minter, feeRecipient, mintParams, salt);
+        signature = _signDigest(signerName, digest);
+    }
+
+    /**
+     * Minting setup
+     */
+
+    /// @dev Temporarily set a free public drop on `token`, mint `quantity`
+    ///      to `minter` through Seaport, then restore the previous public
+    ///      drop.
+    function _mintTokens(address minter, uint256 quantity) internal {
+        PublicDrop memory prevPublicDrop = _seaDrop().getPublicDrop();
+
+        _seaDrop()
+            .updatePublicDrop(
+                PublicDrop({
+                    startPrice: 0,
+                    endPrice: 0,
+                    startTime: uint40(vm.getBlockTimestamp() - 1000),
+                    endTime: uint40(vm.getBlockTimestamp() + 5000),
+                    paymentToken: address(0),
+                    maxTotalMintableByWallet: 1000,
+                    feeBps: 0,
+                    restrictFeeRecipients: false
+                })
+            );
+
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
+            address(token),
+            quantity,
+            address(0x1111111111111111111111111111111111111111),
             0,
-            feeAmount,
-            feeAmount
+            0,
+            minter
         );
+        _fulfill(order, minter, value);
 
-        // Add consideration items for creator payouts.
-        if (creatorAmount != 0) {
-            CreatorPayout[] memory creatorPayouts =
-                IERC721SeaDrop(address(token)).getCreatorPayouts();
-            for (uint256 i = 0; i < creatorPayouts.length; i++) {
-                uint256 amount =
-                    (creatorAmount * creatorPayouts[i].basisPoints) / 10_000;
-                addConsiderationItem(
-                    payable(creatorPayouts[i].payoutAddress),
-                    ItemType.NATIVE,
-                    address(0),
-                    0,
-                    amount,
-                    amount
-                );
-            }
-        }
+        _seaDrop().updatePublicDrop(prevPublicDrop);
     }
+}
 
-    function configureSeaDropOrderParameters() internal {
-        _configureOrderParameters({
-            offerer: address(token),
-            zone: address(0),
-            zoneHash: bytes32(0),
-            salt: 0,
-            useConduit: false
+/**
+ * @dev Fixture for the ERC721SeaDropContractOfferer tests: `owner` deploys
+ *      the token with max supply 5, a public drop, an allowed fee recipient
+ *      and a single creator payout.
+ */
+abstract contract SeaDrop721OffererFixture is SeaDrop721Test {
+    /// @dev An arbitrary allow list merkle root for configuration tests.
+    bytes32 internal constant _ALLOW_LIST_MERKLE_ROOT =
+        0x3333333333333333333333333333333333333333333333333333333333333333;
+
+    address internal owner;
+    address internal creator;
+    address internal minter;
+    uint256 internal minterPk;
+    address internal feeRecipient;
+
+    /// @dev The public drop configured in setUp.
+    PublicDrop internal publicDrop;
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        owner = makeAddr("owner");
+        creator = makeAddr("creator");
+        (minter, minterPk) = makeAddrAndKey("minter");
+        feeRecipient = makeAddr("feeRecipient");
+
+        vm.deal(owner, 100 ether);
+        vm.deal(minter, 100 ether);
+        vm.deal(creator, 100 ether);
+        vm.deal(feeRecipient, 100 ether);
+
+        vm.prank(owner);
+        token = _deployToken();
+
+        publicDrop = PublicDrop({
+            startPrice: 0.1 ether,
+            endPrice: 0.1 ether,
+            startTime: uint40(vm.getBlockTimestamp() - 1000),
+            endTime: uint40(vm.getBlockTimestamp() + 1000),
+            paymentToken: address(0),
+            maxTotalMintableByWallet: 10,
+            feeBps: 1000,
+            restrictFeeRecipients: true
         });
-        baseOrderParameters.orderType = OrderType.CONTRACT;
-        configureOrderComponents(0);
-    }
 
-    function _deriveDomainSeparator(address seadrop)
-        internal
-        view
-        returns (bytes32)
-    {
-        // prettier-ignore
-        return keccak256(
-            abi.encode(
-                _EIP_712_DOMAIN_TYPEHASH,
-                _NAME_HASH,
-                _VERSION_HASH,
-                block.chainid,
-                seadrop
-            )
-        );
-    }
-
-    function _encodeSignature2098(bytes32 r, bytes32 s, uint8 v)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        uint256 yParity;
-        if (v == 27) {
-            yParity = 0;
-        } else {
-            yParity = 1;
-        }
-        uint256 yParityAndS = (yParity << 255) | uint256(s);
-        return abi.encodePacked(r, yParityAndS);
+        vm.startPrank(owner);
+        token.setMaxSupply(5);
+        _seaDrop().updatePublicDrop(publicDrop);
+        _seaDrop().updateAllowedFeeRecipient(feeRecipient, true);
+        _seaDrop().updateCreatorPayouts(_payouts(creator, 10_000));
+        vm.stopPrank();
     }
 }

@@ -1,15 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-    ERC721SeaDropContractOffererHelpers
-} from "./utils/ContractOfferer721Helpers.sol";
+import { SeaDrop721OffererFixture } from "./utils/SeaDrop721Test.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
-
-import {
-    ERC721SeaDropConfigurer
-} from "seadrop/lib/ERC721SeaDropConfigurer.sol";
 
 import { IERC721SeaDrop } from "seadrop/interfaces/IERC721SeaDrop.sol";
 
@@ -42,18 +36,19 @@ import { TestERC20 } from "../../lib/seaport/contracts/test/TestERC20.sol";
 import { stdError } from "forge-std/StdError.sol";
 
 /**
- * @dev Port of the Seaport contract offerer (mint order) cases of
- *      test/ERC721SeaDropContractOfferer.spec.ts. The deployment,
- *      configuration and admin cases live in
+ * @dev Mints through Seaport with the token as the contract offerer. The
+ *      deployment, configuration and admin cases are in
  *      ERC721SeaDropContractOfferer.t.sol.
+ *
+ *      Seaport wraps any `generateOrder` revert in
+ *      `InvalidContractOrder(orderHash)`, so failures also check the SeaDrop
+ *      error through `previewOrder`, which runs the same validation.
  */
-contract ERC721SeaDropContractOffererMintTest is
-    ERC721SeaDropContractOffererHelpers
-{
-    /// @dev it("Should not be able to mint until the creator payout is set")
+contract ERC721SeaDropContractOffererMintTest is SeaDrop721OffererFixture {
+    /// @dev Should not be able to mint until the creator payout is set.
     function testCannotMintUntilCreatorPayoutsSet() public {
-        ERC721SeaDrop token2 =
-            _deployToken(address(new ERC721SeaDropConfigurer()));
+        vm.prank(owner);
+        ERC721SeaDrop token2 = _deployToken();
         IERC721SeaDrop seaDrop2 = IERC721SeaDrop(address(token2));
 
         vm.startPrank(owner);
@@ -66,63 +61,54 @@ contract ERC721SeaDropContractOffererMintTest is
         seaDrop2.updateCreatorPayouts(new CreatorPayout[](0));
         vm.stopPrank();
 
-        (AdvancedOrder memory order, uint256 value) = _createMintOrder(
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
             address(token2),
-            0,
             1,
             feeRecipient,
             publicDrop.feeBps,
             publicDrop.startPrice,
-            address(0),
             minter
         );
 
-        _expectInvalidContractOrder(address(token2));
-        _fulfillAsMinter(order, value, bytes32(0));
+        _assertMintReverts(
+            order,
+            minter,
+            value,
+            abi.encodeWithSelector(CreatorPayoutsNotSet.selector)
+        );
 
-        // The reason Seaport wraps in InvalidContractOrder.
-        vm.expectRevert(CreatorPayoutsNotSet.selector);
-        _previewOrder(order, minter);
-
-        CreatorPayout[] memory payouts = new CreatorPayout[](2);
-        payouts[0] = CreatorPayout(creator, 1_000);
-        payouts[1] = CreatorPayout(owner, 9_000);
         vm.prank(owner);
-        seaDrop2.updateCreatorPayouts(payouts);
+        seaDrop2.updateCreatorPayouts(_payouts(creator, 1_000, owner, 9_000));
 
-        (order, value) = _createMintOrder(
+        (order, value) = _publicMintOrder(
             address(token2),
-            0,
             1,
             feeRecipient,
             publicDrop.feeBps,
             publicDrop.startPrice,
-            address(0),
             minter
         );
 
         vm.expectEmit(true, true, true, true, address(token2));
-        emit SeaDropMint(minter, _PUBLIC_DROP_STAGE_INDEX);
-        _fulfillAsMinter(order, value, bytes32(0));
+        emit SeaDropMint(minter, PUBLIC_DROP_STAGE_INDEX);
+        _fulfill(order, minter, value);
 
-        // For coverage, ensure mint reverts if offer item identifier is not 0
+        // The mint reverts if the offer item identifier is not 0.
         order.parameters.offer[0].identifierOrCriteria = 1;
-        _expectInvalidContractOrder(address(token2));
-        _fulfillAsMinter(order, value, bytes32(0));
-
-        // The reason Seaport wraps in InvalidContractOrder.
-        // CONTRACT BUG (asserting current behavior): the spec expects
-        // MustSpecifyERC1155ConsiderationItemForSeaDropMint here, but the
-        // error-selection shifts in _decodeOrder (`errorBuffer << 254`
-        // keeps bits 0 and 1) report a bad minimumReceived item (bit 0) as
-        // UnsupportedExtraDataVersion(version).
-        vm.expectRevert(
+        // CONTRACT BUG (asserting current behavior): the error-selection
+        // shifts in _decodeOrder (`errorBuffer << 254` keeps bits 0 and 1)
+        // report a bad minimumReceived item (bit 0) as
+        // UnsupportedExtraDataVersion(version) instead of
+        // MustSpecifyERC1155ConsiderationItemForSeaDropMint.
+        _assertMintReverts(
+            order,
+            minter,
+            value,
             abi.encodeWithSelector(UnsupportedExtraDataVersion.selector, 0)
         );
-        _previewOrder(order, minter);
     }
 
-    /// @dev it("Should handle desc and asc mint prices")
+    /// @dev Should handle desc and asc mint prices.
     function testDescAndAscMintPrices() public {
         PublicDrop memory descDrop = publicDrop;
         descDrop.startPrice = 1 ether;
@@ -132,14 +118,12 @@ contract ERC721SeaDropContractOffererMintTest is
 
         // Specifying null address for minter means the fulfiller should be
         // assigned as the minter.
-        (AdvancedOrder memory order, uint256 value) = _createMintOrder(
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
             address(token),
-            0,
             1,
             feeRecipient,
             publicDrop.feeBps,
             descDrop.startPrice,
-            address(0),
             address(0)
         );
 
@@ -157,8 +141,8 @@ contract ERC721SeaDropContractOffererMintTest is
         uint256 balanceBefore = minter.balance;
 
         vm.expectEmit(true, true, true, true, address(token));
-        emit SeaDropMint(minter, _PUBLIC_DROP_STAGE_INDEX);
-        _fulfillAsMinter(order, value, bytes32(0));
+        emit SeaDropMint(minter, PUBLIC_DROP_STAGE_INDEX);
+        _fulfill(order, minter, value);
 
         // Should refund the difference between the expected price and the
         // provided amount. (Forge charges no gas to the pranked minter.)
@@ -171,14 +155,12 @@ contract ERC721SeaDropContractOffererMintTest is
         vm.prank(owner);
         _seaDrop().updatePublicDrop(ascDrop);
 
-        (order, value) = _createMintOrder(
+        (order, value) = _publicMintOrder(
             address(token),
-            0,
             1,
             feeRecipient,
             publicDrop.feeBps,
             ascDrop.endPrice,
-            address(0),
             minter
         );
 
@@ -194,8 +176,8 @@ contract ERC721SeaDropContractOffererMintTest is
         );
 
         vm.expectEmit(true, true, true, true, address(token));
-        emit SeaDropMint(minter, _PUBLIC_DROP_STAGE_INDEX);
-        _fulfillAsMinter(order, value, bytes32(0));
+        emit SeaDropMint(minter, PUBLIC_DROP_STAGE_INDEX);
+        _fulfill(order, minter, value);
 
         // Should refund the difference between the expected price and the
         // provided amount.
@@ -210,9 +192,8 @@ contract ERC721SeaDropContractOffererMintTest is
         assertEq(token.ownerOf(2), owner);
     }
 
-    /// @dev The minter lists tokens 1 and 2 in a signed FULL_OPEN order
-    ///      (`createOrder` in test/seaport-utils/fixtures/marketplace.ts)
-    ///      and the owner fulfills it with `fulfillOrder`.
+    /// @dev A secondary sale: the minter lists tokens 1 and 2 in a signed
+    ///      FULL_OPEN order and the owner fulfills it with `fulfillOrder`.
     function _sellTokensOneAndTwoToOwner() internal {
         OfferItem[] memory offer = new OfferItem[](2);
         offer[0] = OfferItem(ItemType.ERC721, address(token), 1, 1, 1);
@@ -256,8 +237,8 @@ contract ERC721SeaDropContractOffererMintTest is
         );
     }
 
-    /// @dev it("Should only let allowed seaport or conduit call the ERC1155
-    ///      safeTransferFrom")
+    /// @dev Should only let allowed seaport or conduit call the ERC1155
+    ///      safeTransferFrom.
     function testOnlyAllowedSeaportOrConduitCanCallSafeTransferFrom() public {
         vm.prank(owner);
         token.setMaxSupply(3);
@@ -273,7 +254,7 @@ contract ERC721SeaDropContractOffererMintTest is
         _assertSafeTransferFromSucceeds(address(consideration), data);
 
         // Impersonate as conduit
-        _assertSafeTransferFromSucceeds(_OPENSEA_CONDUIT, data);
+        _assertSafeTransferFromSucceeds(OPENSEA_CONDUIT, data);
 
         // Impersonate as owner
         _assertSafeTransferFromReverts(owner, data);
@@ -292,7 +273,7 @@ contract ERC721SeaDropContractOffererMintTest is
 
         // Impersonate as conduit
         _assertSafeTransferFromReverts(
-            _OPENSEA_CONDUIT, dataFromNotTokenContract
+            OPENSEA_CONDUIT, dataFromNotTokenContract
         );
 
         // Impersonate as owner
@@ -321,7 +302,7 @@ contract ERC721SeaDropContractOffererMintTest is
         );
     }
 
-    /// @dev it("Should not allow reentrancy during mint")
+    /// @dev Should not allow reentrancy during mint.
     function testNoReentrancyDuringMint() public {
         // Set a public drop with maxTotalMintableByWallet: 1
         // and restrictFeeRecipient: false
@@ -339,9 +320,7 @@ contract ERC721SeaDropContractOffererMintTest is
         // Set the creator address to MaliciousRecipient.
         vm.prank(owner);
         _seaDrop()
-            .updateCreatorPayouts(
-                _singlePayout(address(maliciousRecipient), 10_000)
-            );
+            .updateCreatorPayouts(_payouts(address(maliciousRecipient), 10_000));
 
         // Should not be able to mint with reentrancy.
         vm.prank(owner);
@@ -352,7 +331,7 @@ contract ERC721SeaDropContractOffererMintTest is
         assertEq(token.totalSupply(), 0);
     }
 
-    /// @dev it("Should handle ERC20 payment tokens without and with conduit")
+    /// @dev Should handle ERC20 payment tokens without and with conduit.
     function testERC20PaymentTokenWithoutAndWithConduit() public {
         // Deploy the payment token.
         vm.prank(minter);
@@ -363,16 +342,16 @@ contract ERC721SeaDropContractOffererMintTest is
         vm.prank(owner);
         _seaDrop().updatePublicDrop(drop);
 
-        (AdvancedOrder memory order, uint256 value) = _createMintOrder(
+        MintOrder memory m = _publicMint(
             address(token),
-            0,
             1,
             feeRecipient,
             publicDrop.feeBps,
             publicDrop.startPrice,
-            address(paymentToken),
             minter
         );
+        m.paymentToken = address(paymentToken);
+        (AdvancedOrder memory order, uint256 value) = _createMintOrder(m);
 
         // Mint the needed amount of payment tokens to the minter.
         paymentToken.mint(minter, value);
@@ -381,7 +360,7 @@ contract ERC721SeaDropContractOffererMintTest is
         vm.expectRevert(
             abi.encodeWithSignature("Error(string)", "NOT_AUTHORIZED")
         );
-        _fulfillAsMinter(order, 0, bytes32(0));
+        _fulfill(order, minter, 0);
 
         // Approve the payment token.
         vm.prank(minter);
@@ -389,8 +368,8 @@ contract ERC721SeaDropContractOffererMintTest is
 
         // Now it should succeed.
         vm.expectEmit(true, true, true, true, address(token));
-        emit SeaDropMint(minter, _PUBLIC_DROP_STAGE_INDEX);
-        _fulfillAsMinter(order, 0, bytes32(0));
+        emit SeaDropMint(minter, PUBLIC_DROP_STAGE_INDEX);
+        _fulfill(order, minter, 0);
 
         // Confirm the payment token was transferred and user has no balance
         // left.
@@ -409,7 +388,7 @@ contract ERC721SeaDropContractOffererMintTest is
         vm.expectRevert(
             abi.encodeWithSignature("Error(string)", "NOT_AUTHORIZED")
         );
-        _fulfillAsMinter(order, 0, conduitKeyOne);
+        _fulfill(order, minter, 0, conduitKeyOne);
 
         // Approve the payment token.
         vm.prank(minter);
@@ -417,15 +396,15 @@ contract ERC721SeaDropContractOffererMintTest is
 
         // It should still fail as we have one minus the needed balance.
         vm.expectRevert(stdError.arithmeticError);
-        _fulfillAsMinter(order, 0, conduitKeyOne);
+        _fulfill(order, minter, 0, conduitKeyOne);
 
         // Mint one more payment token to the minter.
         paymentToken.mint(minter, 1);
 
         // Now it should succeed.
         vm.expectEmit(true, true, true, true, address(token));
-        emit SeaDropMint(minter, _PUBLIC_DROP_STAGE_INDEX);
-        _fulfillAsMinter(order, 0, conduitKeyOne);
+        emit SeaDropMint(minter, PUBLIC_DROP_STAGE_INDEX);
+        _fulfill(order, minter, 0, conduitKeyOne);
 
         // Confirm the payment token was transferred and user has no balance
         // left.
@@ -436,21 +415,19 @@ contract ERC721SeaDropContractOffererMintTest is
         assertEq(paymentToken.balanceOf(creator), creatorAmount * 2);
     }
 
-    /// @dev it("Should be able to mint with 100% fee bps")
+    /// @dev Should be able to mint with 100% fee bps.
     function testMintWith100PercentFeeBps() public {
         PublicDrop memory drop = publicDrop;
         drop.feeBps = 10_000; // 100%
         vm.prank(owner);
         _seaDrop().updatePublicDrop(drop);
 
-        (AdvancedOrder memory order, uint256 value) = _createMintOrder(
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
             address(token),
-            0,
             1,
             feeRecipient,
             10_000,
             publicDrop.startPrice,
-            address(0),
             minter
         );
         // All of the payment goes to the fee recipient.
@@ -458,13 +435,13 @@ contract ERC721SeaDropContractOffererMintTest is
 
         vm.expectEmit(true, true, true, true, address(token));
         emit SeaDropMint(minter, 0);
-        _fulfillAsMinter(order, value, bytes32(0));
+        _fulfill(order, minter, value);
 
         assertEq(token.ownerOf(1), minter);
     }
 
-    /// @dev it("Should return the expected values for getSeaportMetadata")
-    function testGetSeaportMetadata() public {
+    /// @dev Should return the expected values for getSeaportMetadata.
+    function testGetSeaportMetadata() public view {
         bytes4 getSeaportMetadataSelector = 0x2e778efc;
         (bool success, bytes memory returnData) = address(token)
             .staticcall(abi.encodePacked(getSeaportMetadataSelector));
@@ -473,11 +450,7 @@ contract ERC721SeaDropContractOffererMintTest is
         (string memory name, Schema[] memory schemas) =
             abi.decode(returnData, (string, Schema[]));
 
-        uint256[] memory supportedSubstandards = new uint256[](3);
-        supportedSubstandards[0] = 0;
-        supportedSubstandards[1] = 1;
-        supportedSubstandards[2] = 2;
-        bytes memory metadata = abi.encode(supportedSubstandards);
+        bytes memory metadata = abi.encode(_uints(0, 1, 2));
 
         assertEq(name, "ERC721SeaDrop");
         assertEq(schemas.length, 1);
@@ -485,74 +458,51 @@ contract ERC721SeaDropContractOffererMintTest is
         assertEq(schemas[0].metadata, metadata);
     }
 
-    /// @dev it("Should return errors for invalid encodings")
-    ///
-    ///      Seaport wraps each failure in InvalidContractOrder. The spec
-    ///      only names the underlying error in comments; previewOrder
-    ///      asserts it here.
+    /// @dev Should return errors for invalid encodings.
     function testInvalidEncodings() public {
-        (AdvancedOrder memory order, uint256 value) = _createMintOrder(
+        (AdvancedOrder memory order, uint256 value) = _publicMintOrder(
             address(token),
-            0,
             1,
             feeRecipient,
             publicDrop.feeBps,
             publicDrop.startPrice,
-            address(0),
             minter
         );
         bytes memory extraData = order.extraData;
 
         // Unsupported SIP-6 version byte.
-        order.extraData = bytes.concat(bytes1(0x01), _slice(extraData, 1));
-        _expectInvalidContractOrder(address(token));
-        _fulfillAsMinter(order, value, bytes32(0));
-        vm.expectRevert(
+        order.extraData = bytes.concat(
+            bytes1(0x01), _slice(extraData, 1, extraData.length)
+        );
+        _assertMintReverts(
+            order,
+            minter,
+            value,
             abi.encodeWithSelector(UnsupportedExtraDataVersion.selector, 1)
         );
-        _previewOrder(order, minter);
 
         // Unsupported substandard.
-        order.extraData =
-            bytes.concat(bytes1(0x00), bytes1(0x04), _slice(extraData, 2));
-        _expectInvalidContractOrder(address(token));
-        _fulfillAsMinter(order, value, bytes32(0));
-        // CONTRACT BUG (asserting current behavior): the spec expects
-        // InvalidSubstandard(4), but in _decodeOrder `errorBuffer << 252`
-        // also keeps the substandard bit (bit 2), so it reverts with
-        // InvalidExtraDataEncoding(version) and InvalidSubstandard is
-        // unreachable.
-        vm.expectRevert(
+        order.extraData = bytes.concat(
+            bytes1(0x00), bytes1(0x04), _slice(extraData, 2, extraData.length)
+        );
+        // CONTRACT BUG (asserting current behavior): in _decodeOrder
+        // `errorBuffer << 252` also keeps the substandard bit (bit 2), so it
+        // reverts with InvalidExtraDataEncoding(version) and
+        // InvalidSubstandard is unreachable.
+        _assertMintReverts(
+            order,
+            minter,
+            value,
             abi.encodeWithSelector(InvalidExtraDataEncoding.selector, 0)
         );
-        _previewOrder(order, minter);
 
         // Truncated extraData (9 bytes, below the 42 byte minimum).
         order.extraData = _slice(extraData, 0, 9);
-        _expectInvalidContractOrder(address(token));
-        _fulfillAsMinter(order, value, bytes32(0));
-        vm.expectRevert(
+        _assertMintReverts(
+            order,
+            minter,
+            value,
             abi.encodeWithSelector(InvalidExtraDataEncoding.selector, 0)
         );
-        _previewOrder(order, minter);
-    }
-
-    function _slice(bytes memory data, uint256 start)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return _slice(data, start, data.length);
-    }
-
-    function _slice(bytes memory data, uint256 start, uint256 end)
-        internal
-        pure
-        returns (bytes memory result)
-    {
-        result = new bytes(end - start);
-        for (uint256 i = start; i < end; i++) {
-            result[i - start] = data[i];
-        }
     }
 }

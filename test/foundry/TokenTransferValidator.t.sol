@@ -170,7 +170,7 @@ contract TokenTransferValidatorTest is SeaDrop721Test {
         );
     }
 
-    function testERC721GetTransferValidationFunction() public {
+    function testERC721GetTransferValidationFunction() public view {
         (bytes4 functionSignature, bool isViewFunction) =
             token721.getTransferValidationFunction();
         assertEq(
@@ -179,7 +179,7 @@ contract TokenTransferValidatorTest is SeaDrop721Test {
         assertEq(isViewFunction, false);
     }
 
-    function testERC1155GetTransferValidationFunction() public {
+    function testERC1155GetTransferValidationFunction() public view {
         (bytes4 functionSignature, bool isViewFunction) =
             token1155.getTransferValidationFunction();
         assertEq(
