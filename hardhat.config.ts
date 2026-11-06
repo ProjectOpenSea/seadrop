@@ -42,6 +42,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      // Hardhat 2.29 defaults to Osaka, whose EIP-7825 per-transaction gas
+      // cap (2^24) rejects the 30M default gas these tests send.
+      hardfork: "prague",
       blockGasLimit: 30_000_000,
       throwOnCallFailures: false,
     },
