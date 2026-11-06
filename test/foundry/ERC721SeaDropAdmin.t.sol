@@ -720,6 +720,46 @@ contract ERC721SeaDropAdminTest is TestHelper {
         token.multiConfigure(unset);
     }
 
+    /// @dev Token gated tokens or signers passed without their stages or
+    ///      params (or the reverse) revert instead of being skipped.
+    function testMultiConfigure_revertsOnUnpairedArrays() public {
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config =
+            _zeroedConfig();
+        config.tokenGatedAllowedNftTokens = new address[](1);
+        config.tokenGatedAllowedNftTokens[0] = _addr(0x66);
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.TokenGatedMismatch.selector
+        );
+        token.multiConfigure(config);
+
+        config = _zeroedConfig();
+        config.tokenGatedDropStages = new TokenGatedDropStage[](1);
+        config.tokenGatedDropStages[0] = _tokenGatedDropStage();
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.TokenGatedMismatch.selector
+        );
+        token.multiConfigure(config);
+
+        config = _zeroedConfig();
+        config.signers = new address[](1);
+        config.signers[0] = _addr(0x88);
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.SignersMismatch.selector
+        );
+        token.multiConfigure(config);
+
+        config = _zeroedConfig();
+        config.signedMintValidationParams = new SignedMintValidationParams[](1);
+        config.signedMintValidationParams[0] = _signedMintValidationParams();
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.SignersMismatch.selector
+        );
+        token.multiConfigure(config);
+
+        assertEq(seadrop.getTokenGatedAllowedTokens(address(token)).length, 0);
+        assertEq(seadrop.getSigners(address(token)).length, 0);
+    }
+
     function testBurn_onlyOwnerOrApproved() public {
         token.setMaxSupply(3);
 

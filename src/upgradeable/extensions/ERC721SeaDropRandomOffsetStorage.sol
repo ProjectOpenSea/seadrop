@@ -3,8 +3,8 @@ pragma solidity 0.8.17;
 
 library ERC721SeaDropRandomOffsetStorage {
     struct Layout {
-        /// @notice The random offset, between 1 and the MAX_SUPPLY at the time of
-        ///         being set.
+        /// @notice The random offset, between 0 and maxSupply - 2 at the time
+        ///         of being set (0 when maxSupply is 1).
         uint256 randomOffset;
         /// @notice If the collection has been revealed and the randomOffset has
         ///         been set.

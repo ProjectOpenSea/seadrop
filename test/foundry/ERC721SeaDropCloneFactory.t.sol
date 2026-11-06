@@ -9,7 +9,17 @@ import {
     ERC721SeaDropCloneable
 } from "../../src/clones/ERC721SeaDropCloneable.sol";
 import { SeaDrop } from "../../src/SeaDrop.sol";
-import { PublicDrop } from "../../src/lib/SeaDropStructs.sol";
+import {
+    PublicDrop,
+    SignedMintValidationParams,
+    TokenGatedDropStage
+} from "../../src/lib/SeaDropStructs.sol";
+import {
+    ERC721SeaDropStructsErrorsAndEvents
+} from "../../src/lib/ERC721SeaDropStructsErrorsAndEvents.sol";
+import {
+    ITransferValidator721
+} from "../../src/interfaces/ITransferValidator.sol";
 
 contract ERC721SeaDropCloneFactoryTest is Test {
     ERC721SeaDropCloneFactory factory;
@@ -83,6 +93,57 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         ERC721SeaDropCloneable token = ERC721SeaDropCloneable(clone);
         vm.expectRevert("Initializable: contract is already initialized");
         token.initialize("name", "symbol", new address[](0), address(this));
+    }
+
+    /// @dev Token gated tokens or signers passed without their stages or
+    ///      params (or the reverse) revert instead of being skipped.
+    function testClone_multiConfigure_revertsOnUnpairedArrays() public {
+        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(
+            factory.createClone("name", "symbol", bytes32("1"))
+        );
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config;
+        config.seaDropImpl = factory.DEFAULT_SEADROP();
+
+        config.tokenGatedAllowedNftTokens = new address[](1);
+        config.tokenGatedAllowedNftTokens[0] = address(0x66);
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.TokenGatedMismatch.selector
+        );
+        token.multiConfigure(config);
+        config.tokenGatedAllowedNftTokens = new address[](0);
+
+        config.tokenGatedDropStages = new TokenGatedDropStage[](1);
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.TokenGatedMismatch.selector
+        );
+        token.multiConfigure(config);
+        config.tokenGatedDropStages = new TokenGatedDropStage[](0);
+
+        config.signers = new address[](1);
+        config.signers[0] = address(0x88);
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.SignersMismatch.selector
+        );
+        token.multiConfigure(config);
+        config.signers = new address[](0);
+
+        config.signedMintValidationParams = new SignedMintValidationParams[](1);
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.SignersMismatch.selector
+        );
+        token.multiConfigure(config);
+    }
+
+    function testClone_getTransferValidationFunction() public {
+        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(
+            factory.createClone("name", "symbol", bytes32("1"))
+        );
+        (bytes4 functionSignature, bool isViewFunction) =
+            token.getTransferValidationFunction();
+        assertEq(
+            functionSignature, ITransferValidator721.validateTransfer.selector
+        );
+        assertEq(isViewFunction, true);
     }
 
     function onERC721Received(address, address, uint256, bytes calldata)

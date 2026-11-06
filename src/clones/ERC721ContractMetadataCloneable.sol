@@ -294,7 +294,9 @@ contract ERC721ContractMetadataCloneable is
     }
 
     /**
-     * @notice Returns the transfer validation function used.
+     * @notice Returns the transfer validation function used. It is a view
+     *         function: ITransferValidator721 declares validateTransfer
+     *         view, so _beforeTokenTransfers calls it with STATICCALL.
      */
     function getTransferValidationFunction()
         external
@@ -302,7 +304,7 @@ contract ERC721ContractMetadataCloneable is
         returns (bytes4 functionSignature, bool isViewFunction)
     {
         functionSignature = ITransferValidator721.validateTransfer.selector;
-        isViewFunction = false;
+        isViewFunction = true;
     }
 
     /**

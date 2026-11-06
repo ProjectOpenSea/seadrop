@@ -35,6 +35,18 @@ import {
     TransparentUpgradeableProxy
 } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+/// @dev Initializes through __ERC721SeaDropRandomOffset_init, the way a
+///      contract extending ERC721SeaDropRandomOffsetUpgradeable would.
+contract RandomOffsetInitializer is ERC721SeaDropRandomOffsetUpgradeable {
+    function initializeRandomOffset(
+        string memory name,
+        string memory symbol,
+        address[] memory allowedSeaDrop
+    ) external initializer initializerERC721A {
+        __ERC721SeaDropRandomOffset_init(name, symbol, allowedSeaDrop);
+    }
+}
+
 /**
  * @notice Tests specific to the upgradeable tokens: initialization, the
  *         storage layout that deployed proxies depend on, and ExampleToken.
@@ -154,6 +166,35 @@ contract ERC721SeaDropUpgradeableTest is Test {
         );
         uninitialized.initialize("", "", _allowedSeaDrop());
         assertEq(uninitialized.owner(), address(0));
+    }
+
+    /// @dev __ERC721SeaDropRandomOffset_init initializes the whole
+    ///      ERC721SeaDropUpgradeable chain. It used to run only
+    ///      __ERC721SeaDrop_init_unchained, which left the token without a
+    ///      name, symbol, or owner, and with its reentrancy lock at 0, so
+    ///      every mint reverted.
+    function testRandomOffsetInit_initializesParents() public {
+        RandomOffsetInitializer randomOffsetToken = RandomOffsetInitializer(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(new RandomOffsetInitializer()),
+                    address(new ProxyAdmin()),
+                    abi.encodeCall(
+                        RandomOffsetInitializer.initializeRandomOffset,
+                        ("Name", "SYMBOL", _allowedSeaDrop())
+                    )
+                )
+            )
+        );
+
+        assertEq(randomOffsetToken.owner(), address(this));
+        assertEq(randomOffsetToken.name(), "Name");
+        assertEq(randomOffsetToken.symbol(), "SYMBOL");
+
+        randomOffsetToken.setMaxSupply(1);
+        vm.prank(seadrop);
+        randomOffsetToken.mintSeaDrop(minter, 1);
+        assertEq(randomOffsetToken.ownerOf(1), minter);
     }
 
     /// @dev Pin every field of the upgradeable storage layout to the slot

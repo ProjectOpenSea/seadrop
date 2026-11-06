@@ -134,7 +134,7 @@ contract ERC721ContractMetadataUpgradeable is
      *
      * @param newMaxSupply The new max supply to set.
      */
-    function setMaxSupply(uint256 newMaxSupply) external {
+    function setMaxSupply(uint256 newMaxSupply) public virtual {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -303,7 +303,9 @@ contract ERC721ContractMetadataUpgradeable is
     }
 
     /**
-     * @notice Returns the transfer validation function used.
+     * @notice Returns the transfer validation function used. It is a view
+     *         function: ITransferValidator721 declares validateTransfer
+     *         view, so _beforeTokenTransfers calls it with STATICCALL.
      */
     function getTransferValidationFunction()
         external
@@ -311,7 +313,7 @@ contract ERC721ContractMetadataUpgradeable is
         returns (bytes4 functionSignature, bool isViewFunction)
     {
         functionSignature = ITransferValidator721.validateTransfer.selector;
-        isViewFunction = false;
+        isViewFunction = true;
     }
 
     /**

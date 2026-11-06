@@ -80,13 +80,13 @@ contract ERC721TransferValidatorTest is TestHelper {
         token_.safeTransferFrom(address(this), msg.sender, 2);
     }
 
-    function testGetTransferValidationFunction() public {
+    function testGetTransferValidationFunction() public view {
         (bytes4 functionSignature, bool isViewFunction) =
             token_.getTransferValidationFunction();
         assertEq(
             functionSignature, ITransferValidator721.validateTransfer.selector
         );
-        assertEq(isViewFunction, false);
+        assertEq(isViewFunction, true);
     }
 
     function onERC721Received(address, address, uint256, bytes calldata)
