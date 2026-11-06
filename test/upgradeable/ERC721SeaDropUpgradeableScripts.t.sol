@@ -36,11 +36,6 @@ import {
  *         Run with FOUNDRY_PROFILE=upgradeable forge test.
  */
 contract ERC721SeaDropUpgradeableScriptsTest is Test {
-    /// @dev Kept out of src-upgradeable so the test never touches a real
-    ///      deployment-addresses.json. Allowed in fs_permissions.
-    string internal constant ADDRESSES_PATH =
-        "cache/upgradeable-deployment-addresses.test.json";
-
     /// @dev The allowed SeaDrop the deploy script initializes the token with.
     address internal constant SEADROP =
         0x00005EA00Ac477B1030CE78506496e8C2dE24bf5;
@@ -52,10 +47,6 @@ contract ERC721SeaDropUpgradeableScriptsTest is Test {
 
     address minter = makeAddr("minter");
 
-    function setUp() public {
-        vm.setEnv("DEPLOYMENT_ADDRESSES_PATH", ADDRESSES_PATH);
-    }
-
     function _slotAddress(address proxy, bytes32 slot)
         internal
         view
@@ -64,19 +55,10 @@ contract ERC721SeaDropUpgradeableScriptsTest is Test {
         return address(uint160(uint256(vm.load(proxy, slot))));
     }
 
-    /// @dev Assert the addresses file matches `expected` and the proxy's
-    ///      ERC-1967 slots.
+    /// @dev Assert the returned addresses match the proxy's ERC-1967 slots.
     function _assertAddresses(
         UpgradeableDeploymentAddresses.DeploymentAddresses memory expected
     ) internal view {
-        string memory json = vm.readFile(ADDRESSES_PATH);
-        assertEq(vm.parseJsonAddress(json, ".proxy"), expected.proxy);
-        assertEq(vm.parseJsonAddress(json, ".admin"), expected.admin);
-        assertEq(
-            vm.parseJsonAddress(json, ".implementation"),
-            expected.implementation
-        );
-
         assertEq(_slotAddress(expected.proxy, ADMIN_SLOT), expected.admin);
         assertEq(
             _slotAddress(expected.proxy, IMPLEMENTATION_SLOT),
@@ -135,7 +117,8 @@ contract ERC721SeaDropUpgradeableScriptsTest is Test {
         vm.prank(SEADROP);
         token.mintSeaDrop(minter, 3);
 
-        // Upgrade.
+        // Upgrade the proxy the deploy script returned.
+        vm.setEnv("PROXY_ADDRESS", vm.toString(deployed.proxy));
         UpgradeableDeploymentAddresses.DeploymentAddresses
             memory upgraded = new UpgradeERC721SeaDropUpgradeable().run();
         _assertAddresses(upgraded);

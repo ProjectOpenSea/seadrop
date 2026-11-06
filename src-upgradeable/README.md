@@ -23,15 +23,15 @@ Run the scripts from the repository root with `FOUNDRY_PROFILE=upgradeable`. Tha
 
 **Deploy script**
 
-Located at [`script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol`](../script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol). It writes the proxy, admin, and implementation addresses to `src-upgradeable/deployment-addresses.json`. Each run deploys a new `ProxyAdmin`; the Hardhat plugin reused one per network.
+Located at [`script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol`](../script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol). `forge script` prints the proxy, admin, and implementation addresses it returns. Each run deploys a new `ProxyAdmin`; the Hardhat plugin reused one per network.
 
 **Upgrade script**
 
-Located at [`script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol`](../script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol). It reads the proxy from `src-upgradeable/deployment-addresses.json`, deploys a new implementation, upgrades the proxy through its `ProxyAdmin` (the broadcaster must own it), and rewrites the file. Proxies deployed by the old Hardhat scripts work too, since the script reads the admin from the proxy.
+Located at [`script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol`](../script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol). Set `PROXY_ADDRESS` to the proxy to upgrade. The script deploys a new implementation and upgrades the proxy through its `ProxyAdmin` (the broadcaster must own it). Proxies deployed by the old Hardhat scripts work too, since the script reads the admin from the proxy.
 
 Unlike the Hardhat plugin, the upgrade script does not check upgrade safety or storage layout compatibility, so review the new implementation first. State lives in the namespaced `Layout` structs of the `*Storage.sol` libraries (and ERC721A's), so a new implementation may only append fields to those structs.
 
-Set `DEPLOYMENT_ADDRESSES_PATH` to use a different addresses file. The path must be allowed by `fs_permissions` in the upgradeable profile.
+The scripts don't write an addresses file, because `forge script` runs them in simulation before broadcasting: a file written there would also be written on dry runs and on failed broadcasts. The receipt-backed record of each broadcast is `broadcast/<script>/<chain id>/run-latest.json`.
 
 **Test**
 

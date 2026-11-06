@@ -18,23 +18,21 @@ import {
 } from "./UpgradeableDeploymentAddresses.sol";
 
 /**
- * @notice Upgrade the ERC721SeaDropUpgradeable proxy listed in
- *         src-upgradeable/deployment-addresses.json (or the path in
- *         DEPLOYMENT_ADDRESSES_PATH) to a freshly deployed implementation,
- *         through the proxy's ProxyAdmin, as OpenZeppelin's hardhat-upgrades
- *         upgradeProxy did. The broadcaster must own the ProxyAdmin.
- *         Rewrites the addresses file with the new implementation.
+ * @notice Upgrade the ERC721SeaDropUpgradeable proxy at PROXY_ADDRESS to a
+ *         freshly deployed implementation, through the proxy's ProxyAdmin, as
+ *         OpenZeppelin's hardhat-upgrades upgradeProxy did. The broadcaster
+ *         must own the ProxyAdmin. Returns {proxy, admin, implementation}.
  *
  *         Unlike the Hardhat plugin, this does not validate upgrade safety or
  *         storage layout compatibility; check those before upgrading.
  *
- *         FOUNDRY_PROFILE=upgradeable forge script \
+ *         PROXY_ADDRESS=0x... FOUNDRY_PROFILE=upgradeable forge script \
  *           script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol \
  *           --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast --verify
  */
 contract UpgradeERC721SeaDropUpgradeable is UpgradeableDeploymentAddresses {
     function run() external returns (DeploymentAddresses memory) {
-        address proxy = _readProxy(_addressesPath());
+        address proxy = vm.envAddress("PROXY_ADDRESS");
 
         // The admin slot holds the proxy's ProxyAdmin.
         ProxyAdmin proxyAdmin = ProxyAdmin(_getAdmin(proxy));
@@ -49,6 +47,6 @@ contract UpgradeERC721SeaDropUpgradeable is UpgradeableDeploymentAddresses {
 
         vm.stopBroadcast();
 
-        return _writeAddresses(_addressesPath(), proxy);
+        return _addresses(proxy);
     }
 }

@@ -9,7 +9,6 @@ optimized-out
 reference-working
 broadcast
 lcov*.info
-deployment-addresses.json
 
 .DS_Store
 .vscode

@@ -24,9 +24,7 @@ import {
  *         deployer, and a TransparentUpgradeableProxy whose constructor calls
  *         initialize(name, symbol, allowedSeaDrop).
  *
- *         Writes {proxy, admin, implementation} to
- *         src-upgradeable/deployment-addresses.json, or to the path in
- *         DEPLOYMENT_ADDRESSES_PATH.
+ *         Returns {proxy, admin, implementation}, which forge script prints.
  *
  *         FOUNDRY_PROFILE=upgradeable forge script \
  *           script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol \
@@ -63,6 +61,6 @@ contract DeployERC721SeaDropUpgradeable is UpgradeableDeploymentAddresses {
 
         vm.stopBroadcast();
 
-        return _writeAddresses(_addressesPath(), address(proxy));
+        return _addresses(address(proxy));
     }
 }

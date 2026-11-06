@@ -33,10 +33,6 @@ bytecode_hash = 'ipfs'
 # over the EIP-170 size limit. Scripts are never deployed; the implementation
 # itself is checked as usual.
 ignored_warnings_from = ['script/upgradeable']
-fs_permissions = [
-    { access = 'read-write', path = './src-upgradeable/deployment-addresses.json' },
-    { access = 'read-write', path = './cache/upgradeable-deployment-addresses.test.json' },
-]
 
 [profile.ir_inspect]
 test = 'src'
