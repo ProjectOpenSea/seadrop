@@ -13,7 +13,17 @@ import { AllowListData, CreatorPayout } from "seadrop/lib/SeaDropStructs.sol";
 
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
-import { BaseOrderTest } from "seaport-test-utils/BaseOrderTest.sol";
+import {
+    ConduitControllerInterface
+} from "seaport-types/src/interfaces/ConduitControllerInterface.sol";
+
+import {
+    ConduitInterface
+} from "seaport-types/src/interfaces/ConduitInterface.sol";
+
+import {
+    ConsiderationInterface
+} from "seaport-types/src/interfaces/ConsiderationInterface.sol";
 
 import {
     ContractOffererInterface
@@ -24,6 +34,7 @@ import {
     ConsiderationItem,
     CriteriaResolver,
     OfferItem,
+    OrderComponents,
     OrderParameters,
     ReceivedItem,
     SpentItem
@@ -38,20 +49,25 @@ import {
     ZoneInteractionErrors
 } from "../../../lib/seaport/contracts/interfaces/ZoneInteractionErrors.sol";
 
+import { Test } from "forge-std/Test.sol";
+
 import { Vm } from "forge-std/Vm.sol";
 
 import { Merkle } from "murky/Merkle.sol";
 
 /**
- * @dev Token-agnostic base for the SeaDrop Forge tests: Seaport deployment
- *      (from Seaport's BaseOrderTest), the delegation registry, contract order
- *      plumbing (consideration items, fulfillment, previewOrder, the
- *      InvalidContractOrder wrapper), signing, merkle proofs and small array
- *      helpers. SeaDrop721Test and SeaDrop1155Test add the token-specific
- *      order building on top.
+ * @dev Token-agnostic base for the SeaDrop Forge tests: Seaport deployment,
+ *      the delegation registry, contract order plumbing (consideration
+ *      items, fulfillment, previewOrder, the InvalidContractOrder wrapper),
+ *      signing, merkle proofs and small array helpers. SeaDrop721Test and
+ *      SeaDrop1155Test add the token-specific order building on top.
+ *
+ *      Seaport is deployed from the artifacts `scripts/build_seaport.sh`
+ *      builds, so the tests never compile Seaport's sources (which don't
+ *      compile without the optimizer, as `forge coverage` needs).
  */
 abstract contract SeaDropTest is
-    BaseOrderTest,
+    Test,
     SeaDropErrorsAndEvents,
     ZoneInteractionErrors
 {
@@ -80,14 +96,43 @@ abstract contract SeaDropTest is
     );
     bytes32 internal constant _VERSION_HASH = keccak256("2.0");
 
+    /// @dev Seaport, its conduit controller, and a conduit owned by this
+    ///      contract under `conduitKeyOne`, open to Seaport.
+    ConsiderationInterface internal consideration;
+    ConduitControllerInterface internal conduitController;
+    ConduitInterface internal conduit;
+    bytes32 internal conduitKeyOne;
+
+    /// @dev An account with no role on the tokens.
+    address internal bob = makeAddr("bob");
+
     /// @dev The Seaport the tokens allow.
     address internal allowedSeaport;
 
     /// @dev SeaDrop doesn't use criteria resolvers.
     CriteriaResolver[] internal criteriaResolvers;
 
-    function setUp() public virtual override {
-        super.setUp();
+    function setUp() public virtual {
+        conduitController = ConduitControllerInterface(
+            deployCode(
+                "optimized-out/ConduitController.sol/ConduitController.json"
+            )
+        );
+        consideration = ConsiderationInterface(
+            deployCode(
+                "optimized-out/Consideration.sol/Consideration.json",
+                abi.encode(address(conduitController))
+            )
+        );
+        conduitKeyOne = bytes32(uint256(uint160(address(this))) << 96);
+        address conduitAddress =
+            conduitController.createConduit(conduitKeyOne, address(this));
+        conduit = ConduitInterface(conduitAddress);
+        conduitController.updateChannel(
+            conduitAddress, address(consideration), true
+        );
+        vm.label(address(consideration), "consideration");
+        vm.label(conduitAddress, "conduit");
 
         allowedSeaport = address(consideration);
 
@@ -505,6 +550,74 @@ abstract contract SeaDropTest is
         assertEq(ecrecover(digest, v, r, s), signer);
         uint256 yParityAndS = (uint256(v == 27 ? 0 : 1) << 255) | uint256(s);
         signature = abi.encodePacked(r, yParityAndS);
+    }
+
+    /// @dev Sign a Seaport order hash with `pk` (65-byte signature).
+    function signOrder(
+        ConsiderationInterface seaport,
+        uint256 pk,
+        bytes32 orderHash
+    ) internal view returns (bytes memory) {
+        (, bytes32 domainSeparator,) = seaport.information();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            pk,
+            keccak256(
+                abi.encodePacked(bytes2(0x1901), domainSeparator, orderHash)
+            )
+        );
+        return abi.encodePacked(r, s, v);
+    }
+
+    function toOrderComponents(
+        OrderParameters memory parameters,
+        uint256 counter
+    ) internal pure returns (OrderComponents memory) {
+        return OrderComponents({
+            offerer: parameters.offerer,
+            zone: parameters.zone,
+            offer: parameters.offer,
+            consideration: parameters.consideration,
+            orderType: parameters.orderType,
+            startTime: parameters.startTime,
+            endTime: parameters.endTime,
+            zoneHash: parameters.zoneHash,
+            salt: parameters.salt,
+            conduitKey: parameters.conduitKey,
+            counter: counter
+        });
+    }
+
+    /**
+     * Receivers, so tests can pay, mint and transfer to this contract.
+     */
+    receive() external payable { }
+
+    function onERC721Received(address, address, uint256, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
+        return this.onERC721Received.selector;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
     }
 
     /**

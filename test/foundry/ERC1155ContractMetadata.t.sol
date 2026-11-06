@@ -36,7 +36,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155Test {
         super.setUp();
         token = _deployToken();
         owner = address(this);
-        // `bob` is inherited from Seaport's TestTokenMinter.
+        // `bob` (from SeaDropTest) is a non-owner.
     }
 
     function testNameAndSymbol() public view {

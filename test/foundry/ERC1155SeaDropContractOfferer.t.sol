@@ -548,7 +548,7 @@ contract ERC1155SeaDropContractOffererTest is SeaDrop1155OffererFixture {
         config.mintRecipient = address(0);
     }
 
-    function _checkMultiConfigureResults() internal {
+    function _checkMultiConfigureResults() internal view {
         assertEq(token.maxSupply(0), 100);
         assertEq(token.maxSupply(1), 101);
         assertEq(token.baseURI(), "https://example1.com");
