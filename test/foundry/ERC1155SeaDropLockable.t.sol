@@ -57,6 +57,28 @@ contract ERC1155SeaDropLockableWithMint is ERC1155SeaDropLockable {
     }
 }
 
+/// @dev A transfer validator that is also the token owner and makes the
+///      lock permanent while validating a transfer.
+contract LockingTransferValidator {
+    ERC1155SeaDropLockable immutable token;
+
+    constructor(ERC1155SeaDropLockable token_) {
+        token = token_;
+    }
+
+    function validateTransfer(
+        address,
+        address,
+        address,
+        uint256,
+        uint256
+    ) external {
+        if (!token.permanentlyLocked()) {
+            token.lockPermanently();
+        }
+    }
+}
+
 contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
     /// @dev The OpenSea conduit, which ERC1155SeaDrop preapproves.
     address constant CONDUIT = 0x1E0049783F008A0085193E00003D00cd54003c71;
@@ -552,6 +574,47 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
         _assertHolderTransfersRevert(3);
     }
 
+    function testLockPermanentlyRelocksEveryUnlockedId() public {
+        _setUp(LockMode.Locked);
+        token_.mint(holder, 4, 1);
+        token_.setMaxSupply(5, 1000);
+        token_.mint(holder, 5, 1);
+
+        // Unlock token ids 1 to 5, then lock token id 3 again.
+        uint256[] memory ids = new uint256[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            ids[i] = i + 1;
+        }
+        token_.setTokensLocked(ids, false);
+        token_.setTokensLocked(_asArray(3), true);
+
+        vm.recordLogs();
+        token_.lockPermanently();
+        LockEvent[] memory events = _lockEvents();
+
+        // Token ids 1, 2, 4, and 5 are each locked again, in any order, before
+        // PermanentlyLocked.
+        assertEq(events.length, 5, "lock event count");
+        bool[6] memory relocked;
+        for (uint256 i = 0; i < 4; i++) {
+            assertEq(events[i].topic, LockEvents.LOCKED, "lock event topic");
+            assertTrue(events[i].isLocked, "lock event status");
+            assertFalse(relocked[events[i].tokenId], "duplicate token id");
+            relocked[events[i].tokenId] = true;
+        }
+        assertTrue(relocked[1] && relocked[2] && relocked[4] && relocked[5]);
+        assertFalse(relocked[3]);
+        assertEq(
+            events[4].topic,
+            LockEvents.PERMANENTLY_LOCKED,
+            "last lock event"
+        );
+
+        for (uint256 id = 1; id <= 5; id++) {
+            assertTrue(token_.locked(id));
+        }
+    }
+
     function testCannotUnlockAfterPermanent() public {
         _setUp(LockMode.Locked);
         token_.setTokensLocked(_asArray(1), false);
@@ -788,6 +851,36 @@ contract ERC1155SeaDropLockableTest is SeaDrop1155Test {
 
         token_.setTransferValidator(address(new MockTransferValidator(false)));
         _assertTransferSucceeds(1);
+    }
+
+    function testLockSetByTransferValidatorAppliesToTransfer() public {
+        _setUp(LockMode.Unlocked);
+
+        // The validator is also the owner, so it can lock during a transfer.
+        LockingTransferValidator validator = new LockingTransferValidator(
+            token_
+        );
+        token_.setTransferValidator(address(validator));
+        token_.transferOwnership(address(validator));
+
+        vm.startPrank(holder);
+        vm.expectRevert(_tokenLocked(1));
+        token_.safeTransferFrom(holder, recipient, 1, 1, "");
+
+        vm.expectRevert(_tokenLocked(1));
+        token_.safeBatchTransferFrom(
+            holder,
+            recipient,
+            _asArray(1, 2),
+            _asArray(1, 1),
+            ""
+        );
+        vm.stopPrank();
+
+        // The reverted transfers left the lock and balances unchanged.
+        assertFalse(token_.permanentlyLocked());
+        assertEq(token_.balanceOf(holder, 1), 10);
+        assertEq(token_.balanceOf(recipient, 1), 0);
     }
 
     function testFuzzLockedMatchesLastEvent(

@@ -84,7 +84,8 @@ contract ERC1155SeaDropLockable is ERC1155SeaDrop, ERC8451Lockable {
     /**
      * @dev Reverts holder transfers of locked token ids with `TokenLocked`.
      *      Mints and burns are not holder transfers and are not affected.
-     *      The lock is checked before the transfer validator.
+     *      The lock is checked before the transfer validator, so a locked
+     *      token id reports `TokenLocked` rather than a validator error.
      */
     function _beforeTokenTransfer(
         address from,
@@ -93,20 +94,39 @@ contract ERC1155SeaDropLockable is ERC1155SeaDrop, ERC8451Lockable {
         uint256[] memory amounts,
         bytes memory data
     ) internal virtual override {
-        if (from != address(0) && to != address(0)) {
-            // Put the length on the stack for more efficient access.
-            uint256 idsLength = ids.length;
+        bool isHolderTransfer = from != address(0) && to != address(0);
 
-            for (uint256 i = 0; i < idsLength; ) {
-                _revertIfTokenLocked(ids[i]);
-
-                unchecked {
-                    ++i;
-                }
-            }
+        if (isHolderTransfer) {
+            _revertIfAnyTokenLocked(ids);
         }
 
         super._beforeTokenTransfer(from, to, ids, amounts, data);
+
+        // The ERC-1155 transfer validator is not a view call, so a validator
+        // that is also the owner could change the lock while this transfer
+        // is in progress. Check again so that a lock it sets, including a
+        // permanent one, applies to this transfer.
+        if (isHolderTransfer && _transferValidator != address(0)) {
+            _revertIfAnyTokenLocked(ids);
+        }
+    }
+
+    /**
+     * @dev Reverts with `TokenLocked` for the first locked token id.
+     *
+     * @param ids The token ids.
+     */
+    function _revertIfAnyTokenLocked(uint256[] memory ids) internal view {
+        // Put the length on the stack for more efficient access.
+        uint256 idsLength = ids.length;
+
+        for (uint256 i = 0; i < idsLength; ) {
+            _revertIfTokenLocked(ids[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**
