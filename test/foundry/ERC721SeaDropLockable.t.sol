@@ -27,7 +27,7 @@ contract ERC721SeaDropLockableWithMint is ERC721SeaDropLockable {
         string memory symbol,
         address[] memory allowedSeaDrop,
         LockMode lockMode
-    ) ERC721SeaDropLockable(name, symbol, allowedSeaDrop, lockMode) {}
+    ) ERC721SeaDropLockable(name, symbol, allowedSeaDrop, lockMode) { }
 
     function mint(address to, uint256 quantity) public onlyOwner {
         _mint(to, quantity);
@@ -81,11 +81,8 @@ contract ERC721SeaDropLockableTest is TestHelper {
         for (uint256 i = 0; i < logs.length; i++) {
             bytes32 topic = logs[i].topics[0];
             if (topic == DEFAULT_LOCKED) {
-                events[count++] = LockEvent(
-                    topic,
-                    0,
-                    abi.decode(logs[i].data, (bool))
-                );
+                events[count++] =
+                    LockEvent(topic, 0, abi.decode(logs[i].data, (bool)));
             } else if (topic == LOCKED) {
                 events[count++] = LockEvent(
                     topic,
@@ -109,14 +106,10 @@ contract ERC721SeaDropLockableTest is TestHelper {
         for (uint256 i = 0; i < expected.length; i++) {
             assertEq(actual[i].topic, expected[i].topic, "lock event topic");
             assertEq(
-                actual[i].tokenId,
-                expected[i].tokenId,
-                "lock event token id"
+                actual[i].tokenId, expected[i].tokenId, "lock event token id"
             );
             assertEq(
-                actual[i].isLocked,
-                expected[i].isLocked,
-                "lock event status"
+                actual[i].isLocked, expected[i].isLocked, "lock event status"
             );
         }
     }
@@ -685,8 +678,8 @@ contract ERC721SeaDropLockableTest is TestHelper {
             token_.lockPermanently();
         }
 
-        bool expected = lockPermanently ||
-            (tokenOverrideSet ? tokenIsLocked : defaultIsLocked);
+        bool expected = lockPermanently
+            || (tokenOverrideSet ? tokenIsLocked : defaultIsLocked);
         assertEq(token_.locked(1), expected);
         assertEq(token_.locked(2), lockPermanently || defaultIsLocked);
 
@@ -697,12 +690,11 @@ contract ERC721SeaDropLockableTest is TestHelper {
         }
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }

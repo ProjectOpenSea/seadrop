@@ -124,14 +124,13 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
         _authorizeLockUpdate();
         _revertIfPermanentlyLocked();
 
-        TokenLockOverride lockOverride = isLocked
-            ? TokenLockOverride.Locked
-            : TokenLockOverride.Unlocked;
+        TokenLockOverride lockOverride =
+            isLocked ? TokenLockOverride.Locked : TokenLockOverride.Unlocked;
 
         // Put the length on the stack for more efficient access.
         uint256 tokenIdsLength = tokenIds.length;
 
-        for (uint256 i = 0; i < tokenIdsLength; ) {
+        for (uint256 i = 0; i < tokenIdsLength;) {
             uint256 tokenId = tokenIds[i];
 
             _tokenLockOverrides[tokenId] = lockOverride;
@@ -180,7 +179,7 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
         // most recent `Locked` event unlocked it. The set is left in place
         // since `_isTokenLocked` ignores it once the lock is permanent.
         uint256 unlockedLength = _unlockedTokenIds.length();
-        for (uint256 i = 0; i < unlockedLength; ) {
+        for (uint256 i = 0; i < unlockedLength;) {
             emit Locked(_unlockedTokenIds.at(i), true);
 
             unchecked {

@@ -41,7 +41,7 @@ contract ERC721SeaDropLockable is ERC721SeaDrop, ERC8451Lockable {
         string memory symbol,
         address[] memory allowedSeaDrop,
         LockMode lockMode
-    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) ERC8451Lockable(lockMode) {}
+    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) ERC8451Lockable(lockMode) { }
 
     /**
      * @notice Approve or remove `operator` as an operator for the caller.
@@ -85,10 +85,9 @@ contract ERC721SeaDropLockable is ERC721SeaDrop, ERC8451Lockable {
         override
         returns (bool)
     {
-        return
-            interfaceId == type(IERC6982).interfaceId ||
-            interfaceId == type(IERC8451).interfaceId ||
-            super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC6982).interfaceId
+            || interfaceId == type(IERC8451).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /**
