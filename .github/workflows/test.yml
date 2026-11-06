@@ -11,6 +11,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   FOUNDRY_VERSION: v1.9.0
 
