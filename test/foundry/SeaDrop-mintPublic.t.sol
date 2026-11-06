@@ -54,8 +54,8 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
             1 ether, // mint price
             uint48(block.timestamp), // start time
             uint48(block.timestamp) + 100, // end time
-            1, // max mints per wallet
-            100, // fee (1%)
+            2, // max mints per wallet, so the nested mint reaches the guard
+            100, // fee (1%), so the reentry happens on the fee transfer
             false // if false, allow any fee recipient
             // If true, then only the fee recipient can perform the attack
         );
@@ -72,12 +72,13 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
             uint256(
                 seadrop.getPublicDrop(address(token)).maxTotalMintableByWallet
             ),
-            1
+            2
         );
 
         // expect fail on reentrancy
         vm.expectRevert("ETH_TRANSFER_FAILED");
         attacker.attack(seadrop, address(token));
+        assertEq(token.totalSupply(), 0);
     }
 
     function testMintPublic(FuzzInputs memory args) public validateArgs(args) {

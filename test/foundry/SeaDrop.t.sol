@@ -552,14 +552,15 @@ contract TestSeaDrop is TestHelper {
     function testMintPublic_reentrancyThroughCreatorPayout() public {
         token.setMaxSupply(10);
 
-        // Set a public drop with maxTotalMintableByWallet: 1
-        // and restrictFeeRecipients: false.
+        // Allow two mints per wallet so the nested mint passes the quantity
+        // checks and reaches the reentrancy guard, and charge no fee so the
+        // first ETH transfer (and the reentry) is the creator payout.
         PublicDrop memory publicDrop = PublicDrop(
             1 ether, // mint price
             uint48(block.timestamp), // start time
             uint48(block.timestamp + 100), // end time
-            1, // max mints per wallet
-            1000, // fee (10%)
+            2, // max mints per wallet
+            0, // fee
             false // restrict fee recipients
         );
         vm.prank(address(token));
