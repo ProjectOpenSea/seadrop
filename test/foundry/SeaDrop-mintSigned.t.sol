@@ -1080,9 +1080,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
 
         // Add the signer.
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer,
-            signedMintValidationParams
+            address(seadrop), signer, signedMintValidationParams
         );
     }
 
@@ -1093,11 +1091,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
 
         newToken.setMaxSupply(100);
         newToken.updateCreatorPayoutAddress(address(seadrop), creator);
-        newToken.updateAllowedFeeRecipient(
-            address(seadrop),
-            feeRecipient,
-            true
-        );
+        newToken.updateAllowedFeeRecipient(address(seadrop), feeRecipient, true);
     }
 
     /// @dev Sign a mint with the key derived from `signerName` and check
@@ -1111,18 +1105,15 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         uint256 salt
     ) internal returns (bytes memory signature) {
         (bytes32 r, bytes32 s, uint8 v) = _getSignatureComponents(
-            signerName,
-            nftContract,
-            minter_,
-            feeRecipient_,
-            params,
-            salt
+            signerName, nftContract, minter_, feeRecipient_, params, salt
         );
         signature = abi.encodePacked(r, s, v);
 
         // Verify the recovered address matches the signer address.
         assertEq(
-            _recover(nftContract, minter_, feeRecipient_, params, salt, signature),
+            _recover(
+                nftContract, minter_, feeRecipient_, params, salt, signature
+            ),
             makeAddr(signerName)
         );
     }
@@ -1137,9 +1128,8 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         uint256 salt,
         bytes memory signature
     ) internal view returns (address) {
-        return
-            _getDigest(nftContract, minter_, feeRecipient_, params, salt)
-                .recover(signature);
+        return _getDigest(nftContract, minter_, feeRecipient_, params, salt)
+            .recover(signature);
     }
 
     function _expectInvalidSignature(
@@ -1154,12 +1144,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
             abi.encodeWithSelector(
                 InvalidSignature.selector,
                 _recover(
-                    nftContract,
-                    minter_,
-                    feeRecipient_,
-                    params,
-                    salt,
-                    signature
+                    nftContract, minter_, feeRecipient_, params, salt, signature
                 )
             )
         );
@@ -1187,8 +1172,10 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         address signer_,
         SignedMintValidationParams memory expected
     ) internal view {
-        SignedMintValidationParams memory actual = seadrop
-            .getSignedMintValidationParams(address(token), signer_);
+        SignedMintValidationParams memory
+            actual = seadrop.getSignedMintValidationParams(
+            address(token), signer_
+        );
         assertEq(actual.minMintPrice, expected.minMintPrice);
         assertEq(
             actual.maxMaxTotalMintableByWallet,
@@ -1197,8 +1184,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         assertEq(actual.minStartTime, expected.minStartTime);
         assertEq(actual.maxEndTime, expected.maxEndTime);
         assertEq(
-            actual.maxMaxTokenSupplyForStage,
-            expected.maxMaxTokenSupplyForStage
+            actual.maxMaxTokenSupplyForStage, expected.maxMaxTokenSupplyForStage
         );
         assertEq(actual.minFeeBps, expected.minFeeBps);
         assertEq(actual.maxFeeBps, expected.maxFeeBps);
@@ -1212,25 +1198,14 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
 
         // Mint signed with payer for minter.
         bytes memory signature = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         uint256 value = params.mintPrice * 3;
         vm.prank(payer);
         vm.expectRevert(PayerNotAllowed.selector);
         seadrop.mintSigned{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            3,
-            params,
-            salt,
-            signature
+            address(token), feeRecipient, minter, 3, params, salt, signature
         );
 
         // Allow the payer.
@@ -1239,13 +1214,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         _expectSeaDropMint(payer, 3, params);
         vm.prank(payer);
         seadrop.mintSigned{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            3,
-            params,
-            salt,
-            signature
+            address(token), feeRecipient, minter, 3, params, salt, signature
         );
 
         assertEq(token.balanceOf(minter), 3);
@@ -1255,25 +1224,14 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         vm.prank(payer);
         vm.expectRevert(SignatureAlreadyUsed.selector);
         seadrop.mintSigned{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            3,
-            params,
-            salt,
-            signature
+            address(token), feeRecipient, minter, 3, params, salt, signature
         );
 
         // Mint signed with minter being payer. Change the salt to use a new
         // digest.
         uint256 newSalt = salt + 1;
         signature = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            newSalt
+            "signer", address(token), minter, feeRecipient, params, newSalt
         );
 
         _expectSeaDropMint(minter, 3, params);
@@ -1307,12 +1265,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
             ? caller
             : minterIfNotPayer;
         _expectInvalidSignature(
-            nftContract,
-            hashedMinter,
-            feeRecipient_,
-            params,
-            salt,
-            signature
+            nftContract, hashedMinter, feeRecipient_, params, salt, signature
         );
         vm.prank(caller);
         seadrop.mintSigned{ value: params.mintPrice * 3 }(
@@ -1332,36 +1285,19 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
 
         // Sign the mint for the minter.
         bytes memory signature = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         // Test with a different minter address (the payer).
         _mintSignedExpectingInvalidSignature(
-            address(token),
-            payer,
-            feeRecipient,
-            payer,
-            params,
-            salt,
-            signature
+            address(token), payer, feeRecipient, payer, params, salt, signature
         );
 
         // Test with a different fee recipient (the payer).
         token.updateAllowedFeeRecipient(address(seadrop), payer, true);
         token.updatePayer(address(seadrop), payer, true);
         _mintSignedExpectingInvalidSignature(
-            address(token),
-            payer,
-            payer,
-            minter,
-            params,
-            salt,
-            signature
+            address(token), payer, payer, minter, params, salt, signature
         );
 
         // Test with a different token contract.
@@ -1377,9 +1313,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
             );
 
             token2.updateSignedMintValidationParams(
-                address(seadrop),
-                signer,
-                signedMintValidationParams
+                address(seadrop), signer, signedMintValidationParams
             );
             _mintSignedExpectingInvalidSignature(
                 address(token2),
@@ -1395,18 +1329,13 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         // Test with a signer that is not allowed.
         address signer2 = makeAddr("signer2");
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer2,
-            signedMintValidationParams
+            address(seadrop), signer2, signedMintValidationParams
         );
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer2,
-            emptySignedMintValidationParams
+            address(seadrop), signer2, emptySignedMintValidationParams
         );
         _assertSignedMintValidationParams(
-            signer2,
-            emptySignedMintValidationParams
+            signer2, emptySignedMintValidationParams
         );
         {
             address[] memory signers = seadrop.getSigners(address(token));
@@ -1415,12 +1344,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         }
         {
             bytes memory signature2 = _signMint(
-                "signer2",
-                address(token),
-                minter,
-                feeRecipient,
-                params,
-                salt
+                "signer2", address(token), minter, feeRecipient, params, salt
             );
             _mintSignedExpectingInvalidSignature(
                 address(token),
@@ -1462,45 +1386,33 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         // Ensure that the zero address cannot be added as a signer.
         vm.expectRevert(SignerCannotBeZeroAddress.selector);
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            address(0),
-            signedMintValidationParams
+            address(seadrop), address(0), signedMintValidationParams
         );
 
         // Remove the original signer for branch coverage.
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer,
-            emptySignedMintValidationParams
+            address(seadrop), signer, emptySignedMintValidationParams
         );
         _assertSignedMintValidationParams(
-            signer,
-            emptySignedMintValidationParams
+            signer, emptySignedMintValidationParams
         );
 
         // Add two signers and remove the second for branch coverage.
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer,
-            signedMintValidationParams
+            address(seadrop), signer, signedMintValidationParams
         );
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer2,
-            signedMintValidationParams
+            address(seadrop), signer2, signedMintValidationParams
         );
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer2,
-            emptySignedMintValidationParams
+            address(seadrop), signer2, emptySignedMintValidationParams
         );
         _assertSignedMintValidationParams(
             signer,
             SignedMintValidationParams(1, 11, 50, 100000000000, 10000, 1, 9000)
         );
         _assertSignedMintValidationParams(
-            signer2,
-            emptySignedMintValidationParams
+            signer2, emptySignedMintValidationParams
         );
     }
 
@@ -1509,12 +1421,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
     {
         MintParams memory params = mintParams;
         bytes memory signature = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         // Max mints per wallet is 10. Mint 10.
@@ -1534,19 +1441,11 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         vm.prank(minter);
         vm.expectRevert(
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxMintedPerWallet.selector,
-                11,
-                10
+                MintQuantityExceedsMaxMintedPerWallet.selector, 11, 10
             )
         );
         seadrop.mintSigned{ value: params.mintPrice }(
-            address(token),
-            feeRecipient,
-            address(0),
-            1,
-            params,
-            salt,
-            signature
+            address(token), feeRecipient, address(0), 1, params, salt, signature
         );
 
         // Try to mint one more with manipulated mint params.
@@ -1578,12 +1477,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         paramsZeroFee.feeBps = 1;
 
         bytes memory signature = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            paramsZeroFee,
-            salt
+            "signer", address(token), minter, feeRecipient, paramsZeroFee, salt
         );
 
         _expectSeaDropMint(minter, 3, paramsZeroFee);
@@ -1640,12 +1534,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         bytes memory expectedRevert
     ) internal {
         bytes memory signature = _signMint(
-            "signer",
-            address(token),
-            minter,
-            feeRecipient,
-            params,
-            salt
+            "signer", address(token), minter, feeRecipient, params, salt
         );
 
         vm.prank(minter);
@@ -1712,8 +1601,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
 
         newMintParams = mintParams;
         newMintParams.endTime =
-            uint256(signedMintValidationParams.maxEndTime) +
-            1;
+            uint256(signedMintValidationParams.maxEndTime) + 1;
         _expectSignedMintRevert(
             newMintParams,
             salt,
@@ -1783,26 +1671,20 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
         assertEq(token.totalSupply(), 0);
     }
 
-    function testUpdateSignedMintValidationParams_revertInvalidFeeBps()
-        public
-    {
-        SignedMintValidationParams
-            memory invalidParams = signedMintValidationParams;
+    function testUpdateSignedMintValidationParams_revertInvalidFeeBps() public {
+        SignedMintValidationParams memory invalidParams =
+        signedMintValidationParams;
         invalidParams.minFeeBps = 11_000;
         vm.expectRevert(abi.encodeWithSelector(InvalidFeeBps.selector, 11_000));
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer,
-            invalidParams
+            address(seadrop), signer, invalidParams
         );
 
         invalidParams = signedMintValidationParams;
         invalidParams.maxFeeBps = 12_000;
         vm.expectRevert(abi.encodeWithSelector(InvalidFeeBps.selector, 12_000));
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            signer,
-            invalidParams
+            address(seadrop), signer, invalidParams
         );
     }
 }

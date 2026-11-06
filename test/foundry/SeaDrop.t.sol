@@ -480,8 +480,7 @@ contract TestSeaDrop is TestHelper {
         address minter = makeAddr("minter");
 
         bytes memory expectedRevert = abi.encodeWithSelector(
-            OnlyINonFungibleSeaDropToken.selector,
-            address(standardERC721A)
+            OnlyINonFungibleSeaDropToken.selector, address(standardERC721A)
         );
 
         vm.startPrank(address(standardERC721A));
@@ -497,11 +496,8 @@ contract TestSeaDrop is TestHelper {
         vm.expectRevert(expectedRevert);
         seadrop.updatePublicDrop(publicDrop);
 
-        AllowListData memory allowListData = AllowListData(
-            bytes32(0),
-            new string[](0),
-            ""
-        );
+        AllowListData memory allowListData =
+            AllowListData(bytes32(0), new string[](0), "");
         vm.expectRevert(expectedRevert);
         seadrop.updateAllowList(allowListData);
 
@@ -524,8 +520,8 @@ contract TestSeaDrop is TestHelper {
         vm.expectRevert(expectedRevert);
         seadrop.updateAllowedFeeRecipient(minter, true);
 
-        SignedMintValidationParams
-            memory signedMintValidationParams = SignedMintValidationParams(
+        SignedMintValidationParams memory signedMintValidationParams =
+            SignedMintValidationParams(
                 1, // min mint price
                 11, // max max total mintable by wallet
                 50, // min start time
@@ -536,8 +532,7 @@ contract TestSeaDrop is TestHelper {
             );
         vm.expectRevert(expectedRevert);
         seadrop.updateSignedMintValidationParams(
-            minter,
-            signedMintValidationParams
+            minter, signedMintValidationParams
         );
 
         vm.expectRevert(expectedRevert);
@@ -574,8 +569,7 @@ contract TestSeaDrop is TestHelper {
 
         // Set the creator payout address to the MaliciousRecipient.
         token.updateCreatorPayoutAddress(
-            address(seadrop),
-            address(maliciousRecipient)
+            address(seadrop), address(maliciousRecipient)
         );
 
         // Should not be able to mint with reentrancy.

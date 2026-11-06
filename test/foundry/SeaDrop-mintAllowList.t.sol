@@ -525,11 +525,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
 
         // Update the fee recipient and creator payout address for the token.
         newToken.setMaxSupply(1000);
-        newToken.updateAllowedFeeRecipient(
-            address(seadrop),
-            feeRecipient,
-            true
-        );
+        newToken.updateAllowedFeeRecipient(address(seadrop), feeRecipient, true);
         newToken.updateCreatorPayoutAddress(address(seadrop), creator);
     }
 
@@ -547,10 +543,9 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
     }
 
     function _hashPair(bytes32 a, bytes32 b) internal pure returns (bytes32) {
-        return
-            a < b
-                ? keccak256(abi.encodePacked(a, b))
-                : keccak256(abi.encodePacked(b, a));
+        return a < b
+            ? keccak256(abi.encodePacked(a, b))
+            : keccak256(abi.encodePacked(b, a));
     }
 
     function _proof(bytes32 sibling) internal pure returns (bytes32[] memory) {
@@ -561,10 +556,10 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
 
     /// @dev Store a single-leaf allow list for `minter_` and return the
     ///      (empty) proof. The root of a single-leaf tree is the leaf.
-    function _setSingleLeafAllowList(
-        address minter_,
-        MintParams memory params
-    ) internal returns (bytes32 root, bytes32[] memory proof) {
+    function _setSingleLeafAllowList(address minter_, MintParams memory params)
+        internal
+        returns (bytes32 root, bytes32[] memory proof)
+    {
         root = _leaf(minter_, params);
         proof = new bytes32[](0);
         _setAllowList(root);
@@ -572,8 +567,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
 
     function _setAllowList(bytes32 root) internal {
         token.updateAllowList(
-            address(seadrop),
-            AllowListData(root, new string[](0), "")
+            address(seadrop), AllowListData(root, new string[](0), "")
         );
     }
 
@@ -609,12 +603,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         _expectSeaDropMint(minter, minter, mintQuantity, params);
         vm.prank(minter);
         seadrop.mintAllowList{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintQuantity,
-            params,
-            proof
+            address(token), feeRecipient, minter, mintQuantity, params, proof
         );
     }
 
@@ -627,10 +616,8 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         params.mintPrice = 0;
 
         uint256 mintQuantity = _mintQuantity(quantitySeed);
-        (bytes32 root, bytes32[] memory proof) = _setSingleLeafAllowList(
-            minter,
-            params
-        );
+        (bytes32 root, bytes32[] memory proof) =
+            _setSingleLeafAllowList(minter, params);
 
         assertEq(seadrop.getAllowListMerkleRoot(address(token)), root);
 
@@ -659,12 +646,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         // The payer (the owner, this contract) needs to be allowed first.
         vm.expectRevert(PayerNotAllowed.selector);
         seadrop.mintAllowList{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintQuantity,
-            params,
-            proof
+            address(token), feeRecipient, minter, mintQuantity, params, proof
         );
 
         // Allow the payer.
@@ -673,12 +655,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         // Mint an allow list stage with a different payer than minter.
         _expectSeaDropMint(minter, address(this), mintQuantity, params);
         seadrop.mintAllowList{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintQuantity,
-            params,
-            proof
+            address(token), feeRecipient, minter, mintQuantity, params, proof
         );
     }
 
@@ -698,12 +675,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         vm.prank(nonMinter);
         vm.expectRevert(InvalidProof.selector);
         seadrop.mintAllowList{ value: value }(
-            address(token),
-            feeRecipient,
-            nonMinter,
-            mintQuantity,
-            params,
-            proof
+            address(token), feeRecipient, nonMinter, mintQuantity, params, proof
         );
 
         vm.prank(nonMinter);
@@ -783,16 +755,11 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         _expectSeaDropMint(minter, minter, mintQuantity, params);
         vm.prank(minter);
         seadrop.mintAllowList{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintQuantity,
-            params,
-            proof
+            address(token), feeRecipient, minter, mintQuantity, params, proof
         );
 
-        uint256 maxTotalMintableByWalletMintValue = params.mintPrice *
-            params.maxTotalMintableByWallet;
+        uint256 maxTotalMintableByWalletMintValue =
+            params.mintPrice * params.maxTotalMintableByWallet;
 
         // Attempt to mint the maxTotalMintableByWallet to the minter.
         vm.prank(minter);
@@ -831,29 +798,25 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         proofSecondMinter = _proof(leafMinter);
     }
 
-    function testMintAllowList_revertExceedsMaxTokenSupplyForStage(
-        uint256 feeBps
-    ) public withFeeBps(feeBps) {
+    function testMintAllowList_revertExceedsMaxTokenSupplyForStage(uint256 feeBps)
+        public
+        withFeeBps(feeBps)
+    {
         // Create the second minter that will call the transaction exceeding
         // the drop stage supply.
         address secondMinter = makeAddr("secondMinter");
         vm.deal(secondMinter, 10_000 ether);
 
         MintParams memory params = mintParams;
-        (
-            bytes32[] memory proofMinter,
-            bytes32[] memory proofSecondMinter
-        ) = _setTwoLeafAllowList(secondMinter, params);
+        (bytes32[] memory proofMinter, bytes32[] memory proofSecondMinter) =
+            _setTwoLeafAllowList(secondMinter, params);
 
-        uint256 maxTotalMintableByWalletMintValue = params.mintPrice *
-            params.maxTotalMintableByWallet;
+        uint256 maxTotalMintableByWalletMintValue =
+            params.mintPrice * params.maxTotalMintableByWallet;
 
         // Mint the maxTotalMintableByWallet to the minter.
         _expectSeaDropMint(
-            minter,
-            minter,
-            params.maxTotalMintableByWallet,
-            params
+            minter, minter, params.maxTotalMintableByWallet, params
         );
         vm.prank(minter);
         seadrop.mintAllowList{ value: maxTotalMintableByWalletMintValue }(
@@ -898,20 +861,15 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         vm.deal(secondMinter, 10_000 ether);
 
         MintParams memory params = mintParams;
-        (
-            bytes32[] memory proofMinter,
-            bytes32[] memory proofSecondMinter
-        ) = _setTwoLeafAllowList(secondMinter, params);
+        (bytes32[] memory proofMinter, bytes32[] memory proofSecondMinter) =
+            _setTwoLeafAllowList(secondMinter, params);
 
-        uint256 maxTotalMintableByWalletMintValue = params.mintPrice *
-            params.maxTotalMintableByWallet;
+        uint256 maxTotalMintableByWalletMintValue =
+            params.mintPrice * params.maxTotalMintableByWallet;
 
         // Mint the maxTotalMintableByWallet to the minter.
         _expectSeaDropMint(
-            minter,
-            minter,
-            params.maxTotalMintableByWallet,
-            params
+            minter, minter, params.maxTotalMintableByWallet, params
         );
         vm.prank(minter);
         seadrop.mintAllowList{ value: maxTotalMintableByWalletMintValue }(
@@ -960,12 +918,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         vm.prank(minter);
         vm.expectRevert(InvalidProof.selector);
         seadrop.mintAllowList{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintQuantity,
-            params,
-            proof
+            address(token), feeRecipient, minter, mintQuantity, params, proof
         );
 
         // Try with a proof of zero.
@@ -995,12 +948,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
         vm.prank(minter);
         vm.expectRevert(abi.encodeWithSelector(InvalidFeeBps.selector, 10_100));
         seadrop.mintAllowList{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintQuantity,
-            params,
-            proof
+            address(token), feeRecipient, minter, mintQuantity, params, proof
         );
     }
 }

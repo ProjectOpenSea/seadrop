@@ -73,9 +73,7 @@ abstract contract UpgradeableDeploymentAddresses is Script {
         vm.serializeAddress(objectKey, "proxy", addresses.proxy);
         vm.serializeAddress(objectKey, "admin", addresses.admin);
         string memory json = vm.serializeAddress(
-            objectKey,
-            "implementation",
-            addresses.implementation
+            objectKey, "implementation", addresses.implementation
         );
         vm.writeJson(json, addressesPath);
     }

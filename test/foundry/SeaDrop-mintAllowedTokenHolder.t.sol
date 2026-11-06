@@ -425,9 +425,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
 
         // Update the token gated drop for the deployed allowed NFT token.
         token.updateTokenGatedDrop(
-            address(seadrop),
-            address(allowedNftToken),
-            dropStage
+            address(seadrop), address(allowedNftToken), dropStage
         );
     }
 
@@ -476,10 +474,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         _expectSeaDropMint(minter, dropStage.mintPrice);
         vm.prank(minter);
         seadrop.mintAllowedTokenHolder{ value: dropStage.mintPrice }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
 
         // Ensure the token id was redeemed.
@@ -491,9 +486,8 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
             )
         );
 
-        address[] memory allowedTokens = seadrop.getTokenGatedAllowedTokens(
-            address(token)
-        );
+        address[] memory allowedTokens =
+            seadrop.getTokenGatedAllowedTokens(address(token));
         assertEq(allowedTokens.length, 1);
         assertEq(allowedTokens[0], address(allowedNftToken));
     }
@@ -504,10 +498,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         // The payer (the owner, this contract) must be allowed first.
         vm.expectRevert(PayerNotAllowed.selector);
         seadrop.mintAllowedTokenHolder{ value: dropStage.mintPrice }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
 
         // Allow the payer.
@@ -515,10 +506,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
 
         _expectSeaDropMint(address(this), dropStage.mintPrice);
         seadrop.mintAllowedTokenHolder{ value: dropStage.mintPrice }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
 
         assertEq(token.balanceOf(minter), 1);
@@ -529,9 +517,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         TokenGatedDropStage memory dropStageFreeMint = dropStage;
         dropStageFreeMint.mintPrice = 0;
         token.updateTokenGatedDrop(
-            address(seadrop),
-            address(allowedNftToken),
-            dropStageFreeMint
+            address(seadrop), address(allowedNftToken), dropStageFreeMint
         );
 
         TokenGatedMintParams memory mintParams = _mintParamsForMinter(1);
@@ -539,10 +525,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         _expectSeaDropMint(minter, 0);
         vm.prank(minter);
         seadrop.mintAllowedTokenHolder(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
 
         assertEq(token.balanceOf(minter), 1);
@@ -556,10 +539,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         _expectSeaDropMint(minter, dropStage.mintPrice);
         vm.prank(minter);
         seadrop.mintAllowedTokenHolder{ value: dropStage.mintPrice }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
 
         vm.prank(minter);
@@ -572,10 +552,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
             )
         );
         seadrop.mintAllowedTokenHolder{ value: dropStage.mintPrice }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
     }
 
@@ -584,9 +561,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         TokenGatedDropStage memory dropStageExpired = dropStage;
         dropStageExpired.endTime = uint48(block.timestamp - 500);
         token.updateTokenGatedDrop(
-            address(seadrop),
-            address(allowedNftToken),
-            dropStageExpired
+            address(seadrop), address(allowedNftToken), dropStageExpired
         );
 
         TokenGatedMintParams memory mintParams = _mintParamsForMinter(1);
@@ -600,10 +575,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
             )
         );
         seadrop.mintAllowedTokenHolder(
-            address(token),
-            feeRecipient,
-            address(0),
-            mintParams
+            address(token), feeRecipient, address(0), mintParams
         );
     }
 
@@ -613,16 +585,10 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         // Deploy and configure a new ERC721SeaDrop.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        ERC721SeaDrop differentToken = new ERC721SeaDrop(
-            "",
-            "",
-            allowedSeaDrop
-        );
+        ERC721SeaDrop differentToken = new ERC721SeaDrop("", "", allowedSeaDrop);
         differentToken.setMaxSupply(1000);
         differentToken.updateAllowedFeeRecipient(
-            address(seadrop),
-            feeRecipient,
-            true
+            address(seadrop), feeRecipient, true
         );
         differentToken.updateCreatorPayoutAddress(address(seadrop), creator);
 
@@ -633,10 +599,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
             abi.encodeWithSelector(NotActive.selector, block.timestamp, 0, 0)
         );
         seadrop.mintAllowedTokenHolder{ value: dropStage.mintPrice }(
-            address(differentToken),
-            feeRecipient,
-            minter,
-            mintParams
+            address(differentToken), feeRecipient, minter, mintParams
         );
     }
 
@@ -650,20 +613,15 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         // allowed NFT token in the mint params.
         _mintParamsForMinter(1);
         uint256[] memory tokenIds = new uint256[](1);
-        TokenGatedMintParams memory mintParams = TokenGatedMintParams(
-            address(differentAllowedNftToken),
-            tokenIds
-        );
+        TokenGatedMintParams memory mintParams =
+            TokenGatedMintParams(address(differentAllowedNftToken), tokenIds);
 
         vm.prank(minter);
         vm.expectRevert(
             abi.encodeWithSelector(NotActive.selector, block.timestamp, 0, 0)
         );
         seadrop.mintAllowedTokenHolder{ value: dropStage.mintPrice }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
     }
 
@@ -684,10 +642,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
             )
         );
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
     }
 
@@ -698,9 +653,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         newDropStage.maxTotalMintableByWallet = 20;
         newDropStage.maxTokenSupplyForStage = 5;
         token.updateTokenGatedDrop(
-            address(seadrop),
-            address(allowedNftToken),
-            newDropStage
+            address(seadrop), address(allowedNftToken), newDropStage
         );
 
         TokenGatedMintParams memory mintParams = _mintParamsForMinter(20);
@@ -710,16 +663,11 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         vm.prank(minter);
         vm.expectRevert(
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxTokenSupplyForStage.selector,
-                20,
-                5
+                MintQuantityExceedsMaxTokenSupplyForStage.selector, 20, 5
             )
         );
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
-            address(token),
-            feeRecipient,
-            address(0),
-            mintParams
+            address(token), feeRecipient, address(0), mintParams
         );
     }
 
@@ -728,9 +676,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         newDropStage.maxTotalMintableByWallet = 110;
         newDropStage.maxTokenSupplyForStage = 110;
         token.updateTokenGatedDrop(
-            address(seadrop),
-            address(allowedNftToken),
-            newDropStage
+            address(seadrop), address(allowedNftToken), newDropStage
         );
 
         TokenGatedMintParams memory mintParams = _mintParamsForMinter(110);
@@ -740,23 +686,16 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         vm.prank(minter);
         vm.expectRevert(
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxSupply.selector,
-                110,
-                100
+                MintQuantityExceedsMaxSupply.selector, 110, 100
             )
         );
         seadrop.mintAllowedTokenHolder{ value: mintValue }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintParams
+            address(token), feeRecipient, minter, mintParams
         );
     }
 
     function testUpdateTokenGatedDrop_revertDropTokenOrZeroAddress() public {
-        vm.expectRevert(
-            TokenGatedDropAllowedNftTokenCannotBeDropToken.selector
-        );
+        vm.expectRevert(TokenGatedDropAllowedNftTokenCannotBeDropToken.selector);
         token.updateTokenGatedDrop(address(seadrop), address(token), dropStage);
 
         vm.expectRevert(
@@ -771,9 +710,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(InvalidFeeBps.selector, 15_000));
         token.updateTokenGatedDrop(
-            address(seadrop),
-            address(allowedNftToken),
-            invalidDropStage
+            address(seadrop), address(allowedNftToken), invalidDropStage
         );
     }
 
@@ -783,9 +720,8 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         zeroMintDropStage.maxTotalMintableByWallet = 0;
         zeroMintDropStage.maxTokenSupplyForStage = 5;
 
-        address token2 = address(
-            uint160(0x2222222222222222222222222222222222222222)
-        );
+        address token2 =
+            address(uint160(0x2222222222222222222222222222222222222222));
 
         // Expect the call to revert since there is no existing drop stage.
         vm.prank(address(token));
@@ -797,16 +733,13 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         TokenGatedDropStage memory deleteDropStage = dropStage;
         deleteDropStage.maxTotalMintableByWallet = 0;
         token.updateTokenGatedDrop(
-            address(seadrop),
-            address(allowedNftToken),
-            deleteDropStage
+            address(seadrop), address(allowedNftToken), deleteDropStage
         );
 
         assertEq(seadrop.getTokenGatedAllowedTokens(address(token)).length, 0);
 
         TokenGatedDropStage memory stored = seadrop.getTokenGatedDrop(
-            address(token),
-            address(allowedNftToken)
+            address(token), address(allowedNftToken)
         );
         assertEq(stored.mintPrice, 0);
         assertEq(stored.maxTotalMintableByWallet, 0);

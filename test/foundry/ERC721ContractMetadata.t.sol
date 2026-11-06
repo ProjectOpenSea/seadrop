@@ -92,13 +92,12 @@ contract ERC721ContractMetadataTest is TestHelper {
     function testSetMaxSupply_cannotExceedUint64() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropTokenContractMetadata
-                    .CannotExceedMaxSupplyOfUint64
-                    .selector,
-                2**70
+                ISeaDropTokenContractMetadata.CannotExceedMaxSupplyOfUint64
+                .selector,
+                2 ** 70
             )
         );
-        token.setMaxSupply(2**70);
+        token.setMaxSupply(2 ** 70);
     }
 
     function testSetMaxSupply_cannotBeLessThanTotalMinted() public {
@@ -110,8 +109,7 @@ contract ERC721ContractMetadataTest is TestHelper {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropTokenContractMetadata
-                    .NewMaxSupplyCannotBeLessThenTotalMinted
+                ISeaDropTokenContractMetadata.NewMaxSupplyCannotBeLessThenTotalMinted
                     .selector,
                 1,
                 2
@@ -142,7 +140,8 @@ contract ERC721ContractMetadataTest is TestHelper {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropTokenContractMetadata.InvalidRoyaltyBasisPoints.selector,
+                ISeaDropTokenContractMetadata.InvalidRoyaltyBasisPoints
+                .selector,
                 10_001
             )
         );
@@ -151,8 +150,7 @@ contract ERC721ContractMetadataTest is TestHelper {
         );
 
         vm.expectRevert(
-            ISeaDropTokenContractMetadata
-                .RoyaltyAddressCannotBeZeroAddress
+            ISeaDropTokenContractMetadata.RoyaltyAddressCannotBeZeroAddress
                 .selector
         );
         token.setRoyaltyInfo(
@@ -175,10 +173,8 @@ contract ERC721ContractMetadataTest is TestHelper {
         assertEq(token.royaltyAddress(), minter);
         assertEq(token.royaltyBasisPoints(), 500);
 
-        (address receiver, uint256 royaltyAmount) = token.royaltyInfo(
-            1,
-            100_000
-        );
+        (address receiver, uint256 royaltyAmount) =
+            token.royaltyInfo(1, 100_000);
         assertEq(receiver, minter);
         assertEq(royaltyAmount, 5000);
 
@@ -227,19 +223,17 @@ contract ERC721ContractMetadataTest is TestHelper {
     function _assertNotEmitted(address emitter, bytes32 topic0) internal {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         for (uint256 i = 0; i < logs.length; i++) {
-            bool matches = logs[i].emitter == emitter &&
-                logs[i].topics.length != 0 &&
-                logs[i].topics[0] == topic0;
+            bool matches = logs[i].emitter == emitter
+                && logs[i].topics.length != 0 && logs[i].topics[0] == topic0;
             assertFalse(matches, "unexpected event emitted");
         }
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }

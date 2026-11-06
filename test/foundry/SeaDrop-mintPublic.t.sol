@@ -271,10 +271,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         vm.prank(payer);
         vm.expectRevert(PayerNotAllowed.selector);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            3
+            address(token), feeRecipient, minter, 3
         );
 
         assertEq(seadrop.getPayers(address(token)).length, 0);
@@ -291,10 +288,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         _expectSeaDropMint(minter, payer, 3, publicDrop.feeBps);
         vm.prank(payer);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            3
+            address(token), feeRecipient, minter, 3
         );
 
         assertEq(token.balanceOf(minter), 3);
@@ -304,10 +298,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         _expectSeaDropMint(minter, minter, 3, publicDrop.feeBps);
         vm.prank(minter);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            address(0),
-            3
+            address(token), feeRecipient, address(0), 3
         );
 
         assertEq(token.balanceOf(minter), 6);
@@ -331,20 +322,14 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         vm.prank(payer);
         vm.expectRevert(expectedRevert);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            3
+            address(token), feeRecipient, minter, 3
         );
 
         // Mint public with minter being payer.
         vm.prank(minter);
         vm.expectRevert(expectedRevert);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            address(0),
-            3
+            address(token), feeRecipient, address(0), 3
         );
     }
 
@@ -365,20 +350,14 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         vm.prank(payer);
         vm.expectRevert(expectedRevert);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            3
+            address(token), feeRecipient, minter, 3
         );
 
         // Mint public with minter being payer.
         vm.prank(minter);
         vm.expectRevert(expectedRevert);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            address(0),
-            3
+            address(token), feeRecipient, address(0), 3
         );
     }
 
@@ -395,10 +374,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         _expectSeaDropMint(minter, minter, 1, publicDrop.feeBps);
         vm.prank(minter);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            1
+            address(token), feeRecipient, minter, 1
         );
 
         // Minting the next should revert with MintQuantityExceedsMaxSupply.
@@ -407,10 +383,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
             abi.encodeWithSelector(MintQuantityExceedsMaxSupply.selector, 2, 1)
         );
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            1
+            address(token), feeRecipient, minter, 1
         );
 
         // Update max supply to 3.
@@ -420,10 +393,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         _expectSeaDropMint(minter, minter, 1, publicDrop.feeBps);
         vm.prank(minter);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            address(0),
-            1
+            address(token), feeRecipient, address(0), 1
         );
 
         // Minting the next should revert with
@@ -431,16 +401,11 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         vm.prank(minter);
         vm.expectRevert(
             abi.encodeWithSelector(
-                MintQuantityExceedsMaxMintedPerWallet.selector,
-                3,
-                2
+                MintQuantityExceedsMaxMintedPerWallet.selector, 3, 2
             )
         );
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            1
+            address(token), feeRecipient, minter, 1
         );
     }
 
@@ -457,10 +422,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
             )
         );
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            minter,
-            mintQuantity
+            address(token), feeRecipient, minter, mintQuantity
         );
 
         // Pay for 3 mints but request quantity of 2.
@@ -475,10 +437,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
             )
         );
         seadrop.mintPublic{ value: value }(
-            address(token),
-            feeRecipient,
-            address(0),
-            mintQuantity
+            address(token), feeRecipient, address(0), mintQuantity
         );
     }
 
@@ -488,10 +447,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         vm.prank(minter);
         vm.expectRevert(FeeRecipientCannotBeZeroAddress.selector);
         seadrop.mintPublic{ value: value }(
-            address(token),
-            address(0),
-            minter,
-            1
+            address(token), address(0), minter, 1
         );
 
         vm.prank(minter);
@@ -512,10 +468,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         _expectSeaDropMint(minter, minter, 1, 0);
         vm.prank(minter);
         seadrop.mintPublic{ value: publicDrop.mintPrice }(
-            address(token),
-            feeRecipient,
-            address(0),
-            1
+            address(token), feeRecipient, address(0), 1
         );
     }
 

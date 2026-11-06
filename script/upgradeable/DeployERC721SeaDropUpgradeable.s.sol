@@ -13,7 +13,9 @@ import {
     TransparentUpgradeableProxy
 } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import { UpgradeableDeploymentAddresses } from "./UpgradeableDeploymentAddresses.sol";
+import {
+    UpgradeableDeploymentAddresses
+} from "./UpgradeableDeploymentAddresses.sol";
 
 /**
  * @notice Deploy ERC721SeaDropUpgradeable behind a transparent proxy, the

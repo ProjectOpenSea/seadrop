@@ -79,8 +79,7 @@ contract ERC721SeaDropRandomOffsetTest is TestHelper {
 
         // The offset is derived from the fuzzed randomness source.
         assertEq(
-            randomOffset,
-            (uint256(keccak256(abi.encode(difficulty))) % 99) + 1
+            randomOffset, (uint256(keccak256(abi.encode(difficulty))) % 99) + 1
         );
 
         assertGt(randomOffset, 0);

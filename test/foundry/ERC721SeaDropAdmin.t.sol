@@ -86,17 +86,16 @@ contract ERC721SeaDropAdminTest is TestHelper {
         view
         returns (TokenGatedDropStage memory)
     {
-        return
-            TokenGatedDropStage(
-                0.01 ether, // mint price
-                10, // max mints per wallet
-                uint48(block.timestamp - 100), // start time
-                uint48(block.timestamp + 500), // end time
-                1, // drop stage index
-                100, // max token supply for stage
-                100, // fee (1%)
-                true // restrict fee recipients
-            );
+        return TokenGatedDropStage(
+            0.01 ether, // mint price
+            10, // max mints per wallet
+            uint48(block.timestamp - 100), // start time
+            uint48(block.timestamp + 500), // end time
+            1, // drop stage index
+            100, // max token supply for stage
+            100, // fee (1%)
+            true // restrict fee recipients
+        );
     }
 
     function _signedMintValidationParams()
@@ -104,21 +103,21 @@ contract ERC721SeaDropAdminTest is TestHelper {
         pure
         returns (SignedMintValidationParams memory)
     {
-        return
-            SignedMintValidationParams(
-                10, // min mint price
-                5, // max max total mintable by wallet
-                50, // min start time
-                100, // max end time
-                100, // max max token supply for stage
-                5, // min fee bps
-                1000 // max fee bps
-            );
+        return SignedMintValidationParams(
+            10, // min mint price
+            5, // max max total mintable by wallet
+            50, // min start time
+            100, // max end time
+            100, // max max token supply for stage
+            5, // min fee bps
+            1000 // max fee bps
+        );
     }
 
     function _allowListData() internal pure returns (AllowListData memory) {
         string[] memory publicKeyURIs = new string[](0);
-        return AllowListData(bytes32(uint256(0x33) * _REPEAT), publicKeyURIs, "");
+        return
+            AllowListData(bytes32(uint256(0x33) * _REPEAT), publicKeyURIs, "");
     }
 
     /// @dev Multiplier that repeats a byte across 32 bytes, e.g.
@@ -131,10 +130,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
     }
 
     function testDeploy_emitsSeaDropTokenDeployed() public {
-        address expected = computeCreateAddress(
-            address(this),
-            vm.getNonce(address(this))
-        );
+        address expected =
+            computeCreateAddress(address(this), vm.getNonce(address(this)));
         vm.expectEmit(true, true, true, true, expected);
         emit SeaDropTokenDeployed();
         ERC721SeaDrop deployed = new ERC721SeaDrop("", "", _allowedSeaDrop());
@@ -150,10 +147,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
         vm.expectRevert(CreatorPayoutAddressCannotBeZeroAddress.selector);
         seadrop.mintPublic{ value: publicDrop.mintPrice }(
-            address(token),
-            feeRecipient,
-            address(0),
-            1
+            address(token), feeRecipient, address(0), 1
         );
 
         token.updateAllowedFeeRecipient(address(seadrop), feeRecipient, false);
@@ -187,9 +181,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
         vm.expectRevert(DuplicateFeeRecipient.selector);
         token.updateAllowedFeeRecipient(address(seadrop), feeRecipient, true);
 
-        address[] memory allowed = seadrop.getAllowedFeeRecipients(
-            address(token)
-        );
+        address[] memory allowed =
+            seadrop.getAllowedFeeRecipients(address(token));
         assertEq(allowed.length, 1);
         assertEq(allowed[0], feeRecipient);
         assertTrue(
@@ -232,8 +225,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
         token.mintSeaDrop(minter, 1);
 
         vm.expectRevert(
-            ISeaDropTokenContractMetadata
-                .ProvenanceHashCannotBeSetAfterMintStarted
+            ISeaDropTokenContractMetadata.ProvenanceHashCannotBeSetAfterMintStarted
                 .selector
         );
         token.setProvenanceHash(secondProvenanceHash);
@@ -251,8 +243,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC721SeaDropStructsErrorsAndEvents
-                    .MintQuantityExceedsMaxSupply
+                ERC721SeaDropStructsErrorsAndEvents.MintQuantityExceedsMaxSupply
                     .selector,
                 2,
                 1
@@ -268,9 +259,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
     function testSupportsInterface() public view {
         // Interfaces declared by ERC721SeaDrop.
         assertTrue(
-            token.supportsInterface(
-                type(INonFungibleSeaDropToken).interfaceId
-            )
+            token.supportsInterface(type(INonFungibleSeaDropToken).interfaceId)
         );
         assertTrue(token.supportsInterface(type(IERC165).interfaceId));
 
@@ -363,20 +352,16 @@ contract ERC721SeaDropAdminTest is TestHelper {
         token.updateTokenGatedDrop(address(seadrop), _addr(0x44), dropStage);
 
         // updateSignedMintValidationParams
-        SignedMintValidationParams
-            memory signedMintValidationParams = _signedMintValidationParams();
+        SignedMintValidationParams memory signedMintValidationParams =
+            _signedMintValidationParams();
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            _addr(0x55),
-            signedMintValidationParams
+            address(seadrop), _addr(0x55), signedMintValidationParams
         );
 
         vm.prank(creator);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            _addr(0x55),
-            signedMintValidationParams
+            address(seadrop), _addr(0x55), signedMintValidationParams
         );
 
         // updatePayer
@@ -388,9 +373,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
         vm.prank(creator);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
         token.updateSignedMintValidationParams(
-            address(seadrop),
-            _addr(0x66),
-            signedMintValidationParams
+            address(seadrop), _addr(0x66), signedMintValidationParams
         );
     }
 
@@ -425,9 +408,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
     function testUpdateMethods_onlyOwner() public {
         bytes4 onlyOwner = TwoStepOwnable.OnlyOwner.selector;
-        bytes4 onlyAllowedSeaDrop = INonFungibleSeaDropToken
-            .OnlyAllowedSeaDrop
-            .selector;
+        bytes4 onlyAllowedSeaDrop =
+            INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector;
         address seaDropImpl = address(seadrop);
         address nonSeaDrop = creator;
         address addr4 = _addr(0x44);
@@ -489,25 +471,19 @@ contract ERC721SeaDropAdminTest is TestHelper {
         token.updateAllowedFeeRecipient(nonSeaDrop, addr4, true);
 
         // updateSignedMintValidationParams
-        SignedMintValidationParams
-            memory signedMintValidationParams = _signedMintValidationParams();
+        SignedMintValidationParams memory signedMintValidationParams =
+            _signedMintValidationParams();
         token.updateSignedMintValidationParams(
-            seaDropImpl,
-            addr4,
-            signedMintValidationParams
+            seaDropImpl, addr4, signedMintValidationParams
         );
         vm.prank(creator);
         vm.expectRevert(onlyOwner);
         token.updateSignedMintValidationParams(
-            seaDropImpl,
-            addr4,
-            signedMintValidationParams
+            seaDropImpl, addr4, signedMintValidationParams
         );
         vm.expectRevert(onlyAllowedSeaDrop);
         token.updateSignedMintValidationParams(
-            nonSeaDrop,
-            addr4,
-            signedMintValidationParams
+            nonSeaDrop, addr4, signedMintValidationParams
         );
 
         // updatePayer
@@ -529,10 +505,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
         hoax(minter, 100 ether);
         seadrop.mintPublic{ value: publicDrop.mintPrice * 5 }(
-            address(token),
-            feeRecipient,
-            address(0),
-            5
+            address(token), feeRecipient, address(0), 5
         );
 
         vm.startPrank(minter);
@@ -549,7 +522,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
     function _fullConfig(address feeRecipient)
         internal
         view
-        returns (ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config)
+        returns (ERC721SeaDropStructsErrorsAndEvents
+                    .MultiConfigureStruct memory config)
     {
         config.maxSupply = 100;
         config.baseURI = "https://example1.com";
@@ -585,9 +559,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
         config.signers[0] = _addr(0x88);
         config.signers[1] = _addr(0x99);
 
-        config.signedMintValidationParams = new SignedMintValidationParams[](
-            2
-        );
+        config.signedMintValidationParams = new SignedMintValidationParams[](2);
         config.signedMintValidationParams[0] = _signedMintValidationParams();
         config.signedMintValidationParams[1] = _signedMintValidationParams();
         config.signedMintValidationParams[1].minMintPrice += 1;
@@ -596,7 +568,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
     function _zeroedConfig()
         internal
         view
-        returns (ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config)
+        returns (ERC721SeaDropStructsErrorsAndEvents
+                    .MultiConfigureStruct memory config)
     {
         config.seaDropImpl = address(seadrop);
         config.publicDrop.restrictFeeRecipients = true;
@@ -610,9 +583,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
         assertEq(token.baseURI(), "https://example1.com");
         assertEq(token.contractURI(), "https://example2.com");
 
-        PublicDrop memory storedPublicDrop = seadrop.getPublicDrop(
-            address(token)
-        );
+        PublicDrop memory storedPublicDrop =
+            seadrop.getPublicDrop(address(token));
         assertEq(storedPublicDrop.mintPrice, publicDrop.mintPrice);
         assertEq(storedPublicDrop.startTime, publicDrop.startTime);
         assertEq(storedPublicDrop.endTime, publicDrop.endTime);
@@ -632,9 +604,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
         );
         assertEq(seadrop.getCreatorPayoutAddress(address(token)), creator);
 
-        address[] memory feeRecipients = seadrop.getAllowedFeeRecipients(
-            address(token)
-        );
+        address[] memory feeRecipients =
+            seadrop.getAllowedFeeRecipients(address(token));
         assertEq(feeRecipients.length, 1);
         assertEq(feeRecipients[0], feeRecipient);
 
@@ -648,8 +619,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
         for (uint256 i = 0; i < config.tokenGatedAllowedNftTokens.length; i++) {
             _assertTokenGatedDropEq(
                 seadrop.getTokenGatedDrop(
-                    address(token),
-                    config.tokenGatedAllowedNftTokens[i]
+                    address(token), config.tokenGatedAllowedNftTokens[i]
                 ),
                 config.tokenGatedDropStages[i]
             );
@@ -659,8 +629,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
         for (uint256 i = 0; i < config.signers.length; i++) {
             _assertSignedMintValidationParamsEq(
                 seadrop.getSignedMintValidationParams(
-                    address(token),
-                    config.signers[i]
+                    address(token), config.signers[i]
                 ),
                 config.signedMintValidationParams[i]
             );
@@ -669,8 +638,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
     function testMultiConfigure() public {
         address feeRecipient = makeAddr("feeRecipient");
-        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct
-            memory config = _fullConfig(feeRecipient);
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config =
+            _fullConfig(feeRecipient);
 
         vm.prank(creator);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
@@ -678,8 +647,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
         // Should revert if tokenGatedAllowedNftTokens.length !=
         // tokenGatedDropStages.length.
-        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct
-            memory mismatched = _fullConfig(feeRecipient);
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory
+            mismatched = _fullConfig(feeRecipient);
         mismatched.tokenGatedAllowedNftTokens = new address[](1);
         mismatched.tokenGatedAllowedNftTokens[0] = _addr(0x77);
         vm.expectRevert(
@@ -710,8 +679,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
         _checkMultiConfigureResults(config, feeRecipient);
 
         // Should unset properties.
-        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct
-            memory unset = _zeroedConfig();
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory unset =
+            _zeroedConfig();
         unset.disallowedFeeRecipients = config.allowedFeeRecipients;
         vm.expectEmit(true, true, true, true, address(seadrop));
         emit AllowedFeeRecipientUpdated(address(token), feeRecipient, false);
@@ -725,8 +694,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
         unset = _zeroedConfig();
         unset.disallowedTokenGatedAllowedNftTokens = new address[](1);
-        unset.disallowedTokenGatedAllowedNftTokens[0] = config
-            .tokenGatedAllowedNftTokens[0];
+        unset.disallowedTokenGatedAllowedNftTokens[0] =
+            config.tokenGatedAllowedNftTokens[0];
         TokenGatedDropStage memory emptyStage;
         vm.expectEmit(true, true, true, true, address(seadrop));
         emit TokenGatedDropStageUpdated(
@@ -763,9 +732,8 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
         // Only the owner or approved of the minted token should be able to
         // burn it.
-        bytes4 notOwnerNorApproved = IERC721A
-            .TransferCallerNotOwnerNorApproved
-            .selector;
+        bytes4 notOwnerNorApproved =
+            IERC721A.TransferCallerNotOwnerNorApproved.selector;
         vm.prank(creator);
         vm.expectRevert(notOwnerNorApproved);
         token.burn(1);
@@ -851,19 +819,17 @@ contract ERC721SeaDropAdminTest is TestHelper {
     function _assertNotEmitted(address emitter, bytes32 topic0) internal {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         for (uint256 i = 0; i < logs.length; i++) {
-            bool matches = logs[i].emitter == emitter &&
-                logs[i].topics.length != 0 &&
-                logs[i].topics[0] == topic0;
+            bool matches = logs[i].emitter == emitter
+                && logs[i].topics.length != 0 && logs[i].topics[0] == topic0;
             assertFalse(matches, "unexpected event emitted");
         }
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }
