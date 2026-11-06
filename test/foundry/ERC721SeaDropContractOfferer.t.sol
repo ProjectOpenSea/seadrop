@@ -497,6 +497,42 @@ contract ERC721SeaDropContractOffererTest is SeaDrop721OffererFixture {
         _seaDrop().multiConfigureMint(minter, 1);
     }
 
+    /// @dev multiConfigureMint can't mint past the max supply, directly or
+    ///      through the configurer.
+    function testMultiConfigureMintRespectsMaxSupply() public {
+        assertEq(token.maxSupply(), 5);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(MintQuantityExceedsMaxSupply.selector, 6, 5)
+        );
+        vm.prank(owner);
+        _seaDrop().multiConfigureMint(minter, 6);
+
+        MultiConfigureStruct memory configWithMint = _zeroedConfig();
+        configWithMint.mintRecipient = minter;
+        configWithMint.mintQuantity = 6;
+        vm.expectRevert(
+            abi.encodeWithSelector(MintQuantityExceedsMaxSupply.selector, 6, 5)
+        );
+        vm.prank(owner);
+        configurer.multiConfigure(address(token), configWithMint);
+
+        // Up to the max supply is fine.
+        vm.prank(owner);
+        _seaDrop().multiConfigureMint(minter, 4);
+        configWithMint.mintQuantity = 1;
+        vm.prank(owner);
+        configurer.multiConfigure(address(token), configWithMint);
+        assertEq(token.totalSupply(), 5);
+
+        // One more is not.
+        vm.expectRevert(
+            abi.encodeWithSelector(MintQuantityExceedsMaxSupply.selector, 6, 5)
+        );
+        vm.prank(owner);
+        _seaDrop().multiConfigureMint(minter, 1);
+    }
+
     function _zeroedConfig()
         internal
         pure
