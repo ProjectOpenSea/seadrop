@@ -72,14 +72,14 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         token_.mint(holder, 3);
     }
 
-    function _lockEvents() internal returns (LockEvent[] memory) {
+    function _lockEvents() internal view returns (LockEvent[] memory) {
         return LockEvents.decode(vm.getRecordedLogs());
     }
 
     function _assertLockEvents(
         LockEvent[] memory actual,
         LockEvent[] memory expected
-    ) internal {
+    ) internal pure {
         assertEq(actual.length, expected.length, "lock event count");
         for (uint256 i = 0; i < expected.length; i++) {
             assertEq(actual[i].topic, expected[i].topic, "lock event topic");
@@ -192,7 +192,7 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
         assertEq(token_.ownerOf(tokenId), holder);
     }
 
-    function testInterfaceIds() public {
+    function testInterfaceIds() public pure {
         assertEq(type(IERC8451).interfaceId, bytes4(0x9051c597));
         assertEq(type(IERC6982).interfaceId, bytes4(0x6b61a747));
     }

@@ -52,7 +52,8 @@ contract ERC721SeaDropLockable is ERC721SeaDrop {
 
     /**
      * @dev The lock can become permanent at any time, including after
-     *      tokens are minted.
+     *      tokens are minted. A contract that inherits this can override it
+     *      to limit that again.
      */
-    function _checkPermanentLockAllowed() internal view override { }
+    function _checkPermanentLockAllowed() internal view virtual override { }
 }
