@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { PublicDrop, TokenGatedDropStage, SignedMintValidationParams } from "./SeaDropStructs.sol";
+import {
+    PublicDrop,
+    TokenGatedDropStage,
+    SignedMintValidationParams
+} from "./SeaDropStructs.sol";
 
 interface SeaDropErrorsAndEvents {
     /**
@@ -37,10 +41,10 @@ interface SeaDropErrorsAndEvents {
      *      always `type(uint).max`.
      */
     error MintQuantityExceedsMaxTokenSupplyForStage(
-        uint256 total, 
+        uint256 total,
         uint256 maxTokenSupplyForStage
     );
-    
+
     /**
      * @dev Revert if the fee recipient is the zero address.
      */
@@ -152,20 +156,19 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert with an error if an empty TokenGatedDropStage is provided
      *      for an already-empty TokenGatedDropStage.
      */
-     error TokenGatedDropStageNotPresent();
+    error TokenGatedDropStageNotPresent();
 
     /**
      * @dev Revert with an error if an allowedNftToken is set to
      *      the zero address.
      */
-     error TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
+    error TokenGatedDropAllowedNftTokenCannotBeZeroAddress();
 
     /**
      * @dev Revert with an error if an allowedNftToken is set to
      *      the drop token itself.
      */
-     error TokenGatedDropAllowedNftTokenCannotBeDropToken();
-
+    error TokenGatedDropAllowedNftTokenCannotBeDropToken();
 
     /**
      * @dev Revert with an error if supplied signed mint price is less than
@@ -184,7 +187,7 @@ interface SeaDropErrorsAndEvents {
      *      the minimum specified.
      */
     error InvalidSignedStartTime(uint256 got, uint256 minimum);
-    
+
     /**
      * @dev Revert with an error if supplied signed end time is greater than
      *      the maximum specified.
@@ -195,9 +198,9 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert with an error if supplied signed maxTokenSupplyForStage
      *      is greater than the maximum specified.
      */
-     error InvalidSignedMaxTokenSupplyForStage(uint256 got, uint256 maximum);
-    
-     /**
+    error InvalidSignedMaxTokenSupplyForStage(uint256 got, uint256 maximum);
+
+    /**
      * @dev Revert with an error if supplied signed feeBps is greater than
      *      the maximum specified, or less than the minimum.
      */
@@ -217,7 +220,7 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev An event with details of a SeaDrop mint, for analytical purposes.
-     * 
+     *
      * @param nftContract    The nft contract.
      * @param minter         The mint recipient.
      * @param feeRecipient   The fee recipient.
@@ -243,10 +246,7 @@ interface SeaDropErrorsAndEvents {
     /**
      * @dev An event with updated public drop data for an nft contract.
      */
-    event PublicDropUpdated(
-        address indexed nftContract,
-        PublicDrop publicDrop
-    );
+    event PublicDropUpdated(address indexed nftContract, PublicDrop publicDrop);
 
     /**
      * @dev An event with updated token gated drop stage data
@@ -260,7 +260,7 @@ interface SeaDropErrorsAndEvents {
 
     /**
      * @dev An event with updated allow list data for an nft contract.
-     * 
+     *
      * @param nftContract        The nft contract.
      * @param previousMerkleRoot The previous allow list merkle root.
      * @param newMerkleRoot      The new allow list merkle root.
@@ -309,7 +309,7 @@ interface SeaDropErrorsAndEvents {
         address indexed nftContract,
         address indexed signer,
         SignedMintValidationParams signedMintValidationParams
-    );   
+    );
 
     /**
      * @dev An event with the updated payer for an nft contract.

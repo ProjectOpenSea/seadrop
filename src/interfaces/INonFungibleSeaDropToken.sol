@@ -179,9 +179,6 @@ interface INonFungibleSeaDropToken is ISeaDropTokenContractMetadata {
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
-    function updatePayer(
-        address seaDropImpl,
-        address payer,
-        bool allowed
-    ) external;
+    function updatePayer(address seaDropImpl, address payer, bool allowed)
+        external;
 }

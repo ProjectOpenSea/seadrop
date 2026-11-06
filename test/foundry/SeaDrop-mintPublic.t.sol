@@ -92,10 +92,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         uint256 preCreatorBalance = creator.balance;
 
         seadrop.mintPublic{ value: mintValue }(
-            address(token),
-            args.feeRecipient,
-            args.minter,
-            args.numMints
+            address(token), args.feeRecipient, args.minter, args.numMints
         );
 
         // Check minter token balance increased.
@@ -127,10 +124,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         hoax(args.minter, 100 ether);
 
         seadrop.mintPublic{ value: 1 wei }(
-            address(token),
-            args.feeRecipient,
-            args.minter,
-            args.numMints
+            address(token), args.feeRecipient, args.minter, args.numMints
         );
     }
 
@@ -155,10 +149,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         vm.prank(args.minter);
 
         seadrop.mintPublic(
-            address(token),
-            args.feeRecipient,
-            args.minter,
-            args.numMints
+            address(token), args.feeRecipient, args.minter, args.numMints
         );
 
         // Check minter token balance increased.
@@ -177,9 +168,8 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         token.updatePayer(address(seadrop), payer, true);
 
         vm.assume(
-            payer != creator &&
-                payer != args.minter &&
-                payer != args.feeRecipient
+            payer != creator && payer != args.minter
+                && payer != args.feeRecipient
         );
 
         hoax(payer, 100 ether);
@@ -191,10 +181,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         uint256 preCreatorBalance = creator.balance;
 
         seadrop.mintPublic{ value: mintValue }(
-            address(token),
-            args.feeRecipient,
-            args.minter,
-            args.numMints
+            address(token), args.feeRecipient, args.minter, args.numMints
         );
 
         // Check minter token balance increased.

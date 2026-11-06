@@ -12,7 +12,7 @@ contract ERC721SeaDropSoulboundWithMint is ERC721SeaDropSoulbound {
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop
-    ) ERC721SeaDropSoulbound(name, symbol, allowedSeaDrop) {}
+    ) ERC721SeaDropSoulbound(name, symbol, allowedSeaDrop) { }
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
@@ -61,12 +61,11 @@ contract ERC721SeaDropSoulboundTest is TestHelper {
         token_.safeTransferFrom(address(this), greg, 1, "");
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }

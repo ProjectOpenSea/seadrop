@@ -20,50 +20,29 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-             "SignedMint("
-                "address nftContract,"
-                "address minter,"
-                "address feeRecipient,"
-                "MintParams mintParams,"
-                "uint256 salt"
-            ")"
-            "MintParams("
-                "uint256 mintPrice,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "uint256 dropStageIndex,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "SignedMint(" "address nftContract," "address minter,"
+        "address feeRecipient," "MintParams mintParams," "uint256 salt" ")"
+        "MintParams(" "uint256 mintPrice," "uint256 maxTotalMintableByWallet,"
+        "uint256 startTime," "uint256 endTime," "uint256 dropStageIndex,"
+        "uint256 maxTokenSupplyForStage," "uint256 feeBps,"
+        "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "MintParams("
-                "uint256 mintPrice,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "uint256 dropStageIndex,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "MintParams(" "uint256 mintPrice," "uint256 maxTotalMintableByWallet,"
+        "uint256 startTime," "uint256 endTime," "uint256 dropStageIndex,"
+        "uint256 maxTokenSupplyForStage," "uint256 feeBps,"
+        "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "EIP712Domain("
-                "string name,"
-                "string version,"
-                "uint256 chainId,"
-                "address verifyingContract"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "EIP712Domain(" "string name," "string version," "uint256 chainId,"
+        "address verifyingContract" ")"
+    );
     bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("1.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
@@ -84,9 +63,8 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
         );
         vm.assume(args.minter.code.length == 0 && args.minter > address(9));
         vm.assume(
-            args.minter != args.feeRecipient &&
-                args.minter != creator &&
-                args.feeRecipient != creator
+            args.minter != args.feeRecipient && args.minter != creator
+                && args.feeRecipient != creator
         );
         _;
     }
@@ -98,20 +76,9 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
         address feeRecipient,
         MintParams memory mintParams,
         uint256 salt
-    )
-        internal
-        returns (
-            bytes32 r,
-            bytes32 s,
-            uint8 v
-        )
-    {
+    ) internal returns (bytes32 r, bytes32 s, uint8 v) {
         bytes32 digest = _getDigest(
-            nftContract,
-            minter,
-            feeRecipient,
-            mintParams,
-            salt
+            nftContract, minter, feeRecipient, mintParams, salt
         );
         (, uint256 pk) = makeAddrAndKey(name);
         (v, r, s) = vm.sign(pk, digest);
@@ -155,11 +122,11 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
         );
     }
 
-    function _encodeSignature2098(
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    ) internal pure returns (bytes memory) {
+    function _encodeSignature2098(bytes32 r, bytes32 s, uint8 v)
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint256 yParity;
         if (v == 27) {
             yParity = 0;

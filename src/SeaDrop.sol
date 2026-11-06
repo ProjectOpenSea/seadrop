@@ -60,8 +60,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     mapping(address => address[]) private _enumeratedFeeRecipients;
 
     /// @notice Track the parameters for allowed signers for server-side drops.
-    mapping(address => mapping(address => SignedMintValidationParams))
-        private _signedMintValidationParams;
+    mapping(address => mapping(address => SignedMintValidationParams)) private
+        _signedMintValidationParams;
 
     /// @notice Track the signers for each server-side drop.
     mapping(address => address[]) private _enumeratedSigners;
@@ -76,63 +76,42 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     mapping(address => address[]) private _enumeratedPayers;
 
     /// @notice Track the token gated drop stages.
-    mapping(address => mapping(address => TokenGatedDropStage))
-        private _tokenGatedDrops;
+    mapping(address => mapping(address => TokenGatedDropStage)) private
+        _tokenGatedDrops;
 
     /// @notice Track the tokens for token gated drops.
     mapping(address => address[]) private _enumeratedTokenGatedTokens;
 
     /// @notice Track the redeemed token IDs for token gated drop stages.
-    mapping(address => mapping(address => mapping(uint256 => bool)))
-        private _tokenGatedRedeemed;
+    mapping(address => mapping(address => mapping(uint256 => bool))) private
+        _tokenGatedRedeemed;
 
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-             "SignedMint("
-                "address nftContract,"
-                "address minter,"
-                "address feeRecipient,"
-                "MintParams mintParams,"
-                "uint256 salt"
-            ")"
-            "MintParams("
-                "uint256 mintPrice,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "uint256 dropStageIndex,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "SignedMint(" "address nftContract," "address minter,"
+        "address feeRecipient," "MintParams mintParams," "uint256 salt" ")"
+        "MintParams(" "uint256 mintPrice," "uint256 maxTotalMintableByWallet,"
+        "uint256 startTime," "uint256 endTime," "uint256 dropStageIndex,"
+        "uint256 maxTokenSupplyForStage," "uint256 feeBps,"
+        "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "MintParams("
-                "uint256 mintPrice,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "uint256 dropStageIndex,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "MintParams(" "uint256 mintPrice," "uint256 maxTotalMintableByWallet,"
+        "uint256 startTime," "uint256 endTime," "uint256 dropStageIndex,"
+        "uint256 maxTokenSupplyForStage," "uint256 feeBps,"
+        "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "EIP712Domain("
-                "string name,"
-                "string version,"
-                "uint256 chainId,"
-                "address verifyingContract"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "EIP712Domain(" "string name," "string version," "uint256 chainId,"
+        "address verifyingContract" ")"
+    );
     bytes32 internal constant _NAME_HASH = keccak256("SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("1.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
@@ -154,11 +133,9 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      *         call the update methods.
      */
     modifier onlyINonFungibleSeaDropToken() virtual {
-        if (
-            !IERC165(msg.sender).supportsInterface(
-                type(INonFungibleSeaDropToken).interfaceId
-            )
-        ) {
+        if (!IERC165(msg.sender)
+                .supportsInterface(type(INonFungibleSeaDropToken).interfaceId))
+        {
             revert OnlyINonFungibleSeaDropToken(msg.sender);
         }
         _;
@@ -199,9 +176,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         _checkCorrectPayment(quantity, mintPrice);
 
         // Get the minter address.
-        address minter = minterIfNotPayer != address(0)
-            ? minterIfNotPayer
-            : msg.sender;
+        address minter =
+            minterIfNotPayer != address(0) ? minterIfNotPayer : msg.sender;
 
         // Ensure the payer is allowed if not the minter.
         if (minter != msg.sender) {
@@ -221,9 +197,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
         // Check that the fee recipient is allowed if restricted.
         _checkFeeRecipientIsAllowed(
-            nftContract,
-            feeRecipient,
-            publicDrop.restrictFeeRecipients
+            nftContract, feeRecipient, publicDrop.restrictFeeRecipients
         );
 
         // Mint the token(s), split the payout, emit an event.
@@ -266,9 +240,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         _checkCorrectPayment(quantity, mintPrice);
 
         // Get the minter address.
-        address minter = minterIfNotPayer != address(0)
-            ? minterIfNotPayer
-            : msg.sender;
+        address minter =
+            minterIfNotPayer != address(0) ? minterIfNotPayer : msg.sender;
 
         // Ensure the payer is allowed if not the minter.
         if (minter != msg.sender) {
@@ -288,19 +261,15 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
         // Check that the fee recipient is allowed if restricted.
         _checkFeeRecipientIsAllowed(
-            nftContract,
-            feeRecipient,
-            mintParams.restrictFeeRecipients
+            nftContract, feeRecipient, mintParams.restrictFeeRecipients
         );
 
         // Verify the proof.
-        if (
-            !MerkleProof.verify(
+        if (!MerkleProof.verify(
                 proof,
                 _allowListMerkleRoots[nftContract],
                 keccak256(abi.encode(minter, mintParams))
-            )
-        ) {
+            )) {
             revert InvalidProof();
         }
 
@@ -345,9 +314,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         _checkCorrectPayment(quantity, mintParams.mintPrice);
 
         // Get the minter address.
-        address minter = minterIfNotPayer != address(0)
-            ? minterIfNotPayer
-            : msg.sender;
+        address minter =
+            minterIfNotPayer != address(0) ? minterIfNotPayer : msg.sender;
 
         // Ensure the payer is allowed if not the minter.
         if (minter != msg.sender) {
@@ -367,20 +335,14 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
         // Check that the fee recipient is allowed if restricted.
         _checkFeeRecipientIsAllowed(
-            nftContract,
-            feeRecipient,
-            mintParams.restrictFeeRecipients
+            nftContract, feeRecipient, mintParams.restrictFeeRecipients
         );
 
         // Validate the signature in a block scope to avoid "stack too deep".
         {
             // Get the digest to verify the EIP-712 signature.
             bytes32 digest = _getDigest(
-                nftContract,
-                minter,
-                feeRecipient,
-                mintParams,
-                salt
+                nftContract, minter, feeRecipient, mintParams, salt
             );
 
             // Ensure the digest has not already been used.
@@ -420,10 +382,9 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         MintParams memory mintParams,
         address signer
     ) internal view {
-        SignedMintValidationParams
-            memory signedMintValidationParams = _signedMintValidationParams[
-                nftContract
-            ][signer];
+        SignedMintValidationParams memory
+            signedMintValidationParams =
+                _signedMintValidationParams[nftContract][signer];
 
         // Check that SignedMintValidationParams have been initialized; if not,
         // this is an invalid signer.
@@ -439,8 +400,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             );
         }
         if (
-            mintParams.maxTotalMintableByWallet >
-            signedMintValidationParams.maxMaxTotalMintableByWallet
+            mintParams.maxTotalMintableByWallet
+                > signedMintValidationParams.maxMaxTotalMintableByWallet
         ) {
             revert InvalidSignedMaxTotalMintableByWallet(
                 mintParams.maxTotalMintableByWallet,
@@ -460,8 +421,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             );
         }
         if (
-            mintParams.maxTokenSupplyForStage >
-            signedMintValidationParams.maxMaxTokenSupplyForStage
+            mintParams.maxTokenSupplyForStage
+                > signedMintValidationParams.maxMaxTokenSupplyForStage
         ) {
             revert InvalidSignedMaxTokenSupplyForStage(
                 mintParams.maxTokenSupplyForStage,
@@ -502,9 +463,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         TokenGatedMintParams calldata mintParams
     ) external payable override {
         // Get the minter address.
-        address minter = minterIfNotPayer != address(0)
-            ? minterIfNotPayer
-            : msg.sender;
+        address minter =
+            minterIfNotPayer != address(0) ? minterIfNotPayer : msg.sender;
 
         // Ensure the payer is allowed if not the minter.
         if (minter != msg.sender) {
@@ -517,18 +477,15 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         address allowedNftToken = mintParams.allowedNftToken;
 
         // Set the dropStage to a variable.
-        TokenGatedDropStage memory dropStage = _tokenGatedDrops[nftContract][
-            allowedNftToken
-        ];
+        TokenGatedDropStage memory dropStage =
+            _tokenGatedDrops[nftContract][allowedNftToken];
 
         // Validate that the dropStage is active.
         _checkActive(dropStage.startTime, dropStage.endTime);
 
         // Check that the fee recipient is allowed if restricted.
         _checkFeeRecipientIsAllowed(
-            nftContract,
-            feeRecipient,
-            dropStage.restrictFeeRecipients
+            nftContract, feeRecipient, dropStage.restrictFeeRecipients
         );
 
         // Put the mint quantity on the stack for more efficient access.
@@ -548,7 +505,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
         // Iterate through each allowedNftTokenId
         // to ensure it is not already redeemed.
-        for (uint256 i = 0; i < mintQuantity; ) {
+        for (uint256 i = 0; i < mintQuantity;) {
             // Put the tokenId on the stack.
             uint256 tokenId = mintParams.allowedNftTokenIds[i];
 
@@ -562,10 +519,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             }
 
             // Cache the storage pointer for cheaper access.
-            mapping(uint256 => bool)
-                storage redeemedTokenIds = _tokenGatedRedeemed[nftContract][
-                    allowedNftToken
-                ];
+            mapping(uint256 => bool) storage redeemedTokenIds =
+                _tokenGatedRedeemed[nftContract][allowedNftToken];
 
             // Check that the token id has not already been redeemed.
             if (redeemedTokenIds[tokenId]) {
@@ -604,9 +559,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
      */
     function _checkActive(uint256 startTime, uint256 endTime) internal view {
         if (
-            _cast(block.timestamp < startTime) |
-                _cast(block.timestamp > endTime) ==
-            1
+            _cast(block.timestamp < startTime)
+                    | _cast(block.timestamp > endTime) == 1
         ) {
             // Revert if the drop stage is not active.
             revert NotActive(block.timestamp, startTime, endTime);
@@ -631,10 +585,11 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         }
 
         // Revert if the fee recipient is restricted and not allowed.
-        if (restrictFeeRecipients)
+        if (restrictFeeRecipients) {
             if (!_allowedFeeRecipients[nftContract][feeRecipient]) {
                 revert FeeRecipientNotAllowed();
             }
+        }
     }
 
     /**
@@ -996,10 +951,9 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         address allowedNftToken,
         uint256 allowedNftTokenId
     ) external view returns (bool) {
-        return
-            _tokenGatedRedeemed[nftContract][allowedNftToken][
-                allowedNftTokenId
-            ];
+        return _tokenGatedRedeemed[
+            nftContract
+        ][allowedNftToken][allowedNftTokenId];
     }
 
     /**
@@ -1127,12 +1081,10 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         bool addOrUpdateDropStage = dropStage.maxTotalMintableByWallet != 0;
 
         // Get pointers to the token gated drop data and enumerated addresses.
-        TokenGatedDropStage storage existingDropStageData = _tokenGatedDrops[
-            msg.sender
-        ][allowedNftToken];
-        address[] storage enumeratedTokens = _enumeratedTokenGatedTokens[
-            msg.sender
-        ];
+        TokenGatedDropStage storage existingDropStageData =
+            _tokenGatedDrops[msg.sender][allowedNftToken];
+        address[] storage enumeratedTokens =
+            _enumeratedTokenGatedTokens[msg.sender];
 
         // Stage struct packs to a single slot, so load it
         // as a uint256; if it is 0, it is empty.
@@ -1207,11 +1159,10 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
         }
 
         // Track the enumerated storage.
-        address[] storage enumeratedStorage = _enumeratedFeeRecipients[
-            msg.sender
-        ];
-        mapping(address => bool)
-            storage feeRecipientsMap = _allowedFeeRecipients[msg.sender];
+        address[] storage enumeratedStorage =
+            _enumeratedFeeRecipients[msg.sender];
+        mapping(address => bool) storage feeRecipientsMap =
+            _allowedFeeRecipients[msg.sender];
 
         if (allowed) {
             if (feeRecipientsMap[feeRecipient]) {
@@ -1261,15 +1212,12 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
 
         // Track the enumerated storage.
         address[] storage enumeratedStorage = _enumeratedSigners[msg.sender];
-        mapping(address => SignedMintValidationParams)
-            storage signedMintValidationParamsMap = _signedMintValidationParams[
-                msg.sender
-            ];
+        mapping(address => SignedMintValidationParams) storage
+            signedMintValidationParamsMap =
+                _signedMintValidationParams[msg.sender];
 
-        SignedMintValidationParams
-            storage existingSignedMintValidationParams = signedMintValidationParamsMap[
-                signer
-            ];
+        SignedMintValidationParams storage existingSignedMintValidationParams =
+                signedMintValidationParamsMap[signer];
 
         bool signedMintValidationParamsDoNotExist;
         assembly {
@@ -1278,8 +1226,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             )
         }
         // Use maxMaxTotalMintableByWallet as sentry for add/update or delete.
-        bool addOrUpdate = signedMintValidationParams
-            .maxMaxTotalMintableByWallet > 0;
+        bool addOrUpdate =
+            signedMintValidationParams.maxMaxTotalMintableByWallet > 0;
 
         if (addOrUpdate) {
             signedMintValidationParamsMap[signer] = signedMintValidationParams;
@@ -1288,8 +1236,8 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
             }
         } else {
             if (
-                existingSignedMintValidationParams
-                    .maxMaxTotalMintableByWallet == 0
+                existingSignedMintValidationParams.maxMaxTotalMintableByWallet
+                    == 0
             ) {
                 revert SignerNotPresent();
             }
@@ -1359,7 +1307,7 @@ contract SeaDrop is ISeaDrop, ReentrancyGuard {
     ) internal {
         // Cache the length.
         uint256 enumerationLength = enumeration.length;
-        for (uint256 i = 0; i < enumerationLength; ) {
+        for (uint256 i = 0; i < enumerationLength;) {
             // Check if the enumerated element is the one we are deleting.
             if (enumeration[i] == toRemove) {
                 // Swap with the last element.

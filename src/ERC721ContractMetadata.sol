@@ -64,8 +64,8 @@ contract ERC721ContractMetadata is
      */
     function _onlyOwnerOrSelf() internal view {
         if (
-            _cast(msg.sender == owner()) | _cast(msg.sender == address(this)) ==
-            0
+            _cast(msg.sender == owner()) | _cast(msg.sender == address(this))
+                == 0
         ) {
             revert OnlyOwner();
         }
@@ -76,7 +76,7 @@ contract ERC721ContractMetadata is
      */
     constructor(string memory name, string memory symbol)
         ERC721AConduitPreapproved(name, symbol)
-    {}
+    { }
 
     /**
      * @notice Sets the base URI for the token metadata and emits an event.
@@ -139,7 +139,7 @@ contract ERC721ContractMetadata is
         _onlyOwnerOrSelf();
 
         // Ensure the max supply does not exceed the maximum value of uint64.
-        if (newMaxSupply > 2**64 - 1) {
+        if (newMaxSupply > 2 ** 64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
@@ -282,7 +282,11 @@ contract ERC721ContractMetadata is
         uint256,
         /* _tokenId */
         uint256 _salePrice
-    ) external view returns (address receiver, uint256 royaltyAmount) {
+    )
+        external
+        view
+        returns (address receiver, uint256 royaltyAmount)
+    {
         // Put the royalty info on the stack for more efficient access.
         RoyaltyInfo storage info = _royaltyInfo;
 
@@ -328,12 +332,8 @@ contract ERC721ContractMetadata is
             // Call the transfer validator if one is set.
             address transferValidator = _transferValidator;
             if (transferValidator != address(0)) {
-                ITransferValidator721(transferValidator).validateTransfer(
-                    msg.sender,
-                    from,
-                    to,
-                    startTokenId
-                );
+                ITransferValidator721(transferValidator)
+                    .validateTransfer(msg.sender, from, to, startTokenId);
             }
         }
     }
@@ -350,12 +350,11 @@ contract ERC721ContractMetadata is
         override(IERC165, ERC721A)
         returns (bool)
     {
-        return
-            interfaceId == type(IERC2981).interfaceId ||
-            interfaceId == type(ICreatorToken).interfaceId ||
-            interfaceId == type(ILegacyCreatorToken).interfaceId ||
-            interfaceId == 0x49064906 || // ERC-4906
-            super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC2981).interfaceId
+            || interfaceId == type(ICreatorToken).interfaceId
+            || interfaceId == type(ILegacyCreatorToken).interfaceId
+            || interfaceId == 0x49064906 // ERC-4906
+            || super.supportsInterface(interfaceId);
     }
 
     /**
