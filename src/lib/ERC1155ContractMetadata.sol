@@ -650,8 +650,11 @@ contract ERC1155ContractMetadata is
 
     /**
      * @dev The lock can only become permanent before the first token is
-     *      minted, so an owner key cannot end trading for good on a
-     *      collection that already has holders.
+     *      minted, so holders never get a permanent lock they could not see
+     *      at mint, and a stolen owner key cannot apply one to a collection
+     *      that already has holders. A temporary lock can still be applied
+     *      after minting, and it stays in place if the owner then gives up
+     *      ownership.
      */
     function _checkPermanentLockAllowed() internal view virtual override {
         if (_mintStarted) {

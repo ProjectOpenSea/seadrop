@@ -164,27 +164,7 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
         _revertIfPermanentlyLocked();
         _checkPermanentLockAllowed();
 
-        // ERC-8451 requires `defaultLocked()` to return true before
-        // `PermanentlyLocked` is emitted.
-        if (!_defaultLocked) {
-            _defaultLocked = true;
-            emit DefaultLocked(true);
-        }
-
-        // ERC-8451 requires a `Locked(id, true)` for every token id whose
-        // most recent `Locked` event unlocked it. The set is left in place
-        // since `_isTokenLocked` ignores it once the lock is permanent.
-        uint256 unlockedLength = _unlockedTokenIds.length();
-        for (uint256 i = 0; i < unlockedLength; ) {
-            emit Locked(_unlockedTokenIds.at(i), true);
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        _permanentlyLocked = true;
-        emit PermanentlyLocked();
+        _lockPermanently();
     }
 
     /**
@@ -220,18 +200,49 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
      * @dev Set the lock status every token starts with. Emits
      *      `DefaultLocked`, which ERC-6982 requires at deployment, and
      *      `PermanentlyLocked` if the lock is permanent from the start.
+     *      Reverts once the lock is permanent.
      *
      * @param lockMode The lock status to start with.
      */
     function _initializeLock(LockMode lockMode) internal {
+        _revertIfPermanentlyLocked();
+
         bool isLocked = lockMode != LockMode.Unlocked;
         _defaultLocked = isLocked;
         emit DefaultLocked(isLocked);
 
         if (lockMode == LockMode.PermanentlyLocked) {
-            _permanentlyLocked = true;
-            emit PermanentlyLocked();
+            _lockPermanently();
         }
+    }
+
+    /**
+     * @dev Make the lock permanent, after emitting the events ERC-8451
+     *      requires first. Callers check who is calling and that the lock
+     *      is not already permanent.
+     */
+    function _lockPermanently() internal {
+        // ERC-8451 requires `defaultLocked()` to return true before
+        // `PermanentlyLocked` is emitted.
+        if (!_defaultLocked) {
+            _defaultLocked = true;
+            emit DefaultLocked(true);
+        }
+
+        // ERC-8451 requires a `Locked(id, true)` for every token id whose
+        // most recent `Locked` event unlocked it. The set is left in place
+        // since `_isTokenLocked` ignores it once the lock is permanent.
+        uint256 unlockedLength = _unlockedTokenIds.length();
+        for (uint256 i = 0; i < unlockedLength; ) {
+            emit Locked(_unlockedTokenIds.at(i), true);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        _permanentlyLocked = true;
+        emit PermanentlyLocked();
     }
 
     /**

@@ -7,7 +7,7 @@ import { LockEvent, LockEvents } from "./utils/LockEvents.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
-import { ERC8451Lockable } from "seadrop/lib/ERC8451Lockable.sol";
+import { ERC8451Lockable, LockMode } from "seadrop/lib/ERC8451Lockable.sol";
 
 import { IERC8451 } from "seadrop/interfaces/IERC8451.sol";
 
@@ -19,6 +19,18 @@ contract ERC721SeaDropDefaultWithMint is ERC721SeaDrop {
 
     function mint(address to, uint256 quantity) public onlyOwner {
         _mint(to, quantity);
+    }
+}
+
+/// @dev Exposes `_initializeLock` so tests can check its guards.
+contract ERC721SeaDropInitializeLockHarness is ERC721SeaDropDefaultWithMint {
+    constructor(
+        address allowedConfigurer,
+        address allowedSeaport
+    ) ERC721SeaDropDefaultWithMint(allowedConfigurer, allowedSeaport) {}
+
+    function initializeLock(LockMode lockMode) external {
+        _initializeLock(lockMode);
     }
 }
 
@@ -162,5 +174,38 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
         assertEq((slot >> 160) & 0xff, 1, "defaultLocked");
         assertEq((slot >> 168) & 0xff, 0, "permanentlyLocked");
         assertEq((slot >> 176) & 0xff, 1, "hasTokenLockOverrides");
+    }
+
+    function testInitializeLockRevertsOncePermanent() public {
+        ERC721SeaDropInitializeLockHarness harness = new ERC721SeaDropInitializeLockHarness(
+                address(configurer),
+                allowedSeaport
+            );
+        harness.lockPermanently();
+
+        vm.expectRevert(ERC8451Lockable.LockIsPermanent.selector);
+        harness.initializeLock(LockMode.Unlocked);
+
+        assertTrue(harness.defaultLocked());
+        assertTrue(harness.permanentlyLocked());
+    }
+
+    function testInitializeLockPermanentlyRelocksUnlockedIds() public {
+        ERC721SeaDropInitializeLockHarness harness = new ERC721SeaDropInitializeLockHarness(
+                address(configurer),
+                allowedSeaport
+            );
+        harness.setTokensLocked(_asArray(1), false);
+
+        // Starting permanently locked still emits the Locked(id, true)
+        // events ERC-8451 requires before PermanentlyLocked.
+        vm.recordLogs();
+        harness.initializeLock(LockMode.PermanentlyLocked);
+
+        LockEvent[] memory expected = new LockEvent[](3);
+        expected[0] = LockEvents.defaultLocked(true);
+        expected[1] = LockEvents.locked(1, true);
+        expected[2] = LockEvents.permanentlyLocked();
+        _assertLockEvents(LockEvents.decode(vm.getRecordedLogs()), expected);
     }
 }
