@@ -14,7 +14,8 @@ contract DeploySeaDropCloneFactory is BaseCreate2Script {
         setUp();
         vm.createSelectFork("goerli");
         // emit log(keccak256(type(ERC721SeaDropCloneFactory).creationCode));
-        bytes32 salt = 0x000000000000000000000000000000000000000028a4b5c923003304f4352aab;
+        bytes32 salt =
+            0x000000000000000000000000000000000000000028a4b5c923003304f4352aab;
         address deployed = _immutableCreate2IfNotDeployed(
             address(deployer),
             salt,

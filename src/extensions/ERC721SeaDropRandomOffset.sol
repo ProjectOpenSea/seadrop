@@ -41,7 +41,7 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop
-    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) {}
+    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) { }
 
     /**
      * @notice Set the random offset, for a fair metadata reveal. Only callable
@@ -69,9 +69,8 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
         // NOTE: do not use this on other chains
         // randomOffset returns between 1 and MAX_SUPPLY
         randomOffset =
-            (uint256(keccak256(abi.encode(block.difficulty))) %
-                (maxSupply - 1)) +
-            1;
+            (uint256(keccak256(abi.encode(block.difficulty))) % (maxSupply - 1))
+                + 1;
 
         // Set revealed to true.
         revealed = _REVEALED_TRUE;
@@ -104,14 +103,12 @@ contract ERC721SeaDropRandomOffset is ERC721SeaDrop {
         } else {
             // If the baseURI is set and the collection is revealed,
             // return the tokenURI offset by the randomOffset.
-            return
-                string.concat(
-                    base,
-                    _toString(
-                        ((tokenId + randomOffset) % _maxSupply) +
-                            _startTokenId()
-                    )
-                );
+            return string.concat(
+                base,
+                _toString(
+                    ((tokenId + randomOffset) % _maxSupply) + _startTokenId()
+                )
+            );
         }
     }
 }

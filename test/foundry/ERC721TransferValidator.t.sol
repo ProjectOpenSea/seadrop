@@ -18,7 +18,7 @@ contract ERC721SeaDropWithMint is ERC721SeaDrop {
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop
-    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) {}
+    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) { }
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
@@ -84,21 +84,19 @@ contract ERC721TransferValidatorTest is TestHelper {
     }
 
     function testGetTransferValidationFunction() public {
-        (bytes4 functionSignature, bool isViewFunction) = token_
-            .getTransferValidationFunction();
+        (bytes4 functionSignature, bool isViewFunction) =
+            token_.getTransferValidationFunction();
         assertEq(
-            functionSignature,
-            ITransferValidator721.validateTransfer.selector
+            functionSignature, ITransferValidator721.validateTransfer.selector
         );
         assertEq(isViewFunction, false);
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }

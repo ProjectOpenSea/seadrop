@@ -29,11 +29,8 @@ contract DeployAndConfigureExampleToken is Script {
         address[] memory allowedSeadrop = new address[](1);
         allowedSeadrop[0] = seadrop;
 
-        ERC721SeaDrop token = new ERC721SeaDrop(
-            "My Example Token",
-            "ExTKN",
-            allowedSeadrop
-        );
+        ERC721SeaDrop token =
+            new ERC721SeaDrop("My Example Token", "ExTKN", allowedSeadrop);
 
         // Configure the token.
         token.setMaxSupply(maxSupply);

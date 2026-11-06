@@ -1,85 +1,22 @@
 {
   "name": "seadrop",
   "version": "1.0.0",
+  "private": true,
   "description": "Primary drops on the evm.",
   "license": "MIT",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=26"
   },
   "scripts": {
-    "build": "hardhat compile --config ./hardhat.config.ts",
-    "clean": "hardhat clean; hardhat clean --config ./hardhat-coverage.config.ts; forge clean; rm -rf coverage coverage.json hh-cache hh-cache-coverage",
-    "test": "hardhat test --config ./hardhat.config.ts",
-    "test:upgradeable": "hardhat test --config ./src-upgradeable/hardhat.config.ts",
-    "test:forge": "forge test -vvv",
-    "profile": "REPORT_GAS=true hardhat test --config ./hardhat.config.ts",
-    "coverage": "rm -rf temp-src-coverage; hardhat preprocess --dest temp-src-coverage; yarn coverage:hardhat:fix-lib-link; hardhat coverage --config ./hardhat-coverage.config.ts --solcoverjs ./config/.solcover.js; yarn lcov-convert-relative-paths-to-absolute",
-    "coverage:forge": "forge coverage --report summary --report lcov; yarn lcov-filter-ignored-files",
-    "coverage:hardhat:fix-lib-link": "sed -i'.bak' 's|\"openzeppelin-contracts-upgradeable|\"../../../../lib/openzeppelin-contracts-upgradeable/contracts|g'",
-    "lcov-convert-relative-paths-to-absolute": "sed -i'.bak' 's|SF:\\(.*\\)/temp-src-coverage/\\(.*\\)|SF:src/\\2|g' coverage/lcov.info",
-    "lcov-filter-ignored-files": "npx lcov-filter lcov.info 'Shim|MaliciousRecipient|Deploy|Test|Snapshot' > lcov-filtered.info",
-    "lint:check": "yarn lint:check:format && yarn lint:check:solhint && yarn lint:check:eslint",
-    "lint:check:format": "prettier --check **.{sol,js,ts}",
-    "lint:check:solhint": "yarn build && solhint --config ./config/.solhint.json --ignore-path ./config/.solhintignore src/**/*.sol",
-    "lint:check:eslint": "eslint . --ext js,ts",
-    "lint:fix": "yarn lint:fix:format && yarn lint:fix:eslint",
-    "lint:fix:format": "prettier --write **.{sol,js,ts}",
-    "lint:fix:eslint": "eslint --fix . --ext js,ts",
-    "prepare": "husky install"
-  },
-  "lint-staged": {
-    "*.sol": "prettier --write",
-    "*.js": "prettier --write",
-    "*.ts": "prettier --write"
-  },
-  "dependencies": {
-    "ethers": "^5.7.0",
-    "hardhat": "^2.11.1"
+    "build": "forge build",
+    "test": "forge test",
+    "coverage": "forge coverage --report summary --report lcov --no-match-coverage 'Shim|MaliciousRecipient|Deploy|Test|Snapshot'",
+    "lint": "forge fmt --check && forge lint --deny warnings && biome ci .",
+    "lint:fix": "forge fmt && biome check --write .",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@nomiclabs/hardhat-etherscan": "^3.1.0",
-    "@nomiclabs/hardhat-waffle": "^2.0.3",
-    "@openzeppelin/hardhat-upgrades": "^1.28.0",
-    "@typechain/ethers-v5": "^10.1.0",
-    "@typechain/hardhat": "^6.1.2",
-    "@types/chai": "^4.3.3",
-    "@types/mocha": "^9.1.1",
-    "@types/node": "^17.0.8",
-    "@typescript-eslint/eslint-plugin": "^5.36.2",
-    "@typescript-eslint/parser": "^5.36.2",
-    "chai": "^4.3.6",
-    "dotenv": "^16.0.2",
-    "eslint": "^8.23.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-config-standard": "^17.0.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-n": "^15.2.5",
-    "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.0.1",
-    "ethereum-waffle": "^3.4.4",
-    "hardhat-gas-reporter": "^1.0.9",
-    "hardhat-preprocessor": "^0.1.5",
-    "husky": "^8.0.1",
-    "lint-staged": "^13.0.3",
-    "merkletreejs": "^0.2.32",
-    "prettier": "^2.7.1",
-    "prettier-plugin-solidity": "^1.0.0-beta.24",
-    "solhint": "^3.3.7",
-    "solidity-coverage": "^0.8.2",
-    "ts-node": "^10.9.1",
-    "typechain": "^8.1.0",
-    "typescript": "^4.8.3"
-  },
-  "resolutions": {
-    "async": ">=2.6.4",
-    "cross-fetch": ">=3.1.5",
-    "lodash": ">=4.17.21",
-    "node-fetch": "^2.6.7",
-    "underscore": ">=1.12.1",
-    "yargs-parser": ">=5.0.1",
-    "web3": ">=1.8.0",
-    "got": ">=11.8.5",
-    "minimatch": ">=3.0.5"
+    "@biomejs/biome": "2.6.2",
+    "lefthook": "2.2.2"
   }
 }

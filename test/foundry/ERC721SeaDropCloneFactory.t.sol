@@ -36,14 +36,10 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         assertEq(token.symbol(), "symbol", "symbol should be set");
         assertEq(token.owner(), address(this), "owner should be set");
         token.updateCreatorPayoutAddress(
-            factory.DEFAULT_SEADROP(),
-            address(1234)
+            factory.DEFAULT_SEADROP(), address(1234)
         );
         SeaDrop seaDrop = SeaDrop(factory.DEFAULT_SEADROP());
-        assertEq(
-            seaDrop.getCreatorPayoutAddress(address(token)),
-            address(1234)
-        );
+        assertEq(seaDrop.getCreatorPayoutAddress(address(token)), address(1234));
 
         assertEq(token.totalSupply(), 0);
 
@@ -61,10 +57,7 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         token.setMaxSupply(100);
 
         seaDrop.mintPublic{ value: 1 ether }(
-            address(token),
-            address(1),
-            address(0),
-            1
+            address(token), address(1), address(0), 1
         );
         assertEq(token.totalSupply(), 1);
         assertEq(token.ownerOf(1), address(this));
@@ -74,9 +67,7 @@ contract ERC721SeaDropCloneFactoryTest is Test {
 
         token.setBaseURI("https://example.com");
         assertEq(
-            token.tokenURI(1),
-            token.baseURI(),
-            "tokenURI just the baseURI"
+            token.tokenURI(1), token.baseURI(), "tokenURI just the baseURI"
         );
 
         token.setBaseURI("https://example.com/");
@@ -94,12 +85,11 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         token.initialize("name", "symbol", new address[](0), address(this));
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }

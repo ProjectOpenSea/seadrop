@@ -109,12 +109,12 @@ contract ERC721SeaDropCloneable is
      */
     function _updateAllowedSeaDrop(address[] calldata allowedSeaDrop) internal {
         // Put the length on the stack for more efficient access.
-        uint256 enumeratedAllowedSeaDropLength = _enumeratedAllowedSeaDrop
-            .length;
+        uint256 enumeratedAllowedSeaDropLength =
+            _enumeratedAllowedSeaDrop.length;
         uint256 allowedSeaDropLength = allowedSeaDrop.length;
 
         // Reset the old mapping.
-        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength; ) {
+        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength;) {
             _allowedSeaDrop[_enumeratedAllowedSeaDrop[i]] = false;
             unchecked {
                 ++i;
@@ -122,7 +122,7 @@ contract ERC721SeaDropCloneable is
         }
 
         // Set the new mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
+        for (uint256 i = 0; i < allowedSeaDropLength;) {
             _allowedSeaDrop[allowedSeaDrop[i]] = true;
             unchecked {
                 ++i;
@@ -395,10 +395,10 @@ contract ERC721SeaDropCloneable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the signer.
-        ISeaDrop(seaDropImpl).updateSignedMintValidationParams(
-            signer,
-            signedMintValidationParams
-        );
+        ISeaDrop(seaDropImpl)
+            .updateSignedMintValidationParams(
+                signer, signedMintValidationParams
+            );
     }
 
     /**
@@ -409,11 +409,11 @@ contract ERC721SeaDropCloneable is
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
-    function updatePayer(
-        address seaDropImpl,
-        address payer,
-        bool allowed
-    ) external virtual override {
+    function updatePayer(address seaDropImpl, address payer, bool allowed)
+        external
+        virtual
+        override
+    {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -462,9 +462,9 @@ contract ERC721SeaDropCloneable is
         override(IERC165, ERC721ContractMetadataCloneable)
         returns (bool)
     {
-        return
-            interfaceId == type(INonFungibleSeaDropToken).interfaceId ||
-            interfaceId == type(ISeaDropTokenContractMetadata).interfaceId ||
+        return interfaceId == type(INonFungibleSeaDropToken).interfaceId
+            || interfaceId == type(ISeaDropTokenContractMetadata).interfaceId
+            || 
             // ERC721ContractMetadata returns supportsInterface true for
             //     EIP-2981
             // ERC721A returns supportsInterface true for
@@ -495,9 +495,8 @@ contract ERC721SeaDropCloneable is
             this.setContractURI(config.contractURI);
         }
         if (
-            _cast(config.publicDrop.startTime != 0) |
-                _cast(config.publicDrop.endTime != 0) ==
-            1
+            _cast(config.publicDrop.startTime != 0)
+                    | _cast(config.publicDrop.endTime != 0) == 1
         ) {
             this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
         }
@@ -509,19 +508,16 @@ contract ERC721SeaDropCloneable is
         }
         if (config.creatorPayoutAddress != address(0)) {
             this.updateCreatorPayoutAddress(
-                config.seaDropImpl,
-                config.creatorPayoutAddress
+                config.seaDropImpl, config.creatorPayoutAddress
             );
         }
         if (config.provenanceHash != bytes32(0)) {
             this.setProvenanceHash(config.provenanceHash);
         }
         if (config.allowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length;) {
                 this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
-                    config.allowedFeeRecipients[i],
-                    true
+                    config.seaDropImpl, config.allowedFeeRecipients[i], true
                 );
                 unchecked {
                     ++i;
@@ -529,11 +525,9 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.disallowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length;) {
                 this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
-                    config.disallowedFeeRecipients[i],
-                    false
+                    config.seaDropImpl, config.disallowedFeeRecipients[i], false
                 );
                 unchecked {
                     ++i;
@@ -541,11 +535,9 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.allowedPayers.length > 0) {
-            for (uint256 i = 0; i < config.allowedPayers.length; ) {
+            for (uint256 i = 0; i < config.allowedPayers.length;) {
                 this.updatePayer(
-                    config.seaDropImpl,
-                    config.allowedPayers[i],
-                    true
+                    config.seaDropImpl, config.allowedPayers[i], true
                 );
                 unchecked {
                     ++i;
@@ -553,11 +545,9 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.disallowedPayers.length > 0) {
-            for (uint256 i = 0; i < config.disallowedPayers.length; ) {
+            for (uint256 i = 0; i < config.disallowedPayers.length;) {
                 this.updatePayer(
-                    config.seaDropImpl,
-                    config.disallowedPayers[i],
-                    false
+                    config.seaDropImpl, config.disallowedPayers[i], false
                 );
                 unchecked {
                     ++i;
@@ -566,12 +556,12 @@ contract ERC721SeaDropCloneable is
         }
         if (config.tokenGatedDropStages.length > 0) {
             if (
-                config.tokenGatedDropStages.length !=
-                config.tokenGatedAllowedNftTokens.length
+                config.tokenGatedDropStages.length
+                    != config.tokenGatedAllowedNftTokens.length
             ) {
                 revert TokenGatedMismatch();
             }
-            for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
+            for (uint256 i = 0; i < config.tokenGatedDropStages.length;) {
                 this.updateTokenGatedDrop(
                     config.seaDropImpl,
                     config.tokenGatedAllowedNftTokens[i],
@@ -601,16 +591,12 @@ contract ERC721SeaDropCloneable is
         }
         if (config.signedMintValidationParams.length > 0) {
             if (
-                config.signedMintValidationParams.length !=
-                config.signers.length
+                config.signedMintValidationParams.length
+                    != config.signers.length
             ) {
                 revert SignersMismatch();
             }
-            for (
-                uint256 i = 0;
-                i < config.signedMintValidationParams.length;
-
-            ) {
+            for (uint256 i = 0; i < config.signedMintValidationParams.length;) {
                 this.updateSignedMintValidationParams(
                     config.seaDropImpl,
                     config.signers[i],
@@ -622,12 +608,10 @@ contract ERC721SeaDropCloneable is
             }
         }
         if (config.disallowedSigners.length > 0) {
-            for (uint256 i = 0; i < config.disallowedSigners.length; ) {
+            for (uint256 i = 0; i < config.disallowedSigners.length;) {
                 SignedMintValidationParams memory emptyParams;
                 this.updateSignedMintValidationParams(
-                    config.seaDropImpl,
-                    config.disallowedSigners[i],
-                    emptyParams
+                    config.seaDropImpl, config.disallowedSigners[i], emptyParams
                 );
                 unchecked {
                     ++i;

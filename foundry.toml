@@ -1,5 +1,6 @@
 [profile.default]
 src = 'src'
+test = 'test/foundry'
 out = 'out'
 libs = ['lib']
 solc_version = '0.8.17'
@@ -12,9 +13,26 @@ optimizer_runs = 1_000_000
 # via_ir = true
 ignored_error_codes = []
 bytecode_hash = "none"
+# The upgradeable scripts build only under the upgradeable profile below.
+skip = ['script/upgradeable/**']
 
+# The upgradeable contracts compile with the settings they were deployed
+# with (formerly src-upgradeable/hardhat.config.ts): solc 0.8.17, via-IR,
+# 1000 optimizer runs, and the default ipfs metadata hash.
+# Run with FOUNDRY_PROFILE=upgradeable.
 [profile.upgradeable]
 src = 'src-upgradeable/src/'
+test = 'test/upgradeable'
+script = 'script/upgradeable'
+skip = []
+optimizer = true
+optimizer_runs = 1_000
+via_ir = true
+bytecode_hash = 'ipfs'
+# The scripts embed the implementation's creation code, so solc flags them as
+# over the EIP-170 size limit. Scripts are never deployed; the implementation
+# itself is checked as usual.
+ignored_warnings_from = ['script/upgradeable']
 
 [profile.ir_inspect]
 test = 'src'
@@ -22,5 +40,37 @@ test = 'src'
 [rpc_endpoints]
 goerli = '${GOERLI_RPC_URL}'
 mainnet = '${ETHEREUM_RPC_URL}'
+sepolia = '${SEPOLIA_RPC_URL}'
+
+[fmt]
+line_length = 80
+tab_width = 4
+bracket_spacing = true
+int_types = "preserve"
+number_underscore = "preserve"
+quote_style = "double"
+prefer_compact = "none"
+ignore = ["src-upgradeable/lib-upgradeable/**"]
+
+[lint]
+lint_on_build = false
+# These detectors only flag deliberate, audited patterns in the shipped
+# contracts (payouts to configured recipients, external calls in admin loops,
+# events after SeaDrop calls, the documented prevrandao offset, vendored
+# ERC721A casts). CI runs `forge lint --deny warnings`, so every other rule
+# still fails the build.
+exclude_lints = [
+    "arbitrary-send-eth",
+    "block-timestamp",
+    "calls-loop",
+    "encode-packed-collision",
+    "missing-events-arithmetic",
+    "missing-zero-check",
+    "reentrancy-events",
+    "reentrancy-no-eth",
+    "require-revert-in-loop",
+    "unsafe-typecast",
+    "weak-prng",
+]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

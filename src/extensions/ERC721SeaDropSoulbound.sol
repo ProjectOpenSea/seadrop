@@ -20,7 +20,7 @@ contract ERC721SeaDropSoulbound is ERC721SeaDrop {
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop
-    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) {}
+    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) { }
 
     /**
      * @notice This token is soulbound, so approvals cannot be set.
@@ -28,7 +28,11 @@ contract ERC721SeaDropSoulbound is ERC721SeaDrop {
     function setApprovalForAll(
         address, /* operator */
         bool /* approved */
-    ) public virtual override {
+    )
+        public
+        virtual
+        override
+    {
         revert SoulboundNotTransferable();
     }
 
@@ -38,7 +42,11 @@ contract ERC721SeaDropSoulbound is ERC721SeaDrop {
     function approve(
         address, /* to */
         uint256 /* tokenId */
-    ) public virtual override {
+    )
+        public
+        virtual
+        override
+    {
         revert SoulboundNotTransferable();
     }
 
@@ -50,7 +58,11 @@ contract ERC721SeaDropSoulbound is ERC721SeaDrop {
         address, /* to */
         uint256, /* startTokenId */
         uint256 /* quantity */
-    ) internal virtual override {
+    )
+        internal
+        virtual
+        override
+    {
         if (from != address(0)) {
             revert SoulboundNotTransferable();
         }

@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 /**
  * @notice A struct defining public drop data.
  *         Designed to fit efficiently in one storage slot.
- * 
+ *
  * @param mintPrice                The mint price per token. (Up to 1.2m
  *                                 of native token, e.g. ETH, MATIC)
  * @param startTime                The start time, ensure this is not zero.
@@ -29,8 +29,8 @@ struct PublicDrop {
 /**
  * @notice A struct defining token gated drop stage data.
  *         Designed to fit efficiently in one storage slot.
- * 
- * @param mintPrice                The mint price per token. (Up to 1.2m 
+ *
+ * @param mintPrice                The mint price per token. (Up to 1.2m
  *                                 of native token, e.g.: ETH, MATIC)
  * @param maxTotalMintableByWallet Maximum total number of mints a user is
  *                                 allowed. (The limit for this field is
@@ -38,7 +38,7 @@ struct PublicDrop {
  * @param startTime                The start time, ensure this is not zero.
  * @param endTime                  The end time, ensure this is not zero.
  * @param dropStageIndex           The drop stage index to emit with the event
- *                                 for analytical purposes. This should be 
+ *                                 for analytical purposes. This should be
  *                                 non-zero since the public mint emits
  *                                 with index zero.
  * @param maxTokenSupplyForStage   The limit of token supply this stage can
@@ -64,10 +64,10 @@ struct TokenGatedDropStage {
  * @notice A struct defining mint params for an allow list.
  *         An allow list leaf will be composed of `msg.sender` and
  *         the following params.
- * 
+ *
  *         Note: Since feeBps is encoded in the leaf, backend should ensure
  *         that feeBps is acceptable before generating a proof.
- * 
+ *
  * @param mintPrice                The mint price per token.
  * @param maxTotalMintableByWallet Maximum total number of mints a user is
  *                                 allowed.
@@ -85,7 +85,7 @@ struct TokenGatedDropStage {
  *                                 if true, check fee recipient is allowed.
  */
 struct MintParams {
-    uint256 mintPrice; 
+    uint256 mintPrice;
     uint256 maxTotalMintableByWallet;
     uint256 startTime;
     uint256 endTime;
@@ -97,7 +97,7 @@ struct MintParams {
 
 /**
  * @notice A struct defining token gated mint params.
- * 
+ *
  * @param allowedNftToken    The allowed nft token contract address.
  * @param allowedNftTokenIds The token ids to redeem.
  */
@@ -108,7 +108,7 @@ struct TokenGatedMintParams {
 
 /**
  * @notice A struct defining allow list data (for minting an allow list).
- * 
+ *
  * @param merkleRoot    The merkle root for the allow list.
  * @param publicKeyURIs If the allowListURI is encrypted, a list of URIs
  *                      pointing to the public keys. Empty if unencrypted.
@@ -121,7 +121,7 @@ struct AllowListData {
 }
 
 /**
- * @notice A struct defining minimum and maximum parameters to validate for 
+ * @notice A struct defining minimum and maximum parameters to validate for
  *         signed mints, to minimize negative effects of a compromised signer.
  *
  * @param minMintPrice                The minimum mint price allowed.

@@ -14,7 +14,7 @@ contract ERC721SeaDropPausableWithMint is ERC721SeaDropPausable {
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop
-    ) ERC721SeaDropPausable(name, symbol, allowedSeaDrop) {}
+    ) ERC721SeaDropPausable(name, symbol, allowedSeaDrop) { }
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
@@ -84,12 +84,11 @@ contract ERC721SeaDropSoulboundTest is TestHelper {
         assertEq(token_.transfersPaused(), true);
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }
