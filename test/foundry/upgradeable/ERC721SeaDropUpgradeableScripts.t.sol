@@ -5,11 +5,11 @@ import { Test } from "forge-std/Test.sol";
 
 import {
     ERC721SeaDropUpgradeable
-} from "../../src-upgradeable/src/ERC721SeaDropUpgradeable.sol";
+} from "seadrop/upgradeable/ERC721SeaDropUpgradeable.sol";
 
 import {
-    INonFungibleSeaDropTokenUpgradeable
-} from "../../src-upgradeable/src/interfaces/INonFungibleSeaDropTokenUpgradeable.sol";
+    INonFungibleSeaDropToken
+} from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
 
 import {
     ProxyAdmin
@@ -21,19 +21,18 @@ import {
 
 import {
     DeployERC721SeaDropUpgradeable
-} from "../../script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol";
+} from "script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol";
 
 import {
     UpgradeERC721SeaDropUpgradeable
-} from "../../script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol";
+} from "script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol";
 
 import {
     UpgradeableDeploymentAddresses
-} from "../../script/upgradeable/UpgradeableDeploymentAddresses.sol";
+} from "script/upgradeable/UpgradeableDeploymentAddresses.sol";
 
 /**
  * @notice Runs the upgradeable deploy and upgrade scripts end to end.
- *         Run with FOUNDRY_PROFILE=upgradeable forge test.
  */
 contract ERC721SeaDropUpgradeableScriptsTest is Test {
     /// @dev The allowed SeaDrop the deploy script initializes the token with.
@@ -66,27 +65,24 @@ contract ERC721SeaDropUpgradeableScriptsTest is Test {
         );
 
         // The admin is the ProxyAdmin, and it sees the same implementation.
-        TransparentUpgradeableProxy proxy = TransparentUpgradeableProxy(
-            payable(expected.proxy)
-        );
+        TransparentUpgradeableProxy proxy =
+            TransparentUpgradeableProxy(payable(expected.proxy));
         ProxyAdmin proxyAdmin = ProxyAdmin(expected.admin);
         assertEq(proxyAdmin.getProxyAdmin(proxy), expected.admin);
         assertEq(
-            proxyAdmin.getProxyImplementation(proxy),
-            expected.implementation
+            proxyAdmin.getProxyImplementation(proxy), expected.implementation
         );
         assertGt(expected.implementation.code.length, 0);
     }
 
     function testDeployInitializeAndUpgrade() public {
         // Deploy.
-        UpgradeableDeploymentAddresses.DeploymentAddresses
-            memory deployed = new DeployERC721SeaDropUpgradeable().run();
+        UpgradeableDeploymentAddresses.DeploymentAddresses memory deployed =
+            new DeployERC721SeaDropUpgradeable().run();
         _assertAddresses(deployed);
 
-        ERC721SeaDropUpgradeable token = ERC721SeaDropUpgradeable(
-            deployed.proxy
-        );
+        ERC721SeaDropUpgradeable token =
+            ERC721SeaDropUpgradeable(deployed.proxy);
         ProxyAdmin proxyAdmin = ProxyAdmin(deployed.admin);
 
         // initialize(name, symbol, allowedSeaDrop) ran in the proxy's
@@ -110,17 +106,15 @@ contract ERC721SeaDropUpgradeableScriptsTest is Test {
         vm.stopPrank();
 
         // Only the allowed SeaDrop can mint.
-        vm.expectRevert(
-            INonFungibleSeaDropTokenUpgradeable.OnlyAllowedSeaDrop.selector
-        );
+        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
         token.mintSeaDrop(minter, 3);
         vm.prank(SEADROP);
         token.mintSeaDrop(minter, 3);
 
         // Upgrade the proxy the deploy script returned.
         vm.setEnv("PROXY_ADDRESS", vm.toString(deployed.proxy));
-        UpgradeableDeploymentAddresses.DeploymentAddresses
-            memory upgraded = new UpgradeERC721SeaDropUpgradeable().run();
+        UpgradeableDeploymentAddresses.DeploymentAddresses memory upgraded =
+            new UpgradeERC721SeaDropUpgradeable().run();
         _assertAddresses(upgraded);
 
         // Same proxy and admin, new implementation.
@@ -143,9 +137,7 @@ contract ERC721SeaDropUpgradeableScriptsTest is Test {
         assertEq(token.tokenURI(1), "https://example.com/1");
 
         // The allowed SeaDrop survives the upgrade too.
-        vm.expectRevert(
-            INonFungibleSeaDropTokenUpgradeable.OnlyAllowedSeaDrop.selector
-        );
+        vm.expectRevert(INonFungibleSeaDropToken.OnlyAllowedSeaDrop.selector);
         token.mintSeaDrop(minter, 2);
         vm.prank(SEADROP);
         token.mintSeaDrop(minter, 2);

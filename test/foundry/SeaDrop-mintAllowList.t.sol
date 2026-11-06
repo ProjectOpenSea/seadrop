@@ -21,6 +21,9 @@ contract ERC721DropTest is TestHelper {
                     && args.allowList[i] != args.minter
             );
         }
+        // allowList[0] receives the mints, and a contract without
+        // onERC721Received (SeaDrop, say) can't take a _safeMint.
+        vm.assume(args.allowList[0].code.length == 0);
         _;
     }
 
@@ -28,7 +31,7 @@ contract ERC721DropTest is TestHelper {
         // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
@@ -521,7 +524,7 @@ contract SeaDropMintAllowListScenarioTest is TestHelper {
     function _deployToken() internal returns (ERC721SeaDrop newToken) {
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        newToken = new ERC721SeaDrop("", "", allowedSeaDrop);
+        newToken = _newToken("", "", allowedSeaDrop);
 
         // Update the fee recipient and creator payout address for the token.
         newToken.setMaxSupply(1000);

@@ -1,14 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {
-    ERC721SeaDropRandomOffsetUpgradeable
-} from "./ERC721SeaDropRandomOffsetUpgradeable.sol";
-
-import {
-    ERC721ContractMetadataUpgradeable
-} from "../ERC721ContractMetadataUpgradeable.sol";
-
 library ERC721SeaDropRandomOffsetStorage {
     struct Layout {
         /// @notice The random offset, between 1 and the MAX_SUPPLY at the time of

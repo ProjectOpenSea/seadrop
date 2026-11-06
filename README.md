@@ -79,6 +79,7 @@ This diagram shows the logic flow in the case that a drop is hosted on OpenSea, 
 - [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
 - [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
 - [Provenance Hash](docs/ProvenanceHash.md)
+- [Upgradeable Contracts](docs/UpgradeableContracts.md)
 
 ## Install
 
@@ -110,11 +111,7 @@ To run the tests:
 forge test
 ```
 
-The upgradeable contracts in `src-upgradeable` build with their deployable settings (via-IR, 1000 optimizer runs) under their own profile:
-
-```bash
-FOUNDRY_PROFILE=upgradeable forge test
-```
+This runs the upgradeable contracts' tests too. `src/upgradeable` compiles with its deployable settings (via-IR, 1000 optimizer runs) in the same build; see [Upgradeable Contracts](docs/UpgradeableContracts.md).
 
 To run coverage:
 

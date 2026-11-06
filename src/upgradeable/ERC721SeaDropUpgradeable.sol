@@ -3,33 +3,33 @@ pragma solidity 0.8.17;
 
 import {
     ERC721ContractMetadataUpgradeable,
-    ISeaDropTokenContractMetadataUpgradeable
+    ISeaDropTokenContractMetadata
 } from "./ERC721ContractMetadataUpgradeable.sol";
 
 import {
-    INonFungibleSeaDropTokenUpgradeable
-} from "./interfaces/INonFungibleSeaDropTokenUpgradeable.sol";
+    INonFungibleSeaDropToken
+} from "../interfaces/INonFungibleSeaDropToken.sol";
 
-import { ISeaDropUpgradeable } from "./interfaces/ISeaDropUpgradeable.sol";
+import { ISeaDrop } from "../interfaces/ISeaDrop.sol";
 
 import {
     AllowListData,
     PublicDrop,
     TokenGatedDropStage,
     SignedMintValidationParams
-} from "./lib/SeaDropStructsUpgradeable.sol";
+} from "../lib/SeaDropStructs.sol";
 
 import {
-    ERC721SeaDropStructsErrorsAndEventsUpgradeable
-} from "./lib/ERC721SeaDropStructsErrorsAndEventsUpgradeable.sol";
+    ERC721SeaDropStructsErrorsAndEvents
+} from "../lib/ERC721SeaDropStructsErrorsAndEvents.sol";
 
 import {
     ReentrancyGuardUpgradeable
-} from "../lib-upgradeable/solmate/src/utils/ReentrancyGuardUpgradeable.sol";
+} from "./vendored/solmate/ReentrancyGuardUpgradeable.sol";
 
 import {
-    IERC165Upgradeable
-} from "../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+    IERC165
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 import { ERC721SeaDropStorage } from "./ERC721SeaDropStorage.sol";
 
@@ -50,12 +50,13 @@ import {
  */
 contract ERC721SeaDropUpgradeable is
     ERC721ContractMetadataUpgradeable,
-    INonFungibleSeaDropTokenUpgradeable,
-    ERC721SeaDropStructsErrorsAndEventsUpgradeable,
+    INonFungibleSeaDropToken,
+    ERC721SeaDropStructsErrorsAndEvents,
     ReentrancyGuardUpgradeable
 {
     using ERC721SeaDropStorage for ERC721SeaDropStorage.Layout;
-    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
+    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage
+        .Layout;
 
     /**
      * @dev Reverts if not an allowed SeaDrop contract.
@@ -101,10 +102,9 @@ contract ERC721SeaDropUpgradeable is
         uint256 allowedSeaDropLength = allowedSeaDrop.length;
 
         // Set the mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            ERC721SeaDropStorage.layout()._allowedSeaDrop[
-                allowedSeaDrop[i]
-            ] = true;
+        for (uint256 i = 0; i < allowedSeaDropLength;) {
+            ERC721SeaDropStorage.layout()._allowedSeaDrop[allowedSeaDrop[i]] =
+            true;
 
             unchecked {
                 ++i;
@@ -112,9 +112,7 @@ contract ERC721SeaDropUpgradeable is
         }
 
         // Set the enumeration.
-        ERC721SeaDropStorage
-            .layout()
-            ._enumeratedAllowedSeaDrop = allowedSeaDrop;
+        ERC721SeaDropStorage.layout()._enumeratedAllowedSeaDrop = allowedSeaDrop;
 
         // Emit an event noting the contract deployment.
         emit SeaDropTokenDeployed();
@@ -142,16 +140,15 @@ contract ERC721SeaDropUpgradeable is
      */
     function _updateAllowedSeaDrop(address[] calldata allowedSeaDrop) internal {
         // Put the length on the stack for more efficient access.
-        uint256 enumeratedAllowedSeaDropLength = ERC721SeaDropStorage
-            .layout()
-            ._enumeratedAllowedSeaDrop
-            .length;
+        uint256 enumeratedAllowedSeaDropLength =
+            ERC721SeaDropStorage.layout()._enumeratedAllowedSeaDrop.length;
 
         uint256 allowedSeaDropLength = allowedSeaDrop.length;
 
         // Reset the old mapping.
-        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength; ) {
-            ERC721SeaDropStorage.layout()._allowedSeaDrop[
+        for (uint256 i = 0; i < enumeratedAllowedSeaDropLength;) {
+            ERC721SeaDropStorage.layout()
+            ._allowedSeaDrop[
                 ERC721SeaDropStorage.layout()._enumeratedAllowedSeaDrop[i]
             ] = false;
 
@@ -161,10 +158,9 @@ contract ERC721SeaDropUpgradeable is
         }
 
         // Set the new mapping for allowed SeaDrop contracts.
-        for (uint256 i = 0; i < allowedSeaDropLength; ) {
-            ERC721SeaDropStorage.layout()._allowedSeaDrop[
-                allowedSeaDrop[i]
-            ] = true;
+        for (uint256 i = 0; i < allowedSeaDropLength;) {
+            ERC721SeaDropStorage.layout()._allowedSeaDrop[allowedSeaDrop[i]] =
+            true;
 
             unchecked {
                 ++i;
@@ -172,9 +168,7 @@ contract ERC721SeaDropUpgradeable is
         }
 
         // Set the enumeration.
-        ERC721SeaDropStorage
-            .layout()
-            ._enumeratedAllowedSeaDrop = allowedSeaDrop;
+        ERC721SeaDropStorage.layout()._enumeratedAllowedSeaDrop = allowedSeaDrop;
 
         // Emit an event for the update.
         emit AllowedSeaDropUpdated(allowedSeaDrop);
@@ -294,7 +288,7 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the public drop data on SeaDrop.
-        ISeaDropUpgradeable(seaDropImpl).updatePublicDrop(publicDrop);
+        ISeaDrop(seaDropImpl).updatePublicDrop(publicDrop);
     }
 
     /**
@@ -315,7 +309,7 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the allow list on SeaDrop.
-        ISeaDropUpgradeable(seaDropImpl).updateAllowList(allowListData);
+        ISeaDrop(seaDropImpl).updateAllowList(allowListData);
     }
 
     /**
@@ -346,10 +340,7 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the token gated drop stage.
-        ISeaDropUpgradeable(seaDropImpl).updateTokenGatedDrop(
-            allowedNftToken,
-            dropStage
-        );
+        ISeaDrop(seaDropImpl).updateTokenGatedDrop(allowedNftToken, dropStage);
     }
 
     /**
@@ -371,7 +362,7 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the drop URI.
-        ISeaDropUpgradeable(seaDropImpl).updateDropURI(dropURI);
+        ISeaDrop(seaDropImpl).updateDropURI(dropURI);
     }
 
     /**
@@ -392,9 +383,7 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the creator payout address.
-        ISeaDropUpgradeable(seaDropImpl).updateCreatorPayoutAddress(
-            payoutAddress
-        );
+        ISeaDrop(seaDropImpl).updateCreatorPayoutAddress(payoutAddress);
     }
 
     /**
@@ -418,10 +407,7 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the allowed fee recipient.
-        ISeaDropUpgradeable(seaDropImpl).updateAllowedFeeRecipient(
-            feeRecipient,
-            allowed
-        );
+        ISeaDrop(seaDropImpl).updateAllowedFeeRecipient(feeRecipient, allowed);
     }
 
     /**
@@ -446,10 +432,10 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the signer.
-        ISeaDropUpgradeable(seaDropImpl).updateSignedMintValidationParams(
-            signer,
-            signedMintValidationParams
-        );
+        ISeaDrop(seaDropImpl)
+            .updateSignedMintValidationParams(
+                signer, signedMintValidationParams
+            );
     }
 
     /**
@@ -460,11 +446,11 @@ contract ERC721SeaDropUpgradeable is
      * @param payer       The payer to update.
      * @param allowed     Whether the payer is allowed.
      */
-    function updatePayer(
-        address seaDropImpl,
-        address payer,
-        bool allowed
-    ) external virtual override {
+    function updatePayer(address seaDropImpl, address payer, bool allowed)
+        external
+        virtual
+        override
+    {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -472,7 +458,7 @@ contract ERC721SeaDropUpgradeable is
         _onlyAllowedSeaDrop(seaDropImpl);
 
         // Update the payer.
-        ISeaDropUpgradeable(seaDropImpl).updatePayer(payer, allowed);
+        ISeaDrop(seaDropImpl).updatePayer(payer, allowed);
     }
 
     /**
@@ -510,14 +496,12 @@ contract ERC721SeaDropUpgradeable is
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721ContractMetadataUpgradeable)
+        override(IERC165, ERC721ContractMetadataUpgradeable)
         returns (bool)
     {
-        return
-            interfaceId ==
-            type(INonFungibleSeaDropTokenUpgradeable).interfaceId ||
-            interfaceId ==
-            type(ISeaDropTokenContractMetadataUpgradeable).interfaceId ||
+        return interfaceId == type(INonFungibleSeaDropToken).interfaceId
+            || interfaceId == type(ISeaDropTokenContractMetadata).interfaceId
+            || 
             // ERC721ContractMetadata returns supportsInterface true for
             //     EIP-2981
             // ERC721A returns supportsInterface true for
@@ -548,9 +532,8 @@ contract ERC721SeaDropUpgradeable is
             this.setContractURI(config.contractURI);
         }
         if (
-            _cast(config.publicDrop.startTime != 0) |
-                _cast(config.publicDrop.endTime != 0) ==
-            1
+            _cast(config.publicDrop.startTime != 0)
+                    | _cast(config.publicDrop.endTime != 0) == 1
         ) {
             this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
         }
@@ -562,19 +545,16 @@ contract ERC721SeaDropUpgradeable is
         }
         if (config.creatorPayoutAddress != address(0)) {
             this.updateCreatorPayoutAddress(
-                config.seaDropImpl,
-                config.creatorPayoutAddress
+                config.seaDropImpl, config.creatorPayoutAddress
             );
         }
         if (config.provenanceHash != bytes32(0)) {
             this.setProvenanceHash(config.provenanceHash);
         }
         if (config.allowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length;) {
                 this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
-                    config.allowedFeeRecipients[i],
-                    true
+                    config.seaDropImpl, config.allowedFeeRecipients[i], true
                 );
                 unchecked {
                     ++i;
@@ -582,11 +562,9 @@ contract ERC721SeaDropUpgradeable is
             }
         }
         if (config.disallowedFeeRecipients.length > 0) {
-            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length;) {
                 this.updateAllowedFeeRecipient(
-                    config.seaDropImpl,
-                    config.disallowedFeeRecipients[i],
-                    false
+                    config.seaDropImpl, config.disallowedFeeRecipients[i], false
                 );
                 unchecked {
                     ++i;
@@ -594,11 +572,9 @@ contract ERC721SeaDropUpgradeable is
             }
         }
         if (config.allowedPayers.length > 0) {
-            for (uint256 i = 0; i < config.allowedPayers.length; ) {
+            for (uint256 i = 0; i < config.allowedPayers.length;) {
                 this.updatePayer(
-                    config.seaDropImpl,
-                    config.allowedPayers[i],
-                    true
+                    config.seaDropImpl, config.allowedPayers[i], true
                 );
                 unchecked {
                     ++i;
@@ -606,11 +582,9 @@ contract ERC721SeaDropUpgradeable is
             }
         }
         if (config.disallowedPayers.length > 0) {
-            for (uint256 i = 0; i < config.disallowedPayers.length; ) {
+            for (uint256 i = 0; i < config.disallowedPayers.length;) {
                 this.updatePayer(
-                    config.seaDropImpl,
-                    config.disallowedPayers[i],
-                    false
+                    config.seaDropImpl, config.disallowedPayers[i], false
                 );
                 unchecked {
                     ++i;
@@ -619,12 +593,12 @@ contract ERC721SeaDropUpgradeable is
         }
         if (config.tokenGatedDropStages.length > 0) {
             if (
-                config.tokenGatedDropStages.length !=
-                config.tokenGatedAllowedNftTokens.length
+                config.tokenGatedDropStages.length
+                    != config.tokenGatedAllowedNftTokens.length
             ) {
                 revert TokenGatedMismatch();
             }
-            for (uint256 i = 0; i < config.tokenGatedDropStages.length; ) {
+            for (uint256 i = 0; i < config.tokenGatedDropStages.length;) {
                 this.updateTokenGatedDrop(
                     config.seaDropImpl,
                     config.tokenGatedAllowedNftTokens[i],
@@ -654,16 +628,12 @@ contract ERC721SeaDropUpgradeable is
         }
         if (config.signedMintValidationParams.length > 0) {
             if (
-                config.signedMintValidationParams.length !=
-                config.signers.length
+                config.signedMintValidationParams.length
+                    != config.signers.length
             ) {
                 revert SignersMismatch();
             }
-            for (
-                uint256 i = 0;
-                i < config.signedMintValidationParams.length;
-
-            ) {
+            for (uint256 i = 0; i < config.signedMintValidationParams.length;) {
                 this.updateSignedMintValidationParams(
                     config.seaDropImpl,
                     config.signers[i],
@@ -675,12 +645,10 @@ contract ERC721SeaDropUpgradeable is
             }
         }
         if (config.disallowedSigners.length > 0) {
-            for (uint256 i = 0; i < config.disallowedSigners.length; ) {
+            for (uint256 i = 0; i < config.disallowedSigners.length;) {
                 SignedMintValidationParams memory emptyParams;
                 this.updateSignedMintValidationParams(
-                    config.seaDropImpl,
-                    config.disallowedSigners[i],
-                    emptyParams
+                    config.seaDropImpl, config.disallowedSigners[i], emptyParams
                 );
                 unchecked {
                     ++i;

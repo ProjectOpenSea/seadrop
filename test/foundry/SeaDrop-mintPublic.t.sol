@@ -23,7 +23,7 @@ contract ERC721SeaDropMintPublicTest is TestHelper {
         // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
@@ -230,7 +230,7 @@ contract SeaDropMintPublicScenarioTest is TestHelper {
         // Deploy the ERC721SeaDrop token. The test contract is the owner.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
 
         // Configure the token.
         token.setMaxSupply(100);

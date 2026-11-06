@@ -5,7 +5,7 @@ import {
     ConstructorInitializableUpgradeable
 } from "./ConstructorInitializableUpgradeable.sol";
 import { TwoStepOwnableStorage } from "./TwoStepOwnableStorage.sol";
-import "../../../lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts/proxy/utils/Initializable.sol";
 
 /**
 @notice A two-step extension of Ownable, where the new owner must claim ownership of the contract after owner initiates transfer

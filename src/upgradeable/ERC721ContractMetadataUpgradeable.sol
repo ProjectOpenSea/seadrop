@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 import {
-    ISeaDropTokenContractMetadataUpgradeable
-} from "./interfaces/ISeaDropTokenContractMetadataUpgradeable.sol";
+    ISeaDropTokenContractMetadata
+} from "../interfaces/ISeaDropTokenContractMetadata.sol";
 
 import {
     ERC721AConduitPreapprovedUpgradeable
@@ -16,25 +16,21 @@ import {
 import {
     ICreatorToken,
     ILegacyCreatorToken
-} from "./interfaces/ICreatorToken.sol";
+} from "../interfaces/ICreatorToken.sol";
 
-import { ITransferValidator721 } from "./interfaces/ITransferValidator.sol";
+import { ITransferValidator721 } from "../interfaces/ITransferValidator.sol";
 
-import {
-    ERC721AUpgradeable
-} from "../lib/ERC721A-Upgradeable/contracts/ERC721AUpgradeable.sol";
+import { ERC721AUpgradeable } from "ERC721A-Upgradeable/ERC721AUpgradeable.sol";
 
 import {
     TwoStepOwnableUpgradeable
-} from "../lib-upgradeable/utility-contracts/src/TwoStepOwnableUpgradeable.sol";
+} from "./vendored/utility-contracts/TwoStepOwnableUpgradeable.sol";
+
+import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
 
 import {
-    IERC2981Upgradeable
-} from "../lib/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC2981Upgradeable.sol";
-
-import {
-    IERC165Upgradeable
-} from "../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+    IERC165
+} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
 
 import {
     ERC721ContractMetadataStorage
@@ -52,9 +48,10 @@ contract ERC721ContractMetadataUpgradeable is
     ERC721AConduitPreapprovedUpgradeable,
     ERC721TransferValidatorUpgradeable,
     TwoStepOwnableUpgradeable,
-    ISeaDropTokenContractMetadataUpgradeable
+    ISeaDropTokenContractMetadata
 {
-    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
+    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage
+        .Layout;
 
     /**
      * @dev Reverts if the sender is not the owner or the contract itself.
@@ -63,8 +60,8 @@ contract ERC721ContractMetadataUpgradeable is
      */
     function _onlyOwnerOrSelf() internal view {
         if (
-            _cast(msg.sender == owner()) | _cast(msg.sender == address(this)) ==
-            0
+            _cast(msg.sender == owner()) | _cast(msg.sender == address(this))
+                == 0
         ) {
             revert OnlyOwner();
         }
@@ -142,7 +139,7 @@ contract ERC721ContractMetadataUpgradeable is
         _onlyOwnerOrSelf();
 
         // Ensure the max supply does not exceed the maximum value of uint64.
-        if (newMaxSupply > 2**64 - 1) {
+        if (newMaxSupply > 2 ** 64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
 
@@ -182,14 +179,12 @@ contract ERC721ContractMetadataUpgradeable is
         }
 
         // Keep track of the old provenance hash for emitting with the event.
-        bytes32 oldProvenanceHash = ERC721ContractMetadataStorage
-            .layout()
-            ._provenanceHash;
+        bytes32 oldProvenanceHash =
+            ERC721ContractMetadataStorage.layout()._provenanceHash;
 
         // Set the new provenance hash.
-        ERC721ContractMetadataStorage
-            .layout()
-            ._provenanceHash = newProvenanceHash;
+        ERC721ContractMetadataStorage.layout()._provenanceHash =
+        newProvenanceHash;
 
         // Emit an event with the update.
         emit ProvenanceHashUpdated(oldProvenanceHash, newProvenanceHash);
@@ -290,11 +285,14 @@ contract ERC721ContractMetadataUpgradeable is
         uint256,
         /* _tokenId */
         uint256 _salePrice
-    ) external view returns (address receiver, uint256 royaltyAmount) {
+    )
+        external
+        view
+        returns (address receiver, uint256 royaltyAmount)
+    {
         // Put the royalty info on the stack for more efficient access.
-        RoyaltyInfo storage info = ERC721ContractMetadataStorage
-            .layout()
-            ._royaltyInfo;
+        RoyaltyInfo storage info =
+        ERC721ContractMetadataStorage.layout()._royaltyInfo;
 
         // Set the royalty amount to the sale price times the royalty basis
         // points divided by 10_000.
@@ -336,16 +334,11 @@ contract ERC721ContractMetadataUpgradeable is
     ) internal virtual override {
         if (from != address(0) && to != address(0)) {
             // Call the transfer validator if one is set.
-            address transferValidator = ERC721ContractMetadataStorage
-                .layout()
-                ._transferValidator;
+            address transferValidator =
+                ERC721ContractMetadataStorage.layout()._transferValidator;
             if (transferValidator != address(0)) {
-                ITransferValidator721(transferValidator).validateTransfer(
-                    msg.sender,
-                    from,
-                    to,
-                    startTokenId
-                );
+                ITransferValidator721(transferValidator)
+                    .validateTransfer(msg.sender, from, to, startTokenId);
             }
         }
     }
@@ -359,15 +352,14 @@ contract ERC721ContractMetadataUpgradeable is
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721AUpgradeable)
+        override(IERC165, ERC721AUpgradeable)
         returns (bool)
     {
-        return
-            interfaceId == type(IERC2981Upgradeable).interfaceId ||
-            interfaceId == type(ICreatorToken).interfaceId ||
-            interfaceId == type(ILegacyCreatorToken).interfaceId ||
-            interfaceId == 0x49064906 || // ERC-4906
-            super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC2981).interfaceId
+            || interfaceId == type(ICreatorToken).interfaceId
+            || interfaceId == type(ILegacyCreatorToken).interfaceId
+            || interfaceId == 0x49064906 // ERC-4906
+            || super.supportsInterface(interfaceId);
     }
 
     /**

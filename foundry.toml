@@ -13,26 +13,31 @@ optimizer_runs = 1_000_000
 # via_ir = true
 ignored_error_codes = []
 bytecode_hash = "none"
-# The upgradeable scripts build only under the upgradeable profile below.
-skip = ['script/upgradeable/**']
-
-# The upgradeable contracts compile with the settings they were deployed
-# with (formerly src-upgradeable/hardhat.config.ts): solc 0.8.17, via-IR,
-# 1000 optimizer runs, and the default ipfs metadata hash.
-# Run with FOUNDRY_PROFILE=upgradeable.
-[profile.upgradeable]
-src = 'src-upgradeable/src/'
-test = 'test/upgradeable'
-script = 'script/upgradeable'
-skip = []
-optimizer = true
-optimizer_runs = 1_000
-via_ir = true
-bytecode_hash = 'ipfs'
-# The scripts embed the implementation's creation code, so solc flags them as
-# over the EIP-170 size limit. Scripts are never deployed; the implementation
-# itself is checked as usual.
+# The upgradeable contracts in src/upgradeable compile with the settings their
+# implementations are deployed with (formerly src-upgradeable's Hardhat
+# config): via-IR, 1000 optimizer runs, and the default ipfs metadata hash,
+# which --verify needs to match. Files that import them (their tests and
+# scripts) compile with those settings too, and everything else keeps the
+# settings above. Keep regular contracts out of those files' imports, or they
+# compile under both profiles and forge verify-contract asks which one.
+additional_compiler_profiles = [
+    { name = "upgradeable", via_ir = true, optimizer_runs = 1_000, bytecode_hash = "Ipfs" },
+]
+compilation_restrictions = [
+    { paths = "src/upgradeable/**", via_ir = true, optimizer_runs = 1_000, bytecode_hash = "Ipfs" },
+]
+# The upgradeable scripts embed the implementation's creation code, so solc
+# flags them as over the EIP-170 size limit. Scripts are never deployed; the
+# implementation itself is checked as usual.
 ignored_warnings_from = ['script/upgradeable']
+
+# forge coverage turns the optimizer and via-IR off, but src/upgradeable keeps
+# its restricted settings, so its coverage lands on the wrong lines. Coverage
+# runs under this profile instead, which drops the restriction:
+# FOUNDRY_PROFILE=coverage forge coverage (npm run coverage sets it).
+[profile.coverage]
+additional_compiler_profiles = []
+compilation_restrictions = []
 
 [profile.ir_inspect]
 test = 'src'
@@ -50,7 +55,7 @@ int_types = "preserve"
 number_underscore = "preserve"
 quote_style = "double"
 prefer_compact = "none"
-ignore = ["src-upgradeable/lib-upgradeable/**"]
+ignore = ["src/upgradeable/vendored/**"]
 
 [lint]
 lint_on_build = false

@@ -35,7 +35,7 @@ contract TestSeaDrop is TestHelper {
         // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
 
         // Deploy a standard ERC721 token.
         standard721Token = new TestERC721();

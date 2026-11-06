@@ -46,8 +46,8 @@ contract SeaDropMintSignedTest is TestHelper {
         // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
-        token2 = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
+        token2 = _newToken("", "", allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
@@ -1087,7 +1087,7 @@ contract SeaDropMintSignedScenarioTest is TestHelper {
     function _deployToken() internal returns (ERC721SeaDrop newToken) {
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        newToken = new ERC721SeaDrop("", "", allowedSeaDrop);
+        newToken = _newToken("", "", allowedSeaDrop);
 
         newToken.setMaxSupply(100);
         newToken.updateCreatorPayoutAddress(address(seadrop), creator);

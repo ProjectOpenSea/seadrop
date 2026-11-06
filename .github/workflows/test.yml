@@ -67,24 +67,6 @@ jobs:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
-  forge-test-upgradeable:
-    name: Run Upgradeable Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: ${{ env.FOUNDRY_VERSION }}
-
-      - name: Build and test with the deployable upgradeable settings
-        run: forge test -vvv
-        env:
-          FOUNDRY_PROFILE: upgradeable
-
   forge-coverage:
     name: Run Forge Coverage
     runs-on: ubuntu-latest
@@ -103,6 +85,7 @@ jobs:
           forge coverage --report summary --report lcov
           --no-match-coverage 'Shim|MaliciousRecipient|Deploy|Test|Snapshot'
         env:
+          FOUNDRY_PROFILE: coverage
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 

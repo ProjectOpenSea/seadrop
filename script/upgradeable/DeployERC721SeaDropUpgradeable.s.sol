@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {
     ERC721SeaDropUpgradeable
-} from "../../src-upgradeable/src/ERC721SeaDropUpgradeable.sol";
+} from "seadrop/upgradeable/ERC721SeaDropUpgradeable.sol";
 
 import {
     ProxyAdmin
@@ -26,7 +26,7 @@ import {
  *
  *         Returns {proxy, admin, implementation}, which forge script prints.
  *
- *         FOUNDRY_PROFILE=upgradeable forge script \
+ *         forge script \
  *           script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol \
  *           --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast --verify
  */

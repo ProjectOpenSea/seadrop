@@ -63,7 +63,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
         vm.warp(1_700_000_000);
 
         // Deploy the ERC721SeaDrop token. The test contract is the owner.
-        token = new ERC721SeaDrop("", "", _allowedSeaDrop());
+        token = _newToken("", "", _allowedSeaDrop());
 
         publicDrop = PublicDrop(
             0.1 ether, // mint price
@@ -130,11 +130,13 @@ contract ERC721SeaDropAdminTest is TestHelper {
     }
 
     function testDeploy_emitsSeaDropTokenDeployed() public {
-        address expected =
-            computeCreateAddress(address(this), vm.getNonce(address(this)));
+        // The upgradeable token emits from its proxy, which _newToken
+        // creates after the implementation and the ProxyAdmin.
+        uint256 nonce = vm.getNonce(address(this)) + (_upgradeable() ? 2 : 0);
+        address expected = computeCreateAddress(address(this), nonce);
         vm.expectEmit(true, true, true, true, expected);
         emit SeaDropTokenDeployed();
-        ERC721SeaDrop deployed = new ERC721SeaDrop("", "", _allowedSeaDrop());
+        ERC721SeaDrop deployed = _newToken("", "", _allowedSeaDrop());
         assertEq(address(deployed), expected);
     }
 
