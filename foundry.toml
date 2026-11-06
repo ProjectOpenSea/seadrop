@@ -23,4 +23,35 @@ test = 'src'
 goerli = '${GOERLI_RPC_URL}'
 mainnet = '${ETHEREUM_RPC_URL}'
 
+[fmt]
+line_length = 80
+tab_width = 4
+bracket_spacing = true
+int_types = "preserve"
+number_underscore = "preserve"
+quote_style = "double"
+prefer_compact = "none"
+ignore = ["src-upgradeable/lib-upgradeable/**"]
+
+[lint]
+lint_on_build = false
+# These detectors only flag deliberate, audited patterns in the shipped
+# contracts (payouts to configured recipients, external calls in admin loops,
+# events after SeaDrop calls, the documented prevrandao offset, vendored
+# ERC721A casts). CI runs `forge lint --deny warnings`, so every other rule
+# still fails the build.
+exclude_lints = [
+    "arbitrary-send-eth",
+    "block-timestamp",
+    "calls-loop",
+    "encode-packed-collision",
+    "missing-events-arithmetic",
+    "missing-zero-check",
+    "reentrancy-events",
+    "reentrancy-no-eth",
+    "require-revert-in-loop",
+    "unsafe-typecast",
+    "weak-prng",
+]
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

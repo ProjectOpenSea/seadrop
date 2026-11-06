@@ -11,6 +11,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+env:
+  FOUNDRY_VERSION: v1.9.0
+
 jobs:
   lint:
     name: Run Linters
@@ -20,76 +23,27 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Use Node.js
-        uses: actions/setup-node@v7
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          node-version: 22.x
-          cache: "yarn"
-
-      - run: yarn install
-      - run: yarn lint:check
-
-  hardhat-test:
-    name: Run Hardhat Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
+          version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Use Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 22.x
-          cache: "yarn"
+          node-version-file: .nvmrc
+          cache: npm
 
-      - run: yarn install
-      - run: yarn build
-      - run: yarn test
+      - run: npm ci --ignore-scripts
 
-  # TODO get this working
-  # hardhat-test-upgradeable:
-  #   name: Run Hardhat Upgradeable Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v7
-  #       with:
-  #         submodules: recursive
-  #
-  #     - name: Use Node.js
-  #       uses: actions/setup-node@v7
-  #       with:
-  #         node-version: 22.x
-  #         cache: "yarn"
-  #
-  #     - run: yarn install
-  #     - run: yarn build
-  #     - run: yarn test:upgradeable
+      - name: Check Solidity formatting
+        run: forge fmt --check
 
-  hardhat-coverage:
-    name: Run Hardhat Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
+      - name: Lint Solidity
+        run: forge lint --deny warnings
 
-      - name: Use Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: "yarn"
-
-      - run: yarn install
-      - run: yarn build
-      - run: yarn coverage
-
-      - name: Submit coverage to Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          flag-name: hardhat
-          parallel: true
+      - name: Check formatting and lint with Biome
+        run: npx biome ci .
 
   forge-test:
     name: Run Forge Tests
@@ -102,16 +56,31 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.5.1
-
-      - name: Install forge dependencies
-        run: forge install
+          version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Run tests
         run: forge test -vvv
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
+
+  forge-test-upgradeable:
+    name: Run Upgradeable Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Build and test with the deployable upgradeable settings
+        run: forge test -vvv
+        env:
+          FOUNDRY_PROFILE: upgradeable
 
   forge-coverage:
     name: Run Forge Coverage
@@ -124,32 +93,20 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.5.1
-
-      - name: Install forge dependencies
-        run: forge install
+          version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Run coverage
-        run: yarn coverage:forge
+        run: >-
+          forge coverage --report summary --report lcov
+          --no-match-coverage 'Shim|MaliciousRecipient|Deploy|Test|Snapshot'
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
       - name: Submit coverage to Coveralls
+        if: github.repository == 'ProjectOpenSea/seadrop'
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./lcov-filtered.info
+          path-to-lcov: ./lcov.info
           flag-name: foundry
-          parallel: true
-
-  coverage-finish:
-    name: Finish Coverage Results
-    needs: [hardhat-coverage, forge-coverage]
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true

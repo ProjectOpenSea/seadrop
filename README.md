@@ -21,7 +21,6 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
   - [Docs](#docs)
   - [Install](#install)
   - [Usage](#usage)
-    - [Foundry Tests](#foundry-tests)
   - [Audits](#audits)
   - [Contributing](#contributing)
   - [License](#license)
@@ -83,87 +82,64 @@ This diagram shows the logic flow in the case that a drop is hosted on OpenSea, 
 
 ## Install
 
-To install dependencies and compile contracts:
+SeaDrop builds and tests with [Foundry](https://getfoundry.sh). To install Foundry (Linux or macOS):
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+To clone the repo with its dependencies and compile the contracts:
 
 ```bash
 git clone --recurse-submodules https://github.com/ProjectOpenSea/seadrop && cd seadrop
-yarn install
-yarn build
+forge build
+```
+
+Node.js (see `.nvmrc`) is only needed for the formatting and git hook tooling. `npm install` installs [Biome](https://biomejs.dev) and sets up the [lefthook](https://lefthook.dev) pre-commit hook, which runs `forge fmt` and Biome on staged files.
+
+```bash
+npm install
 ```
 
 ## Usage
 
-To run hardhat tests written in javascript:
+To run the tests:
 
 ```bash
-yarn test
-yarn coverage
-```
-
-To profile gas usage:
-
-```bash
-yarn profile
-```
-
-### Foundry Tests
-
-SeaDrop also includes a suite of fuzzing tests written in solidity with Foundry.
-
-To install Foundry (assuming a Linux or macOS system):
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-```
-
-This will download foundryup. To start Foundry, run:
-
-```bash
-foundryup
-```
-
-To install dependencies:
-
-```
-forge install
-```
-
-To run tests:
-
-```
 forge test
 ```
 
-To run gas snapshot:
+The upgradeable contracts in `src-upgradeable` build with their deployable settings (via-IR, 1000 optimizer runs) under their own profile:
 
+```bash
+FOUNDRY_PROFILE=upgradeable forge test
 ```
+
+To run coverage:
+
+```bash
+npm run coverage
+```
+
+To run a gas snapshot:
+
+```bash
 forge snapshot
 ```
 
-The following modifiers are also available:
+Add `-vv` through `-vvvvv` to `forge test` for logs, traces for failing tests, and setup traces. See the [Foundry Book](https://getfoundry.sh/forge/tests/overview) for more.
 
-- Level 2 (-vv): Logs emitted during tests are also displayed.
-- Level 3 (-vvv): Stack traces for failing tests are also displayed.
-- Level 4 (-vvvv): Stack traces for all tests are displayed, and setup traces for failing tests are displayed.
-- Level 5 (-vvvvv): Stack traces and setup traces are always displayed.
+To run lint checks (`forge fmt --check`, `forge lint`, and Biome):
 
 ```bash
-forge test  -vv
+npm run lint
 ```
 
-For more information on foundry testing and use, see [Foundry Book installation instructions](https://book.getfoundry.sh/getting-started/installation).
-
-To run lint checks:
+To fix formatting:
 
 ```bash
-yarn lint:check
-```
-
-Lint checks utilize prettier, prettier-plugin-solidity, and solhint.
-
-```javascript
-"prettier": "^2.5.1",
-"prettier-plugin-solidity": "^1.0.0-beta.24",
+npm run lint:fix
 ```
 
 ## Audits
@@ -175,17 +151,15 @@ SeaDrop was audited after development by [Spearbit](https://spearbit.com/), read
 Contributions to SeaDrop are welcome by anyone interested in writing more tests, improving readability, optimizing for gas efficiency, or extending the protocol with new features.
 
 When making a pull request, ensure that:
-
 - All tests pass.
-- Code coverage remains at 100% (coverage tests must currently be written in hardhat).
+- Code coverage remains at 100%.
 - All new code adheres to the style guide:
   - All lint checks pass.
   - Code is thoroughly commented with natspec where relevant.
 - If making a change to the contracts:
   - Gas snapshots are provided and demonstrate an improvement (or an acceptable deficit given other improvements).
   - Reference contracts are modified correspondingly if relevant.
-  - New tests (ideally via foundry) are included for all new features or code paths.
-- If making a modification to third-party dependencies, `yarn audit` passes.
+  - New Foundry tests are included for all new features or code paths.
 - A descriptive summary of the PR has been provided.
 
 ## License
