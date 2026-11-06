@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {
     ERC721SeaDropUpgradeable
-} from "../../src-upgradeable/src/ERC721SeaDropUpgradeable.sol";
+} from "seadrop/upgradeable/ERC721SeaDropUpgradeable.sol";
 
 import {
     ProxyAdmin
@@ -26,7 +26,7 @@ import {
  *         Unlike the Hardhat plugin, this does not validate upgrade safety or
  *         storage layout compatibility; check those before upgrading.
  *
- *         PROXY_ADDRESS=0x... FOUNDRY_PROFILE=upgradeable forge script \
+ *         PROXY_ADDRESS=0x... forge script \
  *           script/upgradeable/UpgradeERC721SeaDropUpgradeable.s.sol \
  *           --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast --verify
  */

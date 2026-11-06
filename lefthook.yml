@@ -6,7 +6,7 @@ pre-commit:
       glob: "*.sol"
       exclude:
         - "lib/**"
-        - "src-upgradeable/lib-upgradeable/**"
+        - "src/upgradeable/vendored/**"
       run: forge fmt {staged_files}
       stage_fixed: true
     - name: biome

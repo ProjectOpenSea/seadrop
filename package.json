@@ -10,7 +10,7 @@
   "scripts": {
     "build": "forge build",
     "test": "forge test",
-    "coverage": "forge coverage --report summary --report lcov --no-match-coverage 'Shim|MaliciousRecipient|Deploy|Test|Snapshot'",
+    "coverage": "FOUNDRY_PROFILE=coverage forge coverage --report summary --report lcov --no-match-coverage 'Shim|MaliciousRecipient|Deploy|Test|Snapshot'",
     "lint": "forge fmt --check && forge lint --deny warnings && biome ci .",
     "lint:fix": "forge fmt && biome check --write .",
     "prepare": "lefthook install"

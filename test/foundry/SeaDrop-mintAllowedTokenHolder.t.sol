@@ -39,7 +39,7 @@ contract ERC721DropTest is TestHelper {
         // Deploy the ERC721SeaDrop token.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
 
         // Set the max supply to 1000.
         token.setMaxSupply(1000);
@@ -401,7 +401,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         // Deploy the token. The test contract is the owner.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
 
         // Deploy the allowed NFT token.
         allowedNftToken = new TestERC721();
@@ -585,7 +585,7 @@ contract SeaDropMintAllowedTokenHolderScenarioTest is TestHelper {
         // Deploy and configure a new ERC721SeaDrop.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        ERC721SeaDrop differentToken = new ERC721SeaDrop("", "", allowedSeaDrop);
+        ERC721SeaDrop differentToken = _newToken("", "", allowedSeaDrop);
         differentToken.setMaxSupply(1000);
         differentToken.updateAllowedFeeRecipient(
             address(seadrop), feeRecipient, true

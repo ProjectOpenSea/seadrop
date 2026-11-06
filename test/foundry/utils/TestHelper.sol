@@ -11,6 +11,14 @@ import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 import { SeaDropErrorsAndEvents } from "seadrop/lib/SeaDropErrorsAndEvents.sol";
 
+import {
+    ProxyAdmin
+} from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
+
+import {
+    TransparentUpgradeableProxy
+} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 contract TestHelper is Test, SeaDropErrorsAndEvents {
     SeaDrop seadrop = new SeaDrop();
     ERC721SeaDrop token;
@@ -67,6 +75,71 @@ contract TestHelper is Test, SeaDropErrorsAndEvents {
                 && args.feeRecipient != creator
         );
         _;
+    }
+
+    /**
+     * @dev Whether this test contract runs against the upgradeable token,
+     *      ERC721SeaDropUpgradeable behind a transparent proxy, instead of
+     *      ERC721SeaDrop. The test contracts in test/foundry/upgradeable
+     *      override this to rerun the shared tests against it.
+     */
+    function _upgradeable() internal pure virtual returns (bool) {
+        return false;
+    }
+
+    /**
+     * @dev Deploy the token under test, owned by this contract. The
+     *      upgradeable token has the same ABI as ERC721SeaDrop, so the tests
+     *      drive both through the ERC721SeaDrop type.
+     */
+    function _newToken(
+        string memory name,
+        string memory symbol,
+        address[] memory allowedSeaDrop
+    ) internal returns (ERC721SeaDrop) {
+        if (_upgradeable()) {
+            return ERC721SeaDrop(
+                _deployUpgradeable(
+                    "ERC721SeaDropUpgradeable", name, symbol, allowedSeaDrop
+                )
+            );
+        }
+        return new ERC721SeaDrop(name, symbol, allowedSeaDrop);
+    }
+
+    /**
+     * @dev Deploy an upgradeable token the way
+     *      script/upgradeable/DeployERC721SeaDropUpgradeable.s.sol does: the
+     *      implementation, a ProxyAdmin, and a TransparentUpgradeableProxy
+     *      whose constructor calls initialize(name, symbol, allowedSeaDrop),
+     *      which makes this contract the token owner.
+     *
+     *      The implementation deploys from its build artifact, so it keeps
+     *      its deployable settings (via-IR, 1000 runs) and the shared tests
+     *      that call this compile with the default settings.
+     */
+    function _deployUpgradeable(
+        string memory contractName,
+        string memory name,
+        string memory symbol,
+        address[] memory allowedSeaDrop
+    ) internal returns (address) {
+        address implementation = vm.deployCode(
+            string.concat(contractName, ".sol:", contractName)
+        );
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        return address(
+            new TransparentUpgradeableProxy(
+                implementation,
+                address(proxyAdmin),
+                abi.encodeWithSignature(
+                    "initialize(string,string,address[])",
+                    name,
+                    symbol,
+                    allowedSeaDrop
+                )
+            )
+        );
     }
 
     function _getSignatureComponents(

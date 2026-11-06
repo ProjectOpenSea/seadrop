@@ -19,8 +19,10 @@ import {
  *         to enable fair metadata reveals.
  */
 contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
-    using ERC721SeaDropRandomOffsetStorage for ERC721SeaDropRandomOffsetStorage.Layout;
-    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage.Layout;
+    using ERC721SeaDropRandomOffsetStorage for ERC721SeaDropRandomOffsetStorage
+        .Layout;
+    using ERC721ContractMetadataStorage for ERC721ContractMetadataStorage
+        .Layout;
 
     /// @notice Revert when setting the randomOffset if already set.
     error AlreadyRevealed();
@@ -52,18 +54,17 @@ contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
             revert AlreadyRevealed();
         }
 
-        if (
-            _totalMinted() != ERC721ContractMetadataStorage.layout()._maxSupply
-        ) {
+        if (_totalMinted() != ERC721ContractMetadataStorage.layout()._maxSupply)
+        {
             revert NotFullyMinted();
         }
         // block.difficulty returns PREVRANDAO on Ethereum post-merge
         // NOTE: do not use this on other chains
         // randomOffset returns between 1 and MAX_SUPPLY
         ERC721SeaDropRandomOffsetStorage.layout().randomOffset =
-            (uint256(keccak256(abi.encode(block.difficulty))) %
-                (ERC721ContractMetadataStorage.layout()._maxSupply - 1)) +
-            1;
+            (uint256(keccak256(abi.encode(block.difficulty)))
+                    % (ERC721ContractMetadataStorage.layout()._maxSupply - 1))
+                + 1;
 
         ERC721SeaDropRandomOffsetStorage.layout().revealed = true;
     }
@@ -97,19 +98,16 @@ contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
             } else {
                 // If the baseURI is set and the collection is revealed,
                 // return the tokenURI offset by the randomOffset.
-                return
-                    string.concat(
-                        base,
-                        _toString(
-                            ((tokenId +
-                                ERC721SeaDropRandomOffsetStorage
-                                    .layout()
-                                    .randomOffset) %
-                                ERC721ContractMetadataStorage
-                                    .layout()
-                                    ._maxSupply) + _startTokenId()
-                        )
-                    );
+                return string.concat(
+                    base,
+                    _toString(
+                        ((tokenId
+                                    + ERC721SeaDropRandomOffsetStorage.layout()
+                                    .randomOffset)
+                                % ERC721ContractMetadataStorage.layout()
+                                ._maxSupply) + _startTokenId()
+                    )
+                );
             }
         }
     }

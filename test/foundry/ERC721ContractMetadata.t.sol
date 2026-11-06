@@ -27,7 +27,7 @@ contract ERC721ContractMetadataTest is TestHelper {
         // Deploy the ERC721SeaDrop token. The test contract is the owner.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        token = new ERC721SeaDrop("", "", allowedSeaDrop);
+        token = _newToken("", "", allowedSeaDrop);
 
         token.setMaxSupply(5);
     }

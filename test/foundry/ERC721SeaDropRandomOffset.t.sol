@@ -22,7 +22,19 @@ contract ERC721SeaDropRandomOffsetTest is TestHelper {
         // Deploy the token. The test contract is the owner.
         address[] memory allowedSeaDrop = new address[](1);
         allowedSeaDrop[0] = address(seadrop);
-        offsetToken = new ERC721SeaDropRandomOffset("", "", allowedSeaDrop);
+        if (_upgradeable()) {
+            // Same ABI apart from revealed(), which these tests don't call.
+            offsetToken = ERC721SeaDropRandomOffset(
+                _deployUpgradeable(
+                    "ERC721SeaDropRandomOffsetUpgradeable",
+                    "",
+                    "",
+                    allowedSeaDrop
+                )
+            );
+        } else {
+            offsetToken = new ERC721SeaDropRandomOffset("", "", allowedSeaDrop);
+        }
     }
 
     function _mintToMaxSupply() internal {

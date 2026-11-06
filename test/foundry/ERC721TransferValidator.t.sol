@@ -13,30 +13,27 @@ import { MockTransferValidator } from "seadrop/test/MockTransferValidator.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
-contract ERC721SeaDropWithMint is ERC721SeaDrop {
-    constructor(
-        string memory name,
-        string memory symbol,
-        address[] memory allowedSeaDrop
-    ) ERC721SeaDrop(name, symbol, allowedSeaDrop) { }
-
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
-    }
-}
-
 contract ERC721TransferValidatorTest is TestHelper {
     MockTransferValidator transferValidatorAlwaysSucceeds =
         new MockTransferValidator(false);
     MockTransferValidator transferValidatorAlwaysReverts =
         new MockTransferValidator(true);
 
-    ERC721SeaDropWithMint token_;
+    ERC721SeaDrop token_;
 
     event TransferValidatorUpdated(address oldValidator, address newValidator);
 
     function setUp() public {
-        token_ = new ERC721SeaDropWithMint("", "", new address[](0));
+        address[] memory allowedSeaDrop = new address[](1);
+        allowedSeaDrop[0] = address(seadrop);
+        token_ = _newToken("", "", allowedSeaDrop);
+        token_.setMaxSupply(10);
+    }
+
+    /// @dev Mint `quantity` tokens to `to` as SeaDrop.
+    function _mint(address to, uint256 quantity) internal {
+        vm.prank(address(seadrop));
+        token_.mintSeaDrop(to, quantity);
     }
 
     function testOnlyOwnerCanSetTransferValidator() public {
@@ -54,7 +51,7 @@ contract ERC721TransferValidatorTest is TestHelper {
     }
 
     function testTransferValidatorIsCalledOnTransfer() public {
-        token_.mint(address(this), 2);
+        _mint(address(this), 2);
 
         vm.expectEmit(true, true, true, true);
         emit TransferValidatorUpdated(
