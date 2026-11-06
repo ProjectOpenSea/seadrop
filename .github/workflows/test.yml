@@ -16,14 +16,14 @@ jobs:
     name: Run Linters
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
-          node-version: 16.x
+          node-version: 22.x
           cache: "yarn"
 
       - run: yarn install
@@ -33,14 +33,14 @@ jobs:
     name: Run Hardhat Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
-          node-version: 16.x
+          node-version: 22.x
           cache: "yarn"
 
       - run: yarn install
@@ -52,14 +52,14 @@ jobs:
   #   name: Run Hardhat Upgradeable Tests
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v7
   #       with:
   #         submodules: recursive
   #
   #     - name: Use Node.js
-  #       uses: actions/setup-node@v3
+  #       uses: actions/setup-node@v7
   #       with:
-  #         node-version: 16.x
+  #         node-version: 22.x
   #         cache: "yarn"
   #
   #     - run: yarn install
@@ -70,14 +70,14 @@ jobs:
     name: Run Hardhat Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
-          node-version: 16.x
+          node-version: 22.x
           cache: "yarn"
 
       - run: yarn install
@@ -86,7 +86,7 @@ jobs:
 
       - name: Submit coverage to Coveralls
         if: github.repository == 'ProjectOpenSea/seadrop'
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: hardhat
@@ -96,7 +96,7 @@ jobs:
     name: Run Forge Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -124,7 +124,7 @@ jobs:
       #   name: Run Forge Coverage
       #   runs-on: ubuntu-latest
       #   steps:
-      #     - uses: actions/checkout@v3
+      #     - uses: actions/checkout@v7
       #       with:
       #         submodules: recursive
 
@@ -146,7 +146,7 @@ jobs:
       #         GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
       # - name: Submit coverage to Coveralls
-      #   uses: coverallsapp/github-action@master
+      #   uses: coverallsapp/github-action@v2
       #   with:
       #     github-token: ${{ secrets.GITHUB_TOKEN }}
       #     path-to-lcov: ./lcov-filtered.info
@@ -161,6 +161,6 @@ jobs:
     steps:
       - name: Coveralls Finished
         if: github.repository == 'ProjectOpenSea/seadrop'
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2
         with:
           parallel-finished: true
