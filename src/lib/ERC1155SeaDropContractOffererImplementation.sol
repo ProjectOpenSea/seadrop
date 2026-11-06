@@ -1027,12 +1027,12 @@ contract ERC1155SeaDropContractOffererImplementation is
             // Add to total mint quantity.
             totalQuantity += quantity;
 
-            // Check the mint quantities.
+            // Check the mint quantities, with the running total of the
+            // order's items so far for maxTotalMintableByWallet.
             _checkMintQuantity(
                 tokenId,
                 quantity,
-                // Only check totalQuantity on the last iteration.
-                i == tokenIdsLength - 1 ? totalQuantity : 0,
+                totalQuantity,
                 minter,
                 maxTotalMintableByWallet,
                 maxTotalMintableByWalletPerToken,
@@ -1050,8 +1050,10 @@ contract ERC1155SeaDropContractOffererImplementation is
      *
      * @param tokenId                  The token id.
      * @param quantity                 The number of tokens to mint.
-     * @param totalQuantity            When provided as a nonzero value ensures
-     *                                 doesn't exceed maxTotalMintableByWallet.
+     * @param totalQuantity            The running total quantity of the
+     *                                 order's items up to and including this
+     *                                 one, checked against
+     *                                 maxTotalMintableByWallet.
      * @param minter                   The mint recipient.
      * @param maxTotalMintableByWallet The max allowed mints per wallet.
      * @param maxTotalMintableByWalletPerToken The max allowed mints per wallet per token.
@@ -1081,7 +1083,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         ) {
             revert MintQuantityExceedsMaxMintedPerWalletForTokenId(
                 tokenId,
-                quantity + minterNumMinted,
+                quantity + minterNumMintedForTokenId,
                 maxTotalMintableByWalletPerToken
             );
         }
@@ -1102,24 +1104,12 @@ contract ERC1155SeaDropContractOffererImplementation is
             );
         }
 
-        // If totalQuantity is provided, ensure it doesn't exceed maxTotalMintableByWallet.
-        if (totalQuantity != 0) {
-            // Ensure total mint quantity doesn't exceed maxTotalMintableByWallet.
-            if (totalQuantity + minterNumMinted > maxTotalMintableByWallet) {
-                revert MintQuantityExceedsMaxMintedPerWallet(
-                    totalQuantity + minterNumMinted,
-                    maxTotalMintableByWallet
-                );
-            }
-        } else {
-            // Otherwise, just check the quantity.
-            // Ensure mint quantity doesn't exceed maxTotalMintableByWallet.
-            if (quantity + minterNumMinted > maxTotalMintableByWallet) {
-                revert MintQuantityExceedsMaxMintedPerWallet(
-                    quantity + minterNumMinted,
-                    maxTotalMintableByWallet
-                );
-            }
+        // Ensure the running total doesn't exceed maxTotalMintableByWallet.
+        if (totalQuantity + minterNumMinted > maxTotalMintableByWallet) {
+            revert MintQuantityExceedsMaxMintedPerWallet(
+                totalQuantity + minterNumMinted,
+                maxTotalMintableByWallet
+            );
         }
     }
 

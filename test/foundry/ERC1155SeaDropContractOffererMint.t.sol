@@ -700,4 +700,123 @@ contract ERC1155SeaDropContractOffererMintTest is SeaDrop1155OffererFixture {
             }
         }
     }
+
+    /// @dev MintQuantityExceedsMaxMintedPerWalletForTokenId reports the
+    ///      wallet's mints of that token id plus the quantity, not its mints
+    ///      across all token ids.
+    function testMaxMintedPerWalletForTokenIdReportsPerTokenTotal() public {
+        token.setMaxSupply(1, 10);
+        PublicDrop memory drop = publicDrop;
+        drop.maxTotalMintableByWalletPerToken = 3;
+        _seaDrop().updatePublicDrop(drop, 0);
+
+        // Mint 3 of token id 0.
+        (AdvancedOrder memory order, uint256 value) =
+            _mintOrder(_uints(0), _uints(3));
+        _fulfill(order, minter, value);
+
+        // 4 of token id 1, of which the wallet holds none.
+        (order, value) = _mintOrder(_uints(1), _uints(4));
+        _assertMintReverts(
+            order,
+            minter,
+            value,
+            abi.encodeWithSelector(
+                ERC1155SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWalletForTokenId
+                    .selector,
+                1,
+                4,
+                3
+            )
+        );
+
+        // 1 more of token id 0.
+        (order, value) = _mintOrder(_uints(0), _uints(1));
+        _assertMintReverts(
+            order,
+            minter,
+            value,
+            abi.encodeWithSelector(
+                ERC1155SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWalletForTokenId
+                    .selector,
+                0,
+                4,
+                3
+            )
+        );
+    }
+
+    /// @dev The wallet limit is checked against the running total of the
+    ///      order's items, so the middle item of 1, 4, 1 with a limit of 3
+    ///      reports 1 + 4 = 5, not its own 4.
+    function testMaxMintedPerWalletReportsRunningTotal() public {
+        token.setMaxSupply(1, 10);
+        token.setMaxSupply(2, 10);
+        PublicDrop memory drop = publicDrop;
+        drop.maxTotalMintableByWallet = 3;
+        _seaDrop().updatePublicDrop(drop, 0);
+
+        (AdvancedOrder memory order, uint256 value) =
+            _mintOrder(_uints(0, 1, 2), _uints(1, 4, 1));
+        _assertMintReverts(
+            order,
+            minter,
+            value,
+            abi.encodeWithSelector(
+                MintQuantityExceedsMaxMintedPerWallet.selector, 5, 3
+            )
+        );
+    }
+
+    /// @dev For any quantities, prior mints and wallet limit, the order
+    ///      fails at the first item whose running total (with prior mints)
+    ///      exceeds the limit and reports that total, or succeeds.
+    function testFuzzMaxMintedPerWalletRunningTotal(
+        uint256 q0,
+        uint256 q1,
+        uint256 q2,
+        uint256 minted,
+        uint256 maxWallet
+    ) public {
+        uint256[] memory quantities = _uints(
+            bound(q0, 1, 20), bound(q1, 1, 20), bound(q2, 1, 20)
+        );
+        minted = bound(minted, 0, 5);
+        maxWallet = bound(maxWallet, 1, 70);
+
+        for (uint256 tokenId = 0; tokenId < 4; tokenId++) {
+            token.setMaxSupply(tokenId, 1000);
+        }
+        if (minted != 0) {
+            _mintTokens(minter, 3, minted);
+        }
+
+        PublicDrop memory drop = publicDrop;
+        drop.maxTotalMintableByWallet = uint16(maxWallet);
+        drop.maxTotalMintableByWalletPerToken = 1000;
+        _seaDrop().updatePublicDrop(drop, 0);
+
+        (AdvancedOrder memory order, uint256 value) =
+            _mintOrder(_uints(0, 1, 2), quantities);
+
+        uint256 runningTotal = minted;
+        for (uint256 i = 0; i < quantities.length; i++) {
+            runningTotal += quantities[i];
+            if (runningTotal > maxWallet) {
+                _assertMintReverts(
+                    order,
+                    minter,
+                    value,
+                    abi.encodeWithSelector(
+                        MintQuantityExceedsMaxMintedPerWallet.selector,
+                        runningTotal,
+                        maxWallet
+                    )
+                );
+                return;
+            }
+        }
+        _fulfill(order, minter, value);
+        assertEq(token.balanceOf(minter, 2), quantities[2]);
+    }
 }

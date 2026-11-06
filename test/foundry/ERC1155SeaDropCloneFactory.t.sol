@@ -13,6 +13,10 @@ import {
 
 import { IERC1155SeaDrop } from "seadrop/interfaces/IERC1155SeaDrop.sol";
 
+import {
+    ERC1155SeaDropErrorsAndEvents
+} from "seadrop/lib/ERC1155SeaDropErrorsAndEvents.sol";
+
 import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
 import { PublicDrop } from "seadrop/lib/ERC1155SeaDropStructs.sol";
@@ -92,9 +96,20 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         assertEq(token.balanceOf(minter, 3), 1);
         assertEq(creator.balance, 4 ether * 0.95);
 
-        // Minting the same again exceeds maxTotalMintableByWalletPerToken.
-        _expectInvalidContractOrder(clone);
-        _fulfill(order, minter, value);
+        // Minting the same again exceeds maxTotalMintableByWalletPerToken for
+        // token id 1: 3 minted of it plus 3 (not the wallet's 4 overall).
+        _assertMintReverts(
+            order,
+            minter,
+            value,
+            abi.encodeWithSelector(
+                ERC1155SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWalletForTokenId
+                    .selector,
+                1,
+                6,
+                5
+            )
+        );
 
         assertEq(token.uri(1), "", "tokenURI should be blank at first");
         assertEq(token.baseURI(), "", "baseURI should be blank at first");

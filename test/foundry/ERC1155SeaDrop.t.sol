@@ -103,9 +103,20 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         assertEq(token.balanceOf(minter, 3), 1);
         assertEq(context.args.creator.balance, 4 ether * 0.95);
 
-        // Minting the same again exceeds maxTotalMintableByWalletPerToken.
-        _expectInvalidContractOrder(address(token));
-        _fulfill(order, minter, value);
+        // Minting the same again exceeds maxTotalMintableByWalletPerToken for
+        // token id 1: 3 minted of it plus 3 (not the wallet's 4 overall).
+        _assertMintReverts(
+            order,
+            minter,
+            value,
+            abi.encodeWithSelector(
+                ERC1155SeaDropErrorsAndEvents.MintQuantityExceedsMaxMintedPerWalletForTokenId
+                    .selector,
+                1,
+                6,
+                5
+            )
+        );
     }
 
     function testMintAllowList(Context memory context)
