@@ -56,10 +56,9 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
      * @param token  The ERC721SeaDrop contract address.
      * @param config The configuration struct.
      */
-    function multiConfigure(
-        address token,
-        MultiConfigureStruct calldata config
-    ) external {
+    function multiConfigure(address token, MultiConfigureStruct calldata config)
+        external
+    {
         // Ensure the sender is the owner of the token.
         _onlyOwner(token);
 
@@ -73,25 +72,20 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
             IERC721ContractMetadata(token).setContractURI(config.contractURI);
         }
         if (config.provenanceHash != bytes32(0)) {
-            IERC721ContractMetadata(token).setProvenanceHash(
-                config.provenanceHash
-            );
+            IERC721ContractMetadata(token)
+                .setProvenanceHash(config.provenanceHash);
         }
         if (
-            _cast(config.royaltyReceiver != address(0)) &
-                _cast(config.royaltyBps != 0) ==
-            1
+            _cast(config.royaltyReceiver != address(0))
+                    & _cast(config.royaltyBps != 0) == 1
         ) {
-            IERC721ContractMetadata(token).setDefaultRoyalty(
-                config.royaltyReceiver,
-                config.royaltyBps
-            );
+            IERC721ContractMetadata(token)
+                .setDefaultRoyalty(config.royaltyReceiver, config.royaltyBps);
         }
 
         if (
-            _cast(config.publicDrop.startTime != 0) &
-                _cast(config.publicDrop.endTime != 0) ==
-            1
+            _cast(config.publicDrop.startTime != 0)
+                    & _cast(config.publicDrop.endTime != 0) == 1
         ) {
             IERC721SeaDrop(address(token)).updatePublicDrop(config.publicDrop);
         }
@@ -99,86 +93,73 @@ contract ERC721SeaDropConfigurer is ERC721SeaDropContractOffererImplementation {
             IERC721SeaDrop(address(token)).updateDropURI(config.dropURI);
         }
         if (config.allowListData.merkleRoot != bytes32(0)) {
-            IERC721SeaDrop(address(token)).updateAllowList(
-                config.allowListData
-            );
+            IERC721SeaDrop(address(token)).updateAllowList(config.allowListData);
         }
         if (config.creatorPayouts.length != 0) {
-            IERC721SeaDrop(address(token)).updateCreatorPayouts(
-                config.creatorPayouts
-            );
+            IERC721SeaDrop(address(token))
+                .updateCreatorPayouts(config.creatorPayouts);
         }
         if (config.allowedFeeRecipients.length != 0) {
-            for (uint256 i = 0; i < config.allowedFeeRecipients.length; ) {
-                IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-                    config.allowedFeeRecipients[i],
-                    true
-                );
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length;) {
+                IERC721SeaDrop(address(token))
+                    .updateAllowedFeeRecipient(
+                        config.allowedFeeRecipients[i], true
+                    );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedFeeRecipients.length != 0) {
-            for (uint256 i = 0; i < config.disallowedFeeRecipients.length; ) {
-                IERC721SeaDrop(address(token)).updateAllowedFeeRecipient(
-                    config.disallowedFeeRecipients[i],
-                    false
-                );
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length;) {
+                IERC721SeaDrop(address(token))
+                    .updateAllowedFeeRecipient(
+                        config.disallowedFeeRecipients[i], false
+                    );
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.allowedPayers.length != 0) {
-            for (uint256 i = 0; i < config.allowedPayers.length; ) {
-                IERC721SeaDrop(address(token)).updatePayer(
-                    config.allowedPayers[i],
-                    true
-                );
+            for (uint256 i = 0; i < config.allowedPayers.length;) {
+                IERC721SeaDrop(address(token))
+                    .updatePayer(config.allowedPayers[i], true);
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedPayers.length != 0) {
-            for (uint256 i = 0; i < config.disallowedPayers.length; ) {
-                IERC721SeaDrop(address(token)).updatePayer(
-                    config.disallowedPayers[i],
-                    false
-                );
+            for (uint256 i = 0; i < config.disallowedPayers.length;) {
+                IERC721SeaDrop(address(token))
+                    .updatePayer(config.disallowedPayers[i], false);
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.allowedSigners.length != 0) {
-            for (uint256 i = 0; i < config.allowedSigners.length; ) {
-                IERC721SeaDrop(address(token)).updateSigner(
-                    config.allowedSigners[i],
-                    true
-                );
+            for (uint256 i = 0; i < config.allowedSigners.length;) {
+                IERC721SeaDrop(address(token))
+                    .updateSigner(config.allowedSigners[i], true);
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.disallowedSigners.length != 0) {
-            for (uint256 i = 0; i < config.disallowedSigners.length; ) {
-                IERC721SeaDrop(address(token)).updateSigner(
-                    config.disallowedSigners[i],
-                    false
-                );
+            for (uint256 i = 0; i < config.disallowedSigners.length;) {
+                IERC721SeaDrop(address(token))
+                    .updateSigner(config.disallowedSigners[i], false);
                 unchecked {
                     ++i;
                 }
             }
         }
         if (config.mintQuantity != 0) {
-            IERC721SeaDrop(token).multiConfigureMint(
-                config.mintRecipient,
-                config.mintQuantity
-            );
+            IERC721SeaDrop(token)
+                .multiConfigureMint(config.mintRecipient, config.mintQuantity);
         }
     }
 }

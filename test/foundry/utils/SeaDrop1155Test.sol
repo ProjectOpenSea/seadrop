@@ -52,59 +52,34 @@ contract SeaDrop1155Test is
     /// @notice Internal constants for EIP-712: Typed structured
     ///         data hashing and signing
     bytes32 internal constant _SIGNED_MINT_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-             "SignedMint("
-                "address minter,"
-                "address feeRecipient,"
-                "MintParams mintParams,"
-                "uint256 salt"
-            ")"
-            "MintParams("
-                "uint256 startPrice,"
-                "uint256 endPrice,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "address paymentToken,"
-                "uint256 fromTokenId,"
-                "uint256 toTokenId,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 maxTotalMintableByWalletPerToken,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 dropStageIndex,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "SignedMint(" "address minter," "address feeRecipient,"
+        "MintParams mintParams," "uint256 salt" ")" "MintParams("
+        "uint256 startPrice," "uint256 endPrice," "uint256 startTime,"
+        "uint256 endTime," "address paymentToken," "uint256 fromTokenId,"
+        "uint256 toTokenId," "uint256 maxTotalMintableByWallet,"
+        "uint256 maxTotalMintableByWalletPerToken,"
+        "uint256 maxTokenSupplyForStage," "uint256 dropStageIndex,"
+        "uint256 feeBps," "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _MINT_PARAMS_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "MintParams("
-                "uint256 startPrice,"
-                "uint256 endPrice,"
-                "uint256 startTime,"
-                "uint256 endTime,"
-                "address paymentToken,"
-                "uint256 fromTokenId,"
-                "uint256 toTokenId,"
-                "uint256 maxTotalMintableByWallet,"
-                "uint256 maxTotalMintableByWalletPerToken,"
-                "uint256 maxTokenSupplyForStage,"
-                "uint256 dropStageIndex,"
-                "uint256 feeBps,"
-                "bool restrictFeeRecipients"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "MintParams(" "uint256 startPrice," "uint256 endPrice,"
+        "uint256 startTime," "uint256 endTime," "address paymentToken,"
+        "uint256 fromTokenId," "uint256 toTokenId,"
+        "uint256 maxTotalMintableByWallet,"
+        "uint256 maxTotalMintableByWalletPerToken,"
+        "uint256 maxTokenSupplyForStage," "uint256 dropStageIndex,"
+        "uint256 feeBps," "bool restrictFeeRecipients" ")"
+    );
     bytes32 internal constant _EIP_712_DOMAIN_TYPEHASH =
-        // prettier-ignore
-        keccak256(
-            "EIP712Domain("
-                "string name,"
-                "string version,"
-                "uint256 chainId,"
-                "address verifyingContract"
-            ")"
-        );
+    // prettier-ignore
+    keccak256(
+        "EIP712Domain(" "string name," "string version," "uint256 chainId,"
+        "address verifyingContract" ")"
+    );
     bytes32 internal constant _NAME_HASH = keccak256("ERC1155SeaDrop");
     bytes32 internal constant _VERSION_HASH = keccak256("2.0");
     uint256 internal immutable _CHAIN_ID = block.chainid;
@@ -129,10 +104,8 @@ contract SeaDrop1155Test is
      */
     function setSingleCreatorPayout(address creator) internal {
         CreatorPayout[] memory creatorPayouts = new CreatorPayout[](1);
-        creatorPayouts[0] = CreatorPayout({
-            payoutAddress: creator,
-            basisPoints: 10_000
-        });
+        creatorPayouts[0] =
+            CreatorPayout({ payoutAddress: creator, basisPoints: 10_000 });
         IERC1155SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
     }
 
@@ -141,11 +114,8 @@ contract SeaDrop1155Test is
         uint256 proofIndex,
         MintParams memory mintParams
     ) internal returns (bytes32[] memory) {
-        (bytes32 root, bytes32[] memory proof) = _createMerkleRootAndProof(
-            allowList,
-            proofIndex,
-            mintParams
-        );
+        (bytes32 root, bytes32[] memory proof) =
+            _createMerkleRootAndProof(allowList, proofIndex, mintParams);
         AllowListData memory allowListData = AllowListData({
             merkleRoot: root,
             publicKeyURIs: new string[](0),
@@ -167,9 +137,7 @@ contract SeaDrop1155Test is
 
         // Create allowList tuples using allowList addresses and mintParams.
         for (uint256 i = 0; i < allowList.length; i++) {
-            allowListTuples[i] = keccak256(
-                abi.encode(allowList[i], mintParams)
-            );
+            allowListTuples[i] = keccak256(abi.encode(allowList[i], mintParams));
         }
 
         // Initialize Merkle.
@@ -196,11 +164,7 @@ contract SeaDrop1155Test is
         bool compact2098
     ) internal returns (bytes memory signature) {
         bytes32 digest = _getDigest(
-            seadrop,
-            minter,
-            feeRecipient,
-            mintParams,
-            salt
+            seadrop, minter, feeRecipient, mintParams, salt
         );
         (, uint256 pk) = makeAddrAndKey(signerName);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
@@ -280,12 +244,11 @@ contract SeaDrop1155Test is
 
         // Add consideration items for creator payouts.
         if (creatorAmount != 0) {
-            CreatorPayout[] memory creatorPayouts = IERC1155SeaDrop(
-                address(token)
-            ).getCreatorPayouts();
+            CreatorPayout[] memory creatorPayouts =
+                IERC1155SeaDrop(address(token)).getCreatorPayouts();
             for (uint256 i = 0; i < creatorPayouts.length; i++) {
-                uint256 amount = (creatorAmount *
-                    creatorPayouts[i].basisPoints) / 10_000;
+                uint256 amount =
+                    (creatorAmount * creatorPayouts[i].basisPoints) / 10_000;
                 addConsiderationItem(
                     payable(creatorPayouts[i].payoutAddress),
                     ItemType.NATIVE,
@@ -310,9 +273,11 @@ contract SeaDrop1155Test is
         configureOrderComponents(0);
     }
 
-    function _deriveDomainSeparator(
-        address seadrop
-    ) internal view returns (bytes32) {
+    function _deriveDomainSeparator(address seadrop)
+        internal
+        view
+        returns (bytes32)
+    {
         // prettier-ignore
         return keccak256(
             abi.encode(
@@ -325,11 +290,11 @@ contract SeaDrop1155Test is
         );
     }
 
-    function _encodeSignature2098(
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    ) internal pure returns (bytes memory) {
+    function _encodeSignature2098(bytes32 r, bytes32 s, uint8 v)
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint256 yParity;
         if (v == 27) {
             yParity = 0;

@@ -3,6 +3,10 @@ pragma solidity ^0.8.19;
 
 import { SeaDrop1155Test } from "./utils/SeaDrop1155Test.sol";
 
+import { SeaDrop1155MintHelpers } from "./utils/SeaDrop1155MintHelpers.sol";
+
+import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
+
 import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
 import { IERC1155SeaDrop } from "seadrop/interfaces/IERC1155SeaDrop.sol";
@@ -40,8 +44,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.assume(args.feeRecipient.code.length == 0);
         vm.assume(args.creator.code.length == 0);
 
-        assumeNoPrecompiles(args.feeRecipient);
-        assumeNoPrecompiles(args.creator);
+        assumeNotPrecompile(args.feeRecipient);
+        assumeNotPrecompile(args.creator);
 
         _;
     }
@@ -51,14 +55,13 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         token = new ERC1155SeaDrop(address(configurer), allowedSeaport, "", "");
     }
 
-    function testMintPublic(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintPublic(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         token.setMaxSupply(3, 10);
         setSingleCreatorPayout(context.args.creator);
@@ -120,8 +123,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -132,14 +135,13 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         });
     }
 
-    function testMintAllowList(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintAllowList(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -162,11 +164,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         address[] memory allowList = new address[](2);
         allowList[0] = address(this);
         allowList[1] = makeAddr("fred");
-        bytes32[] memory proof = setAllowListMerkleRootAndReturnProof(
-            allowList,
-            0,
-            mintParams
-        );
+        bytes32[] memory proof =
+            setAllowListMerkleRootAndReturnProof(allowList, 0, mintParams);
 
         addSeaDropOfferItem(1, 3); // token id 1, 3 mints
         addSeaDropConsiderationItems(feeRecipient, feeBps, 3 ether);
@@ -209,8 +208,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -221,14 +220,13 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         });
     }
 
-    function testMintSigned(
-        Context memory context
-    ) public fuzzConstraints(context.args) {
+    function testMintSigned(Context memory context)
+        public
+        fuzzConstraints(context.args)
+    {
         address feeRecipient = context.args.feeRecipient;
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         setSingleCreatorPayout(context.args.creator);
 
@@ -305,8 +303,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -339,8 +337,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -355,10 +353,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         // This test ensures that an empty minimumReceived is not allowed.
         address feeRecipient = address(0xfee);
         address creator = address(0xc1ea101);
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
         token.setMaxSupply(1, 10);
         token.setMaxSupply(3, 10);
         setSingleCreatorPayout(creator);
@@ -401,8 +397,8 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder{ value: 0 ether }({
@@ -411,5 +407,144 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
             fulfillerConduitKey: bytes32(0),
             recipient: address(0)
         });
+    }
+}
+
+/// @dev Port of test/ERC1155SeaDrop.spec.ts.
+contract ERC1155SeaDropTransferAndBurnTest is SeaDrop1155MintHelpers {
+    address owner;
+    address creator;
+    address minter;
+
+    function setUp() public override {
+        super.setUp();
+        token = _deployERC1155SeaDrop();
+        owner = address(this);
+        creator = makeAddr("creator");
+        minter = makeAddr("minter");
+    }
+
+    function testTransfer() public {
+        token.setMaxSupply(0, 5);
+        _mintTokens(minter, 0, 5);
+
+        vm.prank(minter);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidCallerOnlyAllowedSeaport.selector, minter
+            )
+        );
+        token.safeTransferFrom(address(token), creator, 0, 1, "");
+
+        vm.prank(minter);
+        token.safeTransferFrom(minter, creator, 0, 1, "");
+
+        vm.prank(minter);
+        token.setApprovalForAll(creator, true);
+        vm.prank(creator);
+        token.safeBatchTransferFrom(minter, creator, _single(0), _single(2), "");
+
+        assertEq(token.balanceOf(creator, 0), 3);
+        assertEq(token.balanceOf(minter, 0), 2);
+
+        // Should auto-approve the conduit to transfer.
+        assertTrue(token.isApprovedForAll(creator, OPENSEA_CONDUIT));
+        assertTrue(token.isApprovedForAll(minter, OPENSEA_CONDUIT));
+        vm.prank(OPENSEA_CONDUIT);
+        token.safeTransferFrom(creator, minter, 0, 1, "");
+        vm.prank(OPENSEA_CONDUIT);
+        token.safeBatchTransferFrom(
+            creator, minter, _single(0), _single(1), hex"dadb0d"
+        );
+
+        // Should not allow a non-approved address to transfer.
+        vm.prank(owner);
+        vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
+        token.safeTransferFrom(minter, creator, 0, 1, "");
+        vm.prank(owner);
+        vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
+        token.safeBatchTransferFrom(
+            minter, creator, _single(0), _single(1), hex"dadb0d"
+        );
+    }
+
+    function testOnlyOwnerOrApprovedCanBurn() public {
+        uint256 tokenId = 2;
+        assertEq(token.balanceOf(minter, tokenId), 0);
+        assertEq(token.totalSupply(tokenId), 0);
+        assertEq(token.maxSupply(tokenId), 0);
+
+        // Mint 6 tokens to the minter.
+        token.setMaxSupply(tokenId, 6);
+        _mintTokens(minter, tokenId, 6);
+
+        assertEq(token.balanceOf(minter, tokenId), 6);
+        assertEq(token.totalSupply(tokenId), 6);
+        assertEq(token.maxSupply(tokenId), 6);
+
+        // Only the owner or approved of the minted token should be able to
+        // burn it.
+        vm.prank(owner);
+        vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
+        token.burn(minter, tokenId, 1);
+        vm.prank(creator);
+        vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
+        token.batchBurn(minter, _single(tokenId), _single(2));
+
+        assertEq(token.balanceOf(minter, tokenId), 6);
+        assertEq(token.totalSupply(tokenId), 6);
+
+        vm.prank(minter);
+        token.burn(minter, tokenId, 1);
+
+        assertEq(token.totalSupply(tokenId), 5);
+
+        vm.prank(minter);
+        token.setApprovalForAll(creator, true);
+        vm.prank(creator);
+        token.burn(minter, tokenId, 1);
+
+        assertEq(token.totalSupply(tokenId), 4);
+
+        vm.prank(minter);
+        token.setApprovalForAll(creator, false);
+        vm.prank(creator);
+        vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
+        token.burn(minter, tokenId, 1);
+
+        vm.prank(minter);
+        token.burn(minter, tokenId, 1);
+        assertEq(token.balanceOf(minter, tokenId), 3);
+        assertEq(token.totalSupply(tokenId), 3);
+
+        vm.prank(minter);
+        vm.expectRevert(ERC1155.InsufficientBalance.selector);
+        token.burn(minter, tokenId, 4);
+
+        // Should not be able to burn a nonexistent token.
+        uint256[4] memory nonexistent = [uint256(20), 15, 29, 31];
+        for (uint256 i = 0; i < nonexistent.length; i++) {
+            vm.prank(minter);
+            vm.expectRevert(ERC1155.InsufficientBalance.selector);
+            token.burn(minter, nonexistent[i], 1);
+            vm.prank(minter);
+            vm.expectRevert(ERC1155.InsufficientBalance.selector);
+            token.batchBurn(minter, _single(nonexistent[i]), _single(1));
+        }
+
+        // Should revert if trying to burn more than the balance.
+        vm.prank(minter);
+        vm.expectRevert(ERC1155.InsufficientBalance.selector);
+        token.batchBurn(minter, _pair(0, tokenId), _pair(1, 1));
+
+        vm.prank(minter);
+        token.batchBurn(minter, _single(tokenId), _single(1));
+        assertEq(token.balanceOf(minter, tokenId), 2);
+        assertEq(token.totalSupply(tokenId), 2);
+
+        vm.prank(minter);
+        token.batchBurn(minter, _single(tokenId), _single(2));
+        assertEq(token.balanceOf(minter, tokenId), 0);
+        assertEq(token.totalSupply(tokenId), 0);
     }
 }

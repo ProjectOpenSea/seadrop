@@ -119,8 +119,8 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96) +
-                    consideration.getContractOffererNonce(address(token))
+                (uint256(uint160(address(token))) << 96)
+                    + consideration.getContractOffererNonce(address(token))
             )
         );
         consideration.fulfillAdvancedOrder({
@@ -143,11 +143,7 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         ERC1155SeaDropCloneable token = ERC1155SeaDropCloneable(clone);
         vm.expectRevert("Initializable: contract is already initialized");
         token.initialize(
-            address(0),
-            address(0),
-            "name",
-            "symbol",
-            address(this)
+            address(0), address(0), "name", "symbol", address(this)
         );
     }
 }

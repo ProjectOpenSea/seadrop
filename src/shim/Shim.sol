@@ -21,5 +21,5 @@ contract Shim {
     function _shim(
         MintParams calldata mintParams,
         AllowListData calldata allowListData
-    ) external {}
+    ) external { }
 }

@@ -36,12 +36,9 @@ contract ERC1155SeaDrop is ERC1155SeaDropContractOfferer {
         string memory symbol_
     )
         ERC1155SeaDropContractOfferer(
-            allowedConfigurer,
-            allowedSeaport,
-            name_,
-            symbol_
+            allowedConfigurer, allowedSeaport, name_, symbol_
         )
-    {}
+    { }
 
     /**
      * @notice Burns a token, restricted to the owner or approved operator,

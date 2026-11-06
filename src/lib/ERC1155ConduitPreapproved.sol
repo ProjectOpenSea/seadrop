@@ -32,10 +32,13 @@ abstract contract ERC1155ConduitPreapproved is ERC1155 {
         _safeBatchTransfer(_by(), from, to, ids, amounts, data);
     }
 
-    function isApprovedForAll(
-        address owner,
-        address operator
-    ) public view virtual override returns (bool) {
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
         if (operator == _CONDUIT) return true;
         return ERC1155.isApprovedForAll(owner, operator);
     }

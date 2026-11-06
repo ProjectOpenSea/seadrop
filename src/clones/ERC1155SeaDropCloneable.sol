@@ -41,10 +41,7 @@ contract ERC1155SeaDropCloneable is ERC1155SeaDropContractOffererCloneable {
 
         // Initialize ERC1155SeaDropContractOffererCloneable.
         __ERC1155SeaDropContractOffererCloneable_init(
-            allowedConfigurer,
-            allowedSeaport,
-            name_,
-            symbol_
+            allowedConfigurer, allowedSeaport, name_, symbol_
         );
     }
 

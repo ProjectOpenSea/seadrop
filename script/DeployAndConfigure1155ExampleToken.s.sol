@@ -56,10 +56,7 @@ contract DeployAndConfigure1155ExampleToken is Script {
         ERC1155SeaDropConfigurer configurer = new ERC1155SeaDropConfigurer();
 
         ERC1155SeaDrop token = new ERC1155SeaDrop(
-            address(configurer),
-            seaport,
-            "My 1155 Example Token",
-            "ExTKN1155"
+            address(configurer), seaport, "My 1155 Example Token", "ExTKN1155"
         );
 
         // Configure the token.
@@ -69,31 +66,29 @@ contract DeployAndConfigure1155ExampleToken is Script {
 
         // Configure the drop parameters.
         setSingleCreatorPayout(token);
-        IERC1155SeaDrop(address(token)).updateAllowedFeeRecipient(
-            feeRecipient,
-            true
-        );
-        IERC1155SeaDrop(address(token)).updatePublicDrop(
-            PublicDrop({
-                startPrice: mintPrice,
-                endPrice: mintPrice,
-                startTime: uint40(block.timestamp),
-                endTime: uint40(block.timestamp) + 1_000_000,
-                paymentToken: address(0),
-                fromTokenId: 1,
-                toTokenId: 3,
-                maxTotalMintableByWallet: maxTotalMintableByWallet,
-                maxTotalMintableByWalletPerToken: maxTotalMintableByWallet,
-                feeBps: feeBps,
-                restrictFeeRecipients: true
-            }),
-            0
-        );
+        IERC1155SeaDrop(address(token))
+            .updateAllowedFeeRecipient(feeRecipient, true);
+        IERC1155SeaDrop(address(token))
+            .updatePublicDrop(
+                PublicDrop({
+                    startPrice: mintPrice,
+                    endPrice: mintPrice,
+                    startTime: uint40(block.timestamp),
+                    endTime: uint40(block.timestamp) + 1_000_000,
+                    paymentToken: address(0),
+                    fromTokenId: 1,
+                    toTokenId: 3,
+                    maxTotalMintableByWallet: maxTotalMintableByWallet,
+                    maxTotalMintableByWalletPerToken: maxTotalMintableByWallet,
+                    feeBps: feeBps,
+                    restrictFeeRecipients: true
+                }),
+                0
+            );
 
         // We are ready, let's mint the first 3 tokens!
-        ConsiderationInterface(seaport).fulfillAdvancedOrder{
-            value: mintPrice * 3
-        }({
+        ConsiderationInterface(seaport)
+        .fulfillAdvancedOrder{ value: mintPrice * 3 }({
             advancedOrder: deriveOrder(address(token), 3),
             criteriaResolvers: new CriteriaResolver[](0),
             fulfillerConduitKey: bytes32(0),
@@ -103,17 +98,16 @@ contract DeployAndConfigure1155ExampleToken is Script {
 
     function setSingleCreatorPayout(ERC1155SeaDrop token) internal {
         CreatorPayout[] memory creatorPayouts = new CreatorPayout[](1);
-        creatorPayouts[0] = CreatorPayout({
-            payoutAddress: creator,
-            basisPoints: 10_000
-        });
+        creatorPayouts[0] =
+            CreatorPayout({ payoutAddress: creator, basisPoints: 10_000 });
         IERC1155SeaDrop(address(token)).updateCreatorPayouts(creatorPayouts);
     }
 
-    function deriveOrder(
-        address token,
-        uint256 quantity
-    ) internal view returns (AdvancedOrder memory order) {
+    function deriveOrder(address token, uint256 quantity)
+        internal
+        view
+        returns (AdvancedOrder memory order)
+    {
         address minter = msg.sender;
         uint256 totalValue = mintPrice * quantity;
 
@@ -126,11 +120,10 @@ contract DeployAndConfigure1155ExampleToken is Script {
             endAmount: quantity
         });
 
-        CreatorPayout[] memory creatorPayouts = IERC1155SeaDrop(token)
-            .getCreatorPayouts();
-        ConsiderationItem[] memory considerationItems = new ConsiderationItem[](
-            creatorPayouts.length + 1
-        );
+        CreatorPayout[] memory creatorPayouts =
+            IERC1155SeaDrop(token).getCreatorPayouts();
+        ConsiderationItem[] memory considerationItems =
+            new ConsiderationItem[](creatorPayouts.length + 1);
 
         // Add consideration item for fee recipient.
         uint256 feeAmount = (totalValue * feeBps) / 10_000;
@@ -146,8 +139,8 @@ contract DeployAndConfigure1155ExampleToken is Script {
 
         // Add consideration items for creator payouts.
         for (uint256 i = 0; i < creatorPayouts.length; i++) {
-            uint256 amount = (creatorAmount * creatorPayouts[i].basisPoints) /
-                10_000;
+            uint256 amount =
+                (creatorAmount * creatorPayouts[i].basisPoints) / 10_000;
             considerationItems[i + 1] = ConsiderationItem({
                 itemType: ItemType.NATIVE,
                 token: address(0),

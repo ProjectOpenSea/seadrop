@@ -32,8 +32,8 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
 
     /// @notice The global mapping and single source of truth for delegations
     /// @dev vault -> vaultVersion -> delegationHash
-    mapping(address => mapping(uint256 => EnumerableSet.Bytes32Set))
-        internal delegations;
+    mapping(address => mapping(uint256 => EnumerableSet.Bytes32Set)) internal
+        delegations;
 
     /// @notice A mapping of wallets to versions (for cheap revocation)
     mapping(address => uint256) internal vaultVersion;
@@ -47,18 +47,21 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
 
     /// @notice A secondary mapping used to return delegation information about a delegation
     /// @dev delegationHash -> DelegateInfo
-    mapping(bytes32 => IDelegationRegistry.DelegationInfo)
-        internal delegationInfo;
+    mapping(bytes32 => IDelegationRegistry.DelegationInfo) internal
+        delegationInfo;
 
     /**
      * @inheritdoc ERC165
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC165) returns (bool) {
-        return
-            interfaceId == type(IDelegationRegistry).interfaceId ||
-            super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC165)
+        returns (bool)
+    {
+        return interfaceId == type(IDelegationRegistry).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /**
@@ -69,10 +72,7 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
      * @inheritdoc IDelegationRegistry
      */
     function delegateForAll(address delegate, bool value) external override {
-        bytes32 delegationHash = _computeAllDelegationHash(
-            msg.sender,
-            delegate
-        );
+        bytes32 delegationHash = _computeAllDelegationHash(msg.sender, delegate);
         _setDelegationValues(
             delegate,
             delegationHash,
@@ -94,9 +94,7 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
         bool value
     ) external override {
         bytes32 delegationHash = _computeContractDelegationHash(
-            msg.sender,
-            delegate,
-            contract_
+            msg.sender, delegate, contract_
         );
         _setDelegationValues(
             delegate,
@@ -125,10 +123,7 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
         bool value
     ) external override {
         bytes32 delegationHash = _computeTokenDelegationHash(
-            msg.sender,
-            delegate,
-            contract_,
-            tokenId
+            msg.sender, delegate, contract_, tokenId
         );
         _setDelegationValues(
             delegate,
@@ -180,16 +175,16 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @dev Helper function to compute delegation hash for wallet delegation
      */
-    function _computeAllDelegationHash(
-        address vault,
-        address delegate
-    ) internal view returns (bytes32) {
+    function _computeAllDelegationHash(address vault, address delegate)
+        internal
+        view
+        returns (bytes32)
+    {
         uint256 vaultVersion_ = vaultVersion[vault];
         uint256 delegateVersion_ = delegateVersion[vault][delegate];
-        return
-            keccak256(
-                abi.encode(delegate, vault, vaultVersion_, delegateVersion_)
-            );
+        return keccak256(
+            abi.encode(delegate, vault, vaultVersion_, delegateVersion_)
+        );
     }
 
     /**
@@ -202,16 +197,11 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     ) internal view returns (bytes32) {
         uint256 vaultVersion_ = vaultVersion[vault];
         uint256 delegateVersion_ = delegateVersion[vault][delegate];
-        return
-            keccak256(
-                abi.encode(
-                    delegate,
-                    vault,
-                    contract_,
-                    vaultVersion_,
-                    delegateVersion_
-                )
-            );
+        return keccak256(
+            abi.encode(
+                delegate, vault, contract_, vaultVersion_, delegateVersion_
+            )
+        );
     }
 
     /**
@@ -225,17 +215,16 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     ) internal view returns (bytes32) {
         uint256 vaultVersion_ = vaultVersion[vault];
         uint256 delegateVersion_ = delegateVersion[vault][delegate];
-        return
-            keccak256(
-                abi.encode(
-                    delegate,
-                    vault,
-                    contract_,
-                    tokenId,
-                    vaultVersion_,
-                    delegateVersion_
-                )
-            );
+        return keccak256(
+            abi.encode(
+                delegate,
+                vault,
+                contract_,
+                tokenId,
+                vaultVersion_,
+                delegateVersion_
+            )
+        );
     }
 
     /**
@@ -276,50 +265,48 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegationsByDelegate(
-        address delegate
-    ) external view returns (IDelegationRegistry.DelegationInfo[] memory info) {
-        EnumerableSet.Bytes32Set
-            storage potentialDelegationHashes = delegationHashes[delegate];
-        uint256 potentialDelegationHashesLength = potentialDelegationHashes
-            .length();
+    function getDelegationsByDelegate(address delegate)
+        external
+        view
+        returns (IDelegationRegistry.DelegationInfo[] memory info)
+    {
+        EnumerableSet.Bytes32Set storage potentialDelegationHashes =
+            delegationHashes[delegate];
+        uint256 potentialDelegationHashesLength =
+            potentialDelegationHashes.length();
         uint256 delegationCount = 0;
-        info = new IDelegationRegistry.DelegationInfo[](
-            potentialDelegationHashesLength
-        );
-        for (uint256 i = 0; i < potentialDelegationHashesLength; ) {
+        info = new IDelegationRegistry
+            .DelegationInfo[](potentialDelegationHashesLength);
+        for (uint256 i = 0; i < potentialDelegationHashesLength;) {
             bytes32 delegateHash = potentialDelegationHashes.at(i);
-            IDelegationRegistry.DelegationInfo
-                memory delegationInfo_ = delegationInfo[delegateHash];
+            IDelegationRegistry.DelegationInfo memory delegationInfo_ =
+                delegationInfo[delegateHash];
             address vault = delegationInfo_.vault;
             IDelegationRegistry.DelegationType type_ = delegationInfo_.type_;
             bool valid = false;
             if (type_ == IDelegationRegistry.DelegationType.ALL) {
-                if (
-                    delegateHash == _computeAllDelegationHash(vault, delegate)
-                ) {
+                if (delegateHash == _computeAllDelegationHash(vault, delegate))
+                {
                     valid = true;
                 }
             } else if (type_ == IDelegationRegistry.DelegationType.CONTRACT) {
                 if (
-                    delegateHash ==
-                    _computeContractDelegationHash(
-                        vault,
-                        delegate,
-                        delegationInfo_.contract_
-                    )
+                    delegateHash
+                        == _computeContractDelegationHash(
+                            vault, delegate, delegationInfo_.contract_
+                        )
                 ) {
                     valid = true;
                 }
             } else if (type_ == IDelegationRegistry.DelegationType.TOKEN) {
                 if (
-                    delegateHash ==
-                    _computeTokenDelegationHash(
-                        vault,
-                        delegate,
-                        delegationInfo_.contract_,
-                        delegationInfo_.tokenId
-                    )
+                    delegateHash
+                        == _computeTokenDelegationHash(
+                            vault,
+                            delegate,
+                            delegationInfo_.contract_,
+                            delegationInfo_.tokenId
+                        )
                 ) {
                     valid = true;
                 }
@@ -333,10 +320,8 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
         }
         if (potentialDelegationHashesLength > delegationCount) {
             assembly {
-                let decrease := sub(
-                    potentialDelegationHashesLength,
-                    delegationCount
-                )
+                let decrease :=
+                    sub(potentialDelegationHashesLength, delegationCount)
                 mstore(info, sub(mload(info), decrease))
             }
         }
@@ -345,32 +330,28 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegatesForAll(
-        address vault
-    ) external view returns (address[] memory delegates) {
-        return
-            _getDelegatesForLevel(
-                vault,
-                IDelegationRegistry.DelegationType.ALL,
-                address(0),
-                0
-            );
+    function getDelegatesForAll(address vault)
+        external
+        view
+        returns (address[] memory delegates)
+    {
+        return _getDelegatesForLevel(
+            vault, IDelegationRegistry.DelegationType.ALL, address(0), 0
+        );
     }
 
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegatesForContract(
-        address vault,
-        address contract_
-    ) external view override returns (address[] memory delegates) {
-        return
-            _getDelegatesForLevel(
-                vault,
-                IDelegationRegistry.DelegationType.CONTRACT,
-                contract_,
-                0
-            );
+    function getDelegatesForContract(address vault, address contract_)
+        external
+        view
+        override
+        returns (address[] memory delegates)
+    {
+        return _getDelegatesForLevel(
+            vault, IDelegationRegistry.DelegationType.CONTRACT, contract_, 0
+        );
     }
 
     /**
@@ -381,13 +362,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
         address contract_,
         uint256 tokenId
     ) external view override returns (address[] memory delegates) {
-        return
-            _getDelegatesForLevel(
-                vault,
-                IDelegationRegistry.DelegationType.TOKEN,
-                contract_,
-                tokenId
-            );
+        return _getDelegatesForLevel(
+            vault, IDelegationRegistry.DelegationType.TOKEN, contract_, tokenId
+        );
     }
 
     function _getDelegatesForLevel(
@@ -396,66 +373,61 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
         address contract_,
         uint256 tokenId
     ) internal view returns (address[] memory delegates) {
-        EnumerableSet.Bytes32Set storage delegationHashes_ = delegations[vault][
-            vaultVersion[vault]
-        ];
+        EnumerableSet.Bytes32Set storage delegationHashes_ =
+            delegations[vault][vaultVersion[vault]];
         uint256 potentialDelegatesLength = delegationHashes_.length();
         uint256 delegatesCount = 0;
         delegates = new address[](potentialDelegatesLength);
-        for (uint256 i = 0; i < potentialDelegatesLength; ) {
+        for (uint256 i = 0; i < potentialDelegatesLength;) {
             bytes32 delegationHash = delegationHashes_.at(i);
-            DelegationInfo storage delegationInfo_ = delegationInfo[
-                delegationHash
-            ];
+            DelegationInfo storage delegationInfo_ =
+                delegationInfo[delegationHash];
             if (delegationInfo_.type_ == delegationType) {
                 if (delegationType == IDelegationRegistry.DelegationType.ALL) {
                     // check delegate version by validating the hash
                     if (
-                        delegationHash ==
-                        _computeAllDelegationHash(
-                            vault,
-                            delegationInfo_.delegate
-                        )
+                        delegationHash
+                            == _computeAllDelegationHash(
+                                vault, delegationInfo_.delegate
+                            )
                     ) {
                         delegates[delegatesCount++] = delegationInfo_.delegate;
                     }
                 } else if (
-                    delegationType ==
-                    IDelegationRegistry.DelegationType.CONTRACT
+                    delegationType
+                        == IDelegationRegistry.DelegationType.CONTRACT
                 ) {
                     if (delegationInfo_.contract_ == contract_) {
                         // check delegate version by validating the hash
                         if (
-                            delegationHash ==
-                            _computeContractDelegationHash(
-                                vault,
-                                delegationInfo_.delegate,
-                                contract_
-                            )
+                            delegationHash
+                                == _computeContractDelegationHash(
+                                    vault, delegationInfo_.delegate, contract_
+                                )
                         ) {
-                            delegates[delegatesCount++] = delegationInfo_
-                                .delegate;
+                            delegates[delegatesCount++] =
+                            delegationInfo_.delegate;
                         }
                     }
                 } else if (
                     delegationType == IDelegationRegistry.DelegationType.TOKEN
                 ) {
                     if (
-                        delegationInfo_.contract_ == contract_ &&
-                        delegationInfo_.tokenId == tokenId
+                        delegationInfo_.contract_ == contract_
+                            && delegationInfo_.tokenId == tokenId
                     ) {
                         // check delegate version by validating the hash
                         if (
-                            delegationHash ==
-                            _computeTokenDelegationHash(
-                                vault,
-                                delegationInfo_.delegate,
-                                contract_,
-                                tokenId
-                            )
+                            delegationHash
+                                == _computeTokenDelegationHash(
+                                    vault,
+                                    delegationInfo_.delegate,
+                                    contract_,
+                                    tokenId
+                                )
                         ) {
-                            delegates[delegatesCount++] = delegationInfo_
-                                .delegate;
+                            delegates[delegatesCount++] =
+                            delegationInfo_.delegate;
                         }
                     }
                 }
@@ -475,43 +447,37 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getContractLevelDelegations(
-        address vault
-    )
+    function getContractLevelDelegations(address vault)
         external
         view
-        returns (
-            IDelegationRegistry.ContractDelegation[] memory contractDelegations
-        )
+        returns (IDelegationRegistry
+                    .ContractDelegation[] memory contractDelegations)
     {
-        EnumerableSet.Bytes32Set storage delegationHashes_ = delegations[vault][
-            vaultVersion[vault]
-        ];
+        EnumerableSet.Bytes32Set storage
+            delegationHashes_ = delegations[vault][vaultVersion[vault]];
         uint256 potentialLength = delegationHashes_.length();
         uint256 delegationCount = 0;
-        contractDelegations = new IDelegationRegistry.ContractDelegation[](
-            potentialLength
-        );
-        for (uint256 i = 0; i < potentialLength; ) {
+        contractDelegations =
+            new IDelegationRegistry.ContractDelegation[](potentialLength);
+        for (uint256 i = 0; i < potentialLength;) {
             bytes32 delegationHash = delegationHashes_.at(i);
-            DelegationInfo storage delegationInfo_ = delegationInfo[
-                delegationHash
-            ];
+            DelegationInfo storage delegationInfo_ =
+                delegationInfo[delegationHash];
             if (
-                delegationInfo_.type_ ==
-                IDelegationRegistry.DelegationType.CONTRACT
+                delegationInfo_.type_
+                    == IDelegationRegistry.DelegationType.CONTRACT
             ) {
                 // check delegate version by validating the hash
                 if (
-                    delegationHash ==
-                    _computeContractDelegationHash(
-                        vault,
-                        delegationInfo_.delegate,
-                        delegationInfo_.contract_
-                    )
+                    delegationHash
+                        == _computeContractDelegationHash(
+                            vault,
+                            delegationInfo_.delegate,
+                            delegationInfo_.contract_
+                        )
                 ) {
-                    contractDelegations[delegationCount++] = IDelegationRegistry
-                        .ContractDelegation({
+                    contractDelegations[delegationCount++] =
+                        IDelegationRegistry.ContractDelegation({
                             contract_: delegationInfo_.contract_,
                             delegate: delegationInfo_.delegate
                         });
@@ -535,42 +501,37 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getTokenLevelDelegations(
-        address vault
-    )
+    function getTokenLevelDelegations(address vault)
         external
         view
         returns (IDelegationRegistry.TokenDelegation[] memory tokenDelegations)
     {
-        EnumerableSet.Bytes32Set storage delegationHashes_ = delegations[vault][
-            vaultVersion[vault]
-        ];
+        EnumerableSet.Bytes32Set storage delegationHashes_ =
+            delegations[vault][vaultVersion[vault]];
         uint256 potentialLength = delegationHashes_.length();
         uint256 delegationCount = 0;
-        tokenDelegations = new IDelegationRegistry.TokenDelegation[](
-            potentialLength
-        );
-        for (uint256 i = 0; i < potentialLength; ) {
+        tokenDelegations =
+            new IDelegationRegistry.TokenDelegation[](potentialLength);
+        for (uint256 i = 0; i < potentialLength;) {
             bytes32 delegationHash = delegationHashes_.at(i);
-            DelegationInfo storage delegationInfo_ = delegationInfo[
-                delegationHash
-            ];
+            DelegationInfo storage delegationInfo_ =
+                delegationInfo[delegationHash];
             if (
-                delegationInfo_.type_ ==
-                IDelegationRegistry.DelegationType.TOKEN
+                delegationInfo_.type_
+                    == IDelegationRegistry.DelegationType.TOKEN
             ) {
                 // check delegate version by validating the hash
                 if (
-                    delegationHash ==
-                    _computeTokenDelegationHash(
-                        vault,
-                        delegationInfo_.delegate,
-                        delegationInfo_.contract_,
-                        delegationInfo_.tokenId
-                    )
+                    delegationHash
+                        == _computeTokenDelegationHash(
+                            vault,
+                            delegationInfo_.delegate,
+                            delegationInfo_.contract_,
+                            delegationInfo_.tokenId
+                        )
                 ) {
-                    tokenDelegations[delegationCount++] = IDelegationRegistry
-                        .TokenDelegation({
+                    tokenDelegations[delegationCount++] =
+                        IDelegationRegistry.TokenDelegation({
                             contract_: delegationInfo_.contract_,
                             tokenId: delegationInfo_.tokenId,
                             delegate: delegationInfo_.delegate
@@ -592,10 +553,12 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function checkDelegateForAll(
-        address delegate,
-        address vault
-    ) public view override returns (bool) {
+    function checkDelegateForAll(address delegate, address vault)
+        public
+        view
+        override
+        returns (bool)
+    {
         bytes32 delegateHash = keccak256(
             abi.encode(
                 delegate,
@@ -624,10 +587,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
                 delegateVersion[vault][delegate]
             )
         );
-        return
-            delegations[vault][vaultVersion[vault]].contains(delegateHash)
-                ? true
-                : checkDelegateForAll(delegate, vault);
+        return delegations[vault][vaultVersion[vault]].contains(delegateHash)
+            ? true
+            : checkDelegateForAll(delegate, vault);
     }
 
     /**
@@ -649,9 +611,8 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
                 delegateVersion[vault][delegate]
             )
         );
-        return
-            delegations[vault][vaultVersion[vault]].contains(delegateHash)
-                ? true
-                : checkDelegateForContract(delegate, vault, contract_);
+        return delegations[vault][vaultVersion[vault]].contains(delegateHash)
+            ? true
+            : checkDelegateForContract(delegate, vault, contract_);
     }
 }

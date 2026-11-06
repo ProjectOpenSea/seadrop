@@ -11,6 +11,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+env:
+  FOUNDRY_VERSION: v1.9.0
+
 jobs:
   lint:
     name: Run Linters
@@ -20,58 +23,30 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Use Node.js
-        uses: actions/setup-node@v7
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          node-version: 22.x
-          cache: "yarn"
-
-      - run: yarn install
-      - run: yarn lint:check
-
-  hardhat-test:
-    name: Run Hardhat Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
+          version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Use Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 22.x
-          cache: "yarn"
+          node-version-file: .nvmrc
+          cache: npm
 
-      - run: yarn install
-      - run: yarn build
-      - run: yarn test
+      - run: npm ci --ignore-scripts
 
-  hardhat-coverage:
-    name: Run Hardhat Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
+      - name: Check Solidity formatting
+        run: forge fmt --check
 
-      - name: Use Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: "yarn"
+      - name: Patch Seaport pragmas
+        run: ./scripts/patch_seaport_pragmas.sh
 
-      - run: yarn install
-      - run: yarn build
-      - run: yarn coverage
+      - name: Lint Solidity
+        run: forge lint --deny warnings
 
-      - name: Submit coverage to Coveralls
-        if: github.repository == 'ProjectOpenSea/seadrop'
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          flag-name: hardhat
-          parallel: true
+      - name: Check formatting and lint with Biome
+        run: npx biome ci .
 
   forge-test:
     name: Run Forge Tests
@@ -84,64 +59,16 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.5.1
+          version: ${{ env.FOUNDRY_VERSION }}
 
-      - name: Install forge dependencies
-        run: forge install
+      - name: Build Seaport artifacts
+        run: ./scripts/build_seaport.sh
 
       - name: Build contracts
-        run: yarn build:foundry
+        run: forge build && ./scripts/show_headroom.sh
 
       - name: Run tests
         run: forge test -vvv
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
           GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
-
-      # TODO re-enable when `forge coverage` starts working
-      # from "Stack too deep" in Seaport contracts
-      # https://github.com/foundry-rs/foundry/issues/3357
-      # forge-coverage:
-      #   name: Run Forge Coverage
-      #   runs-on: ubuntu-latest
-      #   steps:
-      #     - uses: actions/checkout@v7
-      #       with:
-      #         submodules: recursive
-
-      #     - name: Install Foundry
-      #       uses: foundry-rs/foundry-toolchain@v1
-      #       with:
-      #         version: nightly
-
-      #     - name: Install forge dependencies
-      #       run: forge install
-
-      #     - name: Build contracts
-      #       run: yarn build:foundry
-
-      #     - name: Run coverage
-      #       run: yarn coverage:forge
-      #       env:
-      #         ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
-      #         GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
-
-      # - name: Submit coverage to Coveralls
-      #   uses: coverallsapp/github-action@v2
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     path-to-lcov: ./lcov-filtered.info
-      #     flag-name: foundry
-      #     parallel: true
-
-  coverage-finish:
-    name: Finish Coverage Results
-    needs: [hardhat-coverage] # forge-coverage
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        if: github.repository == 'ProjectOpenSea/seadrop'
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true

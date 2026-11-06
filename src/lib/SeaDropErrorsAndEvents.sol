@@ -103,9 +103,7 @@ interface SeaDropErrorsAndEvents {
      * @dev Revert if the total basis points for the creator payouts
      *      don't equal exactly 10_000.
      */
-    error InvalidCreatorPayoutTotalBasisPoints(
-        uint256 totalReceivedBasisPoints
-    );
+    error InvalidCreatorPayoutTotalBasisPoints(uint256 totalReceivedBasisPoints);
 
     /**
      * @dev Revert if the creator payout basis points don't add up to 10_000.

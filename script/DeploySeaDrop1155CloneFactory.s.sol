@@ -17,7 +17,8 @@ contract DeploySeaDrop1155CloneFactory is BaseCreate2Script {
             abi.encode(seaport_v1_5)
         );
 
-        bytes32 salt = 0x0000000000000000000000000000000000000000b98a7c38d8355702858f4296;
+        bytes32 salt =
+            0x0000000000000000000000000000000000000000b98a7c38d8355702858f4296;
         address deployed = _immutableCreate2IfNotDeployed(salt, initCode);
         require(
             deployed == 0x000000F20032b9e171844B00EA507E11960BD94a,

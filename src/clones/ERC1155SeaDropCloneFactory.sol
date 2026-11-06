@@ -32,27 +32,17 @@ contract ERC1155SeaDropCloneFactory {
         cloneableImplementation = address(impl);
     }
 
-    function createClone(
-        string memory name,
-        string memory symbol,
-        bytes32 salt
-    ) external returns (address instance) {
+    function createClone(string memory name, string memory symbol, bytes32 salt)
+        external
+        returns (address instance)
+    {
         // Derive a pseudo-random salt, so clone addresses don't collide
         // across chains.
-        bytes32 cloneSalt = keccak256(
-            abi.encodePacked(salt, blockhash(block.number))
-        );
+        bytes32 cloneSalt =
+            keccak256(abi.encodePacked(salt, blockhash(block.number)));
 
-        instance = Clones.cloneDeterministic(
-            cloneableImplementation,
-            cloneSalt
-        );
-        ERC1155SeaDropCloneable(instance).initialize(
-            configurer,
-            seaport,
-            name,
-            symbol,
-            msg.sender
-        );
+        instance = Clones.cloneDeterministic(cloneableImplementation, cloneSalt);
+        ERC1155SeaDropCloneable(instance)
+            .initialize(configurer, seaport, name, symbol, msg.sender);
     }
 }

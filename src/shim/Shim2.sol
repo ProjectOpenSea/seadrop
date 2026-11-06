@@ -8,5 +8,5 @@ pragma solidity ^0.8.19;
 import { MintParams } from "../lib/ERC1155SeaDropStructs.sol";
 
 contract Shim2 {
-    function _shim(MintParams calldata mintParams) external {}
+    function _shim(MintParams calldata mintParams) external { }
 }

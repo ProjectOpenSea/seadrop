@@ -28,10 +28,8 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
      * @param feeRecipient The new fee recipient.
      * @param allowed      Whether the fee recipient is allowed.
      */
-    function updateAllowedFeeRecipient(
-        address feeRecipient,
-        bool allowed
-    ) external;
+    function updateAllowedFeeRecipient(address feeRecipient, bool allowed)
+        external;
 
     /**
      * @notice Update the SeaDrop creator payout addresses.
@@ -40,9 +38,8 @@ interface ISeaDropToken is ISeaDropTokenContractMetadata {
      *
      * @param creatorPayouts The new creator payouts.
      */
-    function updateCreatorPayouts(
-        CreatorPayout[] calldata creatorPayouts
-    ) external;
+    function updateCreatorPayouts(CreatorPayout[] calldata creatorPayouts)
+        external;
 
     /**
      * @notice Update the SeaDrop drop URI.

@@ -17,19 +17,18 @@ interface IERC1155SeaDrop is ISeaDropToken {
      * @param publicDrop The new public drop parameters.
      * @param index      The public drop index.
      */
-    function updatePublicDrop(
-        PublicDrop calldata publicDrop,
-        uint256 index
-    ) external;
+    function updatePublicDrop(PublicDrop calldata publicDrop, uint256 index)
+        external;
 
     /**
      * @notice Returns the public drop stage parameters at a given index.
      *
      * @param index The index of the public drop stage.
      */
-    function getPublicDrop(
-        uint256 index
-    ) external view returns (PublicDrop memory);
+    function getPublicDrop(uint256 index)
+        external
+        view
+        returns (PublicDrop memory);
 
     /**
      * @notice Returns the public drop indexes.
@@ -49,10 +48,7 @@ interface IERC1155SeaDrop is ISeaDropToken {
      * @param minter  The minter address.
      * @param tokenId The token id to return stats for.
      */
-    function getMintStats(
-        address minter,
-        uint256 tokenId
-    )
+    function getMintStats(address minter, uint256 tokenId)
         external
         view
         returns (

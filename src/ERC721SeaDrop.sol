@@ -38,12 +38,9 @@ contract ERC721SeaDrop is ERC721SeaDropContractOfferer {
         string memory symbol
     )
         ERC721SeaDropContractOfferer(
-            allowedConfigurer,
-            allowedSeaport,
-            name,
-            symbol
+            allowedConfigurer, allowedSeaport, name, symbol
         )
-    {}
+    { }
 
     /**
      * @notice Withdraws contract balance to the contract owner.
@@ -65,9 +62,8 @@ contract ERC721SeaDrop is ERC721SeaDropContractOfferer {
         }
 
         // Send contract balance to the owner.
-        (bool success, bytes memory data) = payable(owner()).call{
-            value: balance
-        }("");
+        (bool success, bytes memory data) =
+            payable(owner()).call{ value: balance }("");
 
         // Require that the call was successful.
         if (!success) {

@@ -34,9 +34,7 @@ interface IERC721SeaDrop is ISeaDropToken {
      *
      * @param minter The minter address.
      */
-    function getMintStats(
-        address minter
-    )
+    function getMintStats(address minter)
         external
         view
         returns (
