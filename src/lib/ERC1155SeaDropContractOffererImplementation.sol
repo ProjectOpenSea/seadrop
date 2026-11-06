@@ -438,8 +438,8 @@ contract ERC1155SeaDropContractOffererImplementation is
         SpentItem[] calldata minimumReceived,
         bytes calldata context
     ) internal view returns (uint8 substandard) {
-        // Declare an error buffer; first check minimumReceived is not length
-        // zero and every minimumReceived has this address for token.
+        // Declare an error buffer. Bit 0 flags an empty minimumReceived or an
+        // item that is not an ERC-1155 item of this token.
         uint256 errorBuffer;
         uint256 minimumReceivedLength = minimumReceived.length;
         errorBuffer |= _castAndInvert(minimumReceivedLength > 0);
@@ -452,36 +452,40 @@ contract ERC1155SeaDropContractOffererImplementation is
             }
         }
 
-        // Set the substandard version.
-        substandard = uint8(context[1]);
+        // Read the SIP-6 version byte and the substandard byte. A context too
+        // short to hold them leaves them zero, and fails the length check.
+        uint256 contextLength = context.length;
+        uint8 version;
+        if (contextLength != 0) {
+            version = uint8(context[0]);
+        }
+        if (contextLength > 1) {
+            substandard = uint8(context[1]);
+        }
 
-        // Next, check for SIP-6 version byte.
-        errorBuffer |= _castAndInvert(context[0] == bytes1(0x00)) << 1;
+        // Bit 1: unsupported SIP-6 version byte.
+        errorBuffer |= _castAndInvert(version == 0) << 1;
 
-        // Next, check for supported substandard.
+        // Bit 2: unsupported substandard.
         errorBuffer |= _castAndInvert(substandard < 3) << 2;
 
-        // Next, check for correct context length. Minimum is 43 bytes
+        // Bit 3: context too short. Minimum is 43 bytes
         // (version byte, substandard byte, feeRecipient, minter,
-        //  publicDropIndex OR other substandard mint params)
-        unchecked {
-            errorBuffer |= _castAndInvert(context.length > 42) << 3;
-        }
+        //  publicDropIndex OR other substandard mint params).
+        errorBuffer |= _castAndInvert(contextLength > 42) << 3;
 
         // Handle decoding errors.
         if (errorBuffer != 0) {
-            uint8 version = uint8(context[0]);
-
-            // We'll first revert with SIP-6 errors to follow spec.
-            // (`UnsupportedExtraDataVersion` and `InvalidExtraDataEncoding`)
-            if (errorBuffer << 254 != 0) {
+            // Revert with the SIP-6 errors first to follow spec
+            // (`UnsupportedExtraDataVersion`, then `InvalidExtraDataEncoding`),
+            // then the substandard, then the minimumReceived.
+            if ((errorBuffer & 2) != 0) {
                 revert UnsupportedExtraDataVersion(version);
-            } else if (errorBuffer << 252 != 0) {
+            } else if ((errorBuffer & 8) != 0) {
                 revert InvalidExtraDataEncoding(version);
-            } else if (errorBuffer << 253 != 0) {
+            } else if ((errorBuffer & 4) != 0) {
                 revert InvalidSubstandard(substandard);
             } else {
-                // errorBuffer << 255 != 0
                 revert MustSpecifyERC1155ConsiderationItemForSeaDropMint();
             }
         }

@@ -245,19 +245,12 @@ contract ERC721SeaDropMintPublicTest is SeaDrop721Test {
         _fulfillAndExpectMint(order, minter, value, PUBLIC_DROP_STAGE_INDEX);
     }
 
-    /**
-     * @dev The inner error for a zero quantity mint.
-     *
-     *      CONTRACT BUG (asserting current behavior): _decodeOrder flags a
-     *      bad minimumReceived (here amount == 0) in bit 0 of its error
-     *      buffer, but `errorBuffer << 254 != 0` tests bits 0 and 1, so it
-     *      reverts with UnsupportedExtraDataVersion(0) instead of
-     *      MustSpecifyERC1155ConsiderationItemForSeaDropMint, which is
-     *      unreachable (as is InvalidSubstandard, shadowed by the `<< 252`
-     *      branch).
-     */
+    /// @dev The inner error for a zero quantity mint: the minimumReceived
+    ///      item must have a non-zero amount.
     function _zeroQuantityError() internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(UnsupportedExtraDataVersion.selector, 0);
+        return abi.encodeWithSelector(
+            MustSpecifyERC1155ConsiderationItemForSeaDropMint.selector
+        );
     }
 
     /// @dev Should not be able to mint zero quantity, whether or not the fee

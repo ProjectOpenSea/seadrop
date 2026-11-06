@@ -84,16 +84,13 @@ contract ERC1155SeaDropContractOffererMintTest is SeaDrop1155OffererFixture {
         // Should not be able to mint when minimumReceived.length is zero.
         (AdvancedOrder memory emptyOfferOrder,) = _createMintOrder(m);
         emptyOfferOrder.parameters.offer = new OfferItem[](0);
-        // CONTRACT BUG (asserting current behavior): `_decodeOrder` tests its
-        // error buffer with `errorBuffer << 254`, which keeps bit 0
-        // (minimumReceived) as well as bit 1 (version), so an empty
-        // minimumReceived reports UnsupportedExtraDataVersion(0) and
-        // MustSpecifyERC1155ConsiderationItemForSeaDropMint is unreachable.
         _assertMintReverts(
             emptyOfferOrder,
             minter,
             value,
-            abi.encodeWithSelector(UnsupportedExtraDataVersion.selector, 0)
+            abi.encodeWithSelector(
+                MustSpecifyERC1155ConsiderationItemForSeaDropMint.selector
+            )
         );
 
         vm.expectEmit(true, true, true, true, address(token2_));
@@ -538,15 +535,11 @@ contract ERC1155SeaDropContractOffererMintTest is SeaDrop1155OffererFixture {
         // Substandard 4.
         order.extraData = _slice(extraData, 0, extraData.length);
         order.extraData[1] = 0x04;
-        // CONTRACT BUG (asserting current behavior): `_decodeOrder` checks
-        // `errorBuffer << 252` (bits 0-3) before `errorBuffer << 253`, so the
-        // substandard bit reports InvalidExtraDataEncoding(0) and
-        // InvalidSubstandard is unreachable.
         _assertMintReverts(
             order,
             minter,
             value,
-            abi.encodeWithSelector(InvalidExtraDataEncoding.selector, 0)
+            abi.encodeWithSelector(InvalidSubstandard.selector, 4)
         );
 
         // Truncated to 9 bytes.
@@ -557,5 +550,154 @@ contract ERC1155SeaDropContractOffererMintTest is SeaDrop1155OffererFixture {
             value,
             abi.encodeWithSelector(InvalidExtraDataEncoding.selector, 0)
         );
+    }
+
+    /// @dev A public mint order of `quantities` of `tokenIds` from the
+    ///      fixture's fee recipient at the public drop's fee and price.
+    function _mintOrder(uint256[] memory tokenIds, uint256[] memory quantities)
+        internal
+        view
+        returns (AdvancedOrder memory, uint256)
+    {
+        return _createMintOrder(
+            _publicMint(
+                address(token),
+                tokenIds,
+                quantities,
+                feeRecipient,
+                publicDrop.feeBps,
+                publicDrop.startPrice,
+                minter,
+                0
+            )
+        );
+    }
+
+    /// @dev Any non-zero SIP-6 version byte is unsupported.
+    function testDecodeOrderRejectsUnsupportedVersion(uint8 version)
+        public
+        view
+    {
+        version = uint8(bound(version, 1, type(uint8).max));
+        (AdvancedOrder memory order,) = _mintOrder(_uints(0), _uints(1));
+        order.extraData[0] = bytes1(version);
+        _expectPreviewRevert(
+            order,
+            minter,
+            abi.encodeWithSelector(
+                UnsupportedExtraDataVersion.selector, version
+            )
+        );
+    }
+
+    /// @dev Substandards 3 and up are unsupported.
+    function testDecodeOrderRejectsInvalidSubstandard(uint8 substandard)
+        public
+    {
+        substandard = uint8(bound(substandard, 3, type(uint8).max));
+        (AdvancedOrder memory order, uint256 value) =
+            _mintOrder(_uints(0), _uints(1));
+        order.extraData[1] = bytes1(substandard);
+        _assertMintReverts(
+            order,
+            minter,
+            value,
+            abi.encodeWithSelector(InvalidSubstandard.selector, substandard)
+        );
+    }
+
+    /// @dev A context shorter than 43 bytes is an invalid encoding, down to
+    ///      an empty one, which must not panic on the missing version and
+    ///      substandard bytes.
+    function testDecodeOrderRejectsShortContext() public view {
+        (AdvancedOrder memory order,) = _mintOrder(_uints(0), _uints(1));
+        bytes memory extraData = order.extraData;
+        assertEq(extraData.length, 43);
+
+        uint256[4] memory lengths = [uint256(0), 1, 2, 42];
+        for (uint256 i = 0; i < lengths.length; i++) {
+            order.extraData = _slice(extraData, 0, lengths[i]);
+            _expectPreviewRevert(
+                order,
+                minter,
+                abi.encodeWithSelector(InvalidExtraDataEncoding.selector, 0)
+            );
+        }
+
+        // A lone non-zero version byte reports the version first.
+        order.extraData = hex"07";
+        _expectPreviewRevert(
+            order,
+            minter,
+            abi.encodeWithSelector(UnsupportedExtraDataVersion.selector, 7)
+        );
+
+        // 43 bytes is enough for a public mint.
+        order.extraData = extraData;
+        _previewOrder(order, minter);
+    }
+
+    /// @dev minimumReceived must hold at least one item, and every item must
+    ///      be an ERC-1155 item of this token.
+    function testDecodeOrderRejectsInvalidMinimumReceived() public view {
+        bytes memory mustSpecify = abi.encodeWithSelector(
+            MustSpecifyERC1155ConsiderationItemForSeaDropMint.selector
+        );
+
+        (AdvancedOrder memory order,) = _mintOrder(_uints(0), _uints(1));
+        order.parameters.offer = new OfferItem[](0);
+        _expectPreviewRevert(order, minter, mustSpecify);
+
+        // The second item is not an ERC-1155 item.
+        (order,) = _mintOrder(_uints(0, 1), _uints(1, 1));
+        order.parameters.offer[1].itemType = ItemType.ERC721;
+        _expectPreviewRevert(order, minter, mustSpecify);
+
+        // The second item is another token.
+        (order,) = _mintOrder(_uints(0, 1), _uints(1, 1));
+        order.parameters.offer[1].token = address(0xbeef);
+        _expectPreviewRevert(order, minter, mustSpecify);
+    }
+
+    /// @dev With several decoding errors at once, the error follows the
+    ///      precedence version, encoding, substandard, minimumReceived.
+    ///      Covers every combination of the four.
+    function testDecodeOrderErrorPrecedence() public view {
+        for (uint256 flags = 0; flags < 16; flags++) {
+            bool badVersion = flags & 1 != 0;
+            bool shortContext = flags & 2 != 0;
+            bool badSubstandard = flags & 4 != 0;
+            bool badItem = flags & 8 != 0;
+
+            (AdvancedOrder memory order,) = _mintOrder(_uints(0), _uints(1));
+            if (badVersion) order.extraData[0] = 0x01;
+            if (badSubstandard) order.extraData[1] = 0x03;
+            if (shortContext) order.extraData = _slice(order.extraData, 0, 42);
+            if (badItem) order.parameters.offer[0].token = address(0xbeef);
+
+            bytes memory expected;
+            if (badVersion) {
+                expected = abi.encodeWithSelector(
+                    UnsupportedExtraDataVersion.selector, 1
+                );
+            } else if (shortContext) {
+                expected = abi.encodeWithSelector(
+                    InvalidExtraDataEncoding.selector, 0
+                );
+            } else if (badSubstandard) {
+                expected =
+                    abi.encodeWithSelector(InvalidSubstandard.selector, 3);
+            } else if (badItem) {
+                expected = abi.encodeWithSelector(
+                    MustSpecifyERC1155ConsiderationItemForSeaDropMint.selector
+                );
+            }
+
+            if (expected.length == 0) {
+                _previewOrder(order, minter);
+            } else {
+                _expectPreviewRevert(order, minter, expected);
+            }
+        }
     }
 }
