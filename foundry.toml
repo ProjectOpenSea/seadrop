@@ -17,9 +17,6 @@ fs_permissions = [
 [profile.clone_factory_deployment]
 optimizer_runs = 99_999_999
 
-[profile.upgradeable]
-src = 'src-upgradeable/src/'
-
 [profile.ir_inspect]
 test = 'src'
 
