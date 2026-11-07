@@ -17,8 +17,8 @@ import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 /**
  * @dev Allow list (SIP-12 substandard 1) mints of token id 10. The fee bps
- *      and quantities are fuzzed. Failed mints assert both Seaport's
- *      InvalidContractOrder and the SeaDrop error behind it.
+ *      and quantities are fuzzed. Failed mints assert the SeaDrop error from
+ *      both previewOrder and the Seaport fulfillment.
  */
 contract ERC1155SeaDropMintAllowListTest is SeaDrop1155Test {
     address owner;

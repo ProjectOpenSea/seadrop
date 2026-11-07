@@ -14,8 +14,8 @@ import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 /**
  * @dev Allow list (SIP-12 substandard 1) mints. The test contract deploys
  *      the token, so it is the owner. The fee bps and quantities are fuzzed.
- *      Failed mints assert both Seaport's InvalidContractOrder and the
- *      SeaDrop error behind it.
+ *      Failed mints assert the SeaDrop error from both previewOrder and the
+ *      Seaport fulfillment.
  */
 contract ERC721SeaDropMintAllowListTest is SeaDrop721Test {
     address creator = makeAddr("creator");

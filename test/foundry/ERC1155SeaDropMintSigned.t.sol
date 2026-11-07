@@ -21,8 +21,8 @@ import { ECDSA } from "solady/src/utils/ECDSA.sol";
 
 /**
  * @dev Server-signed (SIP-12 substandard 2) mints of token id 5. The salt is
- *      fuzzed. Failed mints assert both Seaport's InvalidContractOrder and
- *      the SeaDrop error behind it.
+ *      fuzzed. Failed mints assert the SeaDrop error from both previewOrder
+ *      and the Seaport fulfillment.
  */
 contract ERC1155SeaDropMintSignedTest is SeaDrop1155Test {
     address owner;

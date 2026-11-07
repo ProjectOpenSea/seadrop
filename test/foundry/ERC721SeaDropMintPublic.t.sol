@@ -13,8 +13,8 @@ import {
 
 /**
  * @dev Public drop (SIP-12 substandard 0) mints. The test contract deploys
- *      the token, so it is the owner. Failed mints assert both Seaport's
- *      InvalidContractOrder and the SeaDrop error behind it.
+ *      the token, so it is the owner. Failed mints assert the SeaDrop error
+ *      from both previewOrder and the Seaport fulfillment.
  */
 contract ERC721SeaDropMintPublicTest is SeaDrop721Test {
     address creator = makeAddr("creator");

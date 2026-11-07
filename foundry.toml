@@ -3,6 +3,9 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 solc_version = '0.8.19'
+# Tests deploy Seaport 1.6 artifacts, which use PUSH0, MCOPY and TSTORE, so
+# they run on Cancun. solc 0.8.19 still compiles src for Paris.
+evm_version = 'cancun'
 auto_detect_remappings = false # remappings in remappings.txt
 optimizer_runs = 100_000
 ignored_error_codes = ['code-size', 'init-code-size']

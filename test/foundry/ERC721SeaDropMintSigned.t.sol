@@ -18,7 +18,7 @@ import { Ownable } from "solady/src/auth/Ownable.sol";
 /**
  * @dev Server-signed (SIP-12 substandard 2) mints. The test contract deploys
  *      the token, so it is the owner. The salt is fuzzed. Failed mints assert
- *      both Seaport's InvalidContractOrder and the SeaDrop error behind it.
+ *      the SeaDrop error from both previewOrder and the Seaport fulfillment.
  */
 contract ERC721SeaDropMintSignedTest is SeaDrop721Test {
     address creator = makeAddr("creator");

@@ -20,8 +20,8 @@ import {
 import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
 /**
- * @dev Public drop (SIP-12 substandard 0) mints. Failed mints assert both
- *      Seaport's InvalidContractOrder and the SeaDrop error behind it.
+ * @dev Public drop (SIP-12 substandard 0) mints. Failed mints assert the
+ *      SeaDrop error from both previewOrder and the Seaport fulfillment.
  */
 contract ERC1155SeaDropMintPublicTest is SeaDrop1155Test {
     PublicDrop publicDrop;

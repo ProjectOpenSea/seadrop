@@ -41,9 +41,9 @@ import {
  * @dev Mints through Seaport with the token as the contract offerer. The
  *      admin cases are in ERC1155SeaDropContractOfferer.t.sol.
  *
- *      Seaport wraps any `generateOrder` revert in
- *      `InvalidContractOrder(orderHash)`, so failures also check the SeaDrop
- *      error through `previewOrder`, which runs the same validation.
+ *      Seaport bubbles up a `generateOrder` revert, and failures also check
+ *      the SeaDrop error through `previewOrder`, which runs the same
+ *      validation.
  */
 contract ERC1155SeaDropContractOffererMintTest is SeaDrop1155OffererFixture {
     /// @dev Should not be able to mint until the creator payout is set.

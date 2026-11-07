@@ -434,9 +434,7 @@ abstract contract SeaDropTest is
     }
 
     /// @dev Assert that previewOrder for `order` reverts with `reason`.
-    ///      Seaport wraps the same generateOrder revert in
-    ///      InvalidContractOrder, so this is how the tests see the SeaDrop
-    ///      error behind a failed fulfillment.
+    ///      It runs the same validation as generateOrder.
     function _expectPreviewRevert(
         AdvancedOrder memory order,
         address fulfiller,
@@ -462,8 +460,8 @@ abstract contract SeaDropTest is
     }
 
     /// @dev Assert that previewOrder reverts with `reason` and that
-    ///      fulfilling the order through Seaport reverts with
-    ///      InvalidContractOrder.
+    ///      fulfilling the order through Seaport reverts with it too, as
+    ///      Seaport 1.6 bubbles up the generateOrder revert reason.
     function _assertMintReverts(
         AdvancedOrder memory order,
         address fulfiller,
@@ -471,7 +469,7 @@ abstract contract SeaDropTest is
         bytes memory reason
     ) internal {
         _expectPreviewRevert(order, fulfiller, reason);
-        _expectInvalidContractOrder(order.parameters.offerer);
+        vm.expectRevert(reason);
         _fulfill(order, fulfiller, value);
     }
 
