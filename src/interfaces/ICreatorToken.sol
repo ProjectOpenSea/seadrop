@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.38;
 
 interface ICreatorToken {
     event TransferValidatorUpdated(address oldValidator, address newValidator);

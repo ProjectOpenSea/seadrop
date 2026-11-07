@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.38;
 
 import { ERC721SeaDropUpgradeable } from "../ERC721SeaDropUpgradeable.sol";
 import {
@@ -73,11 +73,11 @@ contract ERC721SeaDropRandomOffsetUpgradeable is ERC721SeaDropUpgradeable {
         // [0, maxSupply - 2] so the shift is uniform over the maxSupply - 1
         // shifts that move every token. A single token can only keep its
         // own metadata.
-        // block.difficulty returns PREVRANDAO on Ethereum post-merge
+        // block.prevrandao is the beacon chain randomness on Ethereum post-merge
         // NOTE: do not use this on other chains
         if (maxSupply > 1) {
             ERC721SeaDropRandomOffsetStorage.layout().randomOffset = uint256(
-                keccak256(abi.encode(block.difficulty))
+                keccak256(abi.encode(block.prevrandao))
             ) % (maxSupply - 1);
         }
 

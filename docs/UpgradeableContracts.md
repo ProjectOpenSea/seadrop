@@ -29,7 +29,7 @@ Constructors are replaced by internal initializer functions named `__{ContractNa
 
 ## Building and testing
 
-`forge build` and `forge test` cover the upgradeable contracts along with everything else. [`foundry.toml`](../foundry.toml) restricts `src/upgradeable` to the settings the implementations are deployed with (solc 0.8.17, via-IR, 1000 optimizer runs, ipfs metadata hash). Files that import them compile with the same settings, and the rest of the repo keeps the default settings.
+`forge build` and `forge test` cover the upgradeable contracts along with everything else. [`foundry.toml`](../foundry.toml) restricts `src/upgradeable` to the settings the implementations are deployed with (solc 0.8.38, via-IR, 1000 optimizer runs, ipfs metadata hash, Cancun). Files that import them compile with the same settings, and the rest of the repo keeps the default settings.
 
 Coverage runs under `FOUNDRY_PROFILE=coverage` (`npm run coverage` sets it), which drops that restriction so the coverage build maps `src/upgradeable` to the right lines.
 
