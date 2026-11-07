@@ -1,6 +1,6 @@
 # SeaDrop Deployment
 
-For official deployments see [Deployments](../README.md#deployments).
+For official deployments see [Deployments](Deployments.md).
 
 If you would like to deploy your own `SeaDrop` instance, you can do so with:
 
@@ -13,3 +13,17 @@ cast send --rpc-url ${RPC_URL} --private-key ${PK} 0x0000000000ffe8b47b3e2130213
 ```
 
 The SeaDrop version above is tagged on GitHub as [`seadrop-1.0`](https://github.com/ProjectOpenSea/seadrop/releases/tag/seadrop-1.0).
+
+## Clone factory
+
+`ERC721SeaDropCloneFactory` deploys through the ImmutableCreate2Factory at `0x0000000000FFe8B47B3e2130213B802212439497`, so it gets the same address on every network:
+
+```bash
+DEPLOYER=<address> SALT=<salt> EXPECTED_ADDRESS=<address> forge script \
+  script/DeploySeaDropCloneFactory.s.sol \
+  --rpc-url <network> --account <keystore> --broadcast --verify
+```
+
+The script logs the factory's init code hash and the address `SALT` produces. The first 20 bytes of `SALT` must be zero or the deployer's address. For a vanity address, mine a salt against the logged hash, for example with [create2crunch](https://github.com/0age/create2crunch). Any change to the factory or to the clone implementation it deploys changes the hash, so mine the salt from the commit you deploy. `EXPECTED_ADDRESS` is optional; when set, the script stops before broadcasting if `SALT` produces a different address.
+
+After deploying, add the factory to OpenSea's chain configuration in os2-core (`SeaportConfig.kt`), along with the code hash of the implementation at `CREATE(factory, 1)`.
