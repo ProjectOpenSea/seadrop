@@ -33,7 +33,7 @@ Future SeaDrop contracts are envisioned to contain additional functionality like
 
 ## Deployments
 
-`SeaDrop` 1.0 is deployed at [`0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code) on Ethereum and most other networks OpenSea supports. On OpenSea, ERC-721 drops use SeaDrop v1 from this branch, and ERC-1155 drops use SeaDrop v2 from the [`v2`](https://github.com/ProjectOpenSea/seadrop/tree/v2) branch.
+`SeaDrop` 1.0 is deployed at [`0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code) on Ethereum and most other networks OpenSea supports. On OpenSea, SeaDrop v1 from this branch powers drops. SeaDrop v2, on the [`v2`](https://github.com/ProjectOpenSea/seadrop/tree/v2) branch, currently powers ERC-1155 open collections, which the collection owner mints.
 
 See [Deployments](docs/Deployments.md) for the clone factories, every network, and the legacy contracts. To deploy to a new network, follow [SeaDrop Deployment](docs/SeaDropDeployment.md).
 
