@@ -486,4 +486,29 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         token_.mint(holder, 3, 1);
         assertTrue(token_.locked(3));
     }
+
+    function testExplicitConduitApprovalStaysReportedUntilRevoked() public {
+        // An approval the holder gave the conduit explicitly is reported
+        // after permanence, since burns accept it, and revoking it works.
+        vm.prank(holder);
+        token_.setApprovalForAll(OPENSEA_CONDUIT, true);
+        token_.lockPermanently();
+        assertTrue(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
+        assertFalse(token_.isApprovedForAll(recipient, OPENSEA_CONDUIT));
+
+        vm.prank(holder);
+        token_.setApprovalForAll(OPENSEA_CONDUIT, false);
+        assertFalse(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
+
+        ERC1155SeaDrop clone = _clone("11");
+        vm.prank(holder);
+        clone.setApprovalForAll(OPENSEA_CONDUIT, true);
+        clone.lockPermanently();
+        assertTrue(clone.isApprovedForAll(holder, OPENSEA_CONDUIT));
+        assertFalse(clone.isApprovedForAll(recipient, OPENSEA_CONDUIT));
+
+        vm.prank(holder);
+        clone.setApprovalForAll(OPENSEA_CONDUIT, false);
+        assertFalse(clone.isApprovedForAll(holder, OPENSEA_CONDUIT));
+    }
 }

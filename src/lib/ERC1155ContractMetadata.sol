@@ -385,9 +385,11 @@ contract ERC1155ContractMetadata is
 
     /**
      * @notice Returns whether `operator` can manage every token of
-     *         `account`. The preapproved conduit stops being approved once
-     *         the lock is permanent, since it can never transfer the tokens
-     *         again.
+     *         `account`. The conduit's preapproval ends once the lock is
+     *         permanent, since it can never transfer the tokens again. An
+     *         approval the holder gave the conduit explicitly is still
+     *         reported until the holder revokes it, because burns accept
+     *         stored approvals.
      */
     function isApprovedForAll(address account, address operator)
         public
@@ -396,11 +398,11 @@ contract ERC1155ContractMetadata is
         override
         returns (bool)
     {
-        if (operator == _CONDUIT) {
-            return !permanentlyLocked();
+        if (operator == _CONDUIT && !permanentlyLocked()) {
+            return true;
         }
 
-        return super.isApprovedForAll(account, operator);
+        return ERC1155.isApprovedForAll(account, operator);
     }
 
     /**
