@@ -85,7 +85,8 @@ contract ERC1155ContractMetadata is
     address internal immutable _CONFIGURER;
 
     /// @notice Whether any token has been minted. The lock can only become
-    ///         permanent before then.
+    ///         permanent before then. Only the first mint of each token id
+    ///         checks it, so later mints don't pay for it.
     bool internal _mintStarted;
 
     /**
@@ -383,6 +384,38 @@ contract ERC1155ContractMetadata is
     }
 
     /**
+     * @notice Returns whether `operator` can manage every token of
+     *         `account`. The conduit's preapproval ends once the lock is
+     *         permanent, since it can never transfer the tokens again. An
+     *         approval the holder gave the conduit explicitly is still
+     *         reported until the holder revokes it, because burns accept
+     *         stored approvals.
+     */
+    function isApprovedForAll(address account, address operator)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        if (operator == _CONDUIT && !permanentlyLocked()) {
+            return true;
+        }
+
+        return ERC1155.isApprovedForAll(account, operator);
+    }
+
+    /**
+     * @notice Give up ownership. Reverts while a temporary lock is in place,
+     *         since no one could lift it afterwards. Unlock first, or make
+     *         the lock permanent.
+     */
+    function renounceOwnership() public payable virtual override {
+        super.renounceOwnership();
+        _revertIfTemporarilyLocked();
+    }
+
+    /**
      * @notice Approve or remove `operator` as an operator for the caller.
      *         Granting an approval reverts once the lock is permanent.
      *         Removing one always works.
@@ -598,21 +631,23 @@ contract ERC1155ContractMetadata is
     function _incrementMintCounts(address to, uint256 id, uint256 amount)
         internal
     {
-        // Record that minting has started, after which the lock cannot
-        // become permanent. A zero-amount mint creates no token and does
-        // not count.
-        if (amount != 0 && !_mintStarted) {
-            _mintStarted = true;
-        }
-
         // Get the current token supply.
         TokenSupply storage tokenSupply = _tokenSupply[id];
+        uint256 totalMinted = tokenSupply.totalMinted;
 
-        if (tokenSupply.totalMinted + amount > tokenSupply.maxSupply) {
+        if (totalMinted + amount > tokenSupply.maxSupply) {
             revert MintExceedsMaxSupply(
-                tokenSupply.totalMinted + amount,
+                totalMinted + amount,
                 tokenSupply.maxSupply
             );
+        }
+
+        // Record that minting has started, after which the lock cannot
+        // become permanent. Only the first mint of each token id reads the
+        // flag, since later ones find a nonzero total. A zero-amount mint
+        // creates no token and does not count.
+        if (totalMinted == 0 && amount != 0 && !_mintStarted) {
+            _mintStarted = true;
         }
 
         // Increment supply and number minted.
@@ -654,8 +689,8 @@ contract ERC1155ContractMetadata is
      *      minted, so holders never get a permanent lock they could not see
      *      at mint, and a stolen owner key cannot apply one to a collection
      *      that already has holders. A temporary lock can still be applied
-     *      after minting, and it stays in place if the owner then gives up
-     *      ownership.
+     *      after minting, and the owner cannot give up ownership while one
+     *      is in place.
      */
     function _checkPermanentLockAllowed() internal view virtual override {
         if (_mintStarted) {

@@ -174,9 +174,17 @@ contract ERC721SeaDropLockableTest is SeaDrop721Test {
             token_.safeTransferFrom(holder, recipient, tokenId);
         }
 
-        // A Seaport sale transfers through the conduit.
+        // A Seaport sale transfers through the conduit. Once the lock is
+        // permanent the conduit is no longer approved, so its transfer
+        // reverts before the lock check.
+        bool permanent = token_.permanentlyLocked();
+        assertEq(token_.isApprovedForAll(holder, CONDUIT), !permanent);
         vm.prank(CONDUIT);
-        vm.expectRevert(_tokenLocked(tokenId));
+        if (permanent) {
+            vm.expectRevert(IERC721A.TransferCallerNotOwnerNorApproved.selector);
+        } else {
+            vm.expectRevert(_tokenLocked(tokenId));
+        }
         token_.transferFrom(holder, recipient, tokenId);
 
         assertEq(token_.ownerOf(tokenId), holder);

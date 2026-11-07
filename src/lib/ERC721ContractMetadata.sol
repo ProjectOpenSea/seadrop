@@ -333,6 +333,36 @@ contract ERC721ContractMetadata is
     }
 
     /**
+     * @notice Returns whether `operator` can manage every token of
+     *         `account`. The preapproved conduit stops being approved once
+     *         the lock is permanent, since it can never transfer the tokens
+     *         again.
+     */
+    function isApprovedForAll(address account, address operator)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        if (operator == _CONDUIT) {
+            return !permanentlyLocked();
+        }
+
+        return super.isApprovedForAll(account, operator);
+    }
+
+    /**
+     * @notice Give up ownership. Reverts while a temporary lock is in place,
+     *         since no one could lift it afterwards. Unlock first, or make
+     *         the lock permanent.
+     */
+    function renounceOwnership() public payable virtual override {
+        super.renounceOwnership();
+        _revertIfTemporarilyLocked();
+    }
+
+    /**
      * @notice Approve or remove `operator` as an operator for the caller.
      *         Granting an approval reverts once the lock is permanent.
      *         Removing one always works.
@@ -445,8 +475,8 @@ contract ERC721ContractMetadata is
      *      minted, so holders never get a permanent lock they could not see
      *      at mint, and a stolen owner key cannot apply one to a collection
      *      that already has holders. A temporary lock can still be applied
-     *      after minting, and it stays in place if the owner then gives up
-     *      ownership.
+     *      after minting, and the owner cannot give up ownership while one
+     *      is in place.
      */
     function _checkPermanentLockAllowed() internal view virtual override {
         if (_totalMinted() != 0) {

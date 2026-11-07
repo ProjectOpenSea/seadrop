@@ -239,15 +239,18 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
         token_.setTransferValidator(validator);
         token_.setDefaultLocked(true);
         token_.setTokensLocked(_asArray(1), false);
+        token_.setTokensLocked(_asArray(2), true);
 
         // Slot 0 holds the transfer validator in its low 20 bytes, then
-        // defaultLocked, permanentlyLocked, and hasTokenLockOverrides, so a
-        // holder transfer reads all of them with one storage read.
+        // defaultLocked, permanentlyLocked, hasTokenLockOverrides, and the
+        // count of locked tokens, so a holder transfer reads all of them
+        // with one storage read.
         uint256 slot = uint256(vm.load(address(token_), bytes32(0)));
         assertEq(address(uint160(slot)), validator);
         assertEq((slot >> 160) & 0xff, 1, "defaultLocked");
         assertEq((slot >> 168) & 0xff, 0, "permanentlyLocked");
         assertEq((slot >> 176) & 0xff, 1, "hasTokenLockOverrides");
+        assertEq((slot >> 184) & type(uint64).max, 1, "lockedTokenCount");
     }
 
     function testCloneStartsUnlockedAndLocksPermanentlyBeforeMint() public {
@@ -404,5 +407,108 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
             .multiConfigureMint(holder, _asArray(1), _asArray(0));
         clone.lockPermanently();
         assertTrue(clone.permanentlyLocked());
+    }
+
+    function testCannotRenounceOwnershipWhileTemporarilyLocked() public {
+        token_.setDefaultLocked(true);
+        vm.expectRevert(
+            ERC8451Lockable.CannotRenounceOwnershipWhileLocked.selector
+        );
+        token_.renounceOwnership();
+
+        // A token's own lock counts too.
+        token_.setDefaultLocked(false);
+        token_.setTokensLocked(_asArray(1), true);
+        vm.expectRevert(
+            ERC8451Lockable.CannotRenounceOwnershipWhileLocked.selector
+        );
+        token_.renounceOwnership();
+
+        token_.setTokensLocked(_asArray(1), false);
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(0));
+    }
+
+    function testCloneCannotRenounceOwnershipWhileTemporarilyLocked() public {
+        ERC1155SeaDrop clone = _clone("8");
+        clone.setTokensLocked(_asArray(1), true);
+        vm.expectRevert(
+            ERC8451Lockable.CannotRenounceOwnershipWhileLocked.selector
+        );
+        clone.renounceOwnership();
+
+        vm.prank(holder);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        clone.renounceOwnership();
+
+        clone.lockPermanently();
+        clone.renounceOwnership();
+        assertEq(clone.owner(), address(0));
+    }
+
+    function testConduitNotApprovedOncePermanentlyLocked() public {
+        assertTrue(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
+        token_.lockPermanently();
+        assertFalse(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
+
+        ERC1155SeaDrop clone = _clone("9");
+        assertTrue(clone.isApprovedForAll(holder, OPENSEA_CONDUIT));
+        clone.lockPermanently();
+        assertFalse(clone.isApprovedForAll(holder, OPENSEA_CONDUIT));
+    }
+
+    function testMintOfAnyTokenIdBlocksPermanentLock() public {
+        // Token ids 1 and 2 have a max supply. Mint only token id 2.
+        token_.mint(holder, 2, 1);
+        vm.expectRevert(ERC8451Lockable.CannotLockPermanentlyAfterMint.selector);
+        token_.lockPermanently();
+
+        ERC1155SeaDrop clone = _clone("10");
+        clone.setMaxSupply(1, 10);
+        clone.setMaxSupply(2, 10);
+        IERC1155SeaDrop(address(clone))
+            .multiConfigureMint(holder, _asArray(2), _asArray(1));
+        vm.expectRevert(ERC8451Lockable.CannotLockPermanentlyAfterMint.selector);
+        clone.lockPermanently();
+    }
+
+    function testMaxSupplyWithoutMintAllowsPermanentLock() public {
+        // Setting a max supply again, or back to zero and up again, without
+        // minting doesn't count as a mint.
+        token_.setMaxSupply(1, 50);
+        token_.setMaxSupply(3, 5);
+        token_.setMaxSupply(3, 0);
+        token_.setMaxSupply(3, 5);
+        token_.lockPermanently();
+        assertTrue(token_.permanentlyLocked());
+
+        // Minting still works after the lock is permanent.
+        token_.mint(holder, 3, 1);
+        assertTrue(token_.locked(3));
+    }
+
+    function testExplicitConduitApprovalStaysReportedUntilRevoked() public {
+        // An approval the holder gave the conduit explicitly is reported
+        // after permanence, since burns accept it, and revoking it works.
+        vm.prank(holder);
+        token_.setApprovalForAll(OPENSEA_CONDUIT, true);
+        token_.lockPermanently();
+        assertTrue(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
+        assertFalse(token_.isApprovedForAll(recipient, OPENSEA_CONDUIT));
+
+        vm.prank(holder);
+        token_.setApprovalForAll(OPENSEA_CONDUIT, false);
+        assertFalse(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
+
+        ERC1155SeaDrop clone = _clone("11");
+        vm.prank(holder);
+        clone.setApprovalForAll(OPENSEA_CONDUIT, true);
+        clone.lockPermanently();
+        assertTrue(clone.isApprovedForAll(holder, OPENSEA_CONDUIT));
+        assertFalse(clone.isApprovedForAll(recipient, OPENSEA_CONDUIT));
+
+        vm.prank(holder);
+        clone.setApprovalForAll(OPENSEA_CONDUIT, false);
+        assertFalse(clone.isApprovedForAll(holder, OPENSEA_CONDUIT));
     }
 }

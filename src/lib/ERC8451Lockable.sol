@@ -40,7 +40,8 @@ enum LockMode {
  *         `_authorizeLockUpdate`, define when a token exists in
  *         `_lockableTokenExists`, and return true from `supportsInterface`
  *         for IERC6982 and IERC8451. It can limit when the lock may become
- *         permanent in `_checkPermanentLockAllowed`.
+ *         permanent in `_checkPermanentLockAllowed`, and should call
+ *         `_revertIfTemporarilyLocked` when its owner gives up ownership.
  *
  *         Declare this right after `TokenTransferValidator` in the
  *         inheritance list so its flags share the transfer validator's
@@ -67,6 +68,11 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     ///      transfer checks skip the per-token lookup.
     bool private _hasTokenLockOverrides;
 
+    /// @dev How many tokens have their own lock status set to locked. With
+    ///      the default lock status, it tells whether a temporary lock is
+    ///      in place. It shares the flags' storage slot.
+    uint64 private _lockedTokenCount;
+
     /// @dev Lock status overrides for single tokens.
     mapping(uint256 => TokenLockOverride) private _tokenLockOverrides;
 
@@ -81,6 +87,10 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     /// @notice Revert when querying the lock status of a token that does
     ///         not exist.
     error LockQueryForNonexistentToken();
+
+    /// @notice Revert when giving up ownership while a temporary lock is in
+    ///         place, since no one could lift it afterwards.
+    error CannotRenounceOwnershipWhileLocked();
 
     /// @notice Revert when making the lock permanent after tokens were
     ///         minted, in contracts that only allow it before.
@@ -124,6 +134,9 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
         // Put the length on the stack for more efficient access.
         uint256 tokenIdsLength = tokenIds.length;
 
+        // Count locked tokens on the stack and write the total once.
+        uint64 lockedTokenCount = _lockedTokenCount;
+
         for (uint256 i = 0; i < tokenIdsLength;) {
             uint256 tokenId = tokenIds[i];
 
@@ -133,13 +146,20 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
                 _tokenLockOverrides[tokenId] = lockOverride;
 
                 // Track unlocked tokens so they can be locked again before
-                // the lock becomes permanent.
-                if (isLocked) {
-                    if (previous == TokenLockOverride.Unlocked) {
-                        _unlockedTokenIds.remove(tokenId);
+                // the lock becomes permanent, and count locked ones. The
+                // count can't wrap: it only drops for a token it counted.
+                unchecked {
+                    if (isLocked) {
+                        if (previous == TokenLockOverride.Unlocked) {
+                            _unlockedTokenIds.remove(tokenId);
+                        }
+                        ++lockedTokenCount;
+                    } else {
+                        _unlockedTokenIds.add(tokenId);
+                        if (previous == TokenLockOverride.Locked) {
+                            --lockedTokenCount;
+                        }
                     }
-                } else {
-                    _unlockedTokenIds.add(tokenId);
                 }
             }
 
@@ -149,6 +169,8 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
                 ++i;
             }
         }
+
+        _lockedTokenCount = lockedTokenCount;
 
         if (tokenIdsLength != 0 && !_hasTokenLockOverrides) {
             _hasTokenLockOverrides = true;
@@ -183,7 +205,7 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     /**
      * @notice Returns whether every token is permanently locked.
      */
-    function permanentlyLocked() external view returns (bool) {
+    function permanentlyLocked() public view returns (bool) {
         return _permanentlyLocked;
     }
 
@@ -271,6 +293,20 @@ abstract contract ERC8451Lockable is IERC6982, IERC8451 {
     function _revertIfPermanentlyLocked() internal view {
         if (_permanentlyLocked) {
             revert LockIsPermanent();
+        }
+    }
+
+    /**
+     * @dev Reverts with `CannotRenounceOwnershipWhileLocked` while a
+     *      temporary lock is in place: tokens are locked by default, or a
+     *      token has its own lock status set to locked, and the lock is not
+     *      permanent. The token contract calls this when its owner gives up
+     *      ownership, so a lock that no one could lift never outlives them.
+     *      The owner can unlock first, or make the lock permanent.
+     */
+    function _revertIfTemporarilyLocked() internal view {
+        if (!_permanentlyLocked && (_defaultLocked || _lockedTokenCount != 0)) {
+            revert CannotRenounceOwnershipWhileLocked();
         }
     }
 
