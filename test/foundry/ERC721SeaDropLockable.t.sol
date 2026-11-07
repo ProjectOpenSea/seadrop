@@ -179,9 +179,17 @@ contract ERC721SeaDropLockableTest is TestHelper {
             token_.safeTransferFrom(holder, recipient, tokenId);
         }
 
-        // A Seaport sale transfers through the conduit.
+        // A Seaport sale transfers through the conduit. Once the lock is
+        // permanent the conduit is no longer approved, so its transfer
+        // reverts before the lock check.
+        bool permanent = token_.permanentlyLocked();
+        assertEq(token_.isApprovedForAll(holder, CONDUIT), !permanent);
         vm.prank(CONDUIT);
-        vm.expectRevert(_tokenLocked(tokenId));
+        if (permanent) {
+            vm.expectRevert(IERC721A.TransferCallerNotOwnerNorApproved.selector);
+        } else {
+            vm.expectRevert(_tokenLocked(tokenId));
+        }
         token_.transferFrom(holder, recipient, tokenId);
 
         assertEq(token_.ownerOf(tokenId), holder);
@@ -765,6 +773,79 @@ contract ERC721SeaDropLockableTest is TestHelper {
         } else {
             _assertTransferSucceeds(1);
         }
+    }
+
+    function testCannotRenounceOwnershipWhileLockedByDefault() public {
+        _setUp(LockMode.Locked);
+
+        vm.expectRevert(
+            ERC8451Lockable.CannotRenounceOwnershipWhileLocked.selector
+        );
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(this));
+
+        // Once tokens are unlocked, the owner can renounce.
+        token_.setDefaultLocked(false);
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(0));
+    }
+
+    function testCannotRenounceOwnershipWhileATokenIsLocked() public {
+        _setUp(LockMode.Unlocked);
+
+        // Lock tokens 1 and 2, lock token 1 again, then unlock token 1.
+        token_.setTokensLocked(_asArray(1), true);
+        token_.setTokensLocked(_asArray(2), true);
+        token_.setTokensLocked(_asArray(1), true);
+        token_.setTokensLocked(_asArray(1), false);
+
+        // Token 2 is still locked.
+        vm.expectRevert(
+            ERC8451Lockable.CannotRenounceOwnershipWhileLocked.selector
+        );
+        token_.renounceOwnership();
+
+        token_.setTokensLocked(_asArray(2), false);
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(0));
+    }
+
+    function testCanRenounceOwnershipOncePermanentlyLocked() public {
+        _setUp(LockMode.Locked);
+        token_.setTokensLocked(_asArray(1), true);
+        token_.lockPermanently();
+
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(0));
+    }
+
+    function testRenounceOwnershipChecksOwnerFirst() public {
+        _setUp(LockMode.Locked);
+
+        vm.prank(holder);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        token_.renounceOwnership();
+    }
+
+    function testConduitNotApprovedOncePermanentlyLocked() public {
+        _setUp(LockMode.Locked);
+        vm.prank(holder);
+        token_.setApprovalForAll(operator, true);
+
+        // The conduit stays preapproved while the lock is temporary.
+        assertTrue(token_.isApprovedForAll(holder, CONDUIT));
+
+        token_.lockPermanently();
+        assertFalse(token_.isApprovedForAll(holder, CONDUIT));
+        assertFalse(token_.isApprovedForAll(recipient, CONDUIT));
+
+        // Other approvals are unchanged.
+        assertTrue(token_.isApprovedForAll(holder, operator));
+    }
+
+    function testConduitNotApprovedWhenPermanentlyLockedFromDeploy() public {
+        _setUp(LockMode.PermanentlyLocked);
+        assertFalse(token_.isApprovedForAll(holder, CONDUIT));
     }
 
     function onERC721Received(address, address, uint256, bytes calldata)
