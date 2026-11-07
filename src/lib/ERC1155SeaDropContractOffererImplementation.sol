@@ -1596,8 +1596,7 @@ contract ERC1155SeaDropContractOffererImplementation is
         bytes32 root,
         bytes32 leaf
     ) internal pure returns (bool isValid) {
-        /// @solidity memory-safe-assembly
-        assembly {
+        assembly ("memory-safe") {
             if sub(context.length, proofOffsetInContext) {
                 // Initialize `offset` to the offset of `proof` in the calldata.
                 let offset := add(context.offset, proofOffsetInContext)

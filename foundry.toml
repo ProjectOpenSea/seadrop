@@ -2,9 +2,10 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
-solc_version = '0.8.19'
-# Tests deploy Seaport 1.6 artifacts, which use PUSH0, MCOPY and TSTORE, so
-# they run on Cancun. solc 0.8.19 still compiles src for Paris.
+solc_version = '0.8.38'
+# Cancun runs on every network SeaDrop deploys to (PUSH0, MCOPY and TSTORE
+# probed with eth_call on 2026-11-07), and the tests' Seaport 1.6 artifacts
+# need it. Pin it so the target doesn't drift with the compiler's default.
 evm_version = 'cancun'
 auto_detect_remappings = false # remappings in remappings.txt
 optimizer_runs = 100_000

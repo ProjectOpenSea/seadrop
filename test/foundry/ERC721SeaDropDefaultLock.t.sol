@@ -55,7 +55,7 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
     function _assertLockEvents(
         LockEvent[] memory actual,
         LockEvent[] memory expected
-    ) internal {
+    ) internal pure {
         assertEq(actual.length, expected.length, "lock event count");
         for (uint256 i = 0; i < expected.length; i++) {
             assertEq(actual[i].topic, expected[i].topic, "lock event topic");
