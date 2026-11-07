@@ -533,8 +533,20 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         assertEq(noAdapter.metadata(1, "context"), bytes("lore"));
     }
 
-    /// @dev Registers through the ERC-8217 adapter deployed on Base. Runs
-    ///      only when AGENT_ADAPTER_FORK_URL names a Base RPC URL.
+    /// @dev The ERC-8217 adapter docs/AgentNFTs.md lists for `chainId`.
+    function _deployedAdapter(uint256 chainId) internal pure returns (address) {
+        if (chainId == 1) return 0xde152AfB7db5373F34876E1499fbD893A82dD336;
+        if (chainId == 8453) return 0x270d25D2c59A8bcA1B0f40ad95fF7806c0025c27;
+        if (chainId == 4663) return 0x000000009d62675362a58911e3f32FEcf46F5E18;
+        if (chainId == 11_155_111) {
+            return 0x7621630cB63a73a194f45A3E6801B8C6A7eC2f92;
+        }
+        revert("no adapter listed for this chain");
+    }
+
+    /// @dev Registers through the ERC-8217 adapter deployed on the chain
+    ///      AGENT_ADAPTER_FORK_URL names: Ethereum, Base, Robinhood Chain or
+    ///      Sepolia. Skipped when it isn't set.
     function testRegisterAgentsWithDeployedAdapter() public {
         string memory forkUrl = vm.envOr("AGENT_ADAPTER_FORK_URL", string(""));
         if (bytes(forkUrl).length == 0) {
@@ -543,14 +555,13 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         }
 
         vm.createSelectFork(forkUrl);
-        assertEq(block.chainid, 8453);
-        address baseAdapter = 0x270d25D2c59A8bcA1B0f40ad95fF7806c0025c27;
+        address deployedAdapter = _deployedAdapter(block.chainid);
 
-        ERC721SeaDropAgentsWithMint forked = _deploy(baseAdapter);
+        ERC721SeaDropAgentsWithMint forked = _deploy(deployedAdapter);
         forked.setMaxSupply(10);
         forked.registerAgents(1, 2, "https://agents.example/", ".json");
 
-        IAgentAdapterView view_ = IAgentAdapterView(baseAdapter);
+        IAgentAdapterView view_ = IAgentAdapterView(deployedAdapter);
         (bool registered, uint256 agentId) = forked.agentOf(1);
         assertTrue(registered);
         IAgentAdapterView.Binding memory binding = view_.bindingOf(agentId);
