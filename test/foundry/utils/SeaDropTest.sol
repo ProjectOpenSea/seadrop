@@ -145,6 +145,40 @@ abstract contract SeaDropTest is
     }
 
     /**
+     * @dev Assert `logs` are what setContractURI(`uri`) emits from
+     *      `tokenAddress`: SeaDrop's original ContractURIUpdated(string) and
+     *      then ERC-7572's ContractURIUpdated(), under the topics indexers
+     *      match on. OpenSea's indexer reads only the ERC-7572 topic.
+     */
+    function _assertContractURIUpdatedLogs(
+        Vm.Log[] memory logs,
+        address tokenAddress,
+        string memory uri
+    ) internal pure {
+        assertEq(logs.length, 2);
+
+        // ContractURIUpdated(string newContractURI)
+        assertEq(logs[0].emitter, tokenAddress);
+        assertEq(logs[0].topics.length, 1);
+        assertEq(
+            logs[0].topics[0],
+            0x905d981207a7d0b6c62cc46ab0be2a076d0298e4a86d0ab79882dbd01ac37378
+        );
+        assertEq(logs[0].topics[0], keccak256("ContractURIUpdated(string)"));
+        assertEq(abi.decode(logs[0].data, (string)), uri);
+
+        // ERC-7572's ContractURIUpdated()
+        assertEq(logs[1].emitter, tokenAddress);
+        assertEq(logs[1].topics.length, 1);
+        assertEq(
+            logs[1].topics[0],
+            0xa5d4097edda6d87cb9329af83fb3712ef77eeb13738ffe43cc35a4ce305ad962
+        );
+        assertEq(logs[1].topics[0], keccak256("ContractURIUpdated()"));
+        assertEq(logs[1].data.length, 0);
+    }
+
+    /**
      * Creator payouts and allow lists
      */
     function _payouts(address a, uint256 aBps)

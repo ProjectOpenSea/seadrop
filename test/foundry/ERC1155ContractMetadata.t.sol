@@ -24,6 +24,7 @@ contract ERC1155ContractMetadataTest is SeaDrop1155Test {
     // Events declared locally so they can be emitted for vm.expectEmit.
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
     event ContractURIUpdated(string newContractURI);
+    event ContractURIUpdated();
     event ProvenanceHashUpdated(bytes32 previousHash, bytes32 newHash);
     event RoyaltyInfoUpdated(address receiver, uint256 basisPoints);
     event MaxSupplyUpdated(uint256 tokenId, uint256 newMaxSupply);
@@ -76,8 +77,20 @@ contract ERC1155ContractMetadataTest is SeaDrop1155Test {
 
         vm.expectEmit(true, true, true, true, address(token));
         emit ContractURIUpdated("http://example.com");
+        vm.expectEmit(true, true, true, true, address(token));
+        emit ContractURIUpdated();
         token.setContractURI("http://example.com");
         assertEq(token.contractURI(), "http://example.com");
+    }
+
+    /// @dev setContractURI emits ERC-7572's ContractURIUpdated() after
+    ///      SeaDrop's original event.
+    function testSetContractURIEmitsERC7572Event() public {
+        vm.recordLogs();
+        token.setContractURI("http://example.com");
+        _assertContractURIUpdatedLogs(
+            vm.getRecordedLogs(), address(token), "http://example.com"
+        );
     }
 
     function testOnlyOwnerCanSetMaxSupply() public {

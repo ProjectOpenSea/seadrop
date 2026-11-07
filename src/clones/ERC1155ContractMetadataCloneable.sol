@@ -173,8 +173,9 @@ contract ERC1155ContractMetadataCloneable is
         // Set the new contract URI.
         _contractURI = newContractURI;
 
-        // Emit an event with the update.
+        // Emit an event with the update, and the ERC-7572 event.
         emit ContractURIUpdated(newContractURI);
+        emit ContractURIUpdated();
     }
 
     /**
