@@ -199,11 +199,28 @@ contract ERC1155SeaDropContractOffererCloneable is
                 maxSupply
             );
         } else if (selector == ContractOffererInterface.ratifyOrder.selector) {
-            // This function is a no-op, nothing additional needs to happen here.
+            ERC1155SeaDropContractOffererStorage.Layout storage layout =
+                ERC1155SeaDropContractOffererStorage.layout();
+
+            // Only an allowed Seaport can ratify, since this clears the
+            // mint record of the current call.
+            if (!layout._allowedSeaport[msg.sender]) {
+                revert InvalidCallerOnlyAllowedSeaport(msg.sender);
+            }
+
+            // Seaport ratifies orders after all of the call's transfers, so
+            // the record is no longer needed. Only the Seaport that opened it
+            // can clear it, so a nested call on another one can't.
+            if (layout._mintRecord.seaport == uint88(uint160(msg.sender))) {
+                delete layout._mintRecord;
+            }
+
             // Utilize assembly to efficiently return the ratifyOrder magic value.
+            // Write the full word, since the mapping lookup above used the
+            // scratch space after it.
             assembly {
-                mstore(0, 0xf4dd92ce)
-                return(0x1c, 32)
+                mstore(0, shl(224, 0xf4dd92ce))
+                return(0, 32)
             }
         } else if (selector == ISeaDropToken.configurer.selector) {
             // Return the configurer contract.
@@ -254,7 +271,8 @@ contract ERC1155SeaDropContractOffererCloneable is
 
     /**
      * @dev Handle ERC-1155 safeTransferFrom. If "from" is this contract,
-     *      the sender can only be Seaport or the conduit.
+     *      the sender can only be Seaport or the conduit, and "to" must be
+     *      the fulfiller or the sole minter of the current Seaport call.
      *
      * @param from   The address to transfer from.
      * @param to     The address to transfer to.
@@ -270,14 +288,30 @@ contract ERC1155SeaDropContractOffererCloneable is
         bytes calldata data
     ) public virtual override {
         if (from == address(this)) {
+            ERC1155SeaDropContractOffererStorage.Layout storage
+                layout = ERC1155SeaDropContractOffererStorage.layout();
+
             // Only Seaport or the conduit can use this function
             // when "from" is this contract.
-            if (
-                msg.sender != _CONDUIT
-                    && !ERC1155SeaDropContractOffererStorage.layout()
-                    ._allowedSeaport[msg.sender]
-            ) {
+            if (msg.sender != _CONDUIT && !layout._allowedSeaport[msg.sender]) {
                 revert InvalidCallerOnlyAllowedSeaport(msg.sender);
+            }
+
+            // The tokens were already minted to their minter in generateOrder,
+            // so nothing is transferred here. The recipient Seaport records
+            // must be the fulfiller, or the minter when the call has only one,
+            // so that it matches where the tokens went.
+            ERC1155SeaDropContractOffererStorage.MintRecord storage record =
+            layout._mintRecord;
+            address minter = record.minter;
+            if (to != minter || record.multipleMinters) {
+                address fulfiller = record.fulfiller;
+                if (fulfiller == address(0)) {
+                    fulfiller = minter;
+                }
+                if (to != fulfiller) {
+                    revert InvalidRecipientOnlyMinterOrFulfiller(to);
+                }
             }
             return;
         }
@@ -332,6 +366,32 @@ contract ERC1155SeaDropContractOffererCloneable is
         // If the minter is the zero address, set it to the fulfiller.
         if (minter == address(0)) {
             minter = fulfiller;
+        }
+
+        // Record the minter and fulfiller for safeTransferFrom to check
+        // Seaport's recipient against. Seaport ratifies every generated order
+        // after all of the call's transfers and ratifyOrder clears the record,
+        // so an open record belongs to an order earlier in the same call.
+        // Bind it to the Seaport that opened it: a nested call on another
+        // allowed Seaport could otherwise add to it or clear it mid-call.
+        ERC1155SeaDropContractOffererStorage.Layout storage layout =
+            ERC1155SeaDropContractOffererStorage.layout();
+        ERC1155SeaDropContractOffererStorage.MintRecord storage record =
+        layout._mintRecord;
+        uint88 seaport = uint88(uint160(msg.sender));
+        uint88 recordSeaport = record.seaport;
+        if (recordSeaport == 0) {
+            record.minter = minter;
+            record.seaport = seaport;
+            // Seaport passes the same fulfiller to every generateOrder of a
+            // call, so it is recorded once, and only when it isn't the minter.
+            if (fulfiller != minter) {
+                record.fulfiller = fulfiller;
+            }
+        } else if (recordSeaport != seaport) {
+            revert NestedSeaportCall(msg.sender);
+        } else if (record.minter != minter) {
+            record.multipleMinters = true;
         }
 
         // Set the token ids and quantities.
