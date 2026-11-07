@@ -16,6 +16,12 @@ import { ITransferValidator721 } from "../interfaces/ITransferValidator.sol";
 
 import { TokenTransferValidator } from "./TokenTransferValidator.sol";
 
+import { ERC8451Lockable, LockMode } from "./ERC8451Lockable.sol";
+
+import { IERC6982 } from "../interfaces/IERC6982.sol";
+
+import { IERC8451 } from "../interfaces/IERC8451.sol";
+
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
@@ -30,10 +36,19 @@ import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
  * @author Michael Cohen (notmichael.eth)
  * @notice A token contract that extends ERC-721
  *         with additional metadata and ownership capabilities.
+ *
+ *         Tokens are lockable (ERC-6982) with permanent locks (ERC-8451).
+ *         Tokens start unlocked. The owner can lock or unlock them, and can
+ *         make the lock permanent until the first token is minted. Locks
+ *         restrict holder transfers only: minting continues, and the holder
+ *         or an approved operator can still burn.
  */
 contract ERC721ContractMetadata is
     ERC721AConduitPreapproved,
     TokenTransferValidator,
+    // Declared right after TokenTransferValidator so the lock flags share
+    // the transfer validator's storage slot.
+    ERC8451Lockable,
     ERC2981,
     Ownable,
     IERC721ContractMetadata
@@ -86,6 +101,10 @@ contract ERC721ContractMetadata is
 
         // Set the owner.
         _initializeOwner(msg.sender);
+
+        // Start unlocked and emit DefaultLocked(false), as ERC-6982
+        // requires at deployment.
+        _initializeLock(LockMode.Unlocked);
     }
 
     /**
@@ -314,8 +333,50 @@ contract ERC721ContractMetadata is
     }
 
     /**
+     * @notice Approve or remove `operator` as an operator for the caller.
+     *         Granting an approval reverts once the lock is permanent.
+     *         Removing one always works.
+     */
+    function setApprovalForAll(address operator, bool approved)
+        public
+        virtual
+        override
+    {
+        if (approved) {
+            _revertIfPermanentlyLocked();
+        }
+
+        super.setApprovalForAll(operator, approved);
+    }
+
+    /**
+     * @notice Approve `to` to transfer `tokenId`. Granting an approval
+     *         reverts once the lock is permanent. Clearing one by
+     *         approving the zero address always works.
+     */
+    function approve(address to, uint256 tokenId)
+        public
+        payable
+        virtual
+        override
+    {
+        if (to != address(0)) {
+            _revertIfPermanentlyLocked();
+        }
+
+        super.approve(to, tokenId);
+    }
+
+    /**
      * @dev Hook that is called before any token transfer.
      *      This includes minting and burning.
+     *
+     *      Holder transfers of locked tokens revert with `TokenLocked`,
+     *      checked before the transfer validator so a locked token reports
+     *      `TokenLocked` rather than a validator error. ERC721A transfers one
+     *      token at a time, so a holder transfer only checks `startTokenId`.
+     *      The ERC-721 validator is called with STATICCALL, so it cannot
+     *      change the lock during the transfer.
      */
     function _beforeTokenTransfers(
         address from,
@@ -324,6 +385,8 @@ contract ERC721ContractMetadata is
         uint256 /* quantity */
     ) internal virtual override {
         if (from != address(0) && to != address(0)) {
+            _revertIfTokenLocked(startTokenId);
+
             // Call the transfer validator if one is set.
             address transferValidator = _transferValidator;
             if (transferValidator != address(0)) {
@@ -346,6 +409,8 @@ contract ERC721ContractMetadata is
         returns (bool)
     {
         return interfaceId == type(IERC721ContractMetadata).interfaceId
+            || interfaceId == type(IERC6982).interfaceId
+            || interfaceId == type(IERC8451).interfaceId
             || interfaceId == type(ICreatorToken).interfaceId
             || interfaceId == type(ILegacyCreatorToken).interfaceId
             || interfaceId == 0x49064906 // ERC-4906 (MetadataUpdate)
@@ -353,6 +418,40 @@ contract ERC721ContractMetadata is
             // ERC721A returns supportsInterface true for
             //     ERC165, ERC721, ERC721Metadata
             ERC721A.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Only the owner can update the lock.
+     */
+    function _authorizeLockUpdate() internal view virtual override {
+        _checkOwner();
+    }
+
+    /**
+     * @dev A token exists from mint until burn.
+     */
+    function _lockableTokenExists(uint256 tokenId)
+        internal
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return _exists(tokenId);
+    }
+
+    /**
+     * @dev The lock can only become permanent before the first token is
+     *      minted, so holders never get a permanent lock they could not see
+     *      at mint, and a stolen owner key cannot apply one to a collection
+     *      that already has holders. A temporary lock can still be applied
+     *      after minting, and it stays in place if the owner then gives up
+     *      ownership.
+     */
+    function _checkPermanentLockAllowed() internal view virtual override {
+        if (_totalMinted() != 0) {
+            revert CannotLockPermanentlyAfterMint();
+        }
     }
 
     /**
