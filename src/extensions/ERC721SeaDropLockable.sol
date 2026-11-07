@@ -44,6 +44,36 @@ contract ERC721SeaDropLockable is ERC721SeaDrop, ERC8451Lockable {
     ) ERC721SeaDrop(name, symbol, allowedSeaDrop) ERC8451Lockable(lockMode) { }
 
     /**
+     * @notice Returns whether `operator` can manage every token of
+     *         `account`. The preapproved conduit stops being approved once
+     *         the lock is permanent, since it can never transfer the tokens
+     *         again.
+     */
+    function isApprovedForAll(address account, address operator)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        if (operator == _CONDUIT) {
+            return !permanentlyLocked();
+        }
+
+        return super.isApprovedForAll(account, operator);
+    }
+
+    /**
+     * @notice Give up ownership. Reverts while a temporary lock is in place,
+     *         since no one could lift it afterwards. Unlock first, or make
+     *         the lock permanent.
+     */
+    function renounceOwnership() public virtual override {
+        super.renounceOwnership();
+        _revertIfTemporarilyLocked();
+    }
+
+    /**
      * @notice Approve or remove `operator` as an operator for the caller.
      *         Granting an approval reverts once the lock is permanent.
      *         Removing one always works.
