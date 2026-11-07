@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.38;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
@@ -87,7 +87,7 @@ contract ERC721SeaDropLockableTest is TestHelper {
 
     /// @dev Returns the DefaultLocked, Locked, and PermanentlyLocked events
     ///      emitted since `vm.recordLogs()`, in order.
-    function _lockEvents() internal returns (LockEvent[] memory events) {
+    function _lockEvents() internal view returns (LockEvent[] memory events) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         events = new LockEvent[](logs.length);
         uint256 count;

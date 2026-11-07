@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.38;
 
 import { TestHelper } from "test/foundry/utils/TestHelper.sol";
 
@@ -62,7 +62,7 @@ contract ERC721SeaDropRandomOffsetTest is TestHelper {
         offsetToken.setMaxSupply(maxSupply);
         offsetToken.setBaseURI("http://example.com/");
         _mintToMaxSupply();
-        vm.difficulty(difficulty);
+        vm.prevrandao(difficulty);
         offsetToken.setRandomOffset();
     }
 
@@ -120,7 +120,7 @@ contract ERC721SeaDropRandomOffsetTest is TestHelper {
 
         assertEq(offsetToken.tokenURI(1), "http://example.com/");
 
-        vm.difficulty(difficulty);
+        vm.prevrandao(difficulty);
         offsetToken.setRandomOffset();
 
         uint256 randomOffset = offsetToken.randomOffset();

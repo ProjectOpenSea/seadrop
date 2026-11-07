@@ -3,10 +3,17 @@ src = 'src'
 test = 'test/foundry'
 out = 'out'
 libs = ['lib']
-solc_version = '0.8.17'
+solc_version = '0.8.38'
+# Cancun runs on every network SeaDrop deploys to (PUSH0, MCOPY and TSTORE
+# probed with eth_call on 2026-11-07); pin it so the target doesn't drift with
+# the compiler's default.
+evm_version = 'cancun'
 optimizer_runs = 1_000_000
 # via_ir = true
-ignored_error_codes = []
+# Under Cancun, solc checks EIP-3860's 49,152-byte initcode limit. Only test
+# contracts exceed it, and they're never deployed; the deployable contracts
+# are far below it (`forge build --sizes`).
+ignored_error_codes = ["init-code-size"]
 bytecode_hash = "none"
 # The upgradeable contracts in src/upgradeable compile with the settings their
 # implementations are deployed with (formerly src-upgradeable's Hardhat
