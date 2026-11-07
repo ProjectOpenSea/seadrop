@@ -146,6 +146,55 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         assertEq(isViewFunction, true);
     }
 
+    /// @dev approve, transferFrom and both safeTransferFrom overloads are
+    ///      non-payable on clones too, so ETH sent with them reverts. Each
+    ///      call succeeds without value.
+    function testClone_approveAndTransfers_revertWithValue() public {
+        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(
+            factory.createClone("name", "symbol", bytes32("1"))
+        );
+        address minter = makeAddr("minter");
+        address receiver = makeAddr("receiver");
+        token.setMaxSupply(1);
+        vm.prank(factory.DEFAULT_SEADROP());
+        token.mintSeaDrop(minter, 1);
+        vm.deal(minter, 1 ether);
+        vm.deal(receiver, 1 ether);
+
+        address[4] memory callers = [minter, minter, receiver, minter];
+        bytes[4] memory calls = [
+            abi.encodeWithSignature("approve(address,uint256)", receiver, 1),
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)", minter, receiver, 1
+            ),
+            abi.encodeWithSignature(
+                "safeTransferFrom(address,address,uint256)", receiver, minter, 1
+            ),
+            abi.encodeWithSignature(
+                "safeTransferFrom(address,address,uint256,bytes)",
+                minter,
+                receiver,
+                1,
+                hex"dadb0d"
+            )
+        ];
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            vm.prank(callers[i]);
+            (bool success, bytes memory returnData) =
+                address(token).call{ value: 1 }(calls[i]);
+            assertFalse(success, "call with value should revert");
+            assertEq(returnData.length, 0, "non-payable check reverts empty");
+
+            vm.prank(callers[i]);
+            (success,) = address(token).call(calls[i]);
+            assertTrue(success, "call without value should succeed");
+        }
+
+        assertEq(token.ownerOf(1), receiver);
+        assertEq(address(token).balance, 0);
+    }
+
     function onERC721Received(address, address, uint256, bytes calldata)
         public
         pure

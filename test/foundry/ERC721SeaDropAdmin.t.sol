@@ -521,6 +521,49 @@ contract ERC721SeaDropAdminTest is TestHelper {
         vm.stopPrank();
     }
 
+    /// @dev approve, transferFrom and both safeTransferFrom overloads are
+    ///      non-payable, so ETH sent with them reverts instead of staying in
+    ///      the token, which cannot withdraw it. Each call succeeds without
+    ///      value, so the revert comes from the value alone.
+    function testApproveAndTransfers_revertWithValue() public {
+        token.setMaxSupply(1);
+        vm.prank(address(seadrop));
+        token.mintSeaDrop(minter, 1);
+        vm.deal(minter, 1 ether);
+        vm.deal(creator, 1 ether);
+
+        address[4] memory callers = [minter, minter, creator, minter];
+        bytes[4] memory calls = [
+            abi.encodeCall(IERC721.approve, (creator, 1)),
+            abi.encodeCall(IERC721.transferFrom, (minter, creator, 1)),
+            abi.encodeWithSignature(
+                "safeTransferFrom(address,address,uint256)", creator, minter, 1
+            ),
+            abi.encodeWithSignature(
+                "safeTransferFrom(address,address,uint256,bytes)",
+                minter,
+                creator,
+                1,
+                hex"dadb0d"
+            )
+        ];
+
+        for (uint256 i = 0; i < calls.length; i++) {
+            vm.prank(callers[i]);
+            (bool success, bytes memory returnData) =
+                address(token).call{ value: 1 }(calls[i]);
+            assertFalse(success, "call with value should revert");
+            assertEq(returnData.length, 0, "non-payable check reverts empty");
+
+            vm.prank(callers[i]);
+            (success,) = address(token).call(calls[i]);
+            assertTrue(success, "call without value should succeed");
+        }
+
+        assertEq(token.ownerOf(1), creator);
+        assertEq(address(token).balance, 0);
+    }
+
     function _fullConfig(address feeRecipient)
         internal
         view
