@@ -74,7 +74,7 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     function _assertLockEvents(
         LockEvent[] memory actual,
         LockEvent[] memory expected
-    ) internal {
+    ) internal pure {
         assertEq(actual.length, expected.length, "lock event count");
         for (uint256 i = 0; i < expected.length; i++) {
             assertEq(actual[i].topic, expected[i].topic, "lock event topic");
@@ -99,6 +99,7 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     /// @dev Returns the lock events `emitter` emitted since recording began.
     function _lockEventsFrom(address emitter)
         internal
+        view
         returns (LockEvent[] memory)
     {
         Vm.Log[] memory logs = vm.getRecordedLogs();
