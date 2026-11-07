@@ -33,6 +33,11 @@ contract ERC721ContractMetadataTest is SeaDrop721Test {
         token = _deployToken();
     }
 
+    /// @dev The public getter solady made internal keeps its 48 hours.
+    function testOwnershipHandoverValidFor() public view {
+        assertEq(token.ownershipHandoverValidFor(), 48 hours);
+    }
+
     /// @dev Should only let the owner set and get the base URI.
     function testOnlyOwnerCanSetBaseURI() public {
         assertEq(token.baseURI(), "");

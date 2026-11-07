@@ -28,7 +28,7 @@ import { ERC1155 } from "solady/src/tokens/ERC1155.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
-import { Ownable } from "solady/src/auth/Ownable.sol";
+import { SeaDropOwnable } from "./SeaDropOwnable.sol";
 
 /**
  * @title  ERC1155ContractMetadata
@@ -53,7 +53,7 @@ contract ERC1155ContractMetadata is
     // the transfer validator's storage slot.
     ERC8451Lockable,
     ERC2981,
-    Ownable,
+    SeaDropOwnable,
     IERC1155ContractMetadata
 {
     /// @notice A struct containing the token supply info per token id.
