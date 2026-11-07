@@ -33,10 +33,15 @@ contract DeploySeaDropCloneFactoryTest is Test {
     ///      variables and Foundry runs tests in parallel.
     function testDeploysToTheSaltAddress() public {
         vm.setEnv("SALT", vm.toString(SALT));
+        DeploySeaDropCloneFactory script = new DeploySeaDropCloneFactory();
+
+        // An explicit zero address is checked like any other.
+        vm.setEnv("EXPECTED_ADDRESS", vm.toString(address(0)));
+        vm.expectRevert("SALT does not produce EXPECTED_ADDRESS");
+        script.run();
 
         // A stale EXPECTED_ADDRESS fails before anything is deployed.
         vm.setEnv("EXPECTED_ADDRESS", vm.toString(address(0xdead)));
-        DeploySeaDropCloneFactory script = new DeploySeaDropCloneFactory();
         vm.expectRevert("SALT does not produce EXPECTED_ADDRESS");
         script.run();
         assertEq(_predicted().code.length, 0);

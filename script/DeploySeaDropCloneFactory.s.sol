@@ -40,11 +40,12 @@ contract DeploySeaDropCloneFactory is BaseCreate2Script {
         console2.logBytes32(initCodeHash);
         console2.log("Address for SALT:", predicted);
 
-        address expected = vm.envOr("EXPECTED_ADDRESS", address(0));
-        require(
-            expected == address(0) || expected == predicted,
-            "SALT does not produce EXPECTED_ADDRESS"
-        );
+        if (vm.envExists("EXPECTED_ADDRESS")) {
+            require(
+                vm.envAddress("EXPECTED_ADDRESS") == predicted,
+                "SALT does not produce EXPECTED_ADDRESS"
+            );
+        }
 
         deployed = _immutableCreate2IfNotDeployed(deployer, salt, initCode);
     }
