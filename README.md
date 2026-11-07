@@ -32,7 +32,7 @@ SeaDrop v2 tokens are [Seaport][seaport-link] contract offerers. Mints are execu
 
 ## Deployments
 
-On OpenSea, ERC-1155 drops use SeaDrop v2 from this branch. Each collection is a clone from `ERC1155SeaDropCloneFactory` at [`0x00b19A5200A100e5fc4c9800772f4d002f218400`](https://etherscan.io/address/0x00b19A5200A100e5fc4c9800772f4d002f218400#code), and mints fill Seaport 1.6 orders. ERC-721 drops use SeaDrop v1 from the [`main`](https://github.com/ProjectOpenSea/seadrop/tree/main) branch; OpenSea doesn't create v2 ERC-721 drops.
+On OpenSea, SeaDrop v2 from this branch currently powers ERC-1155 open collections, which the collection owner mints. Each is a clone from `ERC1155SeaDropCloneFactory` at [`0x00b19A5200A100e5fc4c9800772f4d002f218400`](https://etherscan.io/address/0x00b19A5200A100e5fc4c9800772f4d002f218400#code), and the owner mints through its configurer. OpenSea drops use SeaDrop v1 from the [`main`](https://github.com/ProjectOpenSea/seadrop/tree/main) branch. Earlier v2 ERC-1155 drops, which mint through Seaport 1.6 orders, are still live, but OpenSea no longer creates v2 drops.
 
 See [Deployments](docs/Deployments.md) for every network, the v1 contracts, and the legacy factories.
 
