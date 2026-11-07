@@ -44,6 +44,11 @@ contract DeploySeaDrop1155CloneFactoryTest is Test {
         DeploySeaDrop1155CloneFactory script =
             new DeploySeaDrop1155CloneFactory();
 
+        // An explicit zero address is checked like any other.
+        vm.setEnv("EXPECTED_ADDRESS", vm.toString(address(0)));
+        vm.expectRevert("SALT does not produce EXPECTED_ADDRESS");
+        script.run();
+
         // A stale EXPECTED_ADDRESS fails before anything is deployed.
         vm.setEnv("EXPECTED_ADDRESS", vm.toString(address(0xdead)));
         vm.expectRevert("SALT does not produce EXPECTED_ADDRESS");
