@@ -41,6 +41,10 @@ contract DeploySeaDrop1155CloneFactoryTest is Test {
     ///      variables and Foundry runs tests in parallel.
     function testDeploysToTheSaltAddressWithSeaport16() public {
         vm.setEnv("SALT", vm.toString(SALT));
+        // Set SEAPORT explicitly so a SEAPORT override in the shell running
+        // the tests can't change the expected address. It's the script's
+        // default, Seaport 1.6.
+        vm.setEnv("SEAPORT", vm.toString(SEAPORT_1_6));
         DeploySeaDrop1155CloneFactory script =
             new DeploySeaDrop1155CloneFactory();
 
@@ -55,7 +59,6 @@ contract DeploySeaDrop1155CloneFactoryTest is Test {
         script.run();
         assertEq(_predicted(SEAPORT_1_6).code.length, 0);
 
-        // Without SEAPORT set, the factory allows Seaport 1.6.
         vm.setEnv("EXPECTED_ADDRESS", vm.toString(_predicted(SEAPORT_1_6)));
         address deployed = script.run();
 
