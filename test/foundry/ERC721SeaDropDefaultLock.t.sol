@@ -11,6 +11,8 @@ import { ERC8451Lockable, LockMode } from "seadrop/lib/ERC8451Lockable.sol";
 
 import { IERC8451 } from "seadrop/interfaces/IERC8451.sol";
 
+import { Ownable } from "solady/src/auth/Ownable.sol";
+
 contract ERC721SeaDropDefaultWithMint is ERC721SeaDrop {
     constructor(address allowedConfigurer, address allowedSeaport)
         ERC721SeaDrop(allowedConfigurer, allowedSeaport, "", "")
@@ -160,16 +162,19 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
         token_.setTransferValidator(validator);
         token_.setDefaultLocked(true);
         token_.setTokensLocked(_asArray(1), false);
+        token_.setTokensLocked(_asArray(2), true);
 
         // Slot 9 (after ERC721A 4.3's _spotMinted) holds the transfer
         // validator in its low 20 bytes, then defaultLocked,
-        // permanentlyLocked, and hasTokenLockOverrides, so a holder transfer
-        // reads all of them with one storage read.
+        // permanentlyLocked, hasTokenLockOverrides, and the count of locked
+        // tokens, so a holder transfer reads all of them with one storage
+        // read.
         uint256 slot = uint256(vm.load(address(token_), bytes32(uint256(9))));
         assertEq(address(uint160(slot)), validator);
         assertEq((slot >> 160) & 0xff, 1, "defaultLocked");
         assertEq((slot >> 168) & 0xff, 0, "permanentlyLocked");
         assertEq((slot >> 176) & 0xff, 1, "hasTokenLockOverrides");
+        assertEq((slot >> 184) & type(uint64).max, 1, "lockedTokenCount");
     }
 
     function testInitializeLockRevertsOncePermanent() public {
@@ -201,5 +206,44 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
         expected[1] = LockEvents.locked(1, true);
         expected[2] = LockEvents.permanentlyLocked();
         _assertLockEvents(LockEvents.decode(vm.getRecordedLogs()), expected);
+    }
+
+    function testCannotRenounceOwnershipWhileTemporarilyLocked() public {
+        token_.setDefaultLocked(true);
+        vm.expectRevert(
+            ERC8451Lockable.CannotRenounceOwnershipWhileLocked.selector
+        );
+        token_.renounceOwnership();
+
+        // A token's own lock counts too.
+        token_.setDefaultLocked(false);
+        token_.setTokensLocked(_asArray(1), true);
+        vm.expectRevert(
+            ERC8451Lockable.CannotRenounceOwnershipWhileLocked.selector
+        );
+        token_.renounceOwnership();
+
+        token_.setTokensLocked(_asArray(1), false);
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(0));
+    }
+
+    function testCanRenounceOwnershipOncePermanentlyLocked() public {
+        token_.lockPermanently();
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(0));
+    }
+
+    function testRenounceOwnershipChecksOwnerFirst() public {
+        token_.setDefaultLocked(true);
+        vm.prank(holder);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        token_.renounceOwnership();
+    }
+
+    function testConduitNotApprovedOncePermanentlyLocked() public {
+        assertTrue(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
+        token_.lockPermanently();
+        assertFalse(token_.isApprovedForAll(holder, OPENSEA_CONDUIT));
     }
 }

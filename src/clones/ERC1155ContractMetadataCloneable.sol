@@ -89,9 +89,10 @@ contract ERC1155ContractMetadataCloneable is
     /// @notice The allowed contract that can configure SeaDrop parameters.
     address internal _CONFIGURER;
 
-    /// @notice Whether any token has been minted. The lock can only become
-    ///         permanent before then.
-    bool internal _mintStarted;
+    /// @notice Every token id that has had a nonzero max supply, which any
+    ///         mint needs. The lock can only become permanent while none of
+    ///         them has been minted.
+    uint256[] internal _tokenIdsWithMaxSupply;
 
     /**
      * @dev Reverts if the sender is not the owner or the allowed
@@ -221,6 +222,13 @@ contract ERC1155ContractMetadataCloneable is
                 newMaxSupply,
                 _tokenSupply[tokenId].totalMinted
             );
+        }
+
+        // Record the token id when it first gets a max supply, so the
+        // before-first-mint check for the permanent lock adds nothing to
+        // the mint path.
+        if (newMaxSupply != 0 && _tokenSupply[tokenId].maxSupply == 0) {
+            _tokenIdsWithMaxSupply.push(tokenId);
         }
 
         // Set the new max supply.
@@ -392,6 +400,36 @@ contract ERC1155ContractMetadataCloneable is
         returns (bool)
     {
         return true;
+    }
+
+    /**
+     * @notice Returns whether `operator` can manage every token of
+     *         `account`. The preapproved conduit stops being approved once
+     *         the lock is permanent, since it can never transfer the tokens
+     *         again.
+     */
+    function isApprovedForAll(address account, address operator)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        if (operator == _CONDUIT) {
+            return !permanentlyLocked();
+        }
+
+        return super.isApprovedForAll(account, operator);
+    }
+
+    /**
+     * @notice Give up ownership. Reverts while a temporary lock is in place,
+     *         since no one could lift it afterwards. Unlock first, or make
+     *         the lock permanent.
+     */
+    function renounceOwnership() public payable virtual override {
+        super.renounceOwnership();
+        _revertIfTemporarilyLocked();
     }
 
     /**
@@ -610,13 +648,6 @@ contract ERC1155ContractMetadataCloneable is
     function _incrementMintCounts(address to, uint256 id, uint256 amount)
         internal
     {
-        // Record that minting has started, after which the lock cannot
-        // become permanent. A zero-amount mint creates no token and does
-        // not count.
-        if (amount != 0 && !_mintStarted) {
-            _mintStarted = true;
-        }
-
         // Get the current token supply.
         TokenSupply storage tokenSupply = _tokenSupply[id];
 
@@ -666,12 +697,23 @@ contract ERC1155ContractMetadataCloneable is
      *      minted, so holders never get a permanent lock they could not see
      *      at mint, and a stolen owner key cannot apply one to a collection
      *      that already has holders. A temporary lock can still be applied
-     *      after minting, and it stays in place if the owner then gives up
-     *      ownership.
+     *      after minting, and the owner cannot give up ownership while one
+     *      is in place.
      */
     function _checkPermanentLockAllowed() internal view virtual override {
-        if (_mintStarted) {
-            revert CannotLockPermanentlyAfterMint();
+        // Every mint needs a nonzero max supply, so checking each token id
+        // that ever had one covers every mint. A zero-amount mint doesn't
+        // raise totalMinted, and burns don't lower it.
+        uint256[] storage tokenIds = _tokenIdsWithMaxSupply;
+        uint256 tokenIdsLength = tokenIds.length;
+        for (uint256 i = 0; i < tokenIdsLength;) {
+            if (_tokenSupply[tokenIds[i]].totalMinted != 0) {
+                revert CannotLockPermanentlyAfterMint();
+            }
+
+            unchecked {
+                ++i;
+            }
         }
     }
 }
