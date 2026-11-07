@@ -10,7 +10,7 @@ import {
 } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {
-    TransparentUpgradeableProxy
+    ITransparentUpgradeableProxy
 } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {
@@ -42,7 +42,7 @@ contract UpgradeERC721SeaDropUpgradeable is UpgradeableDeploymentAddresses {
         ERC721SeaDropUpgradeable implementation = new ERC721SeaDropUpgradeable();
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(proxy)), address(implementation)
+            ITransparentUpgradeableProxy(proxy), address(implementation)
         );
 
         vm.stopBroadcast();

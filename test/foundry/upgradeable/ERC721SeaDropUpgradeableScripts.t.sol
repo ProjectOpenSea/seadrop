@@ -16,7 +16,7 @@ import {
 } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {
-    TransparentUpgradeableProxy
+    ITransparentUpgradeableProxy
 } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {
@@ -65,8 +65,8 @@ contract ERC721SeaDropUpgradeableScriptsTest is Test {
         );
 
         // The admin is the ProxyAdmin, and it sees the same implementation.
-        TransparentUpgradeableProxy proxy =
-            TransparentUpgradeableProxy(payable(expected.proxy));
+        ITransparentUpgradeableProxy proxy =
+            ITransparentUpgradeableProxy(expected.proxy);
         ProxyAdmin proxyAdmin = ProxyAdmin(expected.admin);
         assertEq(proxyAdmin.getProxyAdmin(proxy), expected.admin);
         assertEq(
