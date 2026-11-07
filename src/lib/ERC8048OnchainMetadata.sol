@@ -31,12 +31,14 @@ import {
  *         The admin can lock a key for good. After that, nobody can write
  *         that key for any token, authorities included.
  *
- *         Each write emits ERC-4906 `MetadataUpdate` as well as
- *         `MetadataSet`, since marketplaces refresh tokens on ERC-4906
- *         events.
+ *         Each write emits `MetadataSet`, and ERC-4906 `MetadataUpdate`
+ *         for a token that exists, since marketplaces refresh tokens on
+ *         ERC-4906 events. Records written before a mint are picked up
+ *         when the token mints.
  *
  *         The token contract that inherits this must decide who the admin
- *         is in `_isMetadataAdmin`, name a token's holder in
+ *         is in `_isMetadataAdmin`, say whether a token exists in
+ *         `_metadataTokenExists`, name a token's holder in
  *         `_metadataHolderOf`, call `_clearMetadataAuthority` when a token
  *         is transferred or burned, and return true from
  *         `supportsInterface` for IERC8048Metadata and
@@ -138,12 +140,13 @@ abstract contract ERC8048OnchainMetadata is
         bytes calldata value
     ) external {
         _setMetadata(tokenId, key, value);
-        emit MetadataUpdate(tokenId);
+        _emitMetadataUpdate(tokenId);
     }
 
     /**
      * @notice Set `values[i]` for `keys[i]` on `tokenIds[i]`, each as
-     *         `setMetadata` would. Any entry that fails reverts the batch.
+     *         `setMetadata` would. Any entry that fails reverts the batch,
+     *         so leave out tokens whose holder has set a metadata authority.
      *         Consecutive entries for the same token emit one
      *         `MetadataUpdate`.
      *
@@ -170,7 +173,7 @@ abstract contract ERC8048OnchainMetadata is
             }
 
             if (i == length || tokenIds[i] != tokenId) {
-                emit MetadataUpdate(tokenId);
+                _emitMetadataUpdate(tokenId);
             }
         }
     }
@@ -244,6 +247,15 @@ abstract contract ERC8048OnchainMetadata is
     }
 
     /**
+     * @dev Emit ERC-4906 `MetadataUpdate` for `tokenId` if it exists.
+     */
+    function _emitMetadataUpdate(uint256 tokenId) internal {
+        if (_metadataTokenExists(tokenId)) {
+            emit MetadataUpdate(tokenId);
+        }
+    }
+
+    /**
      * @dev Store `value` for `key` on `tokenId` after checking the caller
      *      and the lock, and emit `MetadataSet`.
      */
@@ -275,6 +287,15 @@ abstract contract ERC8048OnchainMetadata is
      * @dev Returns whether `account` is the metadata admin.
      */
     function _isMetadataAdmin(address account)
+        internal
+        view
+        virtual
+        returns (bool);
+
+    /**
+     * @dev Returns whether `tokenId` exists.
+     */
+    function _metadataTokenExists(uint256 tokenId)
         internal
         view
         virtual

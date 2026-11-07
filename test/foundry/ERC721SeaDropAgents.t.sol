@@ -139,15 +139,26 @@ contract ERC721SeaDropAgentsTest is TestHelper {
     }
 
     function testOwnerSetsMetadataBeforeAndAfterMint() public {
-        // Before the token exists.
+        // Before the token exists: MetadataSet, but no ERC-4906 refresh
+        // for a token that isn't there yet.
+        vm.recordLogs();
         vm.expectEmit(true, true, false, true, address(agents));
         emit IERC8048Metadata.MetadataSet(1, "context", "context", "lore");
-        vm.expectEmit(false, false, false, true, address(agents));
-        emit ERC8048OnchainMetadata.MetadataUpdate(1);
         agents.setMetadata(1, "context", "lore");
+        assertEq(_count(vm.getRecordedLogs(), METADATA_UPDATE), 0);
         assertEq(agents.metadata(1, "context"), bytes("lore"));
 
+        // After mint, every write refreshes the token too.
         agents.mint(holder, 1);
+        vm.expectEmit(true, true, false, true, address(agents));
+        emit IERC8048Metadata.MetadataSet(
+            1,
+            "endpoint[web]",
+            "endpoint[web]",
+            "https://agent.example"
+        );
+        vm.expectEmit(false, false, false, true, address(agents));
+        emit ERC8048OnchainMetadata.MetadataUpdate(1);
         agents.setMetadata(1, "endpoint[web]", "https://agent.example");
         assertEq(
             agents.metadata(1, "endpoint[web]"), bytes("https://agent.example")
@@ -214,9 +225,17 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         (tokenIds[2], keys[2], values[2]) = (2, "context", "two");
         (tokenIds[3], keys[3], values[3]) = (1, "endpoint[a2a]", "a2a://one");
 
+        // Before mint, the batch emits no ERC-4906 refreshes.
         vm.recordLogs();
         agents.setMetadataBatch(tokenIds, keys, values);
         Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(_count(logs, METADATA_SET), 4);
+        assertEq(_count(logs, METADATA_UPDATE), 0);
+
+        agents.mint(holder, 2);
+        vm.recordLogs();
+        agents.setMetadataBatch(tokenIds, keys, values);
+        logs = vm.getRecordedLogs();
 
         assertEq(agents.metadata(1, "context"), bytes("one"));
         assertEq(agents.metadata(1, "endpoint[mcp]"), bytes("mcp://one"));
@@ -241,7 +260,6 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         agents.setMetadataBatch(tokenIds, keys, shortValues);
 
         // One bad entry reverts the whole batch.
-        agents.mint(holder, 2);
         vm.prank(holder);
         agents.setMetadataAuthority(2, holder);
         values[0] = "changed";
@@ -381,12 +399,17 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         agents.mint(holder, 1);
         vm.prank(holder);
         agents.setMetadataAuthority(1, agentWallet);
+        vm.prank(agentWallet);
+        agents.setMetadata(1, "endpoint[mcp]", "mcp://seller");
 
         vm.expectEmit(true, true, false, true, address(agents));
         emit IERC8048MetadataAuthority.MetadataAuthoritySet(1, address(0));
         vm.prank(holder);
         agents.transferFrom(holder, otherHolder, 1);
         assertEq(agents.metadataAuthority(1), address(0));
+
+        // The records the seller's authority wrote stay with the token.
+        assertEq(agents.metadata(1, "endpoint[mcp]"), bytes("mcp://seller"));
 
         // The seller's authority can't write the buyer's records.
         vm.prank(agentWallet);
@@ -415,8 +438,12 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         agents.burn(1);
         assertEq(agents.metadataAuthority(1), address(0));
 
-        // The records stay, and the owner can still write them.
+        // The records stay, and the owner can still write them, without
+        // refreshing a token that no longer exists.
+        vm.recordLogs();
         agents.setMetadata(1, "context", "retired");
+        assertEq(_count(vm.getRecordedLogs(), METADATA_UPDATE), 0);
+        assertEq(agents.metadata(1, "context"), bytes("retired"));
     }
 
     function testRegisterAgents() public {

@@ -48,10 +48,12 @@ Anyone can read a token's records with `metadata(tokenId, key)`. Writing them wo
 - While a token has no metadata authority, the owner and the metadata writers the owner allows (`setMetadataWriter`) can write its records. A writer can't call any other owner function, so a hot wallet can run a metadata job. Records can be written before a token mints.
 - The token's holder can set a metadata authority for it at any time with `setMetadataAuthority`, usually themself or their agent's wallet. While a token has an authority, only that authority can write its records, and the owner and writers can't.
 - The authority can hand the role to another address or clear it. Clearing it returns the token to the owner and writers.
-- A transfer or burn clears the authority, so a seller's authority never carries over to the buyer.
+- A transfer or burn clears the authority, so a seller's authority never carries over to the buyer. The records stay with the token: a buyer gets whatever was written before the sale, and the owner and writers can write the token's records again until the buyer sets an authority.
 - `lockMetadataKey(key)` locks a key for every token, for good. After that nobody can write it, authorities included. Only the owner can lock a key.
 
-`setMetadataBatch` writes many records in one transaction. Every write emits ERC-8048's `MetadataSet` and ERC-4906's `MetadataUpdate`.
+`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts, so leave out tokens whose holder has set an authority.
+
+Every write emits ERC-8048's `MetadataSet`. A write to a minted token also emits ERC-4906's `MetadataUpdate`. Writes before mint don't, since marketplaces read a token's metadata when it mints.
 
 The contract doesn't fix any keys. ERC-8048's agent profile (nicknamed ERC-721T) reserves these:
 
@@ -71,5 +73,5 @@ Token id 0 is not special. Put collection-level data in the contract URI.
 - The NFT's page shows that the token is bound to an agent, from the adapter's `AgentBound` event.
 - The agent card shows on the agent's identity item in the ERC-8004 registry, read from the agent URI.
 - OpenSea doesn't read ERC-8048 records. Anything OpenSea should show, such as the name, image and traits, goes in the `tokenURI` JSON.
-- OpenSea refreshes a token's metadata when it sees an ERC-4906 event, and every record write emits one.
+- OpenSea refreshes a token's metadata when it sees an ERC-4906 event, and every record write to a minted token emits one.
 - Agents created with the adapter's `counterfactualRegister` are not indexed.

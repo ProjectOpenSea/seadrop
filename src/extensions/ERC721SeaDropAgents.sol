@@ -194,6 +194,19 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
     }
 
     /**
+     * @dev A token exists from mint until burn.
+     */
+    function _metadataTokenExists(uint256 tokenId)
+        internal
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return _exists(tokenId);
+    }
+
+    /**
      * @dev A token's holder is its owner, from mint until burn.
      */
     function _metadataHolderOf(uint256 tokenId)
