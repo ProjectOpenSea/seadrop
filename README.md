@@ -49,6 +49,7 @@ This diagram shows the logic flow in the case that a drop is hosted on OpenSea, 
 - [SeaDrop Deployment](docs/SeaDropDeployment.md)
 - [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
 - [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
+- [Agent NFTs](docs/AgentNFTs.md)
 - [Provenance Hash](docs/ProvenanceHash.md)
 - [Upgradeable Contracts](docs/UpgradeableContracts.md)
 
