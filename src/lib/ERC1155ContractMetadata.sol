@@ -84,10 +84,10 @@ contract ERC1155ContractMetadata is
     /// @notice The allowed contract that can configure SeaDrop parameters.
     address internal immutable _CONFIGURER;
 
-    /// @notice Every token id that has had a nonzero max supply, which any
-    ///         mint needs. The lock can only become permanent while none of
-    ///         them has been minted.
-    uint256[] internal _tokenIdsWithMaxSupply;
+    /// @notice Whether any token has been minted. The lock can only become
+    ///         permanent before then. Only the first mint of each token id
+    ///         checks it, so later mints don't pay for it.
+    bool internal _mintStarted;
 
     /**
      * @dev Reverts if the sender is not the owner or the allowed
@@ -210,13 +210,6 @@ contract ERC1155ContractMetadata is
                 newMaxSupply,
                 _tokenSupply[tokenId].totalMinted
             );
-        }
-
-        // Record the token id when it first gets a max supply, so the
-        // before-first-mint check for the permanent lock adds nothing to
-        // the mint path.
-        if (newMaxSupply != 0 && _tokenSupply[tokenId].maxSupply == 0) {
-            _tokenIdsWithMaxSupply.push(tokenId);
         }
 
         // Set the new max supply.
@@ -638,12 +631,21 @@ contract ERC1155ContractMetadata is
     {
         // Get the current token supply.
         TokenSupply storage tokenSupply = _tokenSupply[id];
+        uint256 totalMinted = tokenSupply.totalMinted;
 
-        if (tokenSupply.totalMinted + amount > tokenSupply.maxSupply) {
+        if (totalMinted + amount > tokenSupply.maxSupply) {
             revert MintExceedsMaxSupply(
-                tokenSupply.totalMinted + amount,
+                totalMinted + amount,
                 tokenSupply.maxSupply
             );
+        }
+
+        // Record that minting has started, after which the lock cannot
+        // become permanent. Only the first mint of each token id reads the
+        // flag, since later ones find a nonzero total. A zero-amount mint
+        // creates no token and does not count.
+        if (totalMinted == 0 && amount != 0 && !_mintStarted) {
+            _mintStarted = true;
         }
 
         // Increment supply and number minted.
@@ -689,19 +691,8 @@ contract ERC1155ContractMetadata is
      *      is in place.
      */
     function _checkPermanentLockAllowed() internal view virtual override {
-        // Every mint needs a nonzero max supply, so checking each token id
-        // that ever had one covers every mint. A zero-amount mint doesn't
-        // raise totalMinted, and burns don't lower it.
-        uint256[] storage tokenIds = _tokenIdsWithMaxSupply;
-        uint256 tokenIdsLength = tokenIds.length;
-        for (uint256 i = 0; i < tokenIdsLength;) {
-            if (_tokenSupply[tokenIds[i]].totalMinted != 0) {
-                revert CannotLockPermanentlyAfterMint();
-            }
-
-            unchecked {
-                ++i;
-            }
+        if (_mintStarted) {
+            revert CannotLockPermanentlyAfterMint();
         }
     }
 }

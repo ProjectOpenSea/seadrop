@@ -473,8 +473,8 @@ contract ERC1155SeaDropDefaultLockTest is SeaDrop1155Test {
     }
 
     function testMaxSupplyWithoutMintAllowsPermanentLock() public {
-        // Setting a max supply again, or back to zero and up again, records
-        // the token id more than once but changes nothing.
+        // Setting a max supply again, or back to zero and up again, without
+        // minting doesn't count as a mint.
         token_.setMaxSupply(1, 50);
         token_.setMaxSupply(3, 5);
         token_.setMaxSupply(3, 0);

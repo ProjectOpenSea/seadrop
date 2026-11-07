@@ -90,9 +90,8 @@ contract ERC1155ContractMetadataCloneable is
     address internal _CONFIGURER;
 
     /// @notice Whether any token has been minted. The lock can only become
-    ///         permanent before then. It shares `_CONFIGURER`'s slot, which
-    ///         every mint path already reads, so tracking it costs a mint
-    ///         almost nothing.
+    ///         permanent before then. Only the first mint of each token id
+    ///         checks it, so later mints don't pay for it.
     bool internal _mintStarted;
 
     /**
@@ -642,21 +641,23 @@ contract ERC1155ContractMetadataCloneable is
     function _incrementMintCounts(address to, uint256 id, uint256 amount)
         internal
     {
-        // Record that minting has started, after which the lock cannot
-        // become permanent. A zero-amount mint creates no token and does
-        // not count.
-        if (amount != 0 && !_mintStarted) {
-            _mintStarted = true;
-        }
-
         // Get the current token supply.
         TokenSupply storage tokenSupply = _tokenSupply[id];
+        uint256 totalMinted = tokenSupply.totalMinted;
 
-        if (tokenSupply.totalMinted + amount > tokenSupply.maxSupply) {
+        if (totalMinted + amount > tokenSupply.maxSupply) {
             revert MintExceedsMaxSupply(
-                tokenSupply.totalMinted + amount,
+                totalMinted + amount,
                 tokenSupply.maxSupply
             );
+        }
+
+        // Record that minting has started, after which the lock cannot
+        // become permanent. Only the first mint of each token id reads the
+        // flag, since later ones find a nonzero total. A zero-amount mint
+        // creates no token and does not count.
+        if (totalMinted == 0 && amount != 0 && !_mintStarted) {
+            _mintStarted = true;
         }
 
         // Increment supply and number minted.
