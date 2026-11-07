@@ -858,7 +858,7 @@ contract ERC721SeaDropAdminTest is TestHelper {
 
     /// @dev Assert that no log with `topic0` was emitted by `emitter` since
     ///      `vm.recordLogs()` was called.
-    function _assertNotEmitted(address emitter, bytes32 topic0) internal {
+    function _assertNotEmitted(address emitter, bytes32 topic0) internal view {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         for (uint256 i = 0; i < logs.length; i++) {
             bool matches = logs[i].emitter == emitter
