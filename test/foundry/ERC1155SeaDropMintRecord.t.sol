@@ -448,7 +448,8 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         // While the caller's mint has the record open, its receive hook fills
         // a mint order on the second allowed Seaport. That generateOrder
-        // reverts, so the outer fill does too.
+        // reverts with NestedSeaportCall, and Seaport 1.6 bubbles the token's
+        // revert up through the outer fill.
         caller.arm(
             secondSeaport,
             abi.encodeCall(
@@ -474,9 +475,8 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidContractOrder.selector,
-                (uint256(uint160(address(token))) << 96)
-                    + consideration.getContractOffererNonce(address(token))
+                ERC1155SeaDropErrorsAndEvents.NestedSeaportCall.selector,
+                secondSeaport
             )
         );
         caller.run(address(consideration), outerFill);

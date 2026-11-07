@@ -161,10 +161,11 @@ contract ERC721SeaDropDefaultLockTest is SeaDrop721Test {
         token_.setDefaultLocked(true);
         token_.setTokensLocked(_asArray(1), false);
 
-        // Slot 8 holds the transfer validator in its low 20 bytes, then
-        // defaultLocked, permanentlyLocked, and hasTokenLockOverrides, so a
-        // holder transfer reads all of them with one storage read.
-        uint256 slot = uint256(vm.load(address(token_), bytes32(uint256(8))));
+        // Slot 9 (after ERC721A 4.3's _spotMinted) holds the transfer
+        // validator in its low 20 bytes, then defaultLocked,
+        // permanentlyLocked, and hasTokenLockOverrides, so a holder transfer
+        // reads all of them with one storage read.
+        uint256 slot = uint256(vm.load(address(token_), bytes32(uint256(9))));
         assertEq(address(uint160(slot)), validator);
         assertEq((slot >> 160) & 0xff, 1, "defaultLocked");
         assertEq((slot >> 168) & 0xff, 0, "permanentlyLocked");

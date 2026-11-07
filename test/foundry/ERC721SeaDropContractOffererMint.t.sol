@@ -40,9 +40,9 @@ import { stdError } from "forge-std/StdError.sol";
  *      deployment, configuration and admin cases are in
  *      ERC721SeaDropContractOfferer.t.sol.
  *
- *      Seaport wraps any `generateOrder` revert in
- *      `InvalidContractOrder(orderHash)`, so failures also check the SeaDrop
- *      error through `previewOrder`, which runs the same validation.
+ *      Seaport bubbles up a `generateOrder` revert, and failures also check
+ *      the SeaDrop error through `previewOrder`, which runs the same
+ *      validation.
  */
 contract ERC721SeaDropContractOffererMintTest is SeaDrop721OffererFixture {
     /// @dev Should not be able to mint until the creator payout is set.

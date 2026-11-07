@@ -307,7 +307,9 @@ contract ERC1155SeaDropTest is SeaDrop1155Test {
         );
         assertEq(order.parameters.offer.length, 0);
 
-        _expectInvalidContractOrder(address(token));
+        vm.expectRevert(
+            MustSpecifyERC1155ConsiderationItemForSeaDropMint.selector
+        );
         _fulfill(order, address(this), 0);
     }
 }

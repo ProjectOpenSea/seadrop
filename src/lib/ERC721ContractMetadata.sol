@@ -24,7 +24,7 @@ import { IERC8451 } from "../interfaces/IERC8451.sol";
 
 import { ERC721A } from "ERC721A/ERC721A.sol";
 
-import { Ownable } from "solady/src/auth/Ownable.sol";
+import { SeaDropOwnable } from "./SeaDropOwnable.sol";
 
 import { ERC2981 } from "solady/src/tokens/ERC2981.sol";
 
@@ -50,7 +50,7 @@ contract ERC721ContractMetadata is
     // the transfer validator's storage slot.
     ERC8451Lockable,
     ERC2981,
-    Ownable,
+    SeaDropOwnable,
     IERC721ContractMetadata
 {
     /// @notice The max supply.

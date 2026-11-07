@@ -167,4 +167,12 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
             _addrs(address(consideration))
         );
     }
+
+    /// @dev The public getter solady made internal keeps its 48 hours.
+    function testCloneOwnershipHandoverValidFor() public {
+        address clone = factory.createClone("name", "symbol", bytes32("1"));
+        assertEq(
+            ERC1155SeaDropCloneable(clone).ownershipHandoverValidFor(), 48 hours
+        );
+    }
 }

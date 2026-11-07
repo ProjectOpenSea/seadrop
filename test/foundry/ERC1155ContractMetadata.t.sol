@@ -44,6 +44,11 @@ contract ERC1155ContractMetadataTest is SeaDrop1155Test {
         assertEq(token.symbol(), "T1155");
     }
 
+    /// @dev The public getter solady made internal keeps its 48 hours.
+    function testOwnershipHandoverValidFor() public view {
+        assertEq(token.ownershipHandoverValidFor(), 48 hours);
+    }
+
     function testOnlyOwnerCanSetBaseURI() public {
         assertEq(token.baseURI(), "");
 
