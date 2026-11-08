@@ -23,6 +23,7 @@ contract ERC721ContractMetadataTest is TestHelper {
     event ContractURIUpdated();
     event MaxSupplyUpdated(uint256 newMaxSupply);
     event RoyaltyInfoUpdated(address receiver, uint256 bps);
+    event PotentialOwnerUpdated(address newPotentialAdministrator);
 
     function setUp() public {
         // Deploy the ERC721SeaDrop token. The test contract is the owner.
@@ -268,5 +269,28 @@ contract ERC721ContractMetadataTest is TestHelper {
         returns (bytes4)
     {
         return this.onERC721Received.selector;
+    }
+
+    function testRenounceOwnership_cancelsPendingTransfer() public {
+        address pending = makeAddr("pending");
+        token.transferOwnership(pending);
+
+        vm.expectEmit(true, true, true, true, address(token));
+        emit PotentialOwnerUpdated(address(0));
+        token.renounceOwnership();
+        assertEq(token.owner(), address(0));
+
+        // The pending owner can't take back a renounced contract.
+        vm.prank(pending);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        token.acceptOwnership();
+        assertEq(token.owner(), address(0));
+    }
+
+    function testRenounceOwnership_onlyOwner() public {
+        vm.prank(minter);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        token.renounceOwnership();
+        assertEq(token.owner(), address(this));
     }
 }

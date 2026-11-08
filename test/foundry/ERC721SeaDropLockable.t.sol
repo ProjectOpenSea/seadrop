@@ -827,6 +827,21 @@ contract ERC721SeaDropLockableTest is TestHelper {
         token_.renounceOwnership();
     }
 
+    function testRenounceOwnershipCancelsPendingTransfer() public {
+        _setUp(LockMode.Unlocked);
+        address pending = makeAddr("pending");
+        token_.transferOwnership(pending);
+
+        token_.renounceOwnership();
+        assertEq(token_.owner(), address(0));
+
+        // The pending owner can't take the contract back and lock it.
+        vm.prank(pending);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        token_.acceptOwnership();
+        assertEq(token_.owner(), address(0));
+    }
+
     function testConduitNotApprovedOncePermanentlyLocked() public {
         _setUp(LockMode.Locked);
         vm.prank(holder);
