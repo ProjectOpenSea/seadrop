@@ -19,7 +19,14 @@ import {
 
 import { ERC1155SeaDrop } from "seadrop/ERC1155SeaDrop.sol";
 
-import { PublicDrop } from "seadrop/lib/ERC1155SeaDropStructs.sol";
+import {
+    ERC1155SeaDropConfigurer
+} from "seadrop/lib/ERC1155SeaDropConfigurer.sol";
+
+import {
+    MultiConfigureStruct,
+    PublicDrop
+} from "seadrop/lib/ERC1155SeaDropStructs.sol";
 
 import { AdvancedOrder } from "seaport-types/src/lib/ConsiderationStructs.sol";
 
@@ -165,6 +172,40 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         assertEq(
             IERC1155SeaDrop(first).getAllowedSeaport(),
             _addrs(address(consideration))
+        );
+    }
+
+    event ContractURIUpdated(string newContractURI);
+    event ContractURIUpdated();
+
+    /// @dev Clones emit ERC-7572's ContractURIUpdated() after SeaDrop's
+    ///      original event, from setContractURI and from the factory's
+    ///      configurer.
+    function testCloneSetContractURIEmitsERC7572Event() public {
+        address clone = factory.createClone("name", "symbol", bytes32("1"));
+
+        vm.recordLogs();
+        ERC1155SeaDropCloneable(clone)
+            .setContractURI("https://example.com/contract");
+        _assertContractURIUpdatedLogs(
+            vm.getRecordedLogs(), clone, "https://example.com/contract"
+        );
+        assertEq(
+            ERC1155SeaDropCloneable(clone).contractURI(),
+            "https://example.com/contract"
+        );
+
+        MultiConfigureStruct memory config;
+        config.contractURI = "https://example.com/contract2";
+        vm.expectEmit(true, true, true, true, clone);
+        emit ContractURIUpdated("https://example.com/contract2");
+        vm.expectEmit(true, true, true, true, clone);
+        emit ContractURIUpdated();
+        ERC1155SeaDropConfigurer(factory.configurer())
+            .multiConfigure(clone, config);
+        assertEq(
+            ERC1155SeaDropCloneable(clone).contractURI(),
+            "https://example.com/contract2"
         );
     }
 
