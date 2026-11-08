@@ -50,6 +50,13 @@ interface ISeaDropTokenContractMetadata is IERC2981 {
     event ContractURIUpdated(string newContractURI);
 
     /**
+     * @dev Emit an event when the collection-level metadata is updated,
+     *      according to ERC-7572. Emitted alongside the event above, which
+     *      indexers that predate ERC-7572 still read.
+     */
+    event ContractURIUpdated();
+
+    /**
      * @dev Emit an event when the max token supply is updated.
      */
     event MaxSupplyUpdated(uint256 newMaxSupply);
