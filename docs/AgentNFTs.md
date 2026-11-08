@@ -1,6 +1,7 @@
 # Agent NFTs
 
 `ERC721SeaDropAgents` (in `src/extensions`) is `ERC721SeaDrop` for collections whose tokens are AI agents. It adds two things:
+
 - Agent registration. The owner registers an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent for each token before it mints, through an [ERC-8217](https://eips.ethereum.org/EIPS/eip-8217) adapter. Whoever holds the token controls its agent.
 - Onchain metadata under [ERC-8048](https://eips.ethereum.org/EIPS/eip-8048): string keys with bytes values, stored per token, with ERC-8048's Metadata Authority extension. The ERC-8048 code lives in `src/lib/ERC8048OnchainMetadata.sol`, so other token contracts can reuse it.
 
@@ -33,6 +34,7 @@ function registerAgents(
 ```
 
 `registerAgents` registers one agent per token id from `firstTokenId` to `lastTokenId`. Each agent's URI is `prefix`, then the token id, then `suffix`, for example `https://example.com/agents/` and `.json`. `agentOf(tokenId)` returns the agent id.
+
 - Only the owner can call it.
 - It only works for tokens that are not minted yet. The adapter lets a token contract register a token only while the token has no owner. Set the max supply first, since the range can't go past it.
 - Tokens already registered are skipped, so you can send a range again after a failed transaction. The adapter itself doesn't stop a token from being registered twice.
@@ -45,6 +47,7 @@ The agent URI should point to an ERC-8004 registration file, the JSON whose `typ
 ## Onchain metadata
 
 Anyone can read a token's records with `metadata(tokenId, key)`. Writing them works like this:
+
 - While a token has no metadata authority, the owner and the metadata writers the owner allows (`setMetadataWriter`) can write its records. A writer can't call any other owner function, so a hot wallet can run a metadata job. Records can be written before a token mints.
 - The token's holder can set a metadata authority for it at any time with `setMetadataAuthority`, usually themself or their agent's wallet. While a token has an authority, only that authority can write its records, and the owner and writers can't.
 - The authority can hand the role to another address or clear it. Clearing it returns the token to the owner and writers.
