@@ -5,6 +5,7 @@
 ## Layout
 
 `src/upgradeable` mirrors `src`, with the suffix `Upgradeable` on each contract that has a regular counterpart:
+
 - `ERC721SeaDropUpgradeable.sol` and `ERC721ContractMetadataUpgradeable.sol`
 - `extensions/ERC721SeaDropRandomOffsetUpgradeable.sol`
 - `lib/ERC721AConduitPreapprovedUpgradeable.sol` and `lib/ERC721TransferValidatorUpgradeable.sol`
@@ -16,6 +17,7 @@ The upgradeable contracts share the interfaces, structs, errors, and events in `
 ## Storage
 
 State lives in the namespaced `Layout` structs of the `*Storage.sol` libraries, the diamond storage pattern from [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535) that ERC721A-Upgradeable also uses since v4. OpenZeppelin's `Initializable` keeps its two flags in slot 0. Proxies already deployed hold their state at these slots, so:
+
 - Never change a library's `STORAGE_SLOT` string, including the `openzepplin` misspelling.
 - Never reorder, retype, or remove a `Layout` field. A new implementation may only append fields to the end of a `Layout`.
 
