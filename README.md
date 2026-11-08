@@ -120,6 +120,7 @@ SeaDrop was audited after development by [Spearbit](https://spearbit.com/), read
 Contributions to SeaDrop are welcome by anyone interested in writing more tests, improving readability, optimizing for gas efficiency, or extending the protocol with new features.
 
 When making a pull request, ensure that:
+
 - All tests pass.
 - Code coverage remains at 100%.
 - All new code adheres to the style guide:

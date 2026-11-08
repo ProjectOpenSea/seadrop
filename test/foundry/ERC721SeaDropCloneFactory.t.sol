@@ -134,6 +134,34 @@ contract ERC721SeaDropCloneFactoryTest is Test {
         token.multiConfigure(config);
     }
 
+    event ContractURIUpdated(string newContractURI);
+    event ContractURIUpdated();
+
+    /// @dev Clones emit ERC-7572's ContractURIUpdated() after SeaDrop's
+    ///      original event, from setContractURI and from multiConfigure.
+    function testClone_setContractURI_emitsERC7572Event() public {
+        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(
+            factory.createClone("name", "symbol", bytes32("1"))
+        );
+
+        vm.expectEmit(true, true, true, true, address(token));
+        emit ContractURIUpdated("https://example.com/contract");
+        vm.expectEmit(true, true, true, true, address(token));
+        emit ContractURIUpdated();
+        token.setContractURI("https://example.com/contract");
+        assertEq(token.contractURI(), "https://example.com/contract");
+
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config;
+        config.seaDropImpl = factory.DEFAULT_SEADROP();
+        config.contractURI = "https://example.com/contract2";
+        vm.expectEmit(true, true, true, true, address(token));
+        emit ContractURIUpdated("https://example.com/contract2");
+        vm.expectEmit(true, true, true, true, address(token));
+        emit ContractURIUpdated();
+        token.multiConfigure(config);
+        assertEq(token.contractURI(), "https://example.com/contract2");
+    }
+
     function testClone_getTransferValidationFunction() public {
         ERC721SeaDropCloneable token = ERC721SeaDropCloneable(
             factory.createClone("name", "symbol", bytes32("1"))
