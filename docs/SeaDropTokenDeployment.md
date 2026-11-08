@@ -5,6 +5,7 @@ An example script to deploy a token contract is located at [DeployAndConfigureEx
 ### ERC721SeaDrop
 
 `ERC721SeaDrop` contains only an Owner role (assigned to the deployer of the contract) that has authorization for all methods.
+
 1. Deploy `src/ERC721SeaDrop.sol` with constructor args `string name, string symbol, address[] allowedSeaDrop`
    1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Set the token max supply with `token.setMaxSupply()`
