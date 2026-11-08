@@ -20,10 +20,9 @@ contract ERC721SeaDropCloneFactory {
         external
         returns (address)
     {
-        // Derive a pseudo-random salt, so clone addresses don't collide
-        // across chains.
-        bytes32 cloneSalt =
-            keccak256(abi.encodePacked(salt, blockhash(block.number)));
+        // Bind the salt to the caller, so no one can take a clone address
+        // by copying the salt from someone else's pending transaction.
+        bytes32 cloneSalt = keccak256(abi.encode(msg.sender, salt));
 
         address instance = Clones.cloneDeterministic(
             seaDropCloneableUpgradeableImplementation, cloneSalt
