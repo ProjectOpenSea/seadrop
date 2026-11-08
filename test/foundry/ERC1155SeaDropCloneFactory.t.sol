@@ -160,6 +160,25 @@ contract ERC1155SeaDropCloneFactoryTest is SeaDrop1155Test {
         );
     }
 
+    /// @dev The clone salt is bound to the caller: another caller using the
+    ///      same salt gets a different clone and doesn't block this one.
+    function testCreateCloneSaltIsBoundToCaller() public {
+        bytes32 salt = bytes32("1");
+        address other = makeAddr("other");
+
+        vm.prank(other);
+        address theirs = factory.createClone("x", "x", salt);
+        address mine = factory.createClone("name", "symbol", salt);
+
+        assertTrue(theirs != mine);
+        assertEq(ERC1155SeaDrop(theirs).owner(), other);
+        assertEq(ERC1155SeaDrop(mine).owner(), address(this));
+
+        // The same caller can't reuse a salt.
+        vm.expectRevert(bytes("ERC1167: create2 failed"));
+        factory.createClone("name", "symbol", salt);
+    }
+
     /// @dev Clones of the locked implementation still initialize, once.
     function testClonesOfLockedImplementationInitialize() public {
         address first = factory.createClone("first", "ONE", bytes32("1"));
