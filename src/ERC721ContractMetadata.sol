@@ -322,6 +322,16 @@ contract ERC721ContractMetadata is
     }
 
     /**
+     * @notice Give up ownership. Also cancels a pending ownership transfer,
+     *         so the pending owner can't accept it and take back a contract
+     *         that was renounced.
+     */
+    function renounceOwnership() public virtual override {
+        cancelOwnershipTransfer();
+        super.renounceOwnership();
+    }
+
+    /**
      * @dev Hook that is called before any token transfer.
      *      This includes minting and burning.
      */

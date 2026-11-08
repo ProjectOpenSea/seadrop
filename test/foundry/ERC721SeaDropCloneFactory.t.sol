@@ -9,6 +9,7 @@ import {
     ERC721SeaDropCloneable
 } from "../../src/clones/ERC721SeaDropCloneable.sol";
 import { SeaDrop } from "../../src/SeaDrop.sol";
+import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 import {
     PublicDrop,
     SignedMintValidationParams,
@@ -30,6 +31,43 @@ contract ERC721SeaDropCloneFactoryTest is Test {
 
     function testClone__snapshot() public {
         factory.createClone("name", "symbol", bytes32("1"));
+    }
+
+    function testCreateClone_saltIsBoundToCaller() public {
+        bytes32 salt = bytes32("1");
+        address other = makeAddr("other");
+
+        // Another caller using the same salt, for example by copying it
+        // from a pending transaction, gets a different clone and doesn't
+        // block this one.
+        vm.prank(other);
+        address theirs = factory.createClone("x", "x", salt);
+        address mine = factory.createClone("name", "symbol", salt);
+
+        assertTrue(theirs != mine);
+        assertEq(ERC721SeaDropCloneable(theirs).owner(), other);
+        assertEq(ERC721SeaDropCloneable(mine).owner(), address(this));
+
+        // The same caller can't reuse a salt.
+        vm.expectRevert(bytes("ERC1167: create2 failed"));
+        factory.createClone("name", "symbol", salt);
+    }
+
+    function testCloneRenounceOwnership_cancelsPendingTransfer() public {
+        ERC721SeaDropCloneable token = ERC721SeaDropCloneable(
+            factory.createClone("name", "symbol", bytes32("1"))
+        );
+        address pending = makeAddr("pending");
+        token.transferOwnership(pending);
+
+        token.renounceOwnership();
+        assertEq(token.owner(), address(0));
+
+        // The pending owner can't take back a renounced clone.
+        vm.prank(pending);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        token.acceptOwnership();
+        assertEq(token.owner(), address(0));
     }
 
     event SeaDropTokenDeployed();
