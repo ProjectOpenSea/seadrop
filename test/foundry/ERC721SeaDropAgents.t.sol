@@ -21,6 +21,12 @@ import { MockAgentAdapter } from "seadrop/test/MockAgentAdapter.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
+import { ERC721 } from "openzeppelin-contracts/token/ERC721/ERC721.sol";
+
+import {
+    ERC721URIStorage
+} from "openzeppelin-contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+
 contract ERC721SeaDropAgentsWithMint is ERC721SeaDropAgents {
     constructor(address[] memory allowedSeaDrop, address adapter)
         ERC721SeaDropAgents("Agents", "AGENT", allowedSeaDrop, adapter)
@@ -47,6 +53,56 @@ interface IAgentAdapterView {
         returns (bool);
 
     function tokenURI(uint256 agentId) external view returns (string memory);
+}
+
+/// @dev ERC8048OnchainMetadata next to OpenZeppelin's ERC721URIStorage,
+///      which declares ERC-4906's events itself.
+contract URIStorageWithOnchainMetadata is
+    ERC721URIStorage,
+    ERC8048OnchainMetadata
+{
+    address internal immutable _ADMIN = msg.sender;
+
+    constructor() ERC721("Reuse", "REUSE") { }
+
+    function mint(address to, uint256 tokenId) external {
+        _mint(to, tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override
+        returns (bool)
+    {
+        return interfaceId == type(IERC8048Metadata).interfaceId
+            || interfaceId == type(IERC8048MetadataAuthority).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
+
+    function _isMetadataAdmin(address account)
+        internal
+        view
+        override
+        returns (bool)
+    {
+        return account == _ADMIN;
+    }
+
+    function _metadataHolderOf(uint256 tokenId)
+        internal
+        view
+        override
+        returns (address)
+    {
+        return _ownerOf(tokenId);
+    }
+
+    function _emitMetadataUpdate(uint256 tokenId) internal override {
+        if (_exists(tokenId)) {
+            emit MetadataUpdate(tokenId);
+        }
+    }
 }
 
 contract ERC721SeaDropAgentsTest is TestHelper {
@@ -158,7 +214,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
             "https://agent.example"
         );
         vm.expectEmit(false, false, false, true, address(agents));
-        emit ERC8048OnchainMetadata.MetadataUpdate(1);
+        emit ERC721SeaDropAgents.MetadataUpdate(1);
         agents.setMetadata(1, "endpoint[web]", "https://agent.example");
         assertEq(
             agents.metadata(1, "endpoint[web]"), bytes("https://agent.example")
@@ -427,6 +483,36 @@ contract ERC721SeaDropAgentsTest is TestHelper {
             ),
             0
         );
+    }
+
+    function testSafeTransferClearsOnlyTheMovedToken() public {
+        // One batch mint of two tokens clears nothing.
+        agents.mint(holder, 2);
+        vm.startPrank(holder);
+        agents.setMetadataAuthority(1, agentWallet);
+        agents.setMetadataAuthority(2, agentWallet);
+
+        agents.safeTransferFrom(holder, otherHolder, 2);
+        vm.stopPrank();
+
+        assertEq(agents.metadataAuthority(1), agentWallet);
+        assertEq(agents.metadataAuthority(2), address(0));
+    }
+
+    function testReusableNextToOpenZeppelinERC4906() public {
+        URIStorageWithOnchainMetadata reuse =
+            new URIStorageWithOnchainMetadata();
+        reuse.mint(holder, 7);
+
+        vm.expectEmit(true, true, true, true, address(reuse));
+        emit ERC721SeaDropAgents.MetadataUpdate(7);
+        reuse.setMetadata(7, "context", "hello");
+        assertEq(reuse.metadata(7, "context"), bytes("hello"));
+
+        vm.prank(holder);
+        reuse.setMetadataAuthority(7, holder);
+        vm.expectRevert(_writeUnauthorized(7));
+        reuse.setMetadata(7, "context", "bye");
     }
 
     function testBurnClearsMetadataAuthority() public {

@@ -3,7 +3,7 @@
 `ERC721SeaDropAgents` (in `src/extensions`) is `ERC721SeaDrop` for collections whose tokens are AI agents. It adds two things:
 
 - Agent registration. The owner registers an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent for each token before it mints, through an [ERC-8217](https://eips.ethereum.org/EIPS/eip-8217) adapter. Whoever holds the token controls its agent.
-- Onchain metadata under [ERC-8048](https://eips.ethereum.org/EIPS/eip-8048): string keys with bytes values, stored per token, with ERC-8048's Metadata Authority extension. The ERC-8048 code lives in `src/lib/ERC8048OnchainMetadata.sol`, so other token contracts can reuse it.
+- Onchain metadata under [ERC-8048](https://eips.ethereum.org/EIPS/eip-8048): string keys with bytes values, stored per token, with ERC-8048's Metadata Authority extension. The ERC-8048 code lives in `src/lib/ERC8048OnchainMetadata.sol`, so other token contracts can reuse it, including ones that already implement ERC-4906.
 
 Minting, drop configuration and `tokenURI` work as in `ERC721SeaDrop`.
 
@@ -20,7 +20,9 @@ The constructor takes the usual name, symbol and allowed SeaDrop addresses, plus
 
 On a network without an adapter, pass the zero address. Registration then reverts with `AgentAdapterNotSet`, and onchain metadata still works.
 
-The contract's runtime code is about 23.5 KB, about 1 KB under the EIP-170 limit, so a contract that inherits it has little room to add code.
+The adapters are upgradeable proxies. On Ethereum and Base a 3-of-4 Safe controls their upgrades, so the bindings between tokens and agents rely on that Safe.
+
+The contract's runtime code is about 23.6 KB, about 1 KB under the EIP-170 limit, so a contract that inherits it has little room to add code.
 
 ## Register agents
 
@@ -37,10 +39,14 @@ function registerAgents(
 
 - Only the owner can call it.
 - It only works for tokens that are not minted yet. The adapter lets a token contract register a token only while the token has no owner. Set the max supply first, since the range can't go past it.
-- Tokens already registered are skipped, so you can send a range again after a failed transaction. The adapter itself doesn't stop a token from being registered twice.
-- Each registration mints an identity in the ERC-8004 registry. On Base it costs about 220,000 gas per token, so register a large collection over several transactions.
+- Tokens already registered are skipped, so overlapping ranges, or a range sent again after earlier transactions registered part of it, don't register a token twice. The adapter itself doesn't stop a token from being registered twice.
+- Each registration mints an identity in the ERC-8004 registry. That costs about 200,000 gas per token, or about 240,000 once the agent URI is longer than 31 bytes. Ethereum and Base cap a transaction at 16,777,216 gas (EIP-7825), so register about 60 tokens per transaction, fewer with long URIs.
+- Nobody can change an agent URI before its token mints, the owner included, and sending the range again skips it. Check the prefix and suffix before you register, and use URIs whose content you control.
+- Agent URIs are public once registered. For a delayed reveal, keep anything that gives the reveal away out of the registration files until then.
 
-After a token mints, its holder controls the agent in the adapter. They can change the agent URI or set the agent's wallet there. A holder can also register a token the owner didn't register by calling the adapter directly. `agentOf` only tracks agents registered through `registerAgents`.
+After a token mints, its holder controls the agent in the adapter. They can change the agent URI or set the agent's wallet there. A holder can also register a token the owner didn't register by calling the adapter directly. `agentOf` only tracks agents registered through `registerAgents`. Once a token is burned, nobody controls its agent.
+
+The agent's URI and wallet stay as they are when the token is sold. A buyer should set both again through the adapter after buying, or payments sent to the agent's wallet keep reaching the seller.
 
 The agent URI should point to an ERC-8004 registration file, the JSON whose `type` is `https://eips.ethereum.org/EIPS/eip-8004#registration-v1`. Keep that `type` out of the token's own `tokenURI` JSON. OpenSea reads the agent card from the registration file only.
 
@@ -48,13 +54,13 @@ The agent URI should point to an ERC-8004 registration file, the JSON whose `typ
 
 Anyone can read a token's records with `metadata(tokenId, key)`. Writing them works like this:
 
-- While a token has no metadata authority, the owner and the metadata writers the owner allows (`setMetadataWriter`) can write its records. A writer can't call any other owner function, so a hot wallet can run a metadata job. Records can be written before a token mints.
+- While a token has no metadata authority, the owner and the metadata writers the owner allows (`setMetadataWriter`) can write its records. A writer can't call any other owner function, so a hot wallet can run a metadata job. Writers stay allowed when the contract changes owners, so remove them before you transfer ownership. Records can be written before a token mints.
 - The token's holder can set a metadata authority for it at any time with `setMetadataAuthority`, usually themself or their agent's wallet. While a token has an authority, only that authority can write its records, and the owner and writers can't.
 - The authority can hand the role to another address or clear it. Clearing it returns the token to the owner and writers.
-- A transfer or burn clears the authority, so a seller's authority never carries over to the buyer. The records stay with the token: a buyer gets whatever was written before the sale, and the owner and writers can write the token's records again until the buyer sets an authority.
-- `lockMetadataKey(key)` locks a key for every token, for good. After that nobody can write it, authorities included. Only the owner can lock a key.
+- A transfer or burn clears the authority, so a seller's authority never carries over to the buyer. The records stay with the token: a buyer gets whatever was written before the sale, and the owner and writers can write the token's records again until the buyer sets an authority. A seller with an authority can change the records up to the moment of sale, so check them again after buying.
+- `lockMetadataKey(key)` locks a key for every token, for good. After that nobody can write it, authorities included, so it freezes every token's current value for that key, even values an authority wrote. Only the owner can lock a key.
 
-`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts, so leave out tokens whose holder has set an authority.
+`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts, so leave out tokens whose holder has set an authority. A holder can set one at any time, so check `metadataAuthority` right before you send.
 
 Every write emits ERC-8048's `MetadataSet`. A write to a minted token also emits ERC-4906's `MetadataUpdate`. Writes before mint don't, since marketplaces read a token's metadata when it mints.
 

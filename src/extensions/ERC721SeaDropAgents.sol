@@ -39,6 +39,9 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
     ///      none.
     mapping(uint256 => uint256) private _agentIdsPlusOne;
 
+    /// @notice Emitted when a token's metadata changes (ERC-4906).
+    event MetadataUpdate(uint256 _tokenId);
+
     /// @notice Revert when registering agents without an adapter.
     error AgentAdapterNotSet();
 
@@ -172,9 +175,12 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
         uint256 startTokenId,
         uint256 quantity
     ) internal virtual override {
-        // ERC721A transfers and burns one token at a time.
+        // Clear every token that moves. ERC721A 4.2 transfers and burns one
+        // token at a time, so this loop runs once today.
         if (from != address(0)) {
-            _clearMetadataAuthority(startTokenId);
+            for (uint256 i = 0; i < quantity; ++i) {
+                _clearMetadataAuthority(startTokenId + i);
+            }
         }
 
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
@@ -194,16 +200,13 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
     }
 
     /**
-     * @dev A token exists from mint until burn.
+     * @dev Emit ERC-4906 `MetadataUpdate` for a token that exists, from mint
+     *      until burn.
      */
-    function _metadataTokenExists(uint256 tokenId)
-        internal
-        view
-        virtual
-        override
-        returns (bool)
-    {
-        return _exists(tokenId);
+    function _emitMetadataUpdate(uint256 tokenId) internal virtual override {
+        if (_exists(tokenId)) {
+            emit MetadataUpdate(tokenId);
+        }
     }
 
     /**

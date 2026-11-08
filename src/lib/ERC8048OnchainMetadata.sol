@@ -31,18 +31,20 @@ import {
  *         The admin can lock a key for good. After that, nobody can write
  *         that key for any token, authorities included.
  *
- *         Each write emits `MetadataSet`, and ERC-4906 `MetadataUpdate`
- *         for a token that exists, since marketplaces refresh tokens on
- *         ERC-4906 events. Records written before a mint are picked up
- *         when the token mints.
+ *         Each write emits `MetadataSet` and calls `_emitMetadataUpdate`
+ *         once per token, where the token contract emits ERC-4906
+ *         `MetadataUpdate` for a token that exists, since marketplaces
+ *         refresh tokens on ERC-4906 events. Records written before a mint
+ *         are picked up when the token mints. The event is left to the
+ *         token contract so this can sit next to an ERC-4906
+ *         implementation that already declares it.
  *
  *         The token contract that inherits this must decide who the admin
- *         is in `_isMetadataAdmin`, say whether a token exists in
- *         `_metadataTokenExists`, name a token's holder in
- *         `_metadataHolderOf`, call `_clearMetadataAuthority` when a token
- *         is transferred or burned, and return true from
- *         `supportsInterface` for IERC8048Metadata and
- *         IERC8048MetadataAuthority.
+ *         is in `_isMetadataAdmin`, name a token's holder in
+ *         `_metadataHolderOf`, emit ERC-4906 in `_emitMetadataUpdate`,
+ *         call `_clearMetadataAuthority` when a token is transferred or
+ *         burned, and return true from `supportsInterface` for
+ *         IERC8048Metadata and IERC8048MetadataAuthority.
  */
 abstract contract ERC8048OnchainMetadata is
     IERC8048Metadata,
@@ -59,9 +61,6 @@ abstract contract ERC8048OnchainMetadata is
 
     /// @dev The locked keys, by the hash of the key.
     mapping(bytes32 => bool) private _lockedMetadataKeys;
-
-    /// @notice Emitted when a token's metadata changes (ERC-4906).
-    event MetadataUpdate(uint256 _tokenId);
 
     /// @notice Emitted when the admin allows or removes a metadata writer.
     event MetadataWriterUpdated(address indexed writer, bool allowed);
@@ -247,15 +246,6 @@ abstract contract ERC8048OnchainMetadata is
     }
 
     /**
-     * @dev Emit ERC-4906 `MetadataUpdate` for `tokenId` if it exists.
-     */
-    function _emitMetadataUpdate(uint256 tokenId) internal {
-        if (_metadataTokenExists(tokenId)) {
-            emit MetadataUpdate(tokenId);
-        }
-    }
-
-    /**
      * @dev Store `value` for `key` on `tokenId` after checking the caller
      *      and the lock, and emit `MetadataSet`.
      */
@@ -293,13 +283,10 @@ abstract contract ERC8048OnchainMetadata is
         returns (bool);
 
     /**
-     * @dev Returns whether `tokenId` exists.
+     * @dev Called after `tokenId`'s metadata changes. Emit ERC-4906
+     *      `MetadataUpdate` here if the token exists.
      */
-    function _metadataTokenExists(uint256 tokenId)
-        internal
-        view
-        virtual
-        returns (bool);
+    function _emitMetadataUpdate(uint256 tokenId) internal virtual;
 
     /**
      * @dev Returns `tokenId`'s holder, or the zero address when the token
