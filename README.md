@@ -42,7 +42,7 @@ See [Deployments](docs/Deployments.md) for the clone factories, every network, a
 ```mermaid
 flowchart LR
     creator([Creator]) -->|"drop settings"| token["ERC721SeaDrop<br/>token"]
-    token -->|"forwards settings"| seadrop["SeaDrop"]
+    token --> seadrop["SeaDrop"]
     minter([Minter]) -->|"mint + payment"| seadrop
     seadrop -->|"mintSeaDrop()"| token
     seadrop -->|"fee"| fee["Fee recipient"]
