@@ -9,27 +9,11 @@
 
 # SeaDrop
 
-SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockchains.
-
-## Table of Contents
-
-- [SeaDrop](#seadrop)
-  - [Table of Contents](#table-of-contents)
-  - [Background](#background)
-  - [Deployments](#deployments)
-  - [Diagram](#diagram)
-  - [Docs](#docs)
-  - [Install](#install)
-  - [Usage](#usage)
-  - [Audits](#audits)
-  - [Contributing](#contributing)
-  - [License](#license)
+SeaDrop is a contract for primary NFT drops on EVM chains.
 
 ## Background
 
-SeaDrop is a protocol to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, and server-side signed mints.
-
-SeaDrop v2 tokens are [Seaport][seaport-link] contract offerers. Mints are executed by fulfilling Seaport orders with `OrderType.CONTRACT`.
+SeaDrop v2 runs ERC-721 and ERC-1155 drops with public drops, allow lists and server-side signed mints, paid in ETH or ERC-20 tokens. Each token is a [Seaport][seaport-link] contract offerer, so a mint is a Seaport order with `OrderType.CONTRACT`. OpenSea uses v2 for ERC-1155 open collections, and SeaDrop v1 on [`main`](https://github.com/ProjectOpenSea/seadrop/tree/main) for ERC-721 drops.
 
 ## Deployments
 
@@ -57,72 +41,25 @@ The token is the drop: it's a Seaport contract offerer, and a mint is a Seaport 
 ## Docs
 
 - [Deployments](docs/Deployments.md)
+- [Development](docs/Development.md)
 - [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
 - [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
 - [Provenance Hash](docs/ProvenanceHash.md)
 
-## Install
-
-SeaDrop builds and tests with [Foundry](https://getfoundry.sh). To install Foundry (Linux or macOS):
+## Development
 
 ```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
-To clone the repo with its dependencies and compile the contracts:
-
-```bash
-git clone --recurse-submodules https://github.com/ProjectOpenSea/seadrop && cd seadrop
+git clone --recurse-submodules https://github.com/ProjectOpenSea/seadrop -b v2 && cd seadrop
 ./scripts/build_seaport.sh
 forge build
-```
-
-`build_seaport.sh` loosens Seaport's exact `pragma solidity` pins in the `lib/seaport` working tree and builds the Seaport reference and optimized artifacts that the tests load from `reference-out` and `optimized-out`. Don't commit the resulting `lib/seaport` changes.
-
-Node.js (see `.nvmrc`) is only needed for the formatting and git hook tooling. `npm install` installs [Biome](https://biomejs.dev) and sets up the [lefthook](https://lefthook.dev) pre-commit hook, which runs `forge fmt` and Biome on staged files.
-
-```bash
-npm install
-```
-
-## Usage
-
-To run the tests:
-
-```bash
 forge test
 ```
 
-To check that every contract the project compiles, `src/` and the library contracts it uses, fits EIP-170's runtime limit and EIP-3860's init code limit, and to list the ones closest to a limit:
-
-```bash
-./scripts/check_sizes.sh
-```
-
-To run a gas snapshot:
-
-```bash
-forge snapshot
-```
-
-Add `-vv` through `-vvvvv` to `forge test` for logs, traces for failing tests, and setup traces. See the [Foundry Book](https://getfoundry.sh/forge/tests/overview) for more.
-
-To run lint checks (`forge fmt --check`, `forge lint`, and Biome):
-
-```bash
-npm run lint
-```
-
-To fix formatting:
-
-```bash
-npm run lint:fix
-```
+[Development](docs/Development.md) covers installing Foundry, the Seaport build, coverage, linting, size checks and what a pull request needs.
 
 ## Audits
 
-SeaDrop was audited after development by [Spearbit](https://spearbit.com/), read the report [here](./assets/spearbit-seadrop-audit.pdf).
+[Spearbit](https://spearbit.com/) audited SeaDrop. Read [the report](./assets/spearbit-seadrop-audit.pdf).
 
 ## Contributing
 
