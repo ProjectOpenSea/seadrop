@@ -1,0 +1,42 @@
+name: Seaport artifacts
+description: >-
+  Build the Seaport reference and optimized artifacts the tests deploy from,
+  reusing a cached copy while lib/seaport, the build scripts and the Foundry
+  version stay the same.
+
+inputs:
+  foundry-version:
+    description: The Foundry version that builds the artifacts.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Compute the Seaport cache key
+      id: key
+      shell: bash
+      run: |
+        seaport=$(git rev-parse HEAD:lib/seaport)
+        scripts=$(cat scripts/build_seaport.sh scripts/patch_seaport_pragmas.sh | sha256sum | cut -c1-16)
+        echo "key=seaport-${RUNNER_OS}-${{ inputs.foundry-version }}-${seaport}-${scripts}" >>"$GITHUB_OUTPUT"
+
+    - name: Restore Seaport artifacts
+      id: cache
+      uses: actions/cache@v6
+      with:
+        path: |
+          lib/seaport/reference-out
+          lib/seaport/optimized-out
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Build Seaport artifacts
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: ./scripts/build_seaport.sh
+
+    # build_seaport.sh patches the pragmas too. With cached artifacts, the
+    # pragmas still need patching for this repo's contracts to compile.
+    - name: Patch Seaport pragmas
+      if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: ./scripts/patch_seaport_pragmas.sh

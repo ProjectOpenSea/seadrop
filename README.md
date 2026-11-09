@@ -76,10 +76,10 @@ To run the tests:
 forge test
 ```
 
-To print how many bytes `ERC721SeaDrop` has left under the EIP-170 size limit:
+To check that every contract under `src/` fits EIP-170's runtime limit and EIP-3860's init code limit, and list the ones closest to a limit:
 
 ```bash
-./scripts/show_headroom.sh
+./scripts/check_sizes.sh
 ```
 
 To run a gas snapshot:
