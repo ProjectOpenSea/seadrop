@@ -216,6 +216,19 @@ interface SeaDropErrorsAndEvents {
     error AllowedSeaportCannotBeZeroAddress();
 
     /**
+     * @dev Revert if Seaport transfers a minted offer item to an address
+     *      other than the minter or fulfiller of the generateOrder call.
+     */
+    error InvalidRecipientOnlyMinterOrFulfiller(address recipient);
+
+    /**
+     * @dev Revert if an allowed Seaport generates a mint order while a call
+     *      on another allowed Seaport has one open, such as a nested fill
+     *      from a mint or payment hook.
+     */
+    error NestedSeaportCall(address seaport);
+
+    /**
      * @dev Emit an event when allowed Seaport contracts are updated.
      */
     event AllowedSeaportUpdated(address[] allowedSeaport);

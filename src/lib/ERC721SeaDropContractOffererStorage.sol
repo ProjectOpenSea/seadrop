@@ -6,6 +6,25 @@ import { PublicDrop } from "./ERC721SeaDropStructs.sol";
 import { CreatorPayout } from "./SeaDropStructs.sol";
 
 library ERC721SeaDropContractOffererStorage {
+    /**
+     * @notice Who a Seaport call minted to, for safeTransferFrom to check
+     *         Seaport's recipient against. Opened by the call's first mint
+     *         order in generateOrder and cleared in ratifyOrder.
+     */
+    struct MintRecord {
+        /// @notice The minter of the call's first mint order.
+        address minter;
+        /// @notice Whether the call has mint orders for more than one minter.
+        bool multipleMinters;
+        /// @notice The low 88 bits of the allowed Seaport whose call opened
+        ///         the record, packed with the fields above into one slot.
+        ///         Only that Seaport can add to the record or clear it.
+        uint88 seaport;
+        /// @notice The fulfiller of the call, written only when it differs
+        ///         from the minter. Zero means the minter.
+        address fulfiller;
+    }
+
     struct Layout {
         /// @notice The allowed Seaport addresses that can mint.
         mapping(address => bool) _allowedSeaport;
@@ -31,6 +50,8 @@ library ERC721SeaDropContractOffererStorage {
         mapping(address => bool) _allowedPayers;
         /// @notice The enumerated allowed payers.
         address[] _enumeratedPayers;
+        /// @notice Who the current Seaport call minted to.
+        MintRecord _mintRecord;
     }
 
     bytes32 internal constant STORAGE_SLOT = bytes32(
