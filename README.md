@@ -9,39 +9,32 @@
 
 # SeaDrop
 
-SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockchains.
-
-## Table of Contents
-
-- [SeaDrop](#seadrop)
-  - [Table of Contents](#table-of-contents)
-  - [Background](#background)
-  - [Deployments](#deployments)
-  - [Diagram](#diagram)
-  - [Docs](#docs)
-  - [Install](#install)
-  - [Usage](#usage)
-  - [Audits](#audits)
-  - [Contributing](#contributing)
-  - [License](#license)
+SeaDrop is a contract for primary NFT drops on EVM chains.
 
 ## Background
 
-SeaDrop is a contract to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, token gated drops, and server-side signed mints. An implementing token contract should contain the methods to interface with `SeaDrop` through an authorized user such as an Owner or Administrator.
+SeaDrop runs primary NFT drops: public drops, allow lists, server-side signed mints and token-gated mints. A token contract configures its drop through `SeaDrop`, and minters mint through `SeaDrop`.
 
-Future SeaDrop contracts are envisioned to contain additional functionality like descending dutch auction mechanisms and payment in ERC20 tokens.
+This branch is SeaDrop v1, which powers OpenSea's ERC-721 drops. [SeaDrop v2](https://github.com/ProjectOpenSea/seadrop/tree/v2) adds ERC-1155 tokens, ERC-20 payments and several public stages per token, and powers OpenSea's ERC-1155 open collections.
 
 ## Deployments
 
-`SeaDrop` 1.0 is deployed at [`0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code) on Ethereum and most other networks OpenSea supports. On OpenSea, SeaDrop v1 from this branch powers drops. SeaDrop v2, on the [`v2`](https://github.com/ProjectOpenSea/seadrop/tree/v2) branch, currently powers ERC-1155 open collections, which the collection owner mints.
-
-See [Deployments](docs/Deployments.md) for the clone factories, every network, and the legacy contracts. To deploy to a new network, follow [SeaDrop Deployment](docs/SeaDropDeployment.md).
+`SeaDrop` 1.0 is at [`0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code) on Ethereum and most networks OpenSea supports. [Deployments](docs/Deployments.md) lists every network, the clone factories and the legacy contracts, and [SeaDrop Deployment](docs/SeaDropDeployment.md) covers a new network.
 
 ## Diagram
 
-![SeaDrop Diagram](img/seadrop-diagram.png)
+```mermaid
+flowchart LR
+    creator([Creator]) -->|"drop settings"| token["ERC721SeaDrop<br/>token"]
+    token --> seadrop["SeaDrop"]
+    minter([Minter]) -->|"mint + payment"| seadrop
+    seadrop -->|"mintSeaDrop()"| token
+    seadrop -->|"fee"| fee["Fee recipient"]
+    seadrop -->|"payout"| payout["Creator payout<br/>address"]
+    seadrop -.->|"events"| indexer["Indexers"]
+```
 
-This diagram shows the logic flow in the case that a drop is hosted on OpenSea, with an optional mint hosted elsewhere. Note that a fee recipient is not required to integrate with SeaDrop, and a fee recipient may be any address.
+The creator configures a drop by calling the token, for example `updatePublicDrop()` or `multiConfigure()`, and the token forwards the settings to `SeaDrop`. A minter calls `SeaDrop` with the payment, through `mintPublic()`, `mintSigned()`, `mintAllowList()` or `mintAllowedTokenHolder()`. `SeaDrop` checks the stage, the wallet limit and the max supply, pays the fee recipient and the creator's payout address, and calls `mintSeaDrop()` on the token. Every mint names a fee recipient, which can't be the zero address. When a drop restricts fee recipients, it must be one the token allows. The fee itself can be zero.
 
 ## Docs
 
@@ -52,67 +45,19 @@ This diagram shows the logic flow in the case that a drop is hosted on OpenSea, 
 - [Provenance Hash](docs/ProvenanceHash.md)
 - [Upgradeable Contracts](docs/UpgradeableContracts.md)
 
-## Install
-
-SeaDrop builds and tests with [Foundry](https://getfoundry.sh). To install Foundry (Linux or macOS):
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
-To clone the repo with its dependencies and compile the contracts:
+## Development
 
 ```bash
 git clone --recurse-submodules https://github.com/ProjectOpenSea/seadrop && cd seadrop
 forge build
-```
-
-Node.js (see `.nvmrc`) is only needed for the formatting and git hook tooling. `npm install` installs [Biome](https://biomejs.dev) and sets up the [lefthook](https://lefthook.dev) pre-commit hook, which runs `forge fmt` and Biome on staged files.
-
-```bash
-npm install
-```
-
-## Usage
-
-To run the tests:
-
-```bash
 forge test
 ```
 
-This runs the upgradeable contracts' tests too. `src/upgradeable` compiles with its deployable settings (via-IR, 1000 optimizer runs) in the same build; see [Upgradeable Contracts](docs/UpgradeableContracts.md).
-
-To run coverage:
-
-```bash
-npm run coverage
-```
-
-To run a gas snapshot:
-
-```bash
-forge snapshot
-```
-
-Add `-vv` through `-vvvvv` to `forge test` for logs, traces for failing tests, and setup traces. See the [Foundry Book](https://getfoundry.sh/forge/tests/overview) for more.
-
-To run lint checks (`forge fmt --check`, `forge lint`, and Biome):
-
-```bash
-npm run lint
-```
-
-To fix formatting:
-
-```bash
-npm run lint:fix
-```
+[Development](docs/Development.md) covers installing Foundry, coverage, gas snapshots, linting, size checks and what a pull request needs.
 
 ## Audits
 
-SeaDrop was audited after development by [Spearbit](https://spearbit.com/), read the report [here](./assets/spearbit-seadrop-audit.pdf).
+[Spearbit](https://spearbit.com/) audited SeaDrop. Read [the report](./assets/spearbit-seadrop-audit.pdf).
 
 ## Contributing
 

@@ -2,12 +2,12 @@
 
 An example script to deploy a token contract is located at [DeployAndConfigureExampleToken.s.sol](../script/DeployAndConfigureExampleToken.s.sol). It can be run with `forge script script/DeployAndConfigureExampleToken.s.sol --rpc-url ${RPC_URL} --broadcast -vvvv --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify --retries 10`
 
-### ERC721SeaDrop
+## ERC721SeaDrop
 
 `ERC721SeaDrop` contains only an Owner role (assigned to the deployer of the contract) that has authorization for all methods.
 
 1. Deploy `src/ERC721SeaDrop.sol` with constructor args `string name, string symbol, address[] allowedSeaDrop`
-   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
+   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --broadcast --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
 1. Set the token max supply with `token.setMaxSupply()`
 1. Set the creator payout address with `token.updateCreatorPayoutAddress()`
 1. Set the contract URI with `token.setContractURI()`
@@ -26,7 +26,7 @@ An example script to deploy a token contract is located at [DeployAndConfigureEx
 
 ### Format of Drop URI
 
-Follows the pattern of `tokenURI` — could be either on-chain data blob or external URI (IPFS) — that contains the metadata related to the drop and corresponding drop stages.
+Like `tokenURI`, the drop URI points to the drop's metadata and its stages, either as onchain data or as an external URI such as IPFS.
 
 #### Example
 
