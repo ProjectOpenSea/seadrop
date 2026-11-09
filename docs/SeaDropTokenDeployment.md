@@ -12,7 +12,7 @@ Both tokens have one owner role, assigned to the deployer, that can call every m
 1. Allow a fee recipient with `token.updateAllowedFeeRecipient()`.
 1. Set the contract URI with `token.setContractURI()` and the base URI with `token.setBaseURI()`.
 1. Optionally:
-   1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()`. It must be set before the first mint.
+   1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()`, before minting starts. On ERC-721 it can't change after the first mint. On ERC-1155 it can be set only once, even before minting, so set it carefully.
    1. Set an allow list with `token.updateAllowList()`.
    1. Add server-side signers with `token.updateSigner()`.
    1. Allow payers who can mint for someone else with `token.updatePayer()`.
