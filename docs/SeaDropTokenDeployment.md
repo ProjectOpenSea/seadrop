@@ -1,31 +1,31 @@
 # Token Deployment
 
-An example script to deploy a token contract is located at [DeployAndConfigureExampleToken.s.sol](../script/DeployAndConfigureExampleToken.s.sol). It can be run with `forge script script/DeployAndConfigureExampleToken.s.sol --rpc-url ${RPC_URL} --broadcast -vvvv --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify --retries 10`
+Example scripts deploy and configure a token, then mint through Seaport: [DeployAndConfigure721ExampleToken.s.sol](../script/DeployAndConfigure721ExampleToken.s.sol) for ERC-721 and [DeployAndConfigure1155ExampleToken.s.sol](../script/DeployAndConfigure1155ExampleToken.s.sol) for ERC-1155. Run one with `forge script script/DeployAndConfigure1155ExampleToken.s.sol --rpc-url ${RPC_URL} --broadcast -vvvv --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify --retries 10`.
 
-### ERC721SeaDrop
+## ERC1155SeaDrop and ERC721SeaDrop
 
-`ERC721SeaDrop` contains only an Owner role (assigned to the deployer of the contract) that has authorization for all methods.
+Both tokens have one owner role, assigned to the deployer, that can call every method below.
 
-1. Deploy `src/ERC721SeaDrop.sol` with constructor args `string name, string symbol, address[] allowedSeaDrop`
-   1. e.g. `forge create --rpc-url ${RPC_URL} src/ERC721SeaDrop.sol:ERC721SeaDrop --constructor-args "TokenTest1" "TEST1" \[${SEADROP_ADDRESS}\] --private-key ${PK} --etherscan-api-key ${ETHERSCAN_API_KEY} --verify`
-1. Set the token max supply with `token.setMaxSupply()`
-1. Set the creator payout address with `token.updateCreatorPayoutAddress()`
-1. Set the contract URI with `token.setContractURI()`
-1. Set the base URI with `token.setBaseURI()`
+1. Deploy a configurer (`ERC1155SeaDropConfigurer` or `ERC721SeaDropConfigurer`), then the token with constructor args `address allowedConfigurer, address allowedSeaport, string name, string symbol`.
+1. Set the max supply with `token.setMaxSupply()`, per token id for ERC-1155.
+1. Set the creator payouts with `token.updateCreatorPayouts()`.
+1. Allow a fee recipient with `token.updateAllowedFeeRecipient()`.
+1. Set the contract URI with `token.setContractURI()` and the base URI with `token.setBaseURI()`.
 1. Optionally:
-   1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()`
-      1. Must be set before first token is minted
-   1. Set an allow list drop stage with `token.updateAllowList()`
-   1. Add server-side signers with `token.updateSignedMintValidationParams()`
-1. Set a public drop stage with `token.updatePublicDrop()`
-1. Set the drop URI with `token.setDropURI()`
-   1. See [Format of Drop URI](#format-of-drop-uri)
+   1. Set the provenance hash for random metadata reveals with `token.setProvenanceHash()`, before minting starts. On ERC-721 it can't change after the first mint. On ERC-1155 it can be set only once, even before minting, so set it carefully.
+   1. Set an allow list with `token.updateAllowList()`.
+   1. Add server-side signers with `token.updateSigner()`.
+   1. Allow payers who can mint for someone else with `token.updatePayer()`.
+1. Set one or more public drops with `token.updatePublicDrop()`. ERC-1155 drops take an index, so a token can have several.
+1. Set the drop URI with `token.updateDropURI()`. See [Format of Drop URI](#format-of-drop-uri).
+
+The configurer's `multiConfigure(token, config)` sets any of these in one transaction, and it can also mint to the owner.
 
 ## Specifications
 
 ### Format of Drop URI
 
-Follows the pattern of `tokenURI` — could be either on-chain data blob or external URI (IPFS) — that contains the metadata related to the drop and corresponding drop stages.
+Like `tokenURI`, the drop URI points to the drop's metadata and its stages, either as onchain data or as an external URI such as IPFS.
 
 #### Example
 
