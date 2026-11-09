@@ -29,7 +29,7 @@ SeaDrop is a contract for conducting primary NFT drops on evm-compatible blockch
 
 SeaDrop is a contract to perform primary drops on evm-compatible blockchains. The types of drops supported are public drops, allow list stages, token gated drops, and server-side signed mints. An implementing token contract should contain the methods to interface with `SeaDrop` through an authorized user such as an Owner or Administrator.
 
-Future SeaDrop contracts are envisioned to contain additional functionality like descending dutch auction mechanisms and payment in ERC20 tokens.
+[SeaDrop v2](https://github.com/ProjectOpenSea/seadrop/tree/v2) adds ERC-1155 tokens, ERC-20 payments and several public stages per token.
 
 ## Deployments
 
@@ -39,9 +39,18 @@ See [Deployments](docs/Deployments.md) for the clone factories, every network, a
 
 ## Diagram
 
-![SeaDrop Diagram](img/seadrop-diagram.png)
+```mermaid
+flowchart LR
+    creator([Creator]) -->|"updatePublicDrop(), updateSignedMintValidationParams(),<br/>multiConfigure() and other settings"| token["ERC721SeaDrop token"]
+    token -->|"forwards drop settings"| seadrop["SeaDrop"]
+    minter([Minter]) -->|"mintPublic(), mintSigned(),<br/>mintAllowList() or mintAllowedTokenHolder()<br/>with payment"| seadrop
+    seadrop -->|"mintSeaDrop(minter, quantity)"| token
+    seadrop -->|"fee"| fee["Fee recipient"]
+    seadrop -->|"rest of the payment"| payout["Creator payout address"]
+    seadrop -.->|"events"| indexer["Indexers such as OpenSea"]
+```
 
-This diagram shows the logic flow in the case that a drop is hosted on OpenSea, with an optional mint hosted elsewhere. Note that a fee recipient is not required to integrate with SeaDrop, and a fee recipient may be any address.
+The creator configures a drop by calling the token, which forwards the settings to `SeaDrop`. A minter calls `SeaDrop` with the payment. `SeaDrop` checks the stage, the wallet limit and the max supply, pays the fee recipient and the creator's payout address, and calls `mintSeaDrop` on the token. The fee recipient can be any address the token allows, and drops don't need one.
 
 ## Docs
 
