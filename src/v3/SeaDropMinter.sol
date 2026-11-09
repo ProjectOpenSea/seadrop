@@ -650,16 +650,20 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (totalPrice == 0) return;
 
         uint256 fee = totalPrice * stage.feeBps / _BPS;
-        _send(stage.currency, stage.feeRecipient, fee);
-
         uint256 proceeds = totalPrice - fee;
+
+        // Copy the list before any payment, so no payee's callback can
+        // change where this mint's proceeds go
+        PayoutRecipient[] memory recipients;
+        if (proceeds != 0) {
+            recipients = _payoutRecipients[token];
+            if (recipients.length == 0) revert NoPayoutRecipients();
+        }
+
+        _send(stage.currency, stage.feeRecipient, fee);
         if (proceeds == 0) return;
 
-        // A copy, so a recipient's callback can't change the list mid-payout
-        PayoutRecipient[] memory recipients = _payoutRecipients[token];
-        uint256 last = recipients.length;
-        if (last == 0) revert NoPayoutRecipients();
-        --last;
+        uint256 last = recipients.length - 1;
 
         uint256 paid = 0;
         for (uint256 i = 0; i < last; ++i) {

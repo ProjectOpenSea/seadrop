@@ -1386,6 +1386,41 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         assertEq(changed[0].recipient, carol);
     }
 
+    function test_payoutListChangedByFeeRecipientPaysTheSnapshot() public {
+        // The token's owner is the stage's fee recipient, and replaces the
+        // payout list with carol alone when its fee arrives
+        minter.setCurrency(
+            address(0),
+            ISeaDropMinter.CurrencyConfig({
+                allowed: true,
+                minFeeBps: 0,
+                feeRecipient: address(0)
+            })
+        );
+        PayoutListChanger changer = new PayoutListChanger(minter);
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.feeRecipient = address(changer);
+        minter.setStage(address(token721), 0, 0, stage);
+        _setSinglePayout(address(token721), bob);
+        token721.transferOwnership(address(changer));
+        changer.acceptOwnershipOf(token721);
+        changer.arm(address(token721), carol);
+
+        uint256 bobBefore = bob.balance;
+        vm.prank(alice);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+
+        uint256 fee = PRICE * FEE_BPS / 10_000;
+        assertEq(address(changer).balance, fee);
+        assertEq(bob.balance - bobBefore, PRICE - fee);
+        assertEq(carol.balance, 0);
+        assertEq(
+            minter.getPayoutRecipients(address(token721))[0].recipient, carol
+        );
+    }
+
     function test_revert_setStage_nonzeroIdOnERC721() public {
         vm.expectRevert(
             abi.encodeWithSelector(
