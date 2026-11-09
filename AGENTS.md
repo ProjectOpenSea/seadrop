@@ -4,7 +4,7 @@ Guidance for coding agents and contributors working on this branch. The [README]
 
 ## What this branch is
 
-`v2` is SeaDrop v2. Each token is a Seaport contract offerer, so a mint is a Seaport order that the token fills. It supports ERC-721 and ERC-1155. `main` holds v1, a separate design with a standalone `SeaDrop` minter.
+`v2` is SeaDrop v2, with ERC-721 and ERC-1155 tokens. Each token is a Seaport contract offerer, so a public mint is a Seaport order that the token fills. OpenSea's ERC-1155 open collections are minted by their owner through the token's configurer instead ([what OpenSea uses](docs/Deployments.md#what-opensea-uses)). `main` holds v1, a separate design with a standalone `SeaDrop` minter.
 
 Deployed contracts are immutable. A change here only reaches contracts deployed after it, so be conservative with anything that changes bytecode.
 
