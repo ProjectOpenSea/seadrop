@@ -33,10 +33,10 @@ flowchart LR
     seaport -->|"2. payment"| fee["Fee recipient"]
     seaport -->|"2. payment"| payouts["Creator payouts"]
     seaport -->|"3. ratifyOrder()"| token
-    token -.->|"delegatecall"| impl["Implementation"]
+    token -.->|"delegatecall for SeaDrop logic"| configurer
 ```
 
-The token is the drop: it's a Seaport contract offerer, and a mint is a Seaport order whose offerer is the token. The creator configures the token directly, or in one call through its configurer. A minter fulfills the mint order, a `CONTRACT` order, on Seaport. The token mints to the minter in `generateOrder`, Seaport moves the payment to the fee recipient and the creator payouts, and `ratifyOrder` closes the call. The token delegates its SeaDrop logic to an implementation contract (`ERC1155SeaDropContractOffererImplementation` or its ERC-721 counterpart) to stay under the size limit. ERC-1155 open collections on OpenSea only use owner mints through the configurer.
+The token is the drop: it's a Seaport contract offerer, and a mint is a Seaport order whose offerer is the token. The creator configures the token directly, or in one call through its configurer. A minter fulfills the mint order, a `CONTRACT` order, on Seaport. The token mints to the minter in `generateOrder`, Seaport moves the payment to the fee recipient and the creator payouts, and `ratifyOrder` closes the call. The configurer is also the token's implementation: to stay under the size limit, the token delegatecalls it for its SeaDrop logic. ERC-1155 open collections on OpenSea only use owner mints through the configurer.
 
 ## Docs
 
