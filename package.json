@@ -8,7 +8,7 @@
     "node": ">=26"
   },
   "scripts": {
-    "build": "./scripts/build_seaport.sh && forge build && ./scripts/show_headroom.sh",
+    "build": "./scripts/build_seaport.sh && forge build && ./scripts/check_sizes.sh",
     "build:seaport": "./scripts/build_seaport.sh",
     "test": "forge test",
     "lint": "forge fmt --check && ./scripts/patch_seaport_pragmas.sh && forge lint --deny warnings && biome ci .",

@@ -7,8 +7,11 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
+# A new push to a pull request cancels its older run. Every other run gets
+# its own group, so no run on a branch or tag is cancelled or replaced
+# while it waits.
 concurrency:
-  group: ${{github.workflow}}-${{github.ref}}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -21,13 +24,13 @@ jobs:
   lint:
     name: Run Linters
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+      - uses: ./.github/actions/setup-foundry
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
@@ -54,38 +57,38 @@ jobs:
   forge-test:
     name: Run Forge Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+      - uses: ./.github/actions/setup-foundry
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
-      - name: Build Seaport artifacts
-        run: ./scripts/build_seaport.sh
+      - uses: ./.github/actions/seaport-artifacts
+        with:
+          foundry-version: ${{ env.FOUNDRY_VERSION }}
 
-      - name: Build contracts
-        run: forge build && ./scripts/show_headroom.sh
+      - name: Check contract sizes
+        run: ./scripts/check_sizes.sh
 
       - name: Run tests
         run: forge test -vvv
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
-          GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
   forge-coverage:
     name: Run Forge Coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+      - uses: ./.github/actions/setup-foundry
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
@@ -93,8 +96,9 @@ jobs:
       # never compiles Seaport's OrderCombiner, which is stack too deep
       # without the optimizer. The 1155 implementation needs viaIR too,
       # hence --ir-minimum.
-      - name: Build Seaport artifacts
-        run: ./scripts/build_seaport.sh
+      - uses: ./.github/actions/seaport-artifacts
+        with:
+          foundry-version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Run coverage
         run: >-
@@ -102,11 +106,10 @@ jobs:
           --no-match-coverage 'test/|script/'
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
-          GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
 
       - name: Submit coverage to Coveralls
         if: github.repository == 'ProjectOpenSea/seadrop'
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./lcov.info
