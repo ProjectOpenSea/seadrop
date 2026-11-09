@@ -106,6 +106,7 @@ contract TestSeaDropV3Snapshot is Test {
                 uint256(1),
                 wallet,
                 sender,
+                address(0),
                 uint256(5),
                 false,
                 uint256(0),
@@ -146,7 +147,7 @@ contract TestSeaDropV3Snapshot is Test {
                 maxTotalPrice: 0.1 ether
             }),
             ISeaDropMinter.Authorization(
-                address(0), address(0), 0, false, 0, 0, ""
+                address(0), address(0), address(0), 0, false, 0, 0, ""
             )
         );
     }
@@ -164,7 +165,7 @@ contract TestSeaDropV3Snapshot is Test {
                 maxTotalPrice: 0.1 ether
             }),
             ISeaDropMinter.Authorization(
-                address(0), address(0), 0, false, 0, 0, ""
+                address(0), address(0), address(0), 0, false, 0, 0, ""
             )
         );
     }
@@ -182,7 +183,7 @@ contract TestSeaDropV3Snapshot is Test {
                 maxTotalPrice: 0.1 ether
             }),
             ISeaDropMinter.Authorization(
-                address(0), address(0), 0, false, 0, 0, ""
+                address(0), address(0), address(0), 0, false, 0, 0, ""
             )
         );
     }
@@ -200,7 +201,7 @@ contract TestSeaDropV3Snapshot is Test {
                 maxTotalPrice: 0.1 ether
             }),
             ISeaDropMinter.Authorization(
-                address(0), address(0), 0, false, 0, 0, ""
+                address(0), address(0), address(0), 0, false, 0, 0, ""
             )
         );
     }
@@ -218,7 +219,7 @@ contract TestSeaDropV3Snapshot is Test {
                 maxTotalPrice: 0.1 ether
             }),
             ISeaDropMinter.Authorization(
-                signer, address(0), 5, false, 0, 1010101, signature
+                signer, address(0), address(0), 5, false, 0, 1010101, signature
             )
         );
     }
@@ -238,7 +239,14 @@ contract TestSeaDropV3Snapshot is Test {
                 maxTotalPrice: 0.1 ether
             }),
             ISeaDropMinter.Authorization(
-                signer, address(this), 5, false, 0, 1010101, linkedSignature
+                signer,
+                address(this),
+                address(0),
+                5,
+                false,
+                0,
+                1010101,
+                linkedSignature
             )
         );
     }

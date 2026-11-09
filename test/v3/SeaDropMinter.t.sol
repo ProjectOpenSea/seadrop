@@ -1629,6 +1629,129 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         assertEq(minter.getStage(address(token721), 0, 0).endTime, 0);
     }
 
+    function test_revert_mint_currencyDisabledAfterSetStage() public {
+        minter.setCurrency(
+            address(0),
+            ISeaDropMinter.CurrencyConfig({
+                allowed: false,
+                minFeeBps: uint16(FEE_BPS),
+                feeRecipient: feeRecipient
+            })
+        );
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.CurrencyNotAllowed.selector, address(0)
+            )
+        );
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+
+        // Owner mints take no payment, so they still work.
+        minter.ownerMint(address(token721), 0, carol, 1);
+        assertEq(token721.ownerOf(1), carol);
+    }
+
+    function test_revert_mintERC20_currencyDisabledAfterSetStage() public {
+        TestERC20 usdc = new TestERC20();
+        _setERC20Stage(usdc, 10e6);
+        minter.setCurrency(
+            address(usdc),
+            ISeaDropMinter.CurrencyConfig({
+                allowed: false,
+                minFeeBps: 0,
+                feeRecipient: address(0)
+            })
+        );
+        usdc.mint(alice, 10e6);
+        vm.prank(alice);
+        usdc.approve(address(minter), 10e6);
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.CurrencyNotAllowed.selector, address(usdc)
+            )
+        );
+        minter.mint(_erc20Params(usdc, 1, 10e6), _noAuth());
+    }
+
+    function test_revert_mint_minFeeRaisedAfterSetStage() public {
+        minter.setCurrency(
+            address(0),
+            ISeaDropMinter.CurrencyConfig({
+                allowed: true,
+                minFeeBps: 200,
+                feeRecipient: feeRecipient
+            })
+        );
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.FeeBelowMinimum.selector, FEE_BPS, 200
+            )
+        );
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+
+        // Mints resume once the creator raises the stage's fee to match.
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.feeBps = 200;
+        minter.setStage(address(token721), 0, 0, stage);
+        vm.prank(alice);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+        assertEq(feeRecipient.balance, PRICE * 200 / 10_000);
+    }
+
+    function test_revert_mintSigned_authorizationForOtherCurrency() public {
+        TestERC20 usdc = new TestERC20();
+        _setERC20Stage(usdc, 20e6);
+        ISeaDropMinter.Stage memory stage =
+            minter.getStage(address(token721), 0, 0);
+        stage.signer = signer;
+        minter.setStage(address(token721), 0, 0, stage);
+
+        // The signer prices alice's allocation at 10 USDC.
+        ISeaDropMinter.MintParams memory params = _erc20Params(usdc, 1, 10e6);
+        ISeaDropMinter.Authorization memory auth =
+            _authorize(params, signer, signerKey, 0, true, 10e6);
+        assertEq(auth.currency, address(usdc));
+        usdc.mint(alice, 10e6);
+        vm.prank(alice);
+        usdc.approve(address(minter), 10e6);
+        vm.prank(alice);
+        minter.mint(params, auth);
+
+        // The owner switches the stage to ETH. Without the currency in the
+        // authorization, its override would now charge 10,000,000 wei.
+        stage.currency = address(0);
+        stage.price = uint96(PRICE);
+        minter.setStage(address(token721), 0, 0, stage);
+
+        params.currency = address(0);
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.AuthorizationCurrencyMismatch.selector,
+                address(0),
+                address(usdc)
+            )
+        );
+        minter.mint{ value: 10e6 }(params, auth);
+
+        // Claiming the authorization was for ETH breaks the signature.
+        auth.currency = address(0);
+        vm.prank(alice);
+        vm.expectRevert(ISeaDropMinter.InvalidSignature.selector);
+        minter.mint{ value: 10e6 }(params, auth);
+    }
+
     function test_revert_adminConfig_notAdmin() public {
         vm.startPrank(alice);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);

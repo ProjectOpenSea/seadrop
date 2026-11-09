@@ -76,8 +76,8 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     bytes32 public constant MINT_AUTHORIZATION_TYPEHASH = keccak256(
         "MintAuthorization(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,address sender,uint256 maxQuantity,bool hasPrice,"
-        "uint256 price,uint256 expiry)"
+        "address wallet,address sender,address currency,uint256 maxQuantity,"
+        "bool hasPrice,uint256 price,uint256 expiry)"
     );
 
     bytes32 public constant MINT_PARAMS_TYPEHASH = keccak256(
@@ -455,6 +455,10 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
         _countWalletMint(params, walletLimit);
 
+        // The admin may have disabled the currency or raised its minimum
+        // fee since the stage was set.
+        _checkCurrencyPolicy(stage.currency, stage.feeBps);
+
         uint256 totalPrice = unitPrice * params.quantity;
         _collectPayment(params, stage.currency, totalPrice);
 
@@ -504,22 +508,15 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             revert SenderMismatch(sender, msg.sender);
         }
 
-        bytes32 digest = _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    MINT_AUTHORIZATION_TYPEHASH,
-                    params.token,
-                    params.id,
-                    params.stageIndex,
-                    params.wallet,
-                    sender,
-                    authorization.maxQuantity,
-                    authorization.hasPrice,
-                    authorization.price,
-                    authorization.expiry
-                )
-            )
-        );
+        if (authorization.currency != stage.currency) {
+            revert AuthorizationCurrencyMismatch(
+                stage.currency,
+                authorization.currency
+            );
+        }
+
+        bytes32 digest =
+            _hashTypedDataV4(_hashAuthorization(params, authorization));
         bool valid = SignatureChecker.isValidSignatureNow(
             signer, digest, authorization.signature
         );
@@ -706,17 +703,31 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             revert FeeRecipientIsZeroAddress();
         }
 
-        CurrencyConfig memory config = _currencies[stage.currency];
-        if (!config.allowed) revert CurrencyNotAllowed(stage.currency);
+        CurrencyConfig memory config =
+            _checkCurrencyPolicy(stage.currency, stage.feeBps);
         if (config.minFeeBps == 0) return;
-        if (stage.feeBps < config.minFeeBps) {
-            revert FeeBelowMinimum(stage.feeBps, config.minFeeBps);
-        }
         if (stage.feeRecipient != config.feeRecipient) {
             revert FeeRecipientNotRequired(
                 stage.feeRecipient,
                 config.feeRecipient
             );
+        }
+    }
+
+    /**
+     * @dev The currency must be allowed and the fee at least its minimum,
+     *      under the admin's current config. `setStage` and every mint
+     *      check this.
+     */
+    function _checkCurrencyPolicy(address currency, uint256 feeBps)
+        internal
+        view
+        returns (CurrencyConfig memory config)
+    {
+        config = _currencies[currency];
+        if (!config.allowed) revert CurrencyNotAllowed(currency);
+        if (feeBps < config.minFeeBps) {
+            revert FeeBelowMinimum(feeBps, config.minFeeBps);
         }
     }
 
@@ -748,6 +759,27 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             abi.encodeCall(IERC165.supportsInterface, (interfaceId))
         );
         return success && data.length == 32 && abi.decode(data, (bool));
+    }
+
+    function _hashAuthorization(
+        MintParams calldata params,
+        Authorization calldata authorization
+    ) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                MINT_AUTHORIZATION_TYPEHASH,
+                params.token,
+                params.id,
+                params.stageIndex,
+                params.wallet,
+                authorization.sender,
+                authorization.currency,
+                authorization.maxQuantity,
+                authorization.hasPrice,
+                authorization.price,
+                authorization.expiry
+            )
+        );
     }
 
     function _hashMintParams(MintParams calldata params)

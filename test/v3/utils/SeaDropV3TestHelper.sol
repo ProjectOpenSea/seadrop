@@ -26,8 +26,8 @@ abstract contract SeaDropV3TestHelper is Test {
     // Independent copies of the minter's EIP-712 types.
     bytes32 internal constant AUTHORIZATION_TYPEHASH = keccak256(
         "MintAuthorization(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,address sender,uint256 maxQuantity,bool hasPrice,"
-        "uint256 price,uint256 expiry)"
+        "address wallet,address sender,address currency,uint256 maxQuantity,"
+        "bool hasPrice,uint256 price,uint256 expiry)"
     );
     bytes32 internal constant PARAMS_TYPEHASH = keccak256(
         "MintParams(address token,uint256 id,uint256 stageIndex,"
@@ -162,6 +162,7 @@ abstract contract SeaDropV3TestHelper is Test {
                 params.stageIndex,
                 params.wallet,
                 authorization.sender,
+                authorization.currency,
                 authorization.maxQuantity,
                 authorization.hasPrice,
                 authorization.price,
@@ -186,6 +187,7 @@ abstract contract SeaDropV3TestHelper is Test {
         auth = ISeaDropMinter.Authorization({
             signer: authSigner,
             sender: address(0),
+            currency: params.currency,
             maxQuantity: maxQuantity,
             hasPrice: hasPrice,
             price: price,
@@ -204,6 +206,7 @@ abstract contract SeaDropV3TestHelper is Test {
         auth = ISeaDropMinter.Authorization({
             signer: signer,
             sender: sender,
+            currency: params.currency,
             maxQuantity: 0,
             hasPrice: false,
             price: 0,

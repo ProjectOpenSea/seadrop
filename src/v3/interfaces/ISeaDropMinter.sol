@@ -50,6 +50,11 @@ interface ISeaDropMinter {
      * @notice The admin's terms for a currency. Stages can only price in
      *         allowed currencies, and when `minFeeBps` is set, a stage's
      *         fee must go to `feeRecipient` at `minFeeBps` or more.
+     *
+     *         `setStage` checks all three. Each mint checks `allowed` and
+     *         `minFeeBps` again, so disabling a currency or raising its
+     *         minimum applies to stages already set. A new `feeRecipient`
+     *         applies only to stages set afterwards.
      */
     struct CurrencyConfig {
         bool allowed;
@@ -98,6 +103,9 @@ interface ISeaDropMinter {
      *                    payer or a delegate. Tokens still go to the wallet
      *                    unless the usual recipient rules allow otherwise.
      *                    address(0) means any caller the usual rules allow.
+     * @param currency    The stage currency the signer priced this in. It
+     *                    must still match the stage's, so a price override
+     *                    can't carry over to a new currency.
      * @param maxQuantity The wallet's limit in this stage. 0 keeps the
      *                    stage's `maxPerWallet`.
      * @param hasPrice    Whether `price` replaces the stage's price.
@@ -109,6 +117,7 @@ interface ISeaDropMinter {
     struct Authorization {
         address signer;
         address sender;
+        address currency;
         uint256 maxQuantity;
         bool hasPrice;
         uint256 price;
@@ -241,6 +250,10 @@ interface ISeaDropMinter {
     error SignerNotAllowed(address signer);
     error SenderMismatch(address sender, address caller);
     error SenderNeedsSignedStage();
+    error AuthorizationCurrencyMismatch(
+        address stageCurrency,
+        address authorizedCurrency
+    );
     error InvalidSignature();
     error IntentExpired(uint256 expiry);
     error IntentNonceUsed(address wallet, uint256 nonce);
