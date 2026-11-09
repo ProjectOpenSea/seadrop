@@ -76,7 +76,7 @@ To run the tests:
 forge test
 ```
 
-To check that every contract under `src/` fits EIP-170's runtime limit and EIP-3860's init code limit, and list the ones closest to a limit:
+To check that every contract the project compiles, `src/` and the library contracts it uses, fits EIP-170's runtime limit and EIP-3860's init code limit, and to list the ones closest to a limit:
 
 ```bash
 ./scripts/check_sizes.sh

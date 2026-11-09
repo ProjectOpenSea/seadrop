@@ -7,11 +7,12 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
-# A new push to a pull request cancels its older run. Runs on main and v2
-# always finish, so every merged commit gets a result.
+# A new push to a pull request cancels its older run. Every other run gets
+# its own group, so no run on a branch or tag is cancelled or replaced
+# while it waits.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

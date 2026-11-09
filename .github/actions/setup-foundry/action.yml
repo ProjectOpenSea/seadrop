@@ -15,8 +15,12 @@ runs:
       id: cache
       uses: actions/cache@v6
       with:
-        path: ~/.foundry/bin
-        key: foundry-${{ runner.os }}-${{ inputs.version }}
+        # foundryup installs the binaries under versions/ and links them
+        # from bin/, so both are cached.
+        path: |
+          ~/.foundry/bin
+          ~/.foundry/versions
+        key: foundry-install-${{ runner.os }}-${{ inputs.version }}
 
     - name: Install Foundry
       if: steps.cache.outputs.cache-hit != 'true'
