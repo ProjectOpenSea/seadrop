@@ -41,18 +41,18 @@ See [Deployments](docs/Deployments.md) for every network, the v1 contracts, and 
 
 ```mermaid
 flowchart LR
-    creator([Creator]) -->|"update...() settings"| token["Token: ERC1155SeaDrop or ERC721SeaDrop<br/>(Seaport contract offerer)"]
-    creator -->|"multiConfigure(),<br/>with an optional owner mint"| configurer["Configurer"]
-    configurer -->|"settings and owner mints"| token
-    minter([Minter]) -->|"fulfillAdvancedOrder()<br/>with a CONTRACT order"| seaport["Seaport 1.6"]
-    seaport -->|"1. generateOrder() mints to the minter"| token
+    creator([Creator]) -->|"update...()"| token["ERC1155SeaDrop or<br/>ERC721SeaDrop token"]
+    creator -->|"multiConfigure()"| configurer["Configurer"]
+    configurer -->|"settings, owner mints"| token
+    minter([Minter]) -->|"fulfillAdvancedOrder()"| seaport["Seaport 1.6"]
+    seaport -->|"1. generateOrder()"| token
     seaport -->|"2. payment"| fee["Fee recipient"]
     seaport -->|"2. payment"| payouts["Creator payouts"]
     seaport -->|"3. ratifyOrder()"| token
-    token -.->|"SeaDrop logic by delegatecall"| impl["ContractOffererImplementation"]
+    token -.->|"delegatecall"| impl["Implementation"]
 ```
 
-The token is the drop: it's a Seaport contract offerer, and a mint is a Seaport order whose offerer is the token. The creator configures the token directly, or in one call through its configurer. A minter fulfills the mint order on Seaport. The token mints in `generateOrder`, Seaport moves the payment to the fee recipient and the creator payouts, and `ratifyOrder` closes the call. The token delegates its SeaDrop logic to an implementation contract to stay under the size limit. ERC-1155 open collections on OpenSea only use owner mints through the configurer.
+The token is the drop: it's a Seaport contract offerer, and a mint is a Seaport order whose offerer is the token. The creator configures the token directly, or in one call through its configurer. A minter fulfills the mint order, a `CONTRACT` order, on Seaport. The token mints to the minter in `generateOrder`, Seaport moves the payment to the fee recipient and the creator payouts, and `ratifyOrder` closes the call. The token delegates its SeaDrop logic to an implementation contract (`ERC1155SeaDropContractOffererImplementation` or its ERC-721 counterpart) to stay under the size limit. ERC-1155 open collections on OpenSea only use owner mints through the configurer.
 
 ## Docs
 
