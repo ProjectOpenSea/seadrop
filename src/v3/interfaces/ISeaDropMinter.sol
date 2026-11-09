@@ -261,8 +261,12 @@ interface ISeaDropMinter {
     error WithdrawalFailed();
     error Reentrancy();
     error OnlyMinterItself(address caller);
+    error ERC721StageIdNotZero(uint256 id);
+    error PayoutRecipientIsMinter();
+    error FeeRecipientIsMinter();
 
-    /// @notice Set a stage. Only the token's owner can call this.
+    /// @notice Set a stage. Only the token's owner can call this. An
+    ///         ERC-721 token, which ignores ids, only has stages at id 0.
     function setStage(
         address token,
         uint256 id,

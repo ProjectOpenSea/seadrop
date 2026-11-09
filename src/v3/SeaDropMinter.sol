@@ -78,6 +78,9 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     uint256 internal constant _BPS = 10_000;
 
+    /// @dev ERC-165 id of ERC-721.
+    bytes4 internal constant _ERC721_INTERFACE_ID = 0x80ac58cd;
+
     bytes32 public constant MINT_AUTHORIZATION_TYPEHASH = keccak256(
         "MintAuthorization(address token,uint256 id,uint256 stageIndex,"
         "address wallet,address sender,address currency,uint256 maxQuantity,"
@@ -163,6 +166,11 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         uint256 stageIndex,
         Stage calldata stage
     ) external onlyTokenOwner(token) {
+        // An ERC-721 token ignores ids, so stages and wallet limits at
+        // other ids would give each wallet extra limits in one collection.
+        if (id != 0 && _supportsInterface(token, _ERC721_INTERFACE_ID)) {
+            revert ERC721StageIdNotZero(id);
+        }
         if (stage.endTime < stage.startTime) {
             revert StageEndsBeforeStart(stage.startTime, stage.endTime);
         }
@@ -195,6 +203,11 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             if (recipient.recipient == address(0)) {
                 revert PayoutRecipientIsZeroAddress();
             }
+            // ETH paid to the minter would be credited to an account no
+            // one can withdraw from, and an ERC-20 not credited at all
+            if (recipient.recipient == address(this)) {
+                revert PayoutRecipientIsMinter();
+            }
             if (recipient.bps == 0) revert PayoutBpsIsZero();
             totalBps += recipient.bps;
             stored.push(recipient);
@@ -222,6 +235,9 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (config.minFeeBps > _BPS) revert FeeBpsTooHigh(config.minFeeBps);
         if (config.minFeeBps != 0 && config.feeRecipient == address(0)) {
             revert FeeRecipientIsZeroAddress();
+        }
+        if (config.feeRecipient == address(this)) {
+            revert FeeRecipientIsMinter();
         }
 
         _currencies[currency] = config;
@@ -721,6 +737,9 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (stage.feeBps > _BPS) revert FeeBpsTooHigh(stage.feeBps);
         if (stage.feeBps != 0 && stage.feeRecipient == address(0)) {
             revert FeeRecipientIsZeroAddress();
+        }
+        if (stage.feeBps != 0 && stage.feeRecipient == address(this)) {
+            revert FeeRecipientIsMinter();
         }
 
         CurrencyConfig memory config =

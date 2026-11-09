@@ -1386,6 +1386,51 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         assertEq(changed[0].recipient, carol);
     }
 
+    function test_revert_setStage_nonzeroIdOnERC721() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.ERC721StageIdNotZero.selector, 1
+            )
+        );
+        minter.setStage(address(token721), 1, 0, _publicStage());
+    }
+
+    function test_revert_setPayoutRecipients_minter() public {
+        ISeaDropMinter.PayoutRecipient[] memory recipients =
+            new ISeaDropMinter.PayoutRecipient[](2);
+        recipients[0] = ISeaDropMinter.PayoutRecipient(creator, 5000);
+        recipients[1] = ISeaDropMinter.PayoutRecipient(address(minter), 5000);
+        vm.expectRevert(ISeaDropMinter.PayoutRecipientIsMinter.selector);
+        minter.setPayoutRecipients(address(token721), recipients);
+    }
+
+    function test_revert_setStage_feeRecipientIsMinter() public {
+        minter.setCurrency(
+            address(0),
+            ISeaDropMinter.CurrencyConfig({
+                allowed: true,
+                minFeeBps: 0,
+                feeRecipient: address(0)
+            })
+        );
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.feeRecipient = address(minter);
+        vm.expectRevert(ISeaDropMinter.FeeRecipientIsMinter.selector);
+        minter.setStage(address(token721), 0, 0, stage);
+    }
+
+    function test_revert_setCurrency_feeRecipientIsMinter() public {
+        vm.expectRevert(ISeaDropMinter.FeeRecipientIsMinter.selector);
+        minter.setCurrency(
+            address(0),
+            ISeaDropMinter.CurrencyConfig({
+                allowed: true,
+                minFeeBps: uint16(FEE_BPS),
+                feeRecipient: address(minter)
+            })
+        );
+    }
+
     function test_revert_withdraw_nothingCredited() public {
         vm.prank(alice);
         vm.expectRevert(ISeaDropMinter.NothingToWithdraw.selector);

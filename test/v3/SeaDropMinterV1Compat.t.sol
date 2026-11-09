@@ -121,4 +121,13 @@ contract SeaDropMinterV1CompatTest is SeaDropV3TestHelper {
         );
         minter.setStage(address(v1Token), 0, 0, _publicStage());
     }
+
+    function test_revert_setStage_nonzeroIdOnV1Token() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.ERC721StageIdNotZero.selector, 7
+            )
+        );
+        minter.setStage(address(v1Token), 7, 0, _publicStage());
+    }
 }
