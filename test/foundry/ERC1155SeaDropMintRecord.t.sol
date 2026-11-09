@@ -13,10 +13,6 @@ import { IERC1155SeaDrop } from "seadrop/interfaces/IERC1155SeaDrop.sol";
 
 import { ISeaDropToken } from "seadrop/interfaces/ISeaDropToken.sol";
 
-import {
-    ERC1155SeaDropErrorsAndEvents
-} from "seadrop/lib/ERC1155SeaDropErrorsAndEvents.sol";
-
 import { PublicDrop } from "seadrop/lib/ERC1155SeaDropStructs.sol";
 
 import {
@@ -211,9 +207,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.InvalidRecipientOnlyMinterOrFulfiller
-                    .selector,
-                thirdParty
+                InvalidRecipientOnlyMinterOrFulfiller.selector, thirdParty
             )
         );
         vm.prank(minter);
@@ -264,9 +258,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.InvalidRecipientOnlyMinterOrFulfiller
-                    .selector,
-                thirdParty
+                InvalidRecipientOnlyMinterOrFulfiller.selector, thirdParty
             )
         );
         vm.prank(payer);
@@ -389,9 +381,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.InvalidRecipientOnlyMinterOrFulfiller
-                    .selector,
-                thirdParty
+                InvalidRecipientOnlyMinterOrFulfiller.selector, thirdParty
             )
         );
         vm.prank(minter);
@@ -412,9 +402,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
         // token without a new mint has no valid recipient.
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.InvalidRecipientOnlyMinterOrFulfiller
-                    .selector,
-                minter
+                InvalidRecipientOnlyMinterOrFulfiller.selector, minter
             )
         );
         vm.prank(address(consideration));
@@ -474,10 +462,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
         );
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.NestedSeaportCall.selector,
-                secondSeaport
-            )
+            abi.encodeWithSelector(NestedSeaportCall.selector, secondSeaport)
         );
         caller.run(address(consideration), outerFill);
     }
@@ -513,10 +498,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         assertEq(
             caller.lastError(),
-            abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.NestedSeaportCall.selector,
-                address(mock)
-            )
+            abi.encodeWithSelector(NestedSeaportCall.selector, address(mock))
         );
         assertEq(token.balanceOf(address(caller), 1), 1);
     }
@@ -541,9 +523,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.InvalidRecipientOnlyMinterOrFulfiller
-                    .selector,
-                otherMinter
+                InvalidRecipientOnlyMinterOrFulfiller.selector, otherMinter
             )
         );
         caller.run(
@@ -574,9 +554,7 @@ contract ERC1155SeaDropMintRecordTest is SeaDrop1155Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC1155SeaDropErrorsAndEvents.InvalidRecipientOnlyMinterOrFulfiller
-                    .selector,
-                minter
+                InvalidRecipientOnlyMinterOrFulfiller.selector, minter
             )
         );
         vm.prank(payer);
