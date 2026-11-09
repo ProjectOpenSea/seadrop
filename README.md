@@ -41,16 +41,16 @@ See [Deployments](docs/Deployments.md) for the clone factories, every network, a
 
 ```mermaid
 flowchart LR
-    creator([Creator]) -->|"updatePublicDrop(), updateSignedMintValidationParams(),<br/>multiConfigure() and other settings"| token["ERC721SeaDrop token"]
-    token -->|"forwards drop settings"| seadrop["SeaDrop"]
-    minter([Minter]) -->|"mintPublic(), mintSigned(),<br/>mintAllowList() or mintAllowedTokenHolder()<br/>with payment"| seadrop
-    seadrop -->|"mintSeaDrop(minter, quantity)"| token
+    creator([Creator]) -->|"drop settings"| token["ERC721SeaDrop<br/>token"]
+    token -->|"forwards settings"| seadrop["SeaDrop"]
+    minter([Minter]) -->|"mint + payment"| seadrop
+    seadrop -->|"mintSeaDrop()"| token
     seadrop -->|"fee"| fee["Fee recipient"]
-    seadrop -->|"rest of the payment"| payout["Creator payout address"]
-    seadrop -.->|"events"| indexer["Indexers such as OpenSea"]
+    seadrop -->|"payout"| payout["Creator payout<br/>address"]
+    seadrop -.->|"events"| indexer["Indexers"]
 ```
 
-The creator configures a drop by calling the token, which forwards the settings to `SeaDrop`. A minter calls `SeaDrop` with the payment. `SeaDrop` checks the stage, the wallet limit and the max supply, pays the fee recipient and the creator's payout address, and calls `mintSeaDrop` on the token. The fee recipient can be any address the token allows, and drops don't need one.
+The creator configures a drop by calling the token, for example `updatePublicDrop()` or `multiConfigure()`, and the token forwards the settings to `SeaDrop`. A minter calls `SeaDrop` with the payment, through `mintPublic()`, `mintSigned()`, `mintAllowList()` or `mintAllowedTokenHolder()`. `SeaDrop` checks the stage, the wallet limit and the max supply, pays the fee recipient and the creator's payout address, and calls `mintSeaDrop()` on the token. The fee recipient can be any address the token allows, and drops don't need one.
 
 ## Docs
 
