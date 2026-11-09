@@ -1,6 +1,7 @@
 [profile.default]
 src = 'src'
-test = 'test/foundry'
+# v1's tests are in test/foundry and the v3 prototype's in test/v3.
+test = 'test'
 out = 'out'
 libs = ['lib']
 solc_version = '0.8.38'
