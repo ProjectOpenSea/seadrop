@@ -260,6 +260,7 @@ interface ISeaDropMinter {
     error NothingToWithdraw();
     error WithdrawalFailed();
     error Reentrancy();
+    error OnlyMinterItself(address caller);
 
     /// @notice Set a stage. Only the token's owner can call this.
     function setStage(

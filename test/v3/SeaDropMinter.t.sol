@@ -5,6 +5,7 @@ import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
 
 import {
     GasBurningRecipient,
+    PayoutListChanger,
     MockDelegateRegistry,
     MockERC1271Wallet,
     NotASeaDropToken,
@@ -1251,6 +1252,56 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         assertEq(minter.credited(creator, address(usdc)), 0);
     }
 
+    function test_mintERC20_shortTransferReturnIsRolledBackAndCredited()
+        public
+    {
+        _assertBadERC20AnswerCredited(1);
+    }
+
+    function test_mintERC20_transferReturningTwoIsRolledBackAndCredited()
+        public
+    {
+        _assertBadERC20AnswerCredited(2);
+    }
+
+    function test_mintERC20_gasBurningTransferIsRolledBackAndCredited() public {
+        _assertBadERC20AnswerCredited(3);
+    }
+
+    /// @dev The creator's transfer moves the tokens, then answers with
+    ///      `mode`'s bad response. The minter rolls the transfer back and
+    ///      credits the creator, and the mint goes through.
+    function _assertBadERC20AnswerCredited(uint8 mode) internal {
+        TestERC20 usdc = new TestERC20();
+        _setERC20Stage(usdc, 10e6);
+        usdc.mint(alice, 100e6);
+        usdc.setTransferMode(creator, mode);
+        vm.prank(alice);
+        usdc.approve(address(minter), 10e6);
+
+        uint256 proceeds = 10e6 * (10_000 - FEE_BPS) / 10_000;
+        vm.expectEmit(address(minter));
+        emit ISeaDropMinter.PaymentCredited(creator, address(usdc), proceeds);
+        vm.prank(alice);
+        minter.mint{ gas: 1_000_000 }(_erc20Params(usdc, 1, 10e6), _noAuth());
+
+        assertEq(token721.ownerOf(1), alice);
+        assertEq(usdc.balanceOf(creator), 0);
+        assertEq(minter.credited(creator, address(usdc)), proceeds);
+        assertEq(usdc.balanceOf(address(minter)), proceeds);
+    }
+
+    function test_revert_pushERC20_onlyMinterItself() public {
+        TestERC20 usdc = new TestERC20();
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.OnlyMinterItself.selector, alice
+            )
+        );
+        vm.prank(alice);
+        minter.pushERC20(address(usdc), alice, 1);
+    }
+
     // ---------------------------------------------------------------------
     // Failed ETH pushes and withdrawals
     // ---------------------------------------------------------------------
@@ -1304,6 +1355,35 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
             minter.credited(address(recipient), address(0)),
             PRICE * (10_000 - FEE_BPS) / 10_000
         );
+    }
+
+    function test_payoutListChangedMidPayoutPaysTheSnapshot() public {
+        // The owner of the token is also its first payout recipient, and
+        // replaces the list with carol alone when it's paid
+        PayoutListChanger changer = new PayoutListChanger(minter);
+        ISeaDropMinter.PayoutRecipient[] memory recipients =
+            new ISeaDropMinter.PayoutRecipient[](2);
+        recipients[0] = ISeaDropMinter.PayoutRecipient(address(changer), 5000);
+        recipients[1] = ISeaDropMinter.PayoutRecipient(bob, 5000);
+        minter.setPayoutRecipients(address(token721), recipients);
+        token721.transferOwnership(address(changer));
+        changer.acceptOwnershipOf(token721);
+        changer.arm(address(token721), carol);
+
+        uint256 bobBefore = bob.balance;
+        vm.prank(alice);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+
+        uint256 proceeds = PRICE * (10_000 - FEE_BPS) / 10_000;
+        assertEq(token721.ownerOf(1), alice);
+        assertEq(address(changer).balance, proceeds / 2);
+        assertEq(bob.balance - bobBefore, proceeds - proceeds / 2);
+        ISeaDropMinter.PayoutRecipient[] memory changed =
+            minter.getPayoutRecipients(address(token721));
+        assertEq(changed.length, 1);
+        assertEq(changed[0].recipient, carol);
     }
 
     function test_revert_withdraw_nothingCredited() public {

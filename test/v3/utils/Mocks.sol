@@ -9,6 +9,8 @@ import { SeaDropMinter } from "seadrop/v3/SeaDropMinter.sol";
 
 import { ISeaDropMinter } from "seadrop/v3/interfaces/ISeaDropMinter.sol";
 
+import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
+
 /**
  * @dev delegate.xyz v2's delegation calls, reduced to what the minter reads.
  *      Tests etch it at the canonical registry address.
@@ -115,6 +117,39 @@ contract GasBurningRecipient {
     }
 }
 
+/**
+ * @dev A payout recipient that owns the token and, when paid, replaces the
+ *      token's payout list with `newRecipient` alone.
+ */
+contract PayoutListChanger {
+    SeaDropMinter internal immutable _minter;
+    address internal _token;
+    address internal _newRecipient;
+
+    constructor(SeaDropMinter minter) {
+        _minter = minter;
+    }
+
+    function arm(address token, address newRecipient) external {
+        _token = token;
+        _newRecipient = newRecipient;
+    }
+
+    function acceptOwnershipOf(TwoStepOwnable token) external {
+        token.acceptOwnership();
+    }
+
+    receive() external payable {
+        address token = _token;
+        if (token == address(0)) return;
+        _token = address(0);
+        ISeaDropMinter.PayoutRecipient[] memory recipients =
+            new ISeaDropMinter.PayoutRecipient[](1);
+        recipients[0] = ISeaDropMinter.PayoutRecipient(_newRecipient, 10_000);
+        _minter.setPayoutRecipients(token, recipients);
+    }
+}
+
 /// @dev Re-enters the minter from its ERC-721 receipt hook.
 contract ReentrantReceiver {
     SeaDropMinter internal immutable _minter;
@@ -145,10 +180,17 @@ contract NotASeaDropToken {
 
 /**
  * @dev An ERC-20 that can block recipients, as USDC's blocklist does, and
- *      charge a transfer fee.
+ *      charge a transfer fee. A recipient's transfer mode makes `transfer`
+ *      move the tokens and then answer badly: with one byte of return
+ *      data, with the boolean word 2, or by burning all its gas.
  */
 contract TestERC20 is ERC20("Test", "TST", 6) {
+    uint8 public constant SHORT_RETURN = 1;
+    uint8 public constant RETURNS_TWO = 2;
+    uint8 public constant BURNS_GAS = 3;
+
     mapping(address account => bool) public blocked;
+    mapping(address account => uint8 mode) public transferMode;
     uint256 public transferFeeBps;
 
     function mint(address to, uint256 amount) external {
@@ -163,13 +205,37 @@ contract TestERC20 is ERC20("Test", "TST", 6) {
         transferFeeBps = feeBps;
     }
 
+    function setTransferMode(address account, uint8 mode) external {
+        transferMode[account] = mode;
+    }
+
     function transfer(address to, uint256 amount)
         public
         override
         returns (bool)
     {
         require(!blocked[to], "blocked");
-        return super.transfer(to, amount);
+        bool moved = super.transfer(to, amount);
+        uint8 mode = transferMode[to];
+        if (mode == SHORT_RETURN) {
+            assembly ("memory-safe") {
+                mstore(0, 1)
+                return(31, 1)
+            }
+        }
+        if (mode == RETURNS_TWO) {
+            assembly ("memory-safe") {
+                mstore(0, 2)
+                return(0, 32)
+            }
+        }
+        if (mode == BURNS_GAS) {
+            uint256 spins;
+            while (true) {
+                ++spins;
+            }
+        }
+        return moved;
     }
 
     function transferFrom(address from, address to, uint256 amount)

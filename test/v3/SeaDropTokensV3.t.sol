@@ -56,7 +56,8 @@ contract SeaDropTokensV3Test is SeaDropV3TestHelper {
         assertTrue(token721.supportsInterface(0x49064906)); // ERC-4906
         assertTrue(token1155.supportsInterface(v3));
         assertTrue(token1155.supportsInterface(0xd9b67a26)); // ERC-1155
-        assertTrue(token1155.supportsInterface(0x49064906));
+        // ERC-4906 extends ERC-721, so the ERC-1155 token doesn't claim it
+        assertFalse(token1155.supportsInterface(0x49064906));
         assertFalse(token721.supportsInterface(0xffffffff));
     }
 

@@ -72,6 +72,10 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     ///         more is credited instead.
     uint256 public constant ETH_PAYOUT_GAS = 100_000;
 
+    /// @notice The gas an ERC-20 payout push gets. A transfer that needs
+    ///         more is rolled back and the recipient is credited instead.
+    uint256 public constant ERC20_PAYOUT_GAS = 100_000;
+
     uint256 internal constant _BPS = 10_000;
 
     bytes32 public constant MINT_AUTHORIZATION_TYPEHASH = keccak256(
@@ -635,7 +639,8 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         uint256 proceeds = totalPrice - fee;
         if (proceeds == 0) return;
 
-        PayoutRecipient[] storage recipients = _payoutRecipients[token];
+        // A copy, so a recipient's callback can't change the list mid-payout
+        PayoutRecipient[] memory recipients = _payoutRecipients[token];
         uint256 last = recipients.length;
         if (last == 0) revert NoPayoutRecipients();
         --last;
@@ -681,16 +686,31 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     }
 
     /**
-     * @dev Transfer an ERC-20, returning false instead of reverting.
-     *      Tokens that return nothing count as successful.
+     * @notice Transfer an ERC-20 payout. Only the minter itself calls this,
+     *         from `_tryTransferERC20`, so that a transfer the token
+     *         rejects, or answers with anything other than nothing or
+     *         `true`, reverts here and is rolled back.
+     */
+    function pushERC20(address currency, address to, uint256 amount) external {
+        if (msg.sender != address(this)) revert OnlyMinterItself(msg.sender);
+        IERC20(currency).safeTransfer(to, amount);
+    }
+
+    /**
+     * @dev Transfer an ERC-20 with capped gas, returning false instead of
+     *      reverting. The transfer runs in its own call, so one that fails
+     *      or runs out of gas is rolled back before the caller credits the
+     *      recipient, and its revert data isn't copied.
      */
     function _tryTransferERC20(address currency, address to, uint256 amount)
         internal
         returns (bool)
     {
-        (bool success, bytes memory data) =
-            currency.call(abi.encodeCall(IERC20.transfer, (to, amount)));
-        return success && (data.length == 0 || abi.decode(data, (bool)));
+        try this.pushERC20{ gas: ERC20_PAYOUT_GAS }(currency, to, amount) {
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     /**

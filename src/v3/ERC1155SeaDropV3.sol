@@ -80,8 +80,9 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
         override
         returns (bool)
     {
+        // ERC-4906 extends ERC-721, so this token emits its
+        // BatchMetadataUpdate event without claiming the interface.
         return interfaceId == type(ISeaDropTokenV3).interfaceId
-            || interfaceId == 0x49064906 // ERC-4906
             || super.supportsInterface(interfaceId);
     }
 }
