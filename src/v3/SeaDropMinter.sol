@@ -76,8 +76,8 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     bytes32 public constant MINT_AUTHORIZATION_TYPEHASH = keccak256(
         "MintAuthorization(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,uint256 maxQuantity,bool hasPrice,uint256 price,"
-        "uint256 expiry)"
+        "address wallet,address sender,uint256 maxQuantity,bool hasPrice,"
+        "uint256 price,uint256 expiry)"
     );
 
     bytes32 public constant MINT_PARAMS_TYPEHASH = keccak256(
@@ -255,8 +255,10 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
      *
      *         A caller other than the eligible wallet must be its
      *         delegate.xyz delegate for the token, a payer the admin
-     *         trusts, or a payer the token's owner allowed. Tokens go to
-     *         the wallet unless the caller is the wallet or its delegate.
+     *         trusts, a payer the token's owner allowed, or the `sender` a
+     *         signed stage's authorization links to the wallet. Tokens go
+     *         to the wallet unless the caller is the wallet or its
+     *         delegate.
      *
      *         ETH stages take exactly the total price. Excess ETH is
      *         rejected, not refunded.
@@ -275,7 +277,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
                     revert RecipientNotApproved(params.wallet, params.recipient);
                 }
             } else if (
-                !trustedPayers[msg.sender]
+                authorization.sender == address(0) && !trustedPayers[msg.sender]
                     && !allowedPayers[params.token][msg.sender]
                     && !_isDelegate(msg.sender, params.wallet, params.token)
             ) {
@@ -283,6 +285,8 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             }
         }
 
+        // A nonzero sender skipped the payer check above. _mint only
+        // accepts one that a stage signer signed and that is the caller.
         _mint(params, authorization);
     }
 
@@ -444,6 +448,9 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (stage.signer != address(0) || stage.signerSetId != 0) {
             (unitPrice, walletLimit) =
                 _useAuthorization(params, stage, authorization);
+        } else if (authorization.sender != address(0)) {
+            // Nothing signed this sender link.
+            revert SenderNeedsSignedStage();
         }
 
         _countWalletMint(params, walletLimit);
@@ -492,6 +499,11 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             revert AuthorizationExpired(authorization.expiry);
         }
 
+        address sender = authorization.sender;
+        if (sender != address(0) && sender != msg.sender) {
+            revert SenderMismatch(sender, msg.sender);
+        }
+
         bytes32 digest = _hashTypedDataV4(
             keccak256(
                 abi.encode(
@@ -500,6 +512,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
                     params.id,
                     params.stageIndex,
                     params.wallet,
+                    sender,
                     authorization.maxQuantity,
                     authorization.hasPrice,
                     authorization.price,

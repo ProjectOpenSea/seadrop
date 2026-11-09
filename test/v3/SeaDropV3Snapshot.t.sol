@@ -30,6 +30,8 @@ contract TestSeaDropV3Snapshot is Test {
     address signer;
     uint256 signerKey;
     bytes signature;
+    bytes linkedSignature;
+    address linkedWallet = makeAddr("linkedWallet");
 
     function setUp() public {
         (signer, signerKey) = makeAddrAndKey("signer");
@@ -84,20 +86,26 @@ contract TestSeaDropV3Snapshot is Test {
         minter.setSignerSetMember(1, signer, true);
         stage.signerSetId = 1;
         minter.setStage(address(token721), 0, 1, stage);
-        _signAuthorization();
+        signature = _signAuthorization(address(this), address(0));
+        linkedSignature = _signAuthorization(linkedWallet, address(this));
 
         vm.deal(address(5), 1 << 128);
         vm.deal(creator, 1 << 128);
     }
 
-    function _signAuthorization() internal {
+    function _signAuthorization(address wallet, address sender)
+        internal
+        view
+        returns (bytes memory)
+    {
         bytes32 structHash = keccak256(
             abi.encode(
                 minter.MINT_AUTHORIZATION_TYPEHASH(),
                 address(token721),
                 uint256(0),
                 uint256(1),
-                address(this),
+                wallet,
+                sender,
                 uint256(5),
                 false,
                 uint256(0),
@@ -122,7 +130,7 @@ contract TestSeaDropV3Snapshot is Test {
             signerKey,
             keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash))
         );
-        signature = abi.encodePacked(r, s, v);
+        return abi.encodePacked(r, s, v);
     }
 
     function testMintV3ERC721_snapshot() public {
@@ -137,7 +145,9 @@ contract TestSeaDropV3Snapshot is Test {
                 currency: address(0),
                 maxTotalPrice: 0.1 ether
             }),
-            ISeaDropMinter.Authorization(address(0), 0, false, 0, 0, "")
+            ISeaDropMinter.Authorization(
+                address(0), address(0), 0, false, 0, 0, ""
+            )
         );
     }
 
@@ -153,7 +163,9 @@ contract TestSeaDropV3Snapshot is Test {
                 currency: address(0),
                 maxTotalPrice: 0.1 ether
             }),
-            ISeaDropMinter.Authorization(address(0), 0, false, 0, 0, "")
+            ISeaDropMinter.Authorization(
+                address(0), address(0), 0, false, 0, 0, ""
+            )
         );
     }
 
@@ -169,7 +181,9 @@ contract TestSeaDropV3Snapshot is Test {
                 currency: address(0),
                 maxTotalPrice: 0.1 ether
             }),
-            ISeaDropMinter.Authorization(address(0), 0, false, 0, 0, "")
+            ISeaDropMinter.Authorization(
+                address(0), address(0), 0, false, 0, 0, ""
+            )
         );
     }
 
@@ -185,7 +199,9 @@ contract TestSeaDropV3Snapshot is Test {
                 currency: address(0),
                 maxTotalPrice: 0.1 ether
             }),
-            ISeaDropMinter.Authorization(address(0), 0, false, 0, 0, "")
+            ISeaDropMinter.Authorization(
+                address(0), address(0), 0, false, 0, 0, ""
+            )
         );
     }
 
@@ -202,7 +218,27 @@ contract TestSeaDropV3Snapshot is Test {
                 maxTotalPrice: 0.1 ether
             }),
             ISeaDropMinter.Authorization(
-                signer, 5, false, 0, 1010101, signature
+                signer, address(0), 5, false, 0, 1010101, signature
+            )
+        );
+    }
+
+    /// @dev The test contract pays as the sender the signer linked to
+    ///      another wallet, which gets the token and the count.
+    function testMintV3ERC721SignedLinkedSender_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token721),
+                id: 0,
+                stageIndex: 1,
+                wallet: linkedWallet,
+                recipient: linkedWallet,
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                signer, address(this), 5, false, 0, 1010101, linkedSignature
             )
         );
     }

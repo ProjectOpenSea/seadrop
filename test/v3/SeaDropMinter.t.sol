@@ -815,6 +815,188 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     }
 
     // ---------------------------------------------------------------------
+    // Senders a stage signer links to the eligible wallet
+    // ---------------------------------------------------------------------
+
+    /// @dev alice is on the allow list; bob is her embedded wallet, which
+    ///      OpenSea's signer links to her without any onchain delegation.
+    function _setSignerSetStage() internal {
+        minter.setSignerSetMember(1, signer, true);
+        _setSignedStage(address(0), 1);
+    }
+
+    function test_mintSigned_linkedSenderMintsForWallet() public {
+        _setSignerSetStage();
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, alice, 2);
+        assertFalse(minter.trustedPayers(bob));
+
+        vm.expectEmit(address(minter));
+        emit ISeaDropMinter.SeaDropMint(
+            address(token721),
+            0,
+            0,
+            bob,
+            alice,
+            alice,
+            2,
+            PRICE,
+            address(0),
+            feeRecipient,
+            FEE_BPS
+        );
+        vm.prank(bob);
+        minter.mint{ value: 2 * PRICE }(params, _authorizeLinked(params, bob));
+
+        assertEq(token721.balanceOf(alice), 2);
+        assertEq(token721.balanceOf(bob), 0);
+        assertEq(bob.balance, 100 ether - 2 * PRICE);
+        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 2);
+        assertEq(minter.mintedByWallet(address(token721), 0, 0, bob), 0);
+
+        // The count is alice's: she mints her other 3 herself, and then
+        // bob can't mint more for her.
+        params.quantity = 3;
+        params.maxTotalPrice = 3 * PRICE;
+        vm.prank(alice);
+        minter.mint{ value: 3 * PRICE }(
+            params, _authorize(params, signer, signerKey, 0, false, 0)
+        );
+
+        params.quantity = 1;
+        params.maxTotalPrice = PRICE;
+        ISeaDropMinter.Authorization memory auth = _authorizeLinked(params, bob);
+        vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsWalletLimit.selector, 6, 5
+            )
+        );
+        minter.mint{ value: PRICE }(params, auth);
+    }
+
+    function test_revert_mintSigned_linkedSenderIsTheOnlyCaller() public {
+        _setSignerSetStage();
+        address router = makeAddr("router");
+        vm.deal(router, 1 ether);
+        minter.setTrustedPayer(router, true);
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, alice, 1);
+        ISeaDropMinter.Authorization memory auth = _authorizeLinked(params, bob);
+
+        // Not an untrusted caller, a trusted payer, or the wallet itself.
+        address[3] memory callers = [carol, router, alice];
+        vm.deal(carol, 1 ether);
+        for (uint256 i = 0; i < callers.length; ++i) {
+            vm.prank(callers[i]);
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    ISeaDropMinter.SenderMismatch.selector, bob, callers[i]
+                )
+            );
+            minter.mint{ value: PRICE }(params, auth);
+        }
+    }
+
+    function test_revert_mintSigned_linkedSenderCannotRedirect() public {
+        _setSignerSetStage();
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, bob, 1);
+        ISeaDropMinter.Authorization memory auth = _authorizeLinked(params, bob);
+
+        vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.RecipientNotApproved.selector, alice, bob
+            )
+        );
+        minter.mint{ value: PRICE }(params, auth);
+    }
+
+    function test_mintSigned_linkedSenderDelegateCanRedirect() public {
+        _etchRegistry();
+        vm.prank(alice);
+        MockDelegateRegistry(REGISTRY)
+            .delegateContract(bob, address(token721), "", true);
+        _setSignerSetStage();
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, bob, 1);
+
+        vm.prank(bob);
+        minter.mint{ value: PRICE }(params, _authorizeLinked(params, bob));
+        assertEq(token721.ownerOf(1), bob);
+    }
+
+    function test_revert_mintSigned_tamperedSender() public {
+        _setSignerSetStage();
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, alice, 1);
+        ISeaDropMinter.Authorization memory auth = _authorizeLinked(params, bob);
+        auth.sender = carol;
+        vm.deal(carol, 1 ether);
+
+        vm.prank(carol);
+        vm.expectRevert(ISeaDropMinter.InvalidSignature.selector);
+        minter.mint{ value: PRICE }(params, auth);
+    }
+
+    function test_revert_mint_senderOnPublicStage() public {
+        // Unsigned, a sender would let anyone skip the payer rules.
+        ISeaDropMinter.Authorization memory auth = _noAuth();
+        auth.sender = bob;
+
+        vm.prank(bob);
+        vm.expectRevert(ISeaDropMinter.SenderNeedsSignedStage.selector);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), auth
+        );
+    }
+
+    function test_mintSigned_zeroSenderKeepsPayerRules() public {
+        _setSignerSetStage();
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, alice, 1);
+        ISeaDropMinter.Authorization memory auth =
+            _authorize(params, signer, signerKey, 0, false, 0);
+        assertEq(auth.sender, address(0));
+
+        vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(ISeaDropMinter.PayerNotAllowed.selector, bob)
+        );
+        minter.mint{ value: PRICE }(params, auth);
+
+        minter.setTrustedPayer(bob, true);
+        vm.prank(bob);
+        minter.mint{ value: PRICE }(params, auth);
+        assertEq(token721.ownerOf(1), alice);
+    }
+
+    function test_mintWithIntent_linkedSenderMustSubmit() public {
+        _setSignerSetStage();
+        address relayer = makeAddr("relayer");
+        vm.deal(relayer, 1 ether);
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, carol, 1);
+        ISeaDropMinter.MintIntent memory intent = _intent(params, 1);
+        bytes memory intentSignature = _sign(aliceKey, _intentDigest(intent));
+        ISeaDropMinter.Authorization memory auth =
+            _authorizeLinked(params, relayer);
+
+        vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.SenderMismatch.selector, relayer, bob
+            )
+        );
+        minter.mintWithIntent{ value: PRICE }(intent, intentSignature, auth);
+
+        vm.prank(relayer);
+        minter.mintWithIntent{ value: PRICE }(intent, intentSignature, auth);
+        assertEq(token721.ownerOf(1), carol);
+    }
+
+    // ---------------------------------------------------------------------
     // Signed intents
     // ---------------------------------------------------------------------
 

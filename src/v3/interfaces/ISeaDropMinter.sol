@@ -91,6 +91,13 @@ interface ISeaDropMinter {
      *
      * @param signer      Who signed: the stage's signer or a member of its
      *                    signer set.
+     * @param sender      An address the signer linked to `wallet`, such as
+     *                    the same user's embedded wallet. When set, only it
+     *                    can use the authorization, and it can pay for the
+     *                    wallet without being a trusted payer, an allowed
+     *                    payer or a delegate. Tokens still go to the wallet
+     *                    unless the usual recipient rules allow otherwise.
+     *                    address(0) means any caller the usual rules allow.
      * @param maxQuantity The wallet's limit in this stage. 0 keeps the
      *                    stage's `maxPerWallet`.
      * @param hasPrice    Whether `price` replaces the stage's price.
@@ -101,6 +108,7 @@ interface ISeaDropMinter {
      */
     struct Authorization {
         address signer;
+        address sender;
         uint256 maxQuantity;
         bool hasPrice;
         uint256 price;
@@ -231,6 +239,8 @@ interface ISeaDropMinter {
     error UnsupportedToken(address token);
     error AuthorizationExpired(uint256 expiry);
     error SignerNotAllowed(address signer);
+    error SenderMismatch(address sender, address caller);
+    error SenderNeedsSignedStage();
     error InvalidSignature();
     error IntentExpired(uint256 expiry);
     error IntentNonceUsed(address wallet, uint256 nonce);

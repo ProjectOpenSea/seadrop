@@ -26,8 +26,8 @@ abstract contract SeaDropV3TestHelper is Test {
     // Independent copies of the minter's EIP-712 types.
     bytes32 internal constant AUTHORIZATION_TYPEHASH = keccak256(
         "MintAuthorization(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,uint256 maxQuantity,bool hasPrice,uint256 price,"
-        "uint256 expiry)"
+        "address wallet,address sender,uint256 maxQuantity,bool hasPrice,"
+        "uint256 price,uint256 expiry)"
     );
     bytes32 internal constant PARAMS_TYPEHASH = keccak256(
         "MintParams(address token,uint256 id,uint256 stageIndex,"
@@ -161,6 +161,7 @@ abstract contract SeaDropV3TestHelper is Test {
                 params.id,
                 params.stageIndex,
                 params.wallet,
+                authorization.sender,
                 authorization.maxQuantity,
                 authorization.hasPrice,
                 authorization.price,
@@ -184,6 +185,7 @@ abstract contract SeaDropV3TestHelper is Test {
     ) internal view returns (ISeaDropMinter.Authorization memory auth) {
         auth = ISeaDropMinter.Authorization({
             signer: authSigner,
+            sender: address(0),
             maxQuantity: maxQuantity,
             hasPrice: hasPrice,
             price: price,
@@ -191,6 +193,24 @@ abstract contract SeaDropV3TestHelper is Test {
             signature: ""
         });
         auth.signature = _sign(key, _authorizationDigest(params, auth));
+    }
+
+    /// @dev An authorization from `signer` that links `sender` to
+    ///      `params.wallet`, with no overrides.
+    function _authorizeLinked(
+        ISeaDropMinter.MintParams memory params,
+        address sender
+    ) internal view returns (ISeaDropMinter.Authorization memory auth) {
+        auth = ISeaDropMinter.Authorization({
+            signer: signer,
+            sender: sender,
+            maxQuantity: 0,
+            hasPrice: false,
+            price: 0,
+            expiry: vm.getBlockTimestamp() + 100,
+            signature: ""
+        });
+        auth.signature = _sign(signerKey, _authorizationDigest(params, auth));
     }
 
     function _intentDigest(ISeaDropMinter.MintIntent memory intent)
