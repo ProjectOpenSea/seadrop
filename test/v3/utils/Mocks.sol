@@ -118,8 +118,8 @@ contract GasBurningRecipient {
 }
 
 /**
- * @dev A payout recipient that owns the token and, when paid, replaces the
- *      token's payout list with `newRecipient` alone.
+ * @dev A token owner that, when it's paid or receives a token, replaces
+ *      the token's payout list with `newRecipient` alone.
  */
 contract PayoutListChanger {
     SeaDropMinter internal immutable _minter;
@@ -139,7 +139,28 @@ contract PayoutListChanger {
         token.acceptOwnership();
     }
 
+    /// @dev Mint to itself, paying `msg.value`.
+    function mintToSelf(ISeaDropMinter.MintParams calldata params)
+        external
+        payable
+    {
+        ISeaDropMinter.Authorization memory none;
+        _minter.mint{ value: msg.value }(params, none);
+    }
+
     receive() external payable {
+        _changeList();
+    }
+
+    function onERC721Received(address, address, uint256, bytes calldata)
+        external
+        returns (bytes4)
+    {
+        _changeList();
+        return this.onERC721Received.selector;
+    }
+
+    function _changeList() internal {
         address token = _token;
         if (token == address(0)) return;
         _token = address(0);

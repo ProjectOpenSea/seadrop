@@ -484,11 +484,17 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         _checkCurrencyPolicy(stage.currency, stage.feeBps);
 
         uint256 totalPrice = unitPrice * params.quantity;
+        // Copy the payout list before the first call that can change state
+        // (the payment), so no callback during the mint can change where
+        // its proceeds go
+        PayoutRecipient[] memory recipients =
+            _payoutSnapshot(params.token, stage, totalPrice);
+
         _collectPayment(params, stage.currency, totalPrice);
 
         _mintToken(params.token, params.id, params.recipient, params.quantity);
 
-        _payOut(params.token, stage, totalPrice);
+        _payOut(stage, totalPrice, recipients);
 
         emit SeaDropMint(
             params.token,
@@ -644,25 +650,36 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     }
 
     /**
+     * @dev The payout list a mint pays from, read before any external call
+     *      that can change state. Empty when nothing goes to the payout
+     *      recipients.
+     */
+    function _payoutSnapshot(
+        address token,
+        Stage memory stage,
+        uint256 totalPrice
+    ) internal view returns (PayoutRecipient[] memory recipients) {
+        if (totalPrice - totalPrice * stage.feeBps / _BPS == 0) {
+            return recipients;
+        }
+        recipients = _payoutRecipients[token];
+        if (recipients.length == 0) revert NoPayoutRecipients();
+    }
+
+    /**
      * @dev Pay the stage fee, then split the rest across the token's
      *      payout recipients. The last recipient gets the rounding
      *      remainder.
      */
-    function _payOut(address token, Stage memory stage, uint256 totalPrice)
-        internal
-    {
+    function _payOut(
+        Stage memory stage,
+        uint256 totalPrice,
+        PayoutRecipient[] memory recipients
+    ) internal {
         if (totalPrice == 0) return;
 
         uint256 fee = totalPrice * stage.feeBps / _BPS;
         uint256 proceeds = totalPrice - fee;
-
-        // Copy the list before any payment, so no payee's callback can
-        // change where this mint's proceeds go
-        PayoutRecipient[] memory recipients;
-        if (proceeds != 0) {
-            recipients = _payoutRecipients[token];
-            if (recipients.length == 0) revert NoPayoutRecipients();
-        }
 
         _send(stage.currency, stage.feeRecipient, fee);
         if (proceeds == 0) return;

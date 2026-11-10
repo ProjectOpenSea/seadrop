@@ -23,7 +23,7 @@ The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freez
 
 | File                                      | nSLOC | What it does                                                                       |
 | ----------------------------------------- | ----: | ---------------------------------------------------------------------------------- |
-| `src/v3/SeaDropMinter.sol`                |   574 | Drop configuration, mint checks, payments and payouts for every v3 drop on a chain |
+| `src/v3/SeaDropMinter.sol`                |   584 | Drop configuration, mint checks, payments and payouts for every v3 drop on a chain |
 | `src/v3/ERC721SeaDropV3.sol`              |    78 | ERC-721 token (ERC721A) with max supply and a minter allowlist                     |
 | `src/v3/ERC1155SeaDropV3.sol`             |    76 | ERC-1155 token (OpenZeppelin) with per-id max supply                               |
 | `src/v3/SeaDropTokenV3Base.sol`           |    42 | Ownership, allowed minters, preapproved conduit and contract URI for both tokens   |
@@ -31,7 +31,7 @@ The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freez
 | `src/v3/interfaces/ISeaDropTokenV3.sol`   |     8 | The mint entry point tokens expose to the minter                                   |
 | `src/v3/interfaces/IDelegateRegistry.sol` |     9 | The delegate.xyz v2 call the minter makes                                          |
 
-That's about 770 nSLOC of logic and 220 of interfaces. nSLOC here counts lines that aren't blank or comments.
+That's about 780 nSLOC of logic and 220 of interfaces. nSLOC here counts lines that aren't blank or comments.
 
 #27 proposes two pieces the prototype doesn't have yet, and either may join the scope before the freeze:
 
@@ -61,7 +61,7 @@ Both paid paths then share `_mint`:
 4. Check the currency's policy again, in case the admin changed it after the stage was set.
 5. Collect the payment. ETH must match the total exactly. For ERC-20s, the minter checks the balance it actually received.
 6. Mint through `ISeaDropTokenV3`, or through v1's `mintSeaDrop` after checking supply with `getMintStats`.
-7. Pay the stage fee and the token's payout recipients, from a copy of the recipient list taken before any payment. ETH goes out with 100,000 gas. Each ERC-20 transfer runs in a gas-capped call back into the minter (`pushERC20`), so one that the token rejects, that runs out of gas, or that answers with anything other than nothing or `true` is rolled back. A failed push credits the recipient, who withdraws later.
+7. Pay the stage fee and the token's payout recipients, from a copy of the recipient list taken before the payment is collected. ETH goes out with 100,000 gas. Each ERC-20 transfer runs in a gas-capped call back into the minter (`pushERC20`), so one that the token rejects, that runs out of gas, or that answers with anything other than nothing or `true` is rolled back. A failed push credits the recipient, who withdraws later.
 8. Emit `SeaDropMint` with the token, id, stage, payer, wallet, recipient, quantity, unit price, currency, fee recipient and fee bps.
 
 ## Trust assumptions
@@ -90,7 +90,7 @@ Both paid paths then share `_mint`:
 - Excess ETH is rejected, not refunded.
 - A failed payout push credits the recipient instead of reverting the mint, so a bad recipient can't block minting.
 - The last payout recipient receives the rounding remainder.
-- A mint's proceeds follow the recipient list as it stood before any payment for that mint, even if the fee recipient or a payout recipient changes the list from a callback.
+- A mint's proceeds follow the recipient list as it stood before the payment was collected, even if a callback during the mint, from the token's receiver or a payee, changes the list.
 - The minter can't be a payout recipient or fee recipient, since nothing could withdraw what it paid itself.
 - An authorization has no nonce. It can be reused until it expires, within the wallet's limit, and without a limit it can be reused freely until then.
 - A wallet limit added to a live stage starts every wallet at 0.
@@ -102,8 +102,8 @@ Both paid paths then share `_mint`:
 
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
-- The prototype has 134 tests: 106 for the minter, 15 for the tokens, 7 for v1 compatibility and 6 gas snapshots. One is a fuzz test (`testFuzz_payoutSplitsPayEverything`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting and wallet limits.
-- A public mint costs 141k to 164k gas, against 129k for v1 and 202k for v2. The minter's runtime bytecode is 21,852 bytes, 2,724 under the EIP-170 limit.
+- The prototype has 135 tests: 107 for the minter, 15 for the tokens, 7 for v1 compatibility and 6 gas snapshots. One is a fuzz test (`testFuzz_payoutSplitsPayEverything`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting and wallet limits.
+- A public mint costs 141k to 164k gas, against 129k for v1 and 202k for v2. The minter's runtime bytecode is 21,907 bytes, 2,669 under the EIP-170 limit.
 
 ## Deployment
 

@@ -1421,6 +1421,30 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         );
     }
 
+    function test_payoutListChangedFromMintCallbackPaysTheSnapshot() public {
+        // The token's owner mints to itself and replaces the payout list
+        // with carol alone from its ERC-721 receipt hook
+        PayoutListChanger changer = new PayoutListChanger(minter);
+        _setSinglePayout(address(token721), bob);
+        token721.transferOwnership(address(changer));
+        changer.acceptOwnershipOf(token721);
+        changer.arm(address(token721), carol);
+
+        uint256 bobBefore = bob.balance;
+        vm.deal(address(this), PRICE);
+        changer.mintToSelf{ value: PRICE }(
+            _params(address(token721), 0, address(changer), address(changer), 1)
+        );
+
+        uint256 fee = PRICE * FEE_BPS / 10_000;
+        assertEq(token721.ownerOf(1), address(changer));
+        assertEq(bob.balance - bobBefore, PRICE - fee);
+        assertEq(carol.balance, 0);
+        assertEq(
+            minter.getPayoutRecipients(address(token721))[0].recipient, carol
+        );
+    }
+
     function test_revert_setStage_ownerMintIndex() public {
         uint256 reserved = minter.OWNER_MINT_STAGE();
         vm.expectRevert(
