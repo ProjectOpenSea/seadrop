@@ -36,7 +36,7 @@ ignored_warnings_from = ['script']
 # forge coverage turns the optimizer and via-IR off, but src/upgradeable keeps
 # its restricted settings, so its coverage lands on the wrong lines. Coverage
 # runs under this profile instead, which drops the restriction:
-# FOUNDRY_PROFILE=coverage forge coverage (npm run coverage sets it).
+# FOUNDRY_PROFILE=coverage forge coverage.
 [profile.coverage]
 additional_compiler_profiles = []
 compilation_restrictions = []

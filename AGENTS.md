@@ -21,16 +21,17 @@ Deployed non-upgradeable contracts are immutable, so a change only reaches contr
 
 Use Foundry v1.9.0, the version CI pins (`FOUNDRY_VERSION` in `.github/workflows/test.yml`). Other versions format differently and can reject the lint settings in `foundry.toml`. Install it with `foundryup --install v1.9.0`.
 
-| Task                                        | Command                    |
-| ------------------------------------------- | -------------------------- |
-| Build                                       | `forge build`              |
-| Test                                        | `forge test`               |
-| Lint, as CI does                            | `npm run lint`             |
-| Fix formatting                              | `npm run lint:fix`         |
-| Check contract sizes (EIP-170 and EIP-3860) | `./scripts/check_sizes.sh` |
-| Coverage                                    | `npm run coverage`         |
+| Task                                        | Command                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Build                                       | `forge build`                                                                               |
+| Test                                        | `forge test`                                                                                |
+| Install the pinned lint tools (once)        | `scripts/install-tools.sh`                                                                  |
+| Lint, as CI does                            | `scripts/lint.sh check`                                                                     |
+| Fix formatting                              | `scripts/lint.sh fix`                                                                       |
+| Check contract sizes (EIP-170 and EIP-3860) | `./scripts/check_sizes.sh`                                                                  |
+| Coverage                                    | `FOUNDRY_PROFILE=coverage forge coverage` (see [Development](docs/Development.md#commands)) |
 
-`npm run lint` runs `forge fmt --check`, `forge lint --deny warnings` and `biome ci .`. `npm install` installs Biome and a lefthook pre-commit hook that formats staged files. `ERC721SeaDropCloneFactory.t.sol` forks mainnet and needs `ETHEREUM_RPC_URL`.
+`scripts/lint.sh check` runs `forge fmt --check`, `forge lint --deny warnings`, Biome, taplo, shellcheck, shfmt and actionlint. The repo has no Node or npm dependencies. Keep it that way: add tools through `scripts/install-tools.sh`, pinned by version and SHA-256. `.tools/bin/lefthook install` sets up a pre-commit hook that formats staged files. `ERC721SeaDropCloneFactory.t.sol` forks mainnet and needs `ETHEREUM_RPC_URL`.
 
 ## Things to know
 
