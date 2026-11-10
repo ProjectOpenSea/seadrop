@@ -7,13 +7,25 @@ import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 /**
  * @title  SeaDropTokenV3Base
- * @notice What both v3 tokens share: an owner, the minters it allows and
- *         an ERC-7572 contract URI. Drop configuration lives in the
- *         minter.
+ * @notice What both v3 tokens share: an owner, the minters it allows, a
+ *         preapproved conduit and an ERC-7572 contract URI. Drop
+ *         configuration lives in the minter.
  */
 abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
     /// @notice Contracts allowed to call `mintSeaDrop`.
     mapping(address minter => bool allowed) public allowedMinters;
+
+    /**
+     * @notice The conduit every holder's tokens are approved for until the
+     *         holder revokes it, or address(0) for none. It's fixed at
+     *         deployment, so no one can point it at another operator
+     *         later. OpenSea's conduit differs by chain, so the deployer
+     *         passes the one for its chain.
+     */
+    address public immutable preapprovedConduit;
+
+    /// @dev Holders who revoked the conduit's preapproval.
+    mapping(address holder => bool revoked) internal _conduitRevoked;
 
     string internal _contractURI;
 
@@ -31,8 +43,9 @@ abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
     ///      same whichever contract catches it.
     error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
 
-    constructor(address minter) {
+    constructor(address minter, address conduit) {
         if (minter != address(0)) _setAllowedMinter(minter, true);
+        preapprovedConduit = conduit;
     }
 
     /// @notice Allow or disallow a minter.
@@ -61,6 +74,11 @@ abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
     function _setAllowedMinter(address minter, bool allowed) internal {
         allowedMinters[minter] = allowed;
         emit AllowedMinterUpdated(minter, allowed);
+    }
+
+    /// @dev Whether `operator` is the preapproved conduit.
+    function _isConduit(address operator) internal view returns (bool) {
+        return operator != address(0) && operator == preapprovedConduit;
     }
 
     function _checkMinter() internal view {

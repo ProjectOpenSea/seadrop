@@ -5,7 +5,7 @@ import { SeaDropTokenV3Base } from "./SeaDropTokenV3Base.sol";
 
 import { ISeaDropTokenV3 } from "./interfaces/ISeaDropTokenV3.sol";
 
-import { ERC1155 } from "solmate/tokens/ERC1155.sol";
+import { ERC1155 } from "openzeppelin-contracts/token/ERC1155/ERC1155.sol";
 
 /**
  * @title  ERC1155SeaDropV3
@@ -20,13 +20,14 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
 
     mapping(uint256 id => Supply) internal _supply;
 
-    string internal _uri;
-
     event MaxSupplyUpdated(uint256 indexed id, uint256 maxSupply);
 
     error MaxSupplyBelowTotalMinted(uint256 maxSupply, uint256 totalMinted);
 
-    constructor(address minter) SeaDropTokenV3Base(minter) { }
+    constructor(address minter, address conduit)
+        ERC1155("")
+        SeaDropTokenV3Base(minter, conduit)
+    { }
 
     /// @inheritdoc ISeaDropTokenV3
     function mintSeaDrop(address to, uint256 id, uint256 quantity) external {
@@ -56,7 +57,7 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
     /// @notice Set the URI for every id. Emits ERC-4906's
     ///         BatchMetadataUpdate for every id, minted or not.
     function setURI(string calldata newURI) external onlyOwner {
-        _uri = newURI;
+        _setURI(newURI);
         emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
@@ -70,8 +71,33 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
         return (supply.totalMinted, supply.maxSupply);
     }
 
-    function uri(uint256) public view override returns (string memory) {
-        return _uri;
+    /**
+     * @notice Every holder starts with the preapproved conduit approved
+     *         for all their tokens. A holder revokes or restores that with
+     *         `setApprovalForAll(preapprovedConduit, approved)`.
+     */
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        override
+        returns (bool)
+    {
+        if (_isConduit(operator)) return !_conduitRevoked[owner];
+        return super.isApprovedForAll(owner, operator);
+    }
+
+    /// @notice Approve or revoke an operator, the preapproved conduit
+    ///         included.
+    function setApprovalForAll(address operator, bool approved)
+        public
+        override
+    {
+        if (_isConduit(operator)) {
+            _conduitRevoked[msg.sender] = !approved;
+            emit ApprovalForAll(msg.sender, operator, approved);
+            return;
+        }
+        super.setApprovalForAll(operator, approved);
     }
 
     function supportsInterface(bytes4 interfaceId)

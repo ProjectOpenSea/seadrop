@@ -46,9 +46,16 @@ contract TestSeaDropV3Snapshot is Test {
             })
         );
 
-        token721 = new ERC721SeaDropV3("", "", address(minter));
+        token721 = new ERC721SeaDropV3(
+            "",
+            "",
+            address(minter),
+            address(0x1E0049783F008A0085193E00003D00cd54003c71)
+        );
         token721.setMaxSupply(1000);
-        token1155 = new ERC1155SeaDropV3(address(minter));
+        token1155 = new ERC1155SeaDropV3(
+            address(minter), address(0x1E0049783F008A0085193E00003D00cd54003c71)
+        );
         token1155.setMaxSupply(1, 1000);
         address[] memory allowed = new address[](1);
         allowed[0] = address(minter);

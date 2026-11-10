@@ -40,6 +40,7 @@ Use Foundry v1.9.0, the version CI pins (`FOUNDRY_VERSION` in `.github/workflows
 - A payout never reverts a mint. A failed push credits the recipient, who withdraws later. ERC-20 pushes run in a gas-capped call back into the minter (`pushERC20`), so a transfer that fails is rolled back before the credit.
 - OpenSea indexes drops from `SeaDropMint` and the versioned configuration events. Changing their fields is a schema change, so bump the version and coordinate.
 - Live v1 tokens mint through the minter after `updateAllowedSeaDrop`, via `mintSeaDrop(address,uint256)`. Keep that path working.
+- A token's preapproved conduit is fixed at deployment, because it can move every holder's tokens until they revoke it. OpenSea's conduit differs by chain, so it's passed in, and for clones only the factory may pass it, never the clone's creator.
 - Errors are plain, with one check per error.
 - The minter is about 2.8 KB under the EIP-170 limit. Run `./scripts/check_sizes.sh` after adding to it.
 - Compiler settings (solc 0.8.38 for Cancun, 1,000,000 optimizer runs, no metadata hash) change deployed bytecode, so don't change them in passing.

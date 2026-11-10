@@ -22,10 +22,12 @@ contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
 
     error MaxSupplyBelowTotalMinted(uint256 maxSupply, uint256 totalMinted);
 
-    constructor(string memory name, string memory symbol, address minter)
-        ERC721A(name, symbol)
-        SeaDropTokenV3Base(minter)
-    { }
+    constructor(
+        string memory name,
+        string memory symbol,
+        address minter,
+        address conduit
+    ) ERC721A(name, symbol) SeaDropTokenV3Base(minter, conduit) { }
 
     /// @inheritdoc ISeaDropTokenV3
     function mintSeaDrop(address to, uint256, uint256 quantity) external {
@@ -62,6 +64,35 @@ contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
         returns (uint256 totalMinted, uint256 maxSupply_)
     {
         return (_totalMinted(), maxSupply);
+    }
+
+    /**
+     * @notice Every holder starts with the preapproved conduit approved
+     *         for all their tokens. A holder revokes or restores that with
+     *         `setApprovalForAll(preapprovedConduit, approved)`.
+     */
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        override
+        returns (bool)
+    {
+        if (_isConduit(operator)) return !_conduitRevoked[owner];
+        return super.isApprovedForAll(owner, operator);
+    }
+
+    /// @notice Approve or revoke an operator, the preapproved conduit
+    ///         included.
+    function setApprovalForAll(address operator, bool approved)
+        public
+        override
+    {
+        if (_isConduit(operator)) {
+            _conduitRevoked[msg.sender] = !approved;
+            emit ApprovalForAll(msg.sender, operator, approved);
+            return;
+        }
+        super.setApprovalForAll(operator, approved);
     }
 
     function supportsInterface(bytes4 interfaceId)

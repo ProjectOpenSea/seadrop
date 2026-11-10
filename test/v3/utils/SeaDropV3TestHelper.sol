@@ -22,6 +22,9 @@ abstract contract SeaDropV3TestHelper is Test {
     uint256 internal constant ID_1155 = 7;
     uint256 internal constant MAX_SUPPLY = 100;
     uint32 internal constant MAX_PER_WALLET = 5;
+    /// @dev OpenSea's conduit on most chains, preapproved on the test tokens.
+    address internal constant CONDUIT =
+        0x1E0049783F008A0085193E00003D00cd54003c71;
 
     // Independent copies of the minter's EIP-712 types.
     bytes32 internal constant AUTHORIZATION_TYPEHASH = keccak256(
@@ -70,9 +73,9 @@ abstract contract SeaDropV3TestHelper is Test {
             })
         );
 
-        token721 = new ERC721SeaDropV3("Test", "TEST", address(minter));
+        token721 = new ERC721SeaDropV3("Test", "TEST", address(minter), CONDUIT);
         token721.setMaxSupply(MAX_SUPPLY);
-        token1155 = new ERC1155SeaDropV3(address(minter));
+        token1155 = new ERC1155SeaDropV3(address(minter), CONDUIT);
         token1155.setMaxSupply(ID_1155, uint128(MAX_SUPPLY));
 
         _setSinglePayout(address(token721), creator);
