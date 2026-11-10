@@ -5,31 +5,31 @@
 #   - $TEST - set to true to run on testnets, false (default) runs on mainnets
 
 declare -a mainnet_chains=(
-  "mainnet"
-  "polygon"
-  "optimism"
-  "arbitrum"
-  "arbitrum-nova"
-  "avalanche"
-  "klaytn"
-  "base"
-  "zora"
-  #"bsc"
-  #"gnosis"
+    "mainnet"
+    "polygon"
+    "optimism"
+    "arbitrum"
+    "arbitrum-nova"
+    "avalanche"
+    "klaytn"
+    "base"
+    "zora"
+    #"bsc"
+    #"gnosis"
 )
 
 declare -a testnet_chains=(
-  "goerli"
-  "sepolia"
-  "polygon-mumbai"
-  "optimism-goerli"
-  "arbitrum-goerli"
-  "avalanche-fuji"
-  "baobab"
-  "base-goerli"
-  "zora-test"
-  #"bsc-testnet"
-  #"chiado"
+    "goerli"
+    "sepolia"
+    "polygon-mumbai"
+    "optimism-goerli"
+    "arbitrum-goerli"
+    "avalanche-fuji"
+    "baobab"
+    "base-goerli"
+    "zora-test"
+    #"bsc-testnet"
+    #"chiado"
 )
 
 if [[ -n "$TEST" ]]; then
@@ -40,15 +40,15 @@ fi
 
 # Iterate over chains and run command for each chain
 for chain in "${!chains[@]}"; do
-  export CHAIN=${chains[chain]}
-  echo "========== Running forge script with CHAIN set to $CHAIN =========="
-  forge script $SCRIPT \
-    --rpc-url $CHAIN \
-    --private-key $PK \
-    --broadcast \
-    --verify \
-    --no-storage-caching \
-    --skip-simulation
+    export CHAIN=${chains[chain]}
+    echo "========== Running forge script with CHAIN set to $CHAIN =========="
+    forge script "$SCRIPT" \
+        --rpc-url "$CHAIN" \
+        --private-key "$PK" \
+        --broadcast \
+        --verify \
+        --no-storage-caching \
+        --skip-simulation
 done
 echo "====================================================================="
 echo ""

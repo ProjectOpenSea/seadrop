@@ -7,8 +7,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 find ./lib/seaport/contracts \
-  ./lib/seaport/lib/seaport-sol/src \
-  ./lib/seaport/lib/seaport-types/src \
-  ./lib/seaport/lib/seaport-core/src \
-  -type f -name '*.sol' -print0 |
-  xargs -0 perl -pi -e 's/pragma solidity 0/pragma solidity ^0/g'
+    ./lib/seaport/lib/seaport-sol/src \
+    ./lib/seaport/lib/seaport-types/src \
+    ./lib/seaport/lib/seaport-core/src \
+    -type f -name '*.sol' -print0 |
+    xargs -0 perl -pi -e 's/pragma solidity 0/pragma solidity ^0/g'
