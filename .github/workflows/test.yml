@@ -34,13 +34,18 @@ jobs:
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
-      - name: Use Node.js
-        uses: actions/setup-node@v7
+      # The tools are pinned by version and SHA-256 in the install script, so
+      # the cache only skips downloads.
+      - name: Restore tools
+        uses: actions/cache@v6
         with:
-          node-version-file: .nvmrc
-          cache: npm
+          path: .tools
+          key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/install-tools.sh') }}
 
-      - run: npm ci --ignore-scripts
+      - name: Install tools
+        run: |
+          scripts/install-tools.sh
+          echo "$PWD/.tools/bin" >> "$GITHUB_PATH"
 
       - name: Check Solidity formatting
         run: forge fmt --check
@@ -49,7 +54,18 @@ jobs:
         run: forge lint --deny warnings
 
       - name: Check formatting and lint with Biome
-        run: npx biome ci .
+        run: biome ci .
+
+      - name: Check TOML formatting
+        run: taplo fmt --check
+
+      - name: Lint shell scripts
+        run: |
+          shellcheck scripts/*.sh
+          shfmt -d scripts/*.sh
+
+      - name: Lint workflows
+        run: actionlint
 
   forge-test:
     name: Run Forge Tests
