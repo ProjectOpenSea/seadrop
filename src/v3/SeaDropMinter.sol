@@ -166,6 +166,10 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         uint256 stageIndex,
         Stage calldata stage
     ) external onlyTokenOwner(token) {
+        // Owner mints emit OWNER_MINT_STAGE, so no stage can use it
+        if (stageIndex == OWNER_MINT_STAGE) {
+            revert StageIndexReserved(stageIndex);
+        }
         // An ERC-721 token ignores ids, so stages and wallet limits at
         // other ids would give each wallet extra limits in one collection.
         if (id != 0 && _supportsInterface(token, _ERC721_INTERFACE_ID)) {

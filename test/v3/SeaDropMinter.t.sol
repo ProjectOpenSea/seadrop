@@ -1421,6 +1421,16 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         );
     }
 
+    function test_revert_setStage_ownerMintIndex() public {
+        uint256 reserved = minter.OWNER_MINT_STAGE();
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.StageIndexReserved.selector, reserved
+            )
+        );
+        minter.setStage(address(token721), 0, reserved, _publicStage());
+    }
+
     function test_revert_setStage_nonzeroIdOnERC721() public {
         vm.expectRevert(
             abi.encodeWithSelector(

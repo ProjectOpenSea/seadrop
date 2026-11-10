@@ -262,6 +262,7 @@ interface ISeaDropMinter {
     error Reentrancy();
     error OnlyMinterItself(address caller);
     error ERC721StageIdNotZero(uint256 id);
+    error StageIndexReserved(uint256 stageIndex);
     error PayoutRecipientIsMinter();
     error FeeRecipientIsMinter();
 

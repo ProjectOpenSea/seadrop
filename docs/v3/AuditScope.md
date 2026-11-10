@@ -23,15 +23,15 @@ The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freez
 
 | File                                      | nSLOC | What it does                                                                       |
 | ----------------------------------------- | ----: | ---------------------------------------------------------------------------------- |
-| `src/v3/SeaDropMinter.sol`                |   571 | Drop configuration, mint checks, payments and payouts for every v3 drop on a chain |
+| `src/v3/SeaDropMinter.sol`                |   574 | Drop configuration, mint checks, payments and payouts for every v3 drop on a chain |
 | `src/v3/ERC721SeaDropV3.sol`              |    78 | ERC-721 token (ERC721A) with max supply and a minter allowlist                     |
 | `src/v3/ERC1155SeaDropV3.sol`             |    76 | ERC-1155 token (OpenZeppelin) with per-id max supply                               |
 | `src/v3/SeaDropTokenV3Base.sol`           |    42 | Ownership, allowed minters, preapproved conduit and contract URI for both tokens   |
-| `src/v3/interfaces/ISeaDropMinter.sol`    |   202 | Structs, events, errors and entry points of the minter                             |
+| `src/v3/interfaces/ISeaDropMinter.sol`    |   203 | Structs, events, errors and entry points of the minter                             |
 | `src/v3/interfaces/ISeaDropTokenV3.sol`   |     8 | The mint entry point tokens expose to the minter                                   |
 | `src/v3/interfaces/IDelegateRegistry.sol` |     9 | The delegate.xyz v2 call the minter makes                                          |
 
-That's about 767 nSLOC of logic and 219 of interfaces. nSLOC here counts lines that aren't blank or comments.
+That's about 770 nSLOC of logic and 220 of interfaces. nSLOC here counts lines that aren't blank or comments.
 
 #27 proposes two pieces the prototype doesn't have yet, and either may join the scope before the freeze:
 
@@ -83,7 +83,7 @@ Both paid paths then share `_mint`:
 6. Wallet limits. They count per token, id, stage and wallet. A limit of 0 means unlimited and nothing is counted. ERC-721 tokens ignore ids, so `setStage` only accepts id 0 for them, v1 tokens included.
 7. v1 compatibility. A live v1 `ERC721SeaDrop` token can allow the minter with `updateAllowedSeaDrop`. The minter then calls `mintSeaDrop(recipient, quantity)`, after checking supply with `getMintStats`. v1 tokens trust their allowed SeaDrop contracts to enforce limits and fees, so the minter must not open a path that v1 SeaDrop closed. ERC-165 detection decides between the v3 and v1 interfaces.
 8. Tokens. Check the minter allowlist, the max supply checks, the preapproved conduit and each holder's revocation of it, and the ownership transfer: renouncing cancels a pending transfer. ERC721A 4.2.2 keeps the transfer functions non-payable.
-9. Events. Indexers rely on `SeaDropMint` and the versioned configuration events to rebuild every drop's state.
+9. Events. Indexers rely on `SeaDropMint` and the versioned configuration events to rebuild every drop's state. Owner mints emit the reserved stage index `OWNER_MINT_STAGE`, which `setStage` rejects.
 
 ## Known and intended behavior
 
@@ -102,8 +102,8 @@ Both paid paths then share `_mint`:
 
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
-- The prototype has 133 tests: 105 for the minter, 15 for the tokens, 7 for v1 compatibility and 6 gas snapshots. One is a fuzz test (`testFuzz_payoutSplitsPayEverything`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting and wallet limits.
-- A public mint costs 141k to 164k gas, against 129k for v1 and 202k for v2. The minter's runtime bytecode is 21,760 bytes, 2,816 under the EIP-170 limit.
+- The prototype has 134 tests: 106 for the minter, 15 for the tokens, 7 for v1 compatibility and 6 gas snapshots. One is a fuzz test (`testFuzz_payoutSplitsPayEverything`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting and wallet limits.
+- A public mint costs 141k to 164k gas, against 129k for v1 and 202k for v2. The minter's runtime bytecode is 21,852 bytes, 2,724 under the EIP-170 limit.
 
 ## Deployment
 
