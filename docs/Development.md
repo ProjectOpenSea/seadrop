@@ -19,18 +19,18 @@ forge build
 
 `build_seaport.sh` loosens Seaport's exact `pragma solidity` pins in the `lib/seaport` working tree, then builds the Seaport reference and optimized artifacts that the tests deploy from `reference-out` and `optimized-out`. Don't commit the resulting `lib/seaport` changes.
 
-Node.js (see `.nvmrc`) is only needed for formatting and the git hook. `npm install` installs [Biome](https://biomejs.dev) and sets up the [lefthook](https://lefthook.dev) pre-commit hook, which runs `forge fmt` and Biome on staged files.
+Formatting and linting use pinned tools rather than anything from npm. `scripts/install-tools.sh` downloads [Biome](https://biomejs.dev), [taplo](https://taplo.tamasfe.dev), [shellcheck](https://www.shellcheck.net), [shfmt](https://github.com/mvdan/sh), [actionlint](https://github.com/rhysd/actionlint) and [lefthook](https://lefthook.dev) from their GitHub releases into `.tools/bin` and checks each against a pinned SHA-256. It supports macOS and Linux; on Windows, use WSL. `.tools/bin/lefthook install` sets up a pre-commit hook that formats staged files.
 
 ## Commands
 
-| Task                                               | Command                       |
-| -------------------------------------------------- | ----------------------------- |
-| Run the tests                                      | `forge test`                  |
-| Run coverage                                       | `forge coverage --ir-minimum` |
-| Gas snapshot                                       | `forge snapshot`              |
-| Lint (`forge fmt --check`, `forge lint` and Biome) | `npm run lint`                |
-| Fix formatting                                     | `npm run lint:fix`            |
-| Check contract sizes against EIP-170 and EIP-3860  | `./scripts/check_sizes.sh`    |
+| Task                                              | Command                       |
+| ------------------------------------------------- | ----------------------------- |
+| Run the tests                                     | `forge test`                  |
+| Run coverage                                      | `forge coverage --ir-minimum` |
+| Gas snapshot                                      | `forge snapshot`              |
+| Lint, as CI does                                  | `scripts/lint.sh check`       |
+| Fix formatting                                    | `scripts/lint.sh fix`         |
+| Check contract sizes against EIP-170 and EIP-3860 | `./scripts/check_sizes.sh`    |
 
 Add `-vv` through `-vvvvv` to `forge test` for logs and traces.
 

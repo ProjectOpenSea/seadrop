@@ -1,4 +1,4 @@
-# Installed by `npm install` (the `prepare` script runs `lefthook install`).
+# Install with `scripts/install-tools.sh && .tools/bin/lefthook install`.
 pre-commit:
   parallel: true
   jobs:
@@ -9,9 +9,21 @@ pre-commit:
       run: forge fmt {staged_files}
       stage_fixed: true
     - name: biome
-      glob: "*.{js,jsx,ts,tsx,json,jsonc}"
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,md,yml,yaml}"
       exclude:
         - "lib/**"
         - "stdjson/**"
-      run: npx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      run: .tools/bin/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true
+    - name: taplo
+      glob: "*.toml"
+      exclude:
+        - "lib/**"
+      run: .tools/bin/taplo fmt {staged_files}
+      stage_fixed: true
+    - name: shfmt
+      glob: "*.sh"
+      exclude:
+        - "lib/**"
+      run: .tools/bin/shfmt -w {staged_files}
       stage_fixed: true

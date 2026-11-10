@@ -13,8 +13,8 @@ cd "$(dirname "$0")/.."
 status=0
 sizes=$(forge build --sizes --skip test --skip script --json) || status=$?
 if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$sizes"; then
-  echo "forge build failed (exit $status)" >&2
-  exit "$((status == 0 ? 1 : status))"
+    echo "forge build failed (exit $status)" >&2
+    exit "$((status == 0 ? 1 : status))"
 fi
 
 table=$(jq -r '
@@ -32,7 +32,7 @@ $table"
 
 echo "$report"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-  echo "$report" >>"$GITHUB_STEP_SUMMARY"
+    echo "$report" >>"$GITHUB_STEP_SUMMARY"
 fi
 
 over=$(jq -r '
@@ -41,7 +41,7 @@ over=$(jq -r '
   | .key
 ' <<<"$sizes")
 if [ -n "$over" ]; then
-  echo "Over a size limit: $over" >&2
-  exit 1
+    echo "Over a size limit: $over" >&2
+    exit 1
 fi
 exit "$status"
