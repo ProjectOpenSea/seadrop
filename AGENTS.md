@@ -28,11 +28,12 @@ Use Foundry v1.9.0, the version CI pins (`FOUNDRY_VERSION` in `.github/workflows
 | Build                                       | `forge build`                         |
 | Test v3                                     | `forge test --match-path 'test/v3/*'` |
 | Test everything                             | `forge test`                          |
-| Lint, as CI does                            | `npm run lint`                        |
-| Fix formatting                              | `npm run lint:fix`                    |
+| Install the pinned lint tools (once)        | `scripts/install-tools.sh`            |
+| Lint, as CI does                            | `scripts/lint.sh check`               |
+| Fix formatting                              | `scripts/lint.sh fix`                 |
 | Check contract sizes (EIP-170 and EIP-3860) | `./scripts/check_sizes.sh`            |
 
-`npm run lint` runs `forge fmt --check`, `forge lint --deny warnings` and `biome ci .`. v1's `ERC721SeaDropCloneFactory.t.sol` forks mainnet and needs `ETHEREUM_RPC_URL`.
+`scripts/lint.sh check` runs `forge fmt --check`, `forge lint --deny warnings`, Biome, taplo, shellcheck, shfmt and actionlint. The repo has no Node or npm dependencies. Keep it that way: add tools through `scripts/install-tools.sh`, pinned by version and SHA-256. `.tools/bin/lefthook install` sets up a pre-commit hook that formats staged files. v1's `ERC721SeaDropCloneFactory.t.sol` forks mainnet and needs `ETHEREUM_RPC_URL`.
 
 ## Things to know about v3
 

@@ -68,10 +68,10 @@ git clone --recurse-submodules https://github.com/ProjectOpenSea/seadrop && cd s
 forge build
 ```
 
-Node.js (see `.nvmrc`) is only needed for the formatting and git hook tooling. `npm install` installs [Biome](https://biomejs.dev) and sets up the [lefthook](https://lefthook.dev) pre-commit hook, which runs `forge fmt` and Biome on staged files.
+Formatting and linting use pinned tools rather than anything from npm. `scripts/install-tools.sh` downloads [Biome](https://biomejs.dev), taplo, shellcheck, shfmt, actionlint and [lefthook](https://lefthook.dev) from their GitHub releases into `.tools/bin` and checks each against a pinned SHA-256. `.tools/bin/lefthook install` sets up a pre-commit hook that formats staged files.
 
 ```bash
-npm install
+scripts/install-tools.sh
 ```
 
 ## Usage
@@ -87,7 +87,7 @@ This runs the upgradeable contracts' tests too. `src/upgradeable` compiles with 
 To run coverage:
 
 ```bash
-npm run coverage
+FOUNDRY_PROFILE=coverage forge coverage --report summary --report lcov --no-match-coverage 'Shim|MaliciousRecipient|Deploy|Test|Snapshot'
 ```
 
 To run a gas snapshot:
@@ -98,16 +98,16 @@ forge snapshot
 
 Add `-vv` through `-vvvvv` to `forge test` for logs, traces for failing tests, and setup traces. See the [Foundry Book](https://getfoundry.sh/forge/tests/overview) for more.
 
-To run lint checks (`forge fmt --check`, `forge lint`, and Biome):
+To run the lint checks CI runs (`forge fmt --check`, `forge lint`, Biome, taplo, shellcheck, shfmt and actionlint):
 
 ```bash
-npm run lint
+scripts/lint.sh check
 ```
 
 To fix formatting:
 
 ```bash
-npm run lint:fix
+scripts/lint.sh fix
 ```
 
 ## Audits
