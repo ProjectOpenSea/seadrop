@@ -80,8 +80,8 @@ When making a pull request, ensure that:
 
 [MIT](LICENSE) Copyright 2022 Ozone Networks, Inc.
 
-[version-badge]: https://img.shields.io/github/package-json/v/ProjectOpenSea/seadrop
-[version-link]: https://github.com/ProjectOpenSea/seadrop/blob/main/package.json
+[version-badge]: https://img.shields.io/badge/version-1.0.0-blue
+[version-link]: https://github.com/ProjectOpenSea/seadrop/releases
 [ci-badge]: https://github.com/ProjectOpenSea/seadrop/actions/workflows/test.yml/badge.svg
 [ci-link]: https://github.com/ProjectOpenSea/seadrop/actions/workflows/test.yml
 [coverage-badge]: https://coveralls.io/repos/github/ProjectOpenSea/seadrop/badge.svg?branch=main
