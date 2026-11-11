@@ -66,12 +66,12 @@ Every write emits ERC-8048's `MetadataSet`. A write to a minted token also emits
 
 The contract doesn't fix any keys. ERC-8048's agent profile (nicknamed ERC-721T) reserves these:
 
-| Key                            | Value                                                   |
-| ------------------------------ | ------------------------------------------------------- |
-| `context`                      | The agent's context as UTF-8 text, Markdown suggested   |
-| `endpoint[<type>]`             | A URI, for types such as `mcp`, `a2a`, `web` and `x402` |
-| `address[<chain-id>]`          | The agent's account on a chain, as raw address bytes    |
-| `account[<chain-id>][<index>]` | An additional account on a chain                        |
+| Key                            | Value                                                          |
+| ------------------------------ | -------------------------------------------------------------- |
+| `context`                      | The agent's context as UTF-8 text, Markdown suggested          |
+| `endpoint[<type>]`             | A URI, for types such as `mcp`, `a2a`, `ens`, `web` and `x402` |
+| `address[<chain-id>]`          | The agent's account on a chain, as raw address bytes           |
+| `account[<chain-id>][<index>]` | An additional account on a chain                               |
 
 `<chain-id>` is an ERC-7930 chain identifier, such as `0x00010000010100` for Ethereum. ERC-8048 is a draft and its agent profile may still change, so check the current text before you pick keys. Keys are case sensitive.
 
@@ -81,6 +81,6 @@ Token id 0 is not special. Put collection-level data in the contract URI.
 
 - The NFT's page shows that the token is bound to an agent, from the adapter's `AgentBound` event.
 - The agent card shows on the agent's identity item in the ERC-8004 registry, read from the agent URI.
-- OpenSea doesn't read ERC-8048 records. Anything OpenSea should show, such as the name, image and traits, goes in the `tokenURI` JSON.
+- OpenSea doesn't read ERC-8048 records. Anything OpenSea should show, such as the name, image and traits, goes in the `tokenURI` JSON. Don't copy agent keys such as `context` or `endpoint[mcp]` into that JSON: ERC-8495, the draft standard for `tokenURI` JSON, asks for field names of lowercase letters, digits and underscores that won't collide with future extensions.
 - OpenSea refreshes a token's metadata when it sees an ERC-4906 event, and every record write to a minted token emits one.
 - Agents created with the adapter's `counterfactualRegister` are not indexed.
