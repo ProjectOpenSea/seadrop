@@ -189,7 +189,6 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     function test_revert_mint_reentrancy() public {
         ReentrantReceiver receiver = new ReentrantReceiver(minter);
         vm.deal(address(receiver), 1 ether);
-        minter.setTrustedPayer(alice, true);
         receiver.setParams(
             _params(
                 address(token721), 0, address(receiver), address(receiver), 1
@@ -645,21 +644,24 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     // Payer, eligible wallet and recipient
     // ---------------------------------------------------------------------
 
-    function test_revert_mint_untrustedPayerForAnotherWallet() public {
-        vm.prank(bob);
-        vm.expectRevert(
-            abi.encodeWithSelector(ISeaDropMinter.PayerNotAllowed.selector, bob)
-        );
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-    }
-
-    function test_mint_trustedPayerPaysForWallet() public {
+    function test_mint_anyPayerPaysForWallet() public {
         address router = makeAddr("router");
         vm.deal(router, 1 ether);
-        minter.setTrustedPayer(router, true);
 
+        vm.expectEmit(address(minter));
+        emit ISeaDropMinter.SeaDropMint(
+            address(token721),
+            0,
+            0,
+            router,
+            alice,
+            alice,
+            2,
+            PRICE,
+            address(0),
+            feeRecipient,
+            FEE_BPS
+        );
         vm.prank(router);
         minter.mint{ value: 2 * PRICE }(
             _params(address(token721), 0, alice, alice, 2), _noAuth()
@@ -667,58 +669,49 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
 
         assertEq(token721.balanceOf(alice), 2);
         assertEq(token721.balanceOf(router), 0);
-        // Open design question: a payer minting to someone else's wallet
-        // uses up that wallet's per-wallet limit. Here the router spent two
-        // of alice's five. Only payers alice delegated to, payers the admin
-        // trusts, and payers the token's owner allowed can do this.
+        assertEq(router.balance, 1 ether - 2 * PRICE);
+        // Accepted trade-off: any payer can use up a wallet's limit at its
+        // own cost. Here the router spent two of alice's five, and the
+        // tokens still went to alice.
         assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 2);
         assertEq(minter.mintedByWallet(address(token721), 0, 0, router), 0);
-
-        minter.setTrustedPayer(router, false);
-        vm.prank(router);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.PayerNotAllowed.selector, router
-            )
-        );
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
     }
 
-    function test_mint_allowedPayerIsPerToken() public {
-        minter.setAllowedPayer(address(token721), bob, true);
-        assertTrue(minter.allowedPayers(address(token721), bob));
-
-        vm.prank(bob);
+    function test_mint_anyPayerPaysForWalletOnAnyToken() public {
+        // bob isn't alice's delegate and needs no per-token approval.
+        vm.startPrank(bob);
         minter.mint{ value: PRICE }(
             _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-        assertEq(token721.ownerOf(1), alice);
-
-        vm.prank(bob);
-        vm.expectRevert(
-            abi.encodeWithSelector(ISeaDropMinter.PayerNotAllowed.selector, bob)
         );
         minter.mint{ value: PRICE }(
             _params(address(token1155), ID_1155, alice, alice, 1), _noAuth()
         );
+        vm.stopPrank();
+
+        assertEq(token721.ownerOf(1), alice);
+        assertEq(token1155.balanceOf(alice, ID_1155), 1);
+        assertEq(token1155.balanceOf(bob, ID_1155), 0);
     }
 
-    function test_revert_mint_trustedPayerCannotRedirect() public {
+    function test_revert_mint_payerCannotRedirect() public {
         address router = makeAddr("router");
         vm.deal(router, 1 ether);
-        minter.setTrustedPayer(router, true);
 
-        vm.prank(router);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.RecipientNotApproved.selector, alice, router
-            )
-        );
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, router, 1), _noAuth()
-        );
+        address[2] memory recipients = [router, carol];
+        for (uint256 i = 0; i < recipients.length; ++i) {
+            vm.prank(router);
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    ISeaDropMinter.RecipientNotApproved.selector,
+                    alice,
+                    recipients[i]
+                )
+            );
+            minter.mint{ value: PRICE }(
+                _params(address(token721), 0, alice, recipients[i], 1),
+                _noAuth()
+            );
+        }
     }
 
     function test_mint_walletChoosesRecipient() public {
@@ -830,7 +823,6 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         _setSignerSetStage();
         ISeaDropMinter.MintParams memory params =
             _params(address(token721), 0, alice, alice, 2);
-        assertFalse(minter.trustedPayers(bob));
 
         vm.expectEmit(address(minter));
         emit ISeaDropMinter.SeaDropMint(
@@ -880,12 +872,11 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         _setSignerSetStage();
         address router = makeAddr("router");
         vm.deal(router, 1 ether);
-        minter.setTrustedPayer(router, true);
         ISeaDropMinter.MintParams memory params =
             _params(address(token721), 0, alice, alice, 1);
         ISeaDropMinter.Authorization memory auth = _authorizeLinked(params, bob);
 
-        // Not an untrusted caller, a trusted payer, or the wallet itself.
+        // Not another payer, a second payer, or the wallet itself.
         address[3] memory callers = [carol, router, alice];
         vm.deal(carol, 1 ether);
         for (uint256 i = 0; i < callers.length; ++i) {
@@ -942,7 +933,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     }
 
     function test_revert_mint_senderOnPublicStage() public {
-        // Unsigned, a sender would let anyone skip the payer rules.
+        // Nothing signed this sender, so it would restrict nothing.
         ISeaDropMinter.Authorization memory auth = _noAuth();
         auth.sender = bob;
 
@@ -953,7 +944,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         );
     }
 
-    function test_mintSigned_zeroSenderKeepsPayerRules() public {
+    function test_mintSigned_zeroSenderAnyPayer() public {
         _setSignerSetStage();
         ISeaDropMinter.MintParams memory params =
             _params(address(token721), 0, alice, alice, 1);
@@ -961,15 +952,55 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
             _authorize(params, signer, signerKey, 0, false, 0);
         assertEq(auth.sender, address(0));
 
+        // bob isn't alice's delegate or a linked sender.
+        vm.prank(bob);
+        minter.mint{ value: PRICE }(params, auth);
+        assertEq(token721.ownerOf(1), alice);
+        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 1);
+        assertEq(minter.mintedByWallet(address(token721), 0, 0, bob), 0);
+    }
+
+    function test_revert_mintSigned_zeroSenderPayerCannotRedirect() public {
+        _setSignerSetStage();
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, bob, 1);
+        ISeaDropMinter.Authorization memory auth =
+            _authorize(params, signer, signerKey, 0, false, 0);
+
         vm.prank(bob);
         vm.expectRevert(
-            abi.encodeWithSelector(ISeaDropMinter.PayerNotAllowed.selector, bob)
+            abi.encodeWithSelector(
+                ISeaDropMinter.RecipientNotApproved.selector, alice, bob
+            )
         );
         minter.mint{ value: PRICE }(params, auth);
+    }
 
-        minter.setTrustedPayer(bob, true);
+    function test_revert_mintWithIntent_boundSenderRejectsOtherCallers()
+        public
+    {
+        _setSignerSetStage();
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, alice, alice, 1);
+        ISeaDropMinter.MintIntent memory intent = _intent(params, 1);
+        bytes memory intentSignature = _sign(aliceKey, _intentDigest(intent));
+        ISeaDropMinter.Authorization memory auth = _authorizeLinked(params, bob);
+        vm.deal(carol, 1 ether);
+
+        // Not another payer, and not even the wallet that signed the intent.
+        address[2] memory callers = [carol, alice];
+        for (uint256 i = 0; i < callers.length; ++i) {
+            vm.prank(callers[i]);
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    ISeaDropMinter.SenderMismatch.selector, bob, callers[i]
+                )
+            );
+            minter.mintWithIntent{ value: PRICE }(intent, intentSignature, auth);
+        }
+
         vm.prank(bob);
-        minter.mint{ value: PRICE }(params, auth);
+        minter.mintWithIntent{ value: PRICE }(intent, intentSignature, auth);
         assertEq(token721.ownerOf(1), alice);
     }
 
@@ -1676,9 +1707,6 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         recipients[0] = ISeaDropMinter.PayoutRecipient(alice, 10_000);
         vm.expectRevert(onlyOwner);
         minter.setPayoutRecipients(address(token721), recipients);
-
-        vm.expectRevert(onlyOwner);
-        minter.setAllowedPayer(address(token721), alice, true);
         vm.stopPrank();
     }
 
@@ -1959,8 +1987,6 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         );
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
         minter.setSignerSetMember(1, alice, true);
-        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
-        minter.setTrustedPayer(alice, true);
         vm.stopPrank();
     }
 
@@ -1974,12 +2000,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         emit ISeaDropMinter.SignerSetUpdated(1, 2, signer, true);
         minter.setSignerSetMember(2, signer, true);
 
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.TrustedPayerUpdated(1, bob, true);
-        minter.setTrustedPayer(bob, true);
-
         assertTrue(minter.signerSets(2, signer));
-        assertTrue(minter.trustedPayers(bob));
     }
 
     function test_renounceCancelsPendingAdmin() public {

@@ -42,11 +42,12 @@ interface IOwnable {
  *         `(token, id)` has stages, each public or signed. Each mint
  *         separates three roles: the payer (`msg.sender`), the eligible
  *         wallet (whose signatures and wallet limits apply) and the
- *         recipient.
+ *         recipient. Any caller can pay for a wallet. Tokens go to the
+ *         wallet unless the caller is the wallet or its delegate.xyz
+ *         delegate.
  *
  *         The minter's admin manages what's shared across drops: allowed
- *         currencies and their minimum protocol fee, signer sets and
- *         trusted payers.
+ *         currencies and their minimum protocol fee, and signer sets.
  *
  *         The minter mints through ISeaDropTokenV3 when a token supports
  *         it, and otherwise through v1's INonFungibleSeaDropToken, so
@@ -112,13 +113,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     /// @notice Signer set members, managed by the admin.
     mapping(uint64 signerSetId => mapping(address signer => bool)) public
         signerSets;
-
-    /// @notice Payers the admin trusts for every token.
-    mapping(address payer => bool) public trustedPayers;
-
-    /// @notice Payers a token's owner allowed for that token.
-    mapping(address token => mapping(address payer => bool)) public
-        allowedPayers;
 
     /// @notice How many each eligible wallet minted in each stage that has
     ///         a wallet limit.
@@ -222,16 +216,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     }
 
     /// @inheritdoc ISeaDropMinter
-    function setAllowedPayer(address token, address payer, bool allowed)
-        external
-        onlyTokenOwner(token)
-    {
-        allowedPayers[token][payer] = allowed;
-
-        emit AllowedPayerUpdated(CONFIG_EVENT_VERSION, token, payer, allowed);
-    }
-
-    /// @inheritdoc ISeaDropMinter
     function setCurrency(address currency, CurrencyConfig calldata config)
         external
         onlyOwner
@@ -267,22 +251,14 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         );
     }
 
-    /// @inheritdoc ISeaDropMinter
-    function setTrustedPayer(address payer, bool trusted) external onlyOwner {
-        trustedPayers[payer] = trusted;
-
-        emit TrustedPayerUpdated(CONFIG_EVENT_VERSION, payer, trusted);
-    }
-
     /**
      * @notice Mint, paid by the caller.
      *
-     *         A caller other than the eligible wallet must be its
-     *         delegate.xyz delegate for the token, a payer the admin
-     *         trusts, a payer the token's owner allowed, or the `sender` a
-     *         signed stage's authorization links to the wallet. Tokens go
-     *         to the wallet unless the caller is the wallet or its
-     *         delegate.
+     *         Any caller can pay for the eligible wallet. Tokens go to the
+     *         wallet unless the caller is the wallet or its delegate.xyz
+     *         delegate for the token, who can name another recipient. A
+     *         signed stage's authorization with a nonzero `sender` can only
+     *         be used by that sender.
      *
      *         ETH stages take exactly the total price. Excess ETH is
      *         rejected, not refunded.
@@ -295,22 +271,13 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         MintParams calldata params,
         Authorization calldata authorization
     ) external payable nonReentrant {
-        if (msg.sender != params.wallet) {
-            if (params.recipient != params.wallet) {
-                if (!_isDelegate(msg.sender, params.wallet, params.token)) {
-                    revert RecipientNotApproved(params.wallet, params.recipient);
-                }
-            } else if (
-                authorization.sender == address(0) && !trustedPayers[msg.sender]
-                    && !allowedPayers[params.token][msg.sender]
-                    && !_isDelegate(msg.sender, params.wallet, params.token)
-            ) {
-                revert PayerNotAllowed(msg.sender);
-            }
+        if (
+            msg.sender != params.wallet && params.recipient != params.wallet
+                && !_isDelegate(msg.sender, params.wallet, params.token)
+        ) {
+            revert RecipientNotApproved(params.wallet, params.recipient);
         }
 
-        // A nonzero sender skipped the payer check above. _mint only
-        // accepts one that a stage signer signed and that is the caller.
         _mint(params, authorization);
     }
 
@@ -448,7 +415,8 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     /**
      * @dev The mint path `mint` and `mintWithIntent` share, once the
-     *      payer and recipient are approved.
+     *      recipient is approved. Any caller can pay. A nonzero
+     *      authorization `sender` must be the caller.
      */
     function _mint(
         MintParams calldata params,

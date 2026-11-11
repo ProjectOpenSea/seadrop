@@ -96,13 +96,13 @@ interface ISeaDropMinter {
      *
      * @param signer      Who signed: the stage's signer or a member of its
      *                    signer set.
-     * @param sender      An address the signer linked to `wallet`, such as
-     *                    the same user's embedded wallet. When set, only it
-     *                    can use the authorization, and it can pay for the
-     *                    wallet without being a trusted payer, an allowed
-     *                    payer or a delegate. Tokens still go to the wallet
-     *                    unless the usual recipient rules allow otherwise.
-     *                    address(0) means any caller the usual rules allow.
+     * @param sender      The only caller that can use this authorization,
+     *                    such as the same user's embedded wallet. Any
+     *                    caller can pay for a wallet, so this restricts who
+     *                    can use the authorization, and grants nothing
+     *                    beyond it. Tokens still go to the wallet unless the
+     *                    caller is the wallet or its delegate. address(0)
+     *                    means any caller.
      * @param currency    The stage currency the signer priced this in. It
      *                    must still match the stage's, so a price override
      *                    can't carry over to a new currency.
@@ -151,14 +151,6 @@ interface ISeaDropMinter {
         PayoutRecipient[] recipients
     );
 
-    /// @notice A token's owner allowed or disallowed a payer.
-    event AllowedPayerUpdated(
-        uint256 version,
-        address indexed token,
-        address indexed payer,
-        bool allowed
-    );
-
     /// @notice The admin set a currency's terms.
     event CurrencyUpdated(
         uint256 version,
@@ -172,13 +164,6 @@ interface ISeaDropMinter {
         uint64 indexed signerSetId,
         address indexed signer,
         bool allowed
-    );
-
-    /// @notice The admin trusted or untrusted a payer for every token.
-    event TrustedPayerUpdated(
-        uint256 version,
-        address indexed payer,
-        bool trusted
     );
 
     /**
@@ -237,7 +222,6 @@ interface ISeaDropMinter {
         uint256 endTime
     );
     error QuantityIsZero();
-    error PayerNotAllowed(address payer);
     error RecipientNotApproved(address wallet, address recipient);
     error MintQuantityExceedsWalletLimit(uint256 total, uint256 limit);
     error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
@@ -282,11 +266,6 @@ interface ISeaDropMinter {
         PayoutRecipient[] calldata recipients
     ) external;
 
-    /// @notice Allow or disallow a payer for one token. Only the token's
-    ///         owner can call this.
-    function setAllowedPayer(address token, address payer, bool allowed)
-        external;
-
     /// @notice Set a currency's terms. Only the admin can call this.
     function setCurrency(address currency, CurrencyConfig calldata config)
         external;
@@ -298,10 +277,6 @@ interface ISeaDropMinter {
         address signer,
         bool allowed
     ) external;
-
-    /// @notice Trust or untrust a payer for every token. Only the admin
-    ///         can call this.
-    function setTrustedPayer(address payer, bool trusted) external;
 
     /// @notice Mint, paid by the caller.
     function mint(
