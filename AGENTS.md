@@ -13,7 +13,7 @@ Guidance for coding agents and contributors working on `ProjectOpenSea/seadrop-p
 
 It's v1's tree plus SeaDrop v3 under `src/v3`. v3 replaces v2's Seaport-based design with one minter contract per chain and thin tokens. The design and its reasoning are in [#27](https://github.com/ProjectOpenSea/seadrop-priv/issues/27), and the draft audit scope is [docs/v3/AuditScope.md](docs/v3/AuditScope.md).
 
-- `src/v3/SeaDropMinter.sol` is the minter. It holds stages, signed authorizations and intents, payer rules, payments and payouts for every v3 drop on a chain.
+- `src/v3/SeaDropMinter.sol` is the minter. It holds stages, signed authorizations and intents, recipient rules, payments and payouts for every v3 drop on a chain.
 - `src/v3/ERC721SeaDropV3.sol`, `src/v3/ERC1155SeaDropV3.sol` and `src/v3/SeaDropTokenV3Base.sol` are the tokens. They keep ownership, supply and metadata, and mint only for the minters they allow.
 - `src/v3/interfaces` has the minter's structs, events and errors, the token interface, and the delegate.xyz registry call.
 - `test/v3` has v3's Forge tests, with mocks and helpers in `test/v3/utils`.
@@ -43,7 +43,7 @@ Use Foundry v1.9.0, the version CI pins (`FOUNDRY_VERSION` in `.github/workflows
 - Live v1 tokens mint through the minter after `updateAllowedSeaDrop`, via `mintSeaDrop(address,uint256)`. Keep that path working.
 - A token's preapproved conduit is fixed at deployment, because it can move every holder's tokens until they revoke it. OpenSea's conduit differs by chain, so it's passed in, and for clones only the factory may pass it, never the clone's creator.
 - Errors are plain, with one check per error.
-- The minter is about 2.8 KB under the EIP-170 limit. Run `./scripts/check_sizes.sh` after adding to it.
+- The minter is about 3.1 KB under the EIP-170 limit. Run `./scripts/check_sizes.sh` after adding to it.
 - Compiler settings (solc 0.8.38 for Cancun, 1,000,000 optimizer runs, no metadata hash) change deployed bytecode, so don't change them in passing.
 - Biome formats Markdown and JSON. It aligns Markdown tables and wants a blank line before a list.
 
