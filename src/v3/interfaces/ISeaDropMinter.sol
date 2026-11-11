@@ -21,6 +21,10 @@ interface ISeaDropMinter {
      * @param feeRecipient Who receives the fee.
      * @param maxPerWallet The most an eligible wallet can mint in this
      *                     stage. 0 means no limit.
+     * @param maxPerStage  The most minted in this stage across all wallets.
+     *                     0 means no limit, and then nothing is counted, so
+     *                     a limit added to a live stage counts from when
+     *                     it's set. Owner mints don't count.
      * @param signerSetId  A signer set the minter's admin manages. 0 means
      *                     none.
      * @param signer       The stage's own signer, an EOA or an ERC-1271
@@ -34,7 +38,8 @@ interface ISeaDropMinter {
         uint16 feeBps;
         address feeRecipient;
         uint32 maxPerWallet;
-        uint64 signerSetId;
+        uint32 maxPerStage;
+        uint32 signerSetId;
         address signer;
     }
 
@@ -161,7 +166,7 @@ interface ISeaDropMinter {
     /// @notice The admin added a signer to a signer set or removed one.
     event SignerSetUpdated(
         uint256 version,
-        uint64 indexed signerSetId,
+        uint32 indexed signerSetId,
         address indexed signer,
         bool allowed
     );
@@ -224,6 +229,7 @@ interface ISeaDropMinter {
     error QuantityIsZero();
     error RecipientNotApproved(address wallet, address recipient);
     error MintQuantityExceedsWalletLimit(uint256 total, uint256 limit);
+    error MintQuantityExceedsStageLimit(uint256 total, uint256 limit);
     error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
     error CurrencyMismatch(address expected, address given);
     error TotalPriceExceedsMax(uint256 totalPrice, uint256 maxTotalPrice);
@@ -273,7 +279,7 @@ interface ISeaDropMinter {
     /// @notice Add a signer to a signer set or remove one. Only the admin
     ///         can call this.
     function setSignerSetMember(
-        uint64 signerSetId,
+        uint32 signerSetId,
         address signer,
         bool allowed
     ) external;

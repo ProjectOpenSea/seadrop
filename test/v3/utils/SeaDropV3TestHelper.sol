@@ -100,6 +100,7 @@ abstract contract SeaDropV3TestHelper is Test {
             feeBps: uint16(FEE_BPS),
             feeRecipient: feeRecipient,
             maxPerWallet: MAX_PER_WALLET,
+            maxPerStage: 0,
             signerSetId: 0,
             signer: address(0)
         });

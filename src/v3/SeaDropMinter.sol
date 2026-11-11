@@ -111,7 +111,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     mapping(address currency => CurrencyConfig) internal _currencies;
 
     /// @notice Signer set members, managed by the admin.
-    mapping(uint64 signerSetId => mapping(address signer => bool)) public
+    mapping(uint32 signerSetId => mapping(address signer => bool)) public
         signerSets;
 
     /// @notice How many each eligible wallet minted in each stage that has
@@ -125,6 +125,13 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             )
         )
     ) public mintedByWallet;
+
+    /// @notice How many were minted in each stage that has a stage limit,
+    ///         across all wallets.
+    mapping(
+        address token
+            => mapping(uint256 id => mapping(uint256 stageIndex => uint256))
+    ) public mintedInStage;
 
     /// @notice Which intent nonces each wallet used or cancelled.
     mapping(address wallet => mapping(uint256 nonce => bool used)) public
@@ -235,7 +242,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     /// @inheritdoc ISeaDropMinter
     function setSignerSetMember(
-        uint64 signerSetId,
+        uint32 signerSetId,
         address signer,
         bool allowed
     ) external onlyOwner {
@@ -446,6 +453,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         }
 
         _countWalletMint(params, walletLimit);
+        _countStageMint(params, stage.maxPerStage);
 
         // The admin may have disabled the currency or raised its minimum
         // fee since the stage was set.
@@ -545,6 +553,25 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             revert MintQuantityExceedsWalletLimit(walletTotal, walletLimit);
         }
         minted[params.wallet] = walletTotal;
+    }
+
+    /**
+     * @dev Count the mint against the stage's limit across all wallets. As
+     *      with wallet limits, a limit of 0 means no limit and nothing is
+     *      counted, so a limit added to a live stage counts from then.
+     */
+    function _countStageMint(MintParams calldata params, uint256 stageLimit)
+        internal
+    {
+        if (stageLimit == 0) return;
+
+        uint256 stageTotal =
+            mintedInStage[params.token][params.id][params.stageIndex]
+                + params.quantity;
+        if (stageTotal > stageLimit) {
+            revert MintQuantityExceedsStageLimit(stageTotal, stageLimit);
+        }
+        mintedInStage[params.token][params.id][params.stageIndex] = stageTotal;
     }
 
     /**

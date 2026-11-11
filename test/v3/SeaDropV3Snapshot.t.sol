@@ -73,6 +73,7 @@ contract TestSeaDropV3Snapshot is Test {
             feeBps: 100,
             feeRecipient: address(5),
             maxPerWallet: 10,
+            maxPerStage: 0,
             signerSetId: 0,
             signer: address(0)
         });
@@ -88,6 +89,11 @@ contract TestSeaDropV3Snapshot is Test {
         stage.maxPerWallet = 0;
         minter.setStage(address(token721), 0, 2, stage);
         stage.maxPerWallet = 10;
+
+        // The same stage with a stage limit, which adds the stage count.
+        stage.maxPerStage = 1000;
+        minter.setStage(address(token721), 0, 3, stage);
+        stage.maxPerStage = 0;
 
         // A signed stage, with the signer in an admin-managed set.
         minter.setSignerSetMember(1, signer, true);
@@ -201,6 +207,24 @@ contract TestSeaDropV3Snapshot is Test {
                 token: address(token721),
                 id: 0,
                 stageIndex: 2,
+                wallet: address(this),
+                recipient: address(this),
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                address(0), address(0), address(0), 0, false, 0, 0, ""
+            )
+        );
+    }
+
+    function testMintV3ERC721StageLimit_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token721),
+                id: 0,
+                stageIndex: 3,
                 wallet: address(this),
                 recipient: address(this),
                 quantity: 1,

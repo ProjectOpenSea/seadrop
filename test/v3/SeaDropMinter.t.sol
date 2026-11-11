@@ -349,6 +349,200 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     }
 
     // ---------------------------------------------------------------------
+    // Stage limits, across all wallets
+    // ---------------------------------------------------------------------
+
+    function _setStageLimit(uint32 maxPerStage) internal {
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.maxPerStage = maxPerStage;
+        minter.setStage(address(token721), 0, 0, stage);
+    }
+
+    function test_stage_fitsInThreeSlots() public {
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.maxPerStage = type(uint32).max;
+        stage.signerSetId = type(uint32).max;
+        stage.signer = signer;
+
+        vm.record();
+        minter.setStage(address(token721), 0, 1, stage);
+        (, bytes32[] memory writes) = vm.accesses(address(minter));
+        // The copy can write a slot once per field, so count distinct slots.
+        uint256 slots = 0;
+        for (uint256 i = 0; i < writes.length; ++i) {
+            bool seen = false;
+            for (uint256 j = 0; j < i; ++j) {
+                if (writes[j] == writes[i]) seen = true;
+            }
+            if (!seen) ++slots;
+        }
+        assertEq(slots, 3);
+
+        ISeaDropMinter.Stage memory stored =
+            minter.getStage(address(token721), 0, 1);
+        assertEq(stored.maxPerWallet, MAX_PER_WALLET);
+        assertEq(stored.maxPerStage, type(uint32).max);
+        assertEq(stored.signerSetId, type(uint32).max);
+        assertEq(stored.signer, signer);
+    }
+
+    function test_revert_mint_stageLimitAcrossWallets() public {
+        _setStageLimit(4);
+
+        vm.prank(alice);
+        minter.mint{ value: 3 * PRICE }(
+            _params(address(token721), 0, alice, alice, 3), _noAuth()
+        );
+
+        // bob's two would make five of the stage's four.
+        vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsStageLimit.selector, 5, 4
+            )
+        );
+        minter.mint{ value: 2 * PRICE }(
+            _params(address(token721), 0, bob, bob, 2), _noAuth()
+        );
+
+        vm.prank(bob);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, bob, bob, 1), _noAuth()
+        );
+        assertEq(minter.mintedInStage(address(token721), 0, 0), 4);
+
+        vm.deal(carol, 1 ether);
+        vm.prank(carol);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsStageLimit.selector, 5, 4
+            )
+        );
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, carol, carol, 1), _noAuth()
+        );
+    }
+
+    function test_mint_stageLimitIsPerStage() public {
+        _setStageLimit(2);
+        ISeaDropMinter.Stage memory stage1 = _publicStage();
+        stage1.maxPerStage = 2;
+        minter.setStage(address(token721), 0, 1, stage1);
+
+        vm.prank(alice);
+        minter.mint{ value: 2 * PRICE }(
+            _params(address(token721), 0, alice, alice, 2), _noAuth()
+        );
+
+        ISeaDropMinter.MintParams memory params =
+            _params(address(token721), 0, bob, bob, 2);
+        params.stageIndex = 1;
+        vm.prank(bob);
+        minter.mint{ value: 2 * PRICE }(params, _noAuth());
+
+        assertEq(minter.mintedInStage(address(token721), 0, 0), 2);
+        assertEq(minter.mintedInStage(address(token721), 0, 1), 2);
+    }
+
+    function test_mint_zeroStageLimitIsUnlimited() public {
+        _setStageLimit(0);
+
+        vm.prank(alice);
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token721), 0, alice, alice, 5), _noAuth()
+        );
+        vm.prank(bob);
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token721), 0, bob, bob, 5), _noAuth()
+        );
+
+        assertEq(token721.totalSupply(), 10);
+        // An unlimited stage doesn't count, to save the storage write.
+        assertEq(minter.mintedInStage(address(token721), 0, 0), 0);
+    }
+
+    function test_mint_stageLimitAddedToLiveStageCountsFromThen() public {
+        vm.prank(alice);
+        minter.mint{ value: 3 * PRICE }(
+            _params(address(token721), 0, alice, alice, 3), _noAuth()
+        );
+        assertEq(minter.mintedInStage(address(token721), 0, 0), 0);
+
+        // The three already minted don't count toward the new limit.
+        _setStageLimit(2);
+        vm.prank(bob);
+        minter.mint{ value: 2 * PRICE }(
+            _params(address(token721), 0, bob, bob, 2), _noAuth()
+        );
+        assertEq(minter.mintedInStage(address(token721), 0, 0), 2);
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsStageLimit.selector, 3, 2
+            )
+        );
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+    }
+
+    function test_ownerMint_doesNotCountTowardStageLimit() public {
+        _setStageLimit(2);
+
+        minter.ownerMint(address(token721), 0, carol, 10);
+        assertEq(minter.mintedInStage(address(token721), 0, 0), 0);
+
+        vm.prank(alice);
+        minter.mint{ value: 2 * PRICE }(
+            _params(address(token721), 0, alice, alice, 2), _noAuth()
+        );
+        assertEq(minter.mintedInStage(address(token721), 0, 0), 2);
+    }
+
+    function testFuzz_stageTotalNeverExceedsLimit(
+        uint32 limit,
+        uint8[] calldata quantities
+    ) public {
+        limit = uint32(bound(limit, 1, 40));
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.maxPerWallet = 0;
+        stage.maxPerStage = limit;
+        minter.setStage(address(token721), 0, 0, stage);
+
+        address[3] memory wallets = [alice, bob, carol];
+        vm.deal(carol, 100 ether);
+
+        uint256 expected = 0;
+        uint256 count = quantities.length < 20 ? quantities.length : 20;
+        for (uint256 i = 0; i < count; ++i) {
+            uint256 quantity = bound(quantities[i], 1, 10);
+            address wallet = wallets[i % 3];
+            if (expected + quantity > limit) {
+                vm.expectRevert(
+                    abi.encodeWithSelector(
+                        ISeaDropMinter.MintQuantityExceedsStageLimit.selector,
+                        expected + quantity,
+                        limit
+                    )
+                );
+            } else {
+                expected += quantity;
+            }
+            vm.prank(wallet);
+            minter.mint{ value: quantity * PRICE }(
+                _params(address(token721), 0, wallet, wallet, quantity),
+                _noAuth()
+            );
+
+            uint256 total = minter.mintedInStage(address(token721), 0, 0);
+            assertLe(total, limit);
+            assertEq(total, expected);
+            assertEq(token721.totalSupply(), total);
+        }
+    }
+
+    // ---------------------------------------------------------------------
     // Max supply
     // ---------------------------------------------------------------------
 
@@ -391,7 +585,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     // Signed stages
     // ---------------------------------------------------------------------
 
-    function _setSignedStage(address stageSigner, uint64 signerSetId) internal {
+    function _setSignedStage(address stageSigner, uint32 signerSetId) internal {
         ISeaDropMinter.Stage memory stage = _publicStage();
         stage.signer = stageSigner;
         stage.signerSetId = signerSetId;
