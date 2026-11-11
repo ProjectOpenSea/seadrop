@@ -106,7 +106,7 @@ Both paid paths then share `_mint`:
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
 - The prototype has 144 tests: 115 for the minter, 15 for the tokens, 7 for v1 compatibility and 7 gas snapshots. Two are fuzz tests (`testFuzz_payoutSplitsPayEverything` and `testFuzz_stageTotalNeverExceedsLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting and wallet and stage limits.
-- A public mint costs 141k to 164k gas, against 129k for v1 and 202k for v2. A stage limit adds about 23k for its count. The minter's runtime bytecode is 21,438 bytes, 3,138 under the EIP-170 limit.
+- A public mint costs 141k to 164k gas, against 129k for v1 and 202k for v2. A stage limit adds about 23k to the stage's first mint, which writes its count from zero, and about 5k to later ones. The minter's runtime bytecode is 21,438 bytes, 3,138 under the EIP-170 limit.
 
 ## Deployment
 
