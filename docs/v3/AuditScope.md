@@ -21,27 +21,25 @@ We plan to let live v1 drops opt in to v3 only after the audit's findings are re
 
 The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freeze. Today's numbers come from the prototype on the `ryan/v3-research` branch.
 
-| File                                      | nSLOC | What it does                                                                       |
-| ----------------------------------------- | ----: | ---------------------------------------------------------------------------------- |
-| `src/v3/SeaDropMinter.sol`                |   593 | Drop configuration, mint checks, payments and payouts for every v3 drop on a chain |
-| `src/v3/ERC721SeaDropV3.sol`              |    78 | ERC-721 token (ERC721A) with max supply and a minter allowlist                     |
-| `src/v3/ERC1155SeaDropV3.sol`             |    76 | ERC-1155 token (OpenZeppelin) with per-id max supply                               |
-| `src/v3/SeaDropTokenV3Base.sol`           |    42 | Ownership, allowed minters, preapproved conduit and contract URI for both tokens   |
-| `src/v3/interfaces/ISeaDropMinter.sol`    |   193 | Structs, events, errors and entry points of the minter                             |
-| `src/v3/interfaces/ISeaDropTokenV3.sol`   |     8 | The mint entry point tokens expose to the minter                                   |
-| `src/v3/interfaces/IDelegateRegistry.sol` |     9 | The delegate.xyz v2 call the minter makes                                          |
+| File                                      | nSLOC | What it does                                                                                              |
+| ----------------------------------------- | ----: | --------------------------------------------------------------------------------------------------------- |
+| `src/v3/SeaDropMinter.sol`                |   608 | Drop configuration, mint checks, payments, payouts and token registration for every v3 drop on a chain    |
+| `src/v3/SeaDropTokenFactory.sol`          |    74 | Deploys both token implementations, then clones them at creator-salted addresses and registers each clone |
+| `src/v3/ERC721SeaDropV3.sol`              |    93 | ERC-721 token (ERC721A-Upgradeable) with max supply and an initializer for clones                         |
+| `src/v3/ERC1155SeaDropV3.sol`             |    95 | ERC-1155 token (OpenZeppelin) with per-id max supply and an initializer for clones                        |
+| `src/v3/SeaDropTokenV3Base.sol`           |    75 | Ownership, allowed minters, preapproved conduit, contract URI and initialization for both tokens          |
+| `src/v3/interfaces/ISeaDropMinter.sol`    |   207 | Structs, events, errors and entry points of the minter                                                    |
+| `src/v3/interfaces/ISeaDropTokenV3.sol`   |     8 | The mint entry point tokens expose to the minter                                                          |
+| `src/v3/interfaces/IDelegateRegistry.sol` |     9 | The delegate.xyz v2 call the minter makes                                                                 |
 
-That's about 789 nSLOC of logic and 210 of interfaces. nSLOC here counts lines that aren't blank or comments.
+That's about 945 nSLOC of logic and 224 of interfaces. nSLOC here counts lines that aren't blank or comments.
 
-#27 proposes two pieces the prototype doesn't have yet, and either may join the scope before the freeze:
-
-- A factory that deploys v3 tokens as clones and registers them with the minter. Each chain's factory would be deployed with that chain's OpenSea conduit and pass it to every clone, so a clone's creator can't choose the preapproved operator.
-- ERC-7201 namespaced storage in the tokens, so clones can't have storage shifted by a library update.
+The two pieces #27 proposed for clones are now in scope. `SeaDropTokenFactory` deploys v3 tokens as EIP-1167 clones and registers them with the minter, and the tokens keep their own state in ERC-7201 namespaced storage. "Token deployment" and "Storage layout" below describe them.
 
 ## Out of scope
 
 - SeaDrop v1 and v2. v1 tokens are in scope only as targets the minter mints into (see "v1 compatibility" below).
-- Dependencies: OpenZeppelin 4.9 (`EIP712`, `SignatureChecker`, `SafeERC20`, `ERC1155`), ERC721A 4.2.2, `TwoStepOwnable` from utility-contracts, and delegate.xyz's v2 registry.
+- Dependencies: OpenZeppelin 4.9 (`EIP712`, `SignatureChecker`, `SafeERC20`, `ERC1155`, `Clones`), ERC721A-Upgradeable 4.2.2, `TwoStepOwnable` from utility-contracts, and delegate.xyz's v2 registry.
 - Offchain parts: OpenSea's signing service, indexing and Studio.
 - A Seaport adapter. It's deferred: of 21 million SeaDrop mints in the 90 days to Nov 9, 3 went through Seaport.
 
@@ -65,6 +63,37 @@ Both paid paths then share `_mint`:
 8. Pay the stage fee and the token's payout recipients, from a copy of the recipient list taken before the payment is collected. ETH goes out with 100,000 gas. Each ERC-20 transfer runs in a gas-capped call back into the minter (`pushERC20`), so one that the token rejects, that runs out of gas, or that answers with anything other than nothing or `true` is rolled back. A failed push credits the recipient, who withdraws later.
 9. Emit `SeaDropMint` with the token, id, stage, payer, wallet, recipient, quantity, unit price, currency, fee recipient and fee bps.
 
+## Token deployment
+
+Each chain gets one `SeaDropTokenFactory`, deployed with that chain's minter and OpenSea conduit. Its constructor deploys both token implementations, so the conduit and the factory's address are immutables in their bytecode.
+
+- `createERC721(name, symbol, salt)` and `createERC1155(salt)` deploy an EIP-1167 clone with CREATE2, at a salt of `keccak256(abi.encode(creator, salt))`. Two creators with the same salt get different addresses, and no one can deploy to an address another creator predicted. `predictERC721Address` and `predictERC1155Address` return the address in advance.
+- In the same call the factory initializes the clone, with the caller as owner and the factory's minter as the first allowed minter, and then calls the minter's `registerToken`. The factory emits `TokenCreated` last.
+- A clone's `initialize` accepts only the factory as caller, and only once. The implementations mark themselves initialized and give up ownership in their constructors, so even the factory can't initialize them.
+- A clone made from the implementation outside the factory can't be initialized by anyone, so it has no owner and can't mint.
+- The minter's admin allows factories with `setTokenFactory`. `registerToken` accepts only an allowed factory, once per token. A factory that isn't allowed can't create tokens, because registration reverts. Disallowing a factory stops new tokens and leaves the ones it registered registered.
+- Registration doesn't affect minting. It gives indexers a signal: `tokenFactoryOf(token)` names the factory that deployed a token. Tokens from elsewhere, like v1 tokens or a third party's contract, mint the same way without being registered.
+
+Deploying a token costs 266k gas for the ERC-721 and 173k for the ERC-1155, including initialization and registration, against about 2.5M for a full deployment of either contract. Each mint through a clone costs about 2.85k more than through a full deployment: 2.6k for the first access to the implementation's address, and the rest for the `DELEGATECALL`.
+
+## Storage layout
+
+The tokens keep their own state in ERC-7201 namespaces. The tests read every field from these slots, so a layout change fails them.
+
+| Namespace                       | Slot                                                                 | Fields                                                           |
+| ------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `seadrop.v3.SeaDropTokenV3Base` | `0x1cefbe2c3ccb7feb740a1ec48f16b0ca795114b40813c3af6640cac9f1a78d00` | `initialized`, `allowedMinters`, `conduitRevoked`, `contractURI` |
+| `seadrop.v3.ERC721SeaDropV3`    | `0xe88258efc68c2124d32107a295743c18ce3fcb3efcd888edc1efbbb996fd2f00` | `maxSupply`, `baseURI`                                           |
+| `seadrop.v3.ERC1155SeaDropV3`   | `0x2032b18d202658b0d56f376a10c2e031b632a48d257145366b93b7ac14da9d00` | `supply` (per id: `totalMinted`, `maxSupply`), `uri`             |
+
+Not everything could move:
+
+- The ERC-721 now builds on ERC721A-Upgradeable 4.2.2 instead of ERC721A 4.2.2. It's the same release, transpiled from the same ERC721A commit, with its state in one hashed slot, `keccak256("ERC721A.contracts.storage.ERC721A")`, and an initializer instead of a constructor. Clones need the initializer to set the name and symbol in any case. That slot is diamond storage, which predates ERC-7201 and doesn't subtract 1 or clear the last byte, but it's just as independent of inheritance order. Its transfer functions stay non-payable. Together with the namespaced fields, the switch changed a mint's gas by under 60 either way (measured by running the implementation's code directly at a clone's address) and added about 3 KB to the ERC-721's bytecode.
+- OpenZeppelin 4.9's `ERC1155` keeps balances at slot 0 and operator approvals at slot 1. No 4.9 release namespaces them: 4.9's upgradeable variant uses gaps, and namespaced storage arrived in 5.0. Moving to 5.0 would add a second major version of OpenZeppelin as a dependency for two mappings. Its URI slot (2) stays empty, since `uri` reads the namespaced URI.
+- `TwoStepOwnable` from utility-contracts keeps the owner and pending owner in sequential slots: 0 and 1 in the ERC-721, 3 and 4 in the ERC-1155. Namespacing them means replacing an audited dependency with new ownership code in scope.
+
+To be plain about what namespacing buys: an EIP-1167 clone always runs the implementation it was deployed with, so no library update can shift a deployed clone's storage, namespaced or not. A new implementation means a new factory, and old clones keep the old code. Namespacing keeps this repo's own fields fixed across future implementations and independent of base contract order, and would let a later upgradeable variant reuse the layout.
+
 ## Trust assumptions
 
 - The minter's admin (OpenSea, through `TwoStepOwnable`) chooses the allowed currencies, each currency's minimum fee and fee recipient, and the members of signer sets. The admin can't change a token's stages or payouts, and can't move credited balances.
@@ -74,7 +103,9 @@ Both paid paths then share `_mint`:
 - OpenSea's signer binds every authorization it issues to a `sender`, by default the eligible wallet itself. It names a different sender (an embedded wallet, a gift payer, a card provider's wallet) only when the request comes from a signed-in web or mobile session whose account has proven ownership of the eligible wallet by signing in with it. An API key alone never gets a different sender. Authorizations expire in about 15 minutes and carry an exact `maxQuantity`. The signing service logs the wallet, the sender and the account.
 - Any caller can pay for a wallet, but only the wallet and its delegates can send the tokens anywhere else.
 - A delegate can mint against the vault's eligibility and choose the recipient.
-- A token's preapproved conduit can move any holder's tokens until that holder revokes it. It's fixed when the token is deployed. OpenSea's conduit differs by chain (the canonical `0x1E00…3c71` on most chains, others on chains such as Gunzilla, Monad and Abstract), so the deployer passes the chain's conduit, and for clones that deployer would be the factory.
+- A token's preapproved conduit can move any holder's tokens until that holder revokes it. OpenSea's conduit differs by chain (the canonical `0x1E00…3c71` on most chains, others on chains such as Gunzilla, Monad and Abstract), so each chain's factory is deployed with that chain's conduit. The factory deploys the implementations with it as an immutable, so every clone preapproves it, and a creator can't choose it or change it.
+- Whoever deploys a factory picks its conduit and minter, and the minter's admin decides which factories may register tokens. OpenSea deploys the factories and the admin allows only those. Nothing onchain ties a factory's conduit to OpenSea's, so the admin checks it before allowing a factory, and indexers trust a token's registration only as far as they trust the factories the admin allowed.
+- Anyone can deploy a factory, or clone an implementation directly. Neither gets a registered token: the first isn't an allowed factory, and the second can't be initialized.
 
 ## Where we want the most attention
 
@@ -85,8 +116,9 @@ Both paid paths then share `_mint`:
 5. Currency policy. A currency's allowed flag and minimum fee are checked again at mint. A new fee recipient applies only to stages set afterwards.
 6. Wallet limits and stage caps. Both keep v1's meaning, as levels of a running total rather than counts of one stage's mints. The minter counts each eligible wallet's mints per token and id (`mintedByWallet`), across every stage, and a stage's wallet limit caps that total, so what a wallet leaves unused in an earlier stage carries forward. Every paid mint writes the count, in limited and unlimited stages alike, so a later limited stage sees earlier mints. An authorization's `maxQuantity` replaces the stage's limit with a level of that total, as OpenSea's signer set `maxTotalMintableByWallet` in v1. A limit of 0 means unlimited. Owner mints don't count toward any wallet, and the count follows the eligible wallet, not the recipient. For v1 tokens the count starts at zero and doesn't include mints made through v1's SeaDrop, and for v3 tokens it doesn't include mints by other allowed minters. A stage's `maxTokenSupplyForStage` keeps v1's meaning: the stage stops once the token's total minted (for ERC-1155, the id's) reaches it. The minter keeps no count of its own for it. It reads the total from the token before payment, through `mintStats(id)` for v3 tokens and `getMintStats` for v1 tokens, so mints from every stage, owner mints and mints by other allowed minters all count, and what an earlier stage leaves unused carries forward. The read is a view call made under the minter's `nonReentrant` guard. A cap of 0 means none, and a cap at or below the current total closes the stage. Owner mints aren't capped. ERC-721 tokens ignore ids, so `setStage` only accepts id 0 for them, v1 tokens included.
 7. v1 compatibility. A live v1 `ERC721SeaDrop` token can allow the minter with `updateAllowedSeaDrop`. The minter then calls `mintSeaDrop(recipient, quantity)`, after checking supply with `getMintStats`. v1 tokens trust their allowed SeaDrop contracts to enforce limits and fees, so the minter must not open a path that v1 SeaDrop closed. ERC-165 detection decides between the v3 and v1 interfaces.
-8. Tokens. Check the minter allowlist, the max supply checks, the preapproved conduit and each holder's revocation of it, and the ownership transfer: renouncing cancels a pending transfer. ERC721A 4.2.2 keeps the transfer functions non-payable.
-9. Events. Indexers rely on `SeaDropMint` and the versioned configuration events to rebuild every drop's state. Owner mints emit the reserved stage index `OWNER_MINT_STAGE`, which `setStage` rejects.
+8. Tokens. Check the minter allowlist, the max supply checks, the preapproved conduit and each holder's revocation of it, and the ownership transfer: renouncing cancels a pending transfer. ERC721A-Upgradeable 4.2.2 keeps the transfer functions non-payable.
+9. The factory and initialization. Check that only the factory can initialize a clone, only once, and that the implementations can't be initialized. Check that the conduit can't be chosen by a creator, that CREATE2 salts can't be squatted across creators, and that `registerToken` only records tokens from allowed factories. Check the namespaced slots against "Storage layout", and that no namespaced field overlaps ERC721A-Upgradeable's slot or the sequential ones.
+10. Events. Indexers rely on `SeaDropMint` and the versioned configuration events to rebuild every drop's state. Owner mints emit the reserved stage index `OWNER_MINT_STAGE`, which `setStage` rejects.
 
 ## Known and intended behavior
 
@@ -103,18 +135,57 @@ Both paid paths then share `_mint`:
 - Any payer can use up a wallet's limit by paying for mints to that wallet.
 - On a chain without delegate.xyz's registry, no address counts as a delegate.
 - Every holder starts with the token's conduit approved for all their tokens. `setApprovalForAll(conduit, false)` revokes it for that holder, and `true` restores it. A token deployed with no conduit preapproves nothing.
+- Registration doesn't gate minting. The minter mints for any token that allows it, registered or not.
+- A creator can't reuse a salt for the same token standard. The second `create` call reverts.
+- A clone made outside the factory stays uninitialized forever, with no owner.
 - Merkle and token-gated stages are left out. OpenSea doesn't use them, and the v1 contracts that ever set one account for at most 0.2% of mints in the 90 days to Nov 9.
+
+## Event schema
+
+Nothing indexes v3 yet, and no v3 contract has been deployed anywhere, so the schema below ships as version 1. #28 changed `Stage` (wallet limits and `maxTokenSupplyForStage` took v1's meanings, `signerSetId` became `uint32`) while `CONFIG_EVENT_VERSION` stayed 1. Bumping it now would describe a version 1 that no chain ever emitted. From the first deployment on, changing a config event's fields bumps `CONFIG_EVENT_VERSION` and is coordinated with os2-core's indexer. `test/v3/SeaDropV3EventSchema.t.sol` pins every signature below and the version.
+
+The configuration events carry `version` first. `SeaDropMint` and the payment events don't: their topic0 changes with any field type, and their meanings aren't expected to change.
+
+Minter configuration events, with `version` = 1:
+
+| Event                     | Fields, in order (indexed marked)                                                                                                                                                                                                                                                                                                         | When                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `StageUpdated`            | `uint256 version`, `address token` (indexed), `uint256 id` (indexed), `uint256 stageIndex` (indexed), `Stage stage` = (`uint96 price`, `address currency`, `uint40 startTime`, `uint40 endTime`, `uint16 feeBps`, `address feeRecipient`, `uint32 maxPerWallet`, `uint32 maxTokenSupplyForStage`, `uint32 signerSetId`, `address signer`) | A token's owner sets a stage                  |
+| `PayoutRecipientsUpdated` | `uint256 version`, `address token` (indexed), `PayoutRecipient[] recipients` = (`address recipient`, `uint16 bps`)[]                                                                                                                                                                                                                      | A token's owner sets payout recipients        |
+| `CurrencyUpdated`         | `uint256 version`, `address currency` (indexed), `CurrencyConfig config` = (`bool allowed`, `uint16 minFeeBps`, `address feeRecipient`)                                                                                                                                                                                                   | The admin sets a currency's terms             |
+| `SignerSetUpdated`        | `uint256 version`, `uint32 signerSetId` (indexed), `address signer` (indexed), `bool allowed`                                                                                                                                                                                                                                             | The admin adds or removes a signer set member |
+| `TokenFactoryUpdated`     | `uint256 version`, `address factory` (indexed), `bool allowed`                                                                                                                                                                                                                                                                            | The admin allows or disallows a factory       |
+| `TokenRegistered`         | `uint256 version`, `address token` (indexed), `address factory` (indexed)                                                                                                                                                                                                                                                                 | A factory registers a token it deployed       |
+
+Minter mint and payment events:
+
+| Event             | Fields, in order (indexed marked)                                                                                                                                                                                                                | When                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `SeaDropMint`     | `address token` (indexed), `uint256 id` (indexed), `uint256 stageIndex`, `address payer`, `address wallet` (indexed), `address recipient`, `uint256 quantity`, `uint256 unitPrice`, `address currency`, `address feeRecipient`, `uint256 feeBps` | Every mint. Owner mints use stage index `OWNER_MINT_STAGE` (`type(uint256).max`), the owner as payer and wallet, and zero price and fee |
+| `PaymentCredited` | `address account` (indexed), `address currency` (indexed), `uint256 amount`                                                                                                                                                                      | A payout push failed                                                                                                                    |
+| `Withdrawal`      | `address account` (indexed), `address currency` (indexed), `address to`, `uint256 amount`                                                                                                                                                        | An account withdrew its credit                                                                                                          |
+| `IntentCancelled` | `address wallet` (indexed), `uint256 nonce`                                                                                                                                                                                                      | A wallet cancelled an intent nonce                                                                                                      |
+
+Factory event:
+
+| Event          | Fields, in order (indexed marked)                                                                          | When                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `TokenCreated` | `address token` (indexed), `address implementation` (indexed), `address creator` (indexed), `bytes32 salt` | After a clone is deployed, initialized and registered, in the same call |
+
+`TokenCreated` isn't versioned. The minter's `TokenRegistered` is the record of which factory deployed a token, and `TokenCreated` adds the creator and the implementation, which tells ERC-721 (`erc721Implementation()`) from ERC-1155 (`erc1155Implementation()`). An indexer that trusts registrations should only follow factories the minter allowed.
+
+Token events: a clone's initialization emits `OwnershipTransferred(address(0), owner)` and `AllowedMinterUpdated(minter, true)`. After that the tokens emit `AllowedMinterUpdated`, `MaxSupplyUpdated` (`uint256 maxSupply` on the ERC-721, `uint256 id` (indexed) and `uint256 maxSupply` on the ERC-1155), ERC-7572's `ContractURIUpdated()`, ERC-4906's `BatchMetadataUpdate(0, type(uint256).max)` on a URI change, the ownership events and the standard ERC-721 and ERC-1155 events.
 
 ## Build and tests
 
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
-- The prototype has 155 tests: 124 for the minter, 15 for the tokens, 9 for v1 compatibility and 7 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
-- A public mint costs 141k to 166k gas, against 129k for v1 and 202k for v2. Every paid mint writes the wallet's count, even in a stage with no wallet limit. That costs about 23k on a wallet's first mint of a token and id, and about 5k on later ones. Skipping it in unlimited stages would save the write, but a later limited stage couldn't see those mints. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 21,431 bytes, 3,145 under the EIP-170 limit.
+- The prototype has 180 tests: 124 for the minter, 15 for the tokens, 18 for the factory, clones and storage slots, 9 for v1 compatibility, 3 for the event schema and 11 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
+- A public mint through a clone costs 144k to 169k gas, against 129k for v1 and 202k for v2. About 2.85k of that is the clone's `DELEGATECALL` (see "Token deployment"). Every paid mint writes the wallet's count, even in a stage with no wallet limit. That costs about 23k on a wallet's first mint of a token and id, and about 5k on later ones. Skipping it in unlimited stages would save the write, but a later limited stage couldn't see those mints. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 22,242 bytes, 2,334 under the EIP-170 limit. The ERC-721 implementation is 11,065 bytes and the ERC-1155 11,258. The factory's runtime is 2,287 bytes, and its init code, which carries both implementations, is 26,159 bytes, 22,993 under EIP-3860's limit.
 
 ## Deployment
 
-One minter per chain, on every network OpenSea deploys SeaDrop to. We haven't settled whether every chain gets the same address, or who holds the admin role. We'd welcome your recommendations on both.
+One minter and one token factory per chain, on every network OpenSea deploys SeaDrop to. The factory is deployed with the chain's minter and OpenSea conduit, and the minter's admin then allows it with `setTokenFactory`. We haven't settled whether every chain gets the same address, or who holds the admin role. We'd welcome your recommendations on both.
 
 ## Questions for Spearbit
 
