@@ -98,6 +98,7 @@ Both paid paths then share `_mint`:
 - An authorization has no nonce. It can be reused until it expires, within the wallet's limit, and without a limit it can be reused freely until then.
 - A wallet limit added to a live stage starts every wallet at 0. A stage cap is a level of the token's total minted, not a count of the stage's own mints, so a cap added to a live stage includes everything already minted, and one at or below the current total closes the stage.
 - Owner mints aren't capped by stages, but they raise the total that later stage caps compare against.
+- The stage cap is checked before payment. An ERC-20 transfer hook during payment can't reenter this minter, but it could mint through another minter the token allows and push the total past the stage cap. The token's own max supply still holds, and only admin-allowed currencies are exposed.
 - Any payer can use up a wallet's limit by paying for mints to that wallet.
 - On a chain without delegate.xyz's registry, no address counts as a delegate.
 - Every holder starts with the token's conduit approved for all their tokens. `setApprovalForAll(conduit, false)` revokes it for that holder, and `true` restores it. A token deployed with no conduit preapproves nothing.
