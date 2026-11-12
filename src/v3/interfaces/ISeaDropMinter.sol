@@ -187,6 +187,20 @@ interface ISeaDropMinter {
         bool allowed
     );
 
+    /// @notice The admin allowed or disallowed a token factory.
+    event TokenFactoryUpdated(
+        uint256 version,
+        address indexed factory,
+        bool allowed
+    );
+
+    /// @notice An allowed factory registered a token it deployed.
+    event TokenRegistered(
+        uint256 version,
+        address indexed token,
+        address indexed factory
+    );
+
     /**
      * @notice Tokens were minted. Owner mints use stage index
      *         OWNER_MINT_STAGE, the owner as payer and wallet, and zero
@@ -274,6 +288,8 @@ interface ISeaDropMinter {
     error StageIndexReserved(uint256 stageIndex);
     error PayoutRecipientIsMinter();
     error FeeRecipientIsMinter();
+    error OnlyTokenFactory(address caller);
+    error TokenAlreadyRegistered(address token, address factory);
 
     /// @notice Set a stage. Only the token's owner can call this. An
     ///         ERC-721 token, which ignores ids, only has stages at id 0.
@@ -302,6 +318,17 @@ interface ISeaDropMinter {
         address signer,
         bool allowed
     ) external;
+
+    /// @notice Allow or disallow a token factory. Only the admin can call
+    ///         this. Tokens a factory registered stay registered after it's
+    ///         disallowed.
+    function setTokenFactory(address factory, bool allowed) external;
+
+    /// @notice Record that the calling factory deployed `token`. Only an
+    ///         allowed factory can call this, once per token. Registration
+    ///         doesn't change how a token mints. It tells indexers which
+    ///         factory deployed it.
+    function registerToken(address token) external;
 
     /// @notice Mint, paid by the caller.
     function mint(
