@@ -66,7 +66,7 @@ contract SeaDropMinterV1CompatTest is SeaDropV3TestHelper {
         assertEq(v1Token.ownerOf(2), alice);
         assertEq(creator.balance, 2 * PRICE * (10_000 - FEE_BPS) / 10_000);
         assertEq(feeRecipient.balance, 2 * PRICE * FEE_BPS / 10_000);
-        assertEq(minter.mintedByWallet(address(v1Token), 0, 0, alice), 2);
+        assertEq(minter.mintedByWallet(address(v1Token), 0, alice), 2);
     }
 
     function test_v1Token_signedMint() public {

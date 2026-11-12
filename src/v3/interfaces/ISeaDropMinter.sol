@@ -19,8 +19,15 @@ interface ISeaDropMinter {
      * @param feeBps       The fee recipient's share of the total, in basis
      *                     points.
      * @param feeRecipient Who receives the fee.
-     * @param maxPerWallet The most an eligible wallet can mint in this
-     *                     stage. 0 means no limit.
+     * @param maxPerWallet The stage's cap on the eligible wallet's total
+     *                     minted, as v1's `maxTotalMintableByWallet`: the
+     *                     wallet's mints of the `(token, id)` through this
+     *                     minter, from every stage, can't pass it. It's a
+     *                     level of the total, not a count of this stage's
+     *                     mints, so what the wallet leaves unused in
+     *                     earlier stages carries forward. 0 means no
+     *                     limit, though the mints still count toward the
+     *                     total.
      * @param maxTokenSupplyForStage The stage's cap on the total minted,
      *                     as v1 defines it: the stage stops once the
      *                     token's total minted (for ERC-1155, the id's)
@@ -117,8 +124,11 @@ interface ISeaDropMinter {
      * @param currency    The stage currency the signer priced this in. It
      *                    must still match the stage's, so a price override
      *                    can't carry over to a new currency.
-     * @param maxQuantity The wallet's limit in this stage. 0 keeps the
-     *                    stage's `maxPerWallet`.
+     * @param maxQuantity The level of the wallet's total minted, from
+     *                    every stage, that this authorization allows,
+     *                    replacing the stage's `maxPerWallet` as v1's
+     *                    signed `maxTotalMintableByWallet` did. 0 keeps
+     *                    the stage's `maxPerWallet`.
      * @param hasPrice    Whether `price` replaces the stage's price.
      * @param price       The wallet's price per token when `hasPrice`.
      * @param expiry      The last second the authorization is valid.

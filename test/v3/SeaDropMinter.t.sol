@@ -53,7 +53,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         assertEq(feeRecipient.balance, 2 * PRICE * FEE_BPS / 10_000);
         assertEq(creator.balance, 2 * PRICE * (10_000 - FEE_BPS) / 10_000);
         assertEq(address(minter).balance, 0);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 2);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 2);
     }
 
     function test_mintPublic_ERC1155() public {
@@ -92,7 +92,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
             minter.mint{ value: 3 * PRICE }(
                 _params(tokens[i], ids[i], alice, alice, 3), _noAuth()
             );
-            assertEq(minter.mintedByWallet(tokens[i], ids[i], 0, alice), 3);
+            assertEq(minter.mintedByWallet(tokens[i], ids[i], alice), 3);
         }
         assertEq(token721.balanceOf(alice), 3);
         assertEq(token1155.balanceOf(alice, ID_1155), 3);
@@ -283,8 +283,34 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     }
 
     // ---------------------------------------------------------------------
-    // Wallet limits, per stage
+    // Wallet limits, levels of the wallet's total across stages
     // ---------------------------------------------------------------------
+
+    function _setStageLimit(uint256 stageIndex, uint32 maxPerWallet) internal {
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.maxPerWallet = maxPerWallet;
+        minter.setStage(address(token721), 0, stageIndex, stage);
+    }
+
+    function _stageParams(
+        uint256 stageIndex,
+        address wallet,
+        address recipient,
+        uint256 quantity
+    ) internal view returns (ISeaDropMinter.MintParams memory params) {
+        params = _params(address(token721), 0, wallet, recipient, quantity);
+        params.stageIndex = stageIndex;
+    }
+
+    function _expectWalletLimitRevert(uint256 total, uint256 limit) internal {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsWalletLimit.selector,
+                total,
+                limit
+            )
+        );
+    }
 
     function test_revert_mint_walletLimit() public {
         vm.prank(alice);
@@ -303,49 +329,185 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         );
     }
 
-    function test_mint_walletLimitIsPerStage() public {
-        ISeaDropMinter.Stage memory stage1 = _publicStage();
-        stage1.maxPerWallet = 2;
-        minter.setStage(address(token721), 0, 1, stage1);
+    function test_mint_walletLimitCarriesForward() public {
+        _setStageLimit(1, MAX_PER_WALLET);
+
+        vm.prank(alice);
+        minter.mint{ value: 2 * PRICE }(
+            _stageParams(0, alice, alice, 2), _noAuth()
+        );
+
+        // Stage 1's limit is a level of alice's total, so the three she
+        // left unused in stage 0 are still hers.
+        vm.prank(alice);
+        minter.mint{ value: 3 * PRICE }(
+            _stageParams(1, alice, alice, 3), _noAuth()
+        );
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 5);
+        assertEq(token721.balanceOf(alice), 5);
+
+        vm.prank(alice);
+        _expectWalletLimitRevert(6, 5);
+        minter.mint{ value: PRICE }(_stageParams(1, alice, alice, 1), _noAuth());
+
+        // Stage 0 sees stage 1's mints too.
+        vm.prank(alice);
+        _expectWalletLimitRevert(6, 5);
+        minter.mint{ value: PRICE }(_stageParams(0, alice, alice, 1), _noAuth());
+    }
+
+    function test_revert_mint_laterStageLimitBelowWalletTotal() public {
+        _setStageLimit(1, 2);
 
         vm.prank(alice);
         minter.mint{ value: 5 * PRICE }(
-            _params(address(token721), 0, alice, alice, 5), _noAuth()
+            _stageParams(0, alice, alice, 5), _noAuth()
         );
 
-        // Stage 0's five don't count toward stage 1's limit of two.
-        ISeaDropMinter.MintParams memory params =
-            _params(address(token721), 0, alice, alice, 2);
-        params.stageIndex = 1;
+        // Stage 0's five count toward stage 1's limit of two, so stage 1
+        // has nothing left for alice.
         vm.prank(alice);
-        minter.mint{ value: 2 * PRICE }(params, _noAuth());
-
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 5);
-        assertEq(minter.mintedByWallet(address(token721), 0, 1, alice), 2);
-
-        params.quantity = 1;
-        params.maxTotalPrice = PRICE;
-        vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.MintQuantityExceedsWalletLimit.selector, 3, 2
-            )
-        );
-        minter.mint{ value: PRICE }(params, _noAuth());
+        _expectWalletLimitRevert(6, 2);
+        minter.mint{ value: PRICE }(_stageParams(1, alice, alice, 1), _noAuth());
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 5);
     }
 
     function test_mint_zeroWalletLimitIsUnlimited() public {
-        ISeaDropMinter.Stage memory stage = _publicStage();
-        stage.maxPerWallet = 0;
-        minter.setStage(address(token721), 0, 0, stage);
+        _setStageLimit(0, 0);
 
         vm.prank(alice);
         minter.mint{ value: 20 * PRICE }(
             _params(address(token721), 0, alice, alice, 20), _noAuth()
         );
         assertEq(token721.balanceOf(alice), 20);
-        // An unlimited stage doesn't count, to save the storage write.
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 0);
+        // An unlimited stage still counts, so later limited stages see it.
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 20);
+    }
+
+    function test_mint_unlimitedStageCountsTowardLaterLimit() public {
+        _setStageLimit(0, 0);
+        _setStageLimit(1, MAX_PER_WALLET);
+
+        vm.prank(alice);
+        minter.mint{ value: 4 * PRICE }(
+            _stageParams(0, alice, alice, 4), _noAuth()
+        );
+
+        vm.prank(alice);
+        minter.mint{ value: PRICE }(_stageParams(1, alice, alice, 1), _noAuth());
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 5);
+
+        vm.prank(alice);
+        _expectWalletLimitRevert(6, 5);
+        minter.mint{ value: PRICE }(_stageParams(1, alice, alice, 1), _noAuth());
+    }
+
+    function test_mint_walletLimitIsPerId_ERC1155() public {
+        uint256 otherId = ID_1155 + 1;
+        token1155.setMaxSupply(otherId, uint128(MAX_SUPPLY));
+        minter.setStage(address(token1155), otherId, 0, _publicStage());
+
+        vm.startPrank(alice);
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token1155), ID_1155, alice, alice, 5), _noAuth()
+        );
+        // A full ID_1155 allocation leaves the other id's untouched.
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token1155), otherId, alice, alice, 5), _noAuth()
+        );
+
+        _expectWalletLimitRevert(6, 5);
+        minter.mint{ value: PRICE }(
+            _params(address(token1155), ID_1155, alice, alice, 1), _noAuth()
+        );
+        vm.stopPrank();
+
+        assertEq(minter.mintedByWallet(address(token1155), ID_1155, alice), 5);
+        assertEq(minter.mintedByWallet(address(token1155), otherId, alice), 5);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 0);
+    }
+
+    function test_mint_walletLimitsAreIndependent() public {
+        vm.prank(alice);
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token721), 0, alice, alice, 5), _noAuth()
+        );
+        vm.prank(bob);
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token721), 0, bob, bob, 5), _noAuth()
+        );
+
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 5);
+        assertEq(minter.mintedByWallet(address(token721), 0, bob), 5);
+
+        vm.prank(alice);
+        _expectWalletLimitRevert(6, 5);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+    }
+
+    function test_mint_walletLimitFollowsWalletNotRecipient() public {
+        vm.prank(alice);
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token721), 0, alice, carol, 5), _noAuth()
+        );
+        assertEq(token721.balanceOf(carol), 5);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 5);
+        assertEq(minter.mintedByWallet(address(token721), 0, carol), 0);
+
+        // alice's limit is used up, whoever she mints to.
+        vm.prank(alice);
+        _expectWalletLimitRevert(6, 5);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+
+        // carol holds five but minted none, so her full limit is left.
+        vm.deal(carol, 1 ether);
+        vm.prank(carol);
+        minter.mint{ value: 5 * PRICE }(
+            _params(address(token721), 0, carol, carol, 5), _noAuth()
+        );
+        assertEq(token721.balanceOf(carol), 10);
+        assertEq(minter.mintedByWallet(address(token721), 0, carol), 5);
+    }
+
+    function testFuzz_walletTotalNeverExceedsStageLimit(
+        uint8[3] calldata limits,
+        uint8[] calldata steps
+    ) public {
+        uint256[3] memory stageLimits;
+        for (uint256 i = 0; i < 3; ++i) {
+            // 0 is unlimited.
+            stageLimits[i] = bound(limits[i], 0, 30);
+            _setStageLimit(i, uint32(stageLimits[i]));
+        }
+
+        uint256 total;
+        uint256 count = steps.length > 16 ? 16 : steps.length;
+        for (uint256 i = 0; i < count; ++i) {
+            uint256 stageIndex = steps[i] % 3;
+            uint256 quantity = bound(steps[i] >> 2, 1, 5);
+            uint256 limit = stageLimits[stageIndex];
+
+            vm.prank(alice);
+            if (limit != 0 && total + quantity > limit) {
+                _expectWalletLimitRevert(total + quantity, limit);
+                minter.mint{ value: quantity * PRICE }(
+                    _stageParams(stageIndex, alice, alice, quantity), _noAuth()
+                );
+                continue;
+            }
+            minter.mint{ value: quantity * PRICE }(
+                _stageParams(stageIndex, alice, alice, quantity), _noAuth()
+            );
+            total += quantity;
+
+            assertEq(minter.mintedByWallet(address(token721), 0, alice), total);
+            assertTrue(limit == 0 || total <= limit);
+        }
+        assertEq(token721.balanceOf(alice), total);
     }
 
     // ---------------------------------------------------------------------
@@ -880,7 +1042,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         minter.mint{ value: 4 * PRICE }(params, auth);
 
         // The same authorization can be reused up to the wallet's limit,
-        // since it's counted against the wallet's stage total.
+        // since it's counted against the wallet's total.
         params.quantity = 3;
         params.maxTotalPrice = 3 * PRICE;
         vm.prank(alice);
@@ -911,6 +1073,41 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         minter.mint{ value: 6 * PRICE }(
             params, _authorize(params, signer, signerKey, 0, false, 0)
         );
+    }
+
+    function test_mintSigned_maxQuantityIsALevelOfWalletTotal() public {
+        // A signed stage 1 after the public stage 0.
+        ISeaDropMinter.Stage memory stage1 = _publicStage();
+        stage1.signer = signer;
+        minter.setStage(address(token721), 0, 1, stage1);
+
+        vm.prank(alice);
+        minter.mint{ value: 3 * PRICE }(
+            _stageParams(0, alice, alice, 3), _noAuth()
+        );
+
+        // A level of 3 is what alice already minted, so it allows nothing.
+        ISeaDropMinter.MintParams memory params =
+            _stageParams(1, alice, alice, 1);
+        ISeaDropMinter.Authorization memory auth =
+            _authorize(params, signer, signerKey, 3, false, 0);
+        vm.prank(alice);
+        _expectWalletLimitRevert(4, 3);
+        minter.mint{ value: PRICE }(params, auth);
+
+        // A level of 7 allows four more on top of stage 0's three.
+        auth = _authorize(params, signer, signerKey, 7, false, 0);
+        params.quantity = 4;
+        params.maxTotalPrice = 4 * PRICE;
+        vm.prank(alice);
+        minter.mint{ value: 4 * PRICE }(params, auth);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 7);
+
+        params.quantity = 1;
+        params.maxTotalPrice = PRICE;
+        vm.prank(alice);
+        _expectWalletLimitRevert(8, 7);
+        minter.mint{ value: PRICE }(params, auth);
     }
 
     // ---------------------------------------------------------------------
@@ -946,8 +1143,8 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         // Accepted trade-off: any payer can use up a wallet's limit at its
         // own cost. Here the router spent two of alice's five, and the
         // tokens still went to alice.
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 2);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, router), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 2);
+        assertEq(minter.mintedByWallet(address(token721), 0, router), 0);
     }
 
     function test_mint_anyPayerPaysForWalletOnAnyToken() public {
@@ -993,8 +1190,8 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
             _params(address(token721), 0, alice, carol, 1), _noAuth()
         );
         assertEq(token721.ownerOf(1), carol);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 1);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, carol), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 1);
+        assertEq(minter.mintedByWallet(address(token721), 0, carol), 0);
     }
 
     function _etchRegistry() internal {
@@ -1021,8 +1218,8 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         minter.mint{ value: 2 * PRICE }(params, auth);
 
         assertEq(token721.balanceOf(hot), 2);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, vault), 2);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, hot), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, vault), 2);
+        assertEq(minter.mintedByWallet(address(token721), 0, hot), 0);
     }
 
     function test_mint_delegateAllCoversEveryToken() public {
@@ -1117,8 +1314,8 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         assertEq(token721.balanceOf(alice), 2);
         assertEq(token721.balanceOf(bob), 0);
         assertEq(bob.balance, 100 ether - 2 * PRICE);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 2);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, bob), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 2);
+        assertEq(minter.mintedByWallet(address(token721), 0, bob), 0);
 
         // The count is alice's: she mints her other 3 herself, and then
         // bob can't mint more for her.
@@ -1229,8 +1426,8 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         vm.prank(bob);
         minter.mint{ value: PRICE }(params, auth);
         assertEq(token721.ownerOf(1), alice);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 1);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, bob), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 1);
+        assertEq(minter.mintedByWallet(address(token721), 0, bob), 0);
     }
 
     function test_revert_mintSigned_zeroSenderPayerCannotRedirect() public {
@@ -1330,7 +1527,7 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         assertEq(token721.balanceOf(carol), 2);
         assertEq(relayer.balance, 1 ether - 2 * PRICE);
         assertEq(alice.balance, 100 ether);
-        assertEq(minter.mintedByWallet(address(token721), 0, 0, alice), 2);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 2);
         assertTrue(minter.intentNonceUsed(alice, 1));
     }
 
@@ -1925,6 +2122,9 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
 
         minter.ownerMint(address(token721), 0, carol, MAX_PER_WALLET + 1);
         assertEq(token721.balanceOf(carol), MAX_PER_WALLET + 1);
+        // Owner mints don't count toward any wallet's total.
+        assertEq(minter.mintedByWallet(address(token721), 0, carol), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, address(this)), 0);
     }
 
     function test_revert_ownerMint_maxSupply() public {

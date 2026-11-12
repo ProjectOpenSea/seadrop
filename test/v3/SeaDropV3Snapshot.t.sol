@@ -85,7 +85,7 @@ contract TestSeaDropV3Snapshot is Test {
         minter.setStage(address(token1155), 1, 0, stage);
         minter.setStage(address(v1Token), 0, 0, stage);
 
-        // The same stage without a wallet limit, which skips the count.
+        // The same stage without a wallet limit, which still counts the mint.
         stage.maxPerWallet = 0;
         minter.setStage(address(token721), 0, 2, stage);
         stage.maxPerWallet = 10;

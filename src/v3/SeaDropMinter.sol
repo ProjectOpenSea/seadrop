@@ -114,16 +114,12 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     mapping(uint32 signerSetId => mapping(address signer => bool)) public
         signerSets;
 
-    /// @notice How many each eligible wallet minted in each stage that has
-    ///         a wallet limit.
+    /// @notice How many each eligible wallet minted of a `(token, id)`
+    ///         through this minter, across every stage. Stage wallet
+    ///         limits cap this total. Owner mints aren't counted.
     mapping(
         address token
-            => mapping(
-            uint256 id
-                => mapping(
-                uint256 stageIndex => mapping(address wallet => uint256)
-            )
-        )
+            => mapping(uint256 id => mapping(address wallet => uint256))
     ) public mintedByWallet;
 
     /// @notice Which intent nonces each wallet used or cancelled.
@@ -547,21 +543,22 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     }
 
     /**
-     * @dev Count the mint against the eligible wallet's limit in the
-     *      stage. A limit of 0 means no limit, and then nothing is counted,
-     *      since limits are per stage and nothing else reads the count. So
-     *      a limit added to a live stage starts every wallet at 0.
+     * @dev Add the mint to the eligible wallet's total for the
+     *      `(token, id)`, across every stage, and check it against the
+     *      stage's limit, as v1 checks `maxTotalMintableByWallet`. The limit
+     *      is a level of that total, not a count of this stage's mints, so
+     *      what a wallet leaves unused in earlier stages carries forward. A
+     *      limit of 0 means no limit, but the mint still counts, so later
+     *      limited stages see it.
      */
     function _countWalletMint(MintParams calldata params, uint256 walletLimit)
         internal
     {
-        if (walletLimit == 0) return;
-
         mapping(address wallet => uint256) storage minted =
-            mintedByWallet[params.token][params.id][params.stageIndex];
+            mintedByWallet[params.token][params.id];
 
         uint256 walletTotal = minted[params.wallet] + params.quantity;
-        if (walletTotal > walletLimit) {
+        if (walletLimit != 0 && walletTotal > walletLimit) {
             revert MintQuantityExceedsWalletLimit(walletTotal, walletLimit);
         }
         minted[params.wallet] = walletTotal;
