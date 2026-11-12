@@ -3,7 +3,7 @@
 `ERC721SeaDropAgents` (in `src/extensions`) is `ERC721SeaDrop` for collections whose tokens are AI agents. It adds two things:
 
 - Agent registration. The owner registers an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent for each token before it mints, through an [ERC-8217](https://eips.ethereum.org/EIPS/eip-8217) adapter. Whoever holds the token controls its agent.
-- Onchain metadata under [ERC-8048](https://eips.ethereum.org/EIPS/eip-8048): string keys with bytes values, stored per token, with ERC-8048's Metadata Authority extension. The ERC-8048 code lives in `src/lib/ERC8048OnchainMetadata.sol`, so other token contracts can reuse it, including ones that already implement ERC-4906.
+- Onchain metadata under [ERC-8048](https://eips.ethereum.org/EIPS/eip-8048): string keys with bytes values, stored per token. One collection authority decides who can write them. The ERC-8048 code lives in `src/lib/ERC8048OnchainMetadata.sol`, so other token contracts can reuse it, including ones that already implement ERC-4906.
 
 Minting, drop configuration and `tokenURI` work as in `ERC721SeaDrop`.
 
@@ -22,7 +22,7 @@ On a network without an adapter, pass the zero address. Registration then revert
 
 The adapters are upgradeable proxies. On Ethereum and Base a 3-of-4 Safe controls their upgrades, so the bindings between tokens and agents rely on that Safe.
 
-The contract's runtime code is about 23.6 KB, about 1 KB under the EIP-170 limit, so a contract that inherits it has little room to add code.
+The contract's runtime code is about 23.4 KB, about 1.2 KB under the EIP-170 limit, so a contract that inherits it has little room to add code.
 
 ## Register agents
 
@@ -52,15 +52,43 @@ The agent URI should point to an ERC-8004 registration file, the JSON whose `typ
 
 ## Onchain metadata
 
-Anyone can read a token's records with `metadata(tokenId, key)`. Writing them works like this:
+Anyone can read a token's records with `metadata(tokenId, key)`.
 
-- While a token has no metadata authority, the owner and the metadata writers the owner allows (`setMetadataWriter`) can write its records. A writer can't call any other owner function, so a hot wallet can run a metadata job. Writers stay allowed when the contract changes owners, so remove them before you transfer ownership. Records can be written before a token mints.
-- The token's holder can set a metadata authority for it at any time with `setMetadataAuthority`, usually themself or their agent's wallet. While a token has an authority, only that authority can write its records, and the owner and writers can't.
-- The authority can hand the role to another address or clear it. Clearing it returns the token to the owner and writers.
-- A transfer or burn clears the authority, so a seller's authority never carries over to the buyer. The records stay with the token: a buyer gets whatever was written before the sale, and the owner and writers can write the token's records again until the buyer sets an authority. A seller with an authority can change the records up to the moment of sale, so check them again after buying.
-- `lockMetadataKey(key)` locks a key for every token, for good. After that nobody can write it, authorities included, so it freezes every token's current value for that key, even values an authority wrote. Only the owner can lock a key.
+### Who can write
 
-`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts, so leave out tokens whose holder has set an authority. A holder can set one at any time, so check `metadataAuthority` right before you send.
+The contract has one collection authority and two settings, which `collectionAuthority()` returns:
+
+- The collection authority can write any token's records, including before the token mints. When the authority is blank (the zero address), the owner is the authority. The authority can be an account or a policy contract that applies its own rules.
+- With `holderCanWrite`, a token's current holder can also write that token's records. The contract checks `ownerOf` at write time, so after a transfer the new holder can write right away and the old holder can't. Nobody has to claim anything. ERC-721 operators can't write for the holder.
+- With `authorityLocked`, the owner can no longer change the authority or the settings. The current authority still can, so a locked policy contract can hand itself to a new one. A blank authority can't be locked.
+
+`setCollectionAuthority(authority, holderCanWrite, authorityLocked)` sets all three and emits `CollectionAuthorityUpdated`. The owner can call it until the authority is locked, and the current authority can always call it. Both settings start false, so a new collection starts with the owner controlling everything.
+
+While the authority isn't blank, the owner writes only through it. A blank authority follows ownership, so a new owner takes over writing when the contract changes owners.
+
+### Common setups
+
+- Owner only. Leave the authority blank and both settings false, the default. Only the owner writes, and holders can't.
+- Holders write their own records, and the owner can change the rules. Leave the authority blank and set `holderCanWrite`. Each holder writes their own token's records, the owner can still write any token, and the owner can turn holder writes off later.
+- Holders control their records for good. Set `holderCanWrite` and `authorityLocked`, with `0x000000000000000000000000000000000000dEaD` as the authority. Nobody can change the settings again, the owner can't write, and each holder writes their own token's records.
+- A policy contract decides. Set a policy contract as the authority with `holderCanWrite` false. Holders can't write past it, and every write goes through its rules. The owner can replace the policy.
+- A locked policy. Do the same and set `authorityLocked`. The owner can't replace the policy, and only the policy can hand the authority on.
+
+With `holderCanWrite`, a seller can change their token's records up to the moment of sale, so a buyer should check them after buying. In the other setups holders can't write, so the records a buyer sees are the ones the authority wrote.
+
+### Reference policy
+
+`src/lib/MetadataWriterPolicy.sol` is a small policy contract to set as the collection authority. The contract doesn't need it, and it shows what a policy can do. Its owner (the admin) can allow several writer addresses with `setWriter`, such as a hot wallet that runs a metadata job. A writer can write records and nothing else. A token's current holder can delegate their token's writes to one address with `setDelegate`, such as their agent's wallet. A delegation counts only while the holder who set it still holds the token, so it lapses on transfer. It counts again if the token comes back to that holder.
+
+Writers and delegates call the policy's `setMetadata` and `setMetadataBatch`, which check the caller and forward the write to the token. The admin can also call `lockMetadataKey` and `setCollectionAuthority` through the policy, for example to hand the authority to a new policy.
+
+### Locked keys and batches
+
+`lockMetadataKey(key)` locks a key for every token, for good. After that nobody can write it, holders included, so it freezes every token's current value for that key. Only the collection authority can lock a key.
+
+`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts. The collection authority can write every entry, so its batches fail only on a locked key.
+
+### Events and keys
 
 Every write emits ERC-8048's `MetadataSet`. A write to a minted token also emits ERC-4906's `MetadataUpdate`. Writes before mint don't, since marketplaces read a token's metadata when it mints.
 
