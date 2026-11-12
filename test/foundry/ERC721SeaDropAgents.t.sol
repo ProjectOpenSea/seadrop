@@ -864,6 +864,28 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         policy.setMetadata(2, "context", "x");
     }
 
+    function testPolicyRenounceCancelsPendingOwner() public {
+        MetadataWriterPolicy policy = _deployPolicy();
+        agents.setCollectionAuthority(address(policy), false, true);
+
+        vm.startPrank(policyAdmin);
+        policy.transferOwnership(stranger);
+        policy.renounceOwnership();
+        vm.stopPrank();
+        assertEq(policy.owner(), address(0));
+
+        // The pending owner can't take back the renounced policy.
+        vm.prank(stranger);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        policy.acceptOwnership();
+        vm.prank(stranger);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        policy.setWriter(stranger, true);
+        vm.prank(stranger);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        policy.setCollectionAuthority(stranger, false, false);
+    }
+
     function testReusableNextToOpenZeppelinERC4906() public {
         URIStorageWithOnchainMetadata reuse =
             new URIStorageWithOnchainMetadata();

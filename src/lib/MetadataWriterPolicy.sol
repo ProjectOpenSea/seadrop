@@ -181,6 +181,16 @@ contract MetadataWriterPolicy is TwoStepOwnable {
     }
 
     /**
+     * @notice Renounce ownership. This also cancels a pending ownership
+     *         transfer, so the pending owner can't accept it and take back
+     *         a policy that was renounced.
+     */
+    function renounceOwnership() public virtual override {
+        cancelOwnershipTransfer();
+        super.renounceOwnership();
+    }
+
+    /**
      * @dev Revert unless the caller is a writer or `tokenId`'s delegate.
      */
     function _checkWriter(uint256 tokenId) internal view {
