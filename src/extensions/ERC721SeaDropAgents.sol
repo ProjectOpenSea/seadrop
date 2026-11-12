@@ -9,10 +9,6 @@ import { IAgentAdapter } from "../interfaces/IAgentAdapter.sol";
 
 import { IERC8048Metadata } from "../interfaces/IERC8048Metadata.sol";
 
-import {
-    IERC8048MetadataAuthority
-} from "../interfaces/IERC8048MetadataAuthority.sol";
-
 /**
  * @title  ERC721SeaDropAgents
  * @author Ryan Ghods (ralxz.eth)
@@ -22,10 +18,9 @@ import {
  *           each token before it is minted, through an ERC-8217 adapter, so
  *           every token is minted with its agent. Whoever holds the token
  *           controls the agent.
- *         - ERC-8048 onchain metadata with the Metadata Authority
- *           extension, for agent records such as the ERC-721T profile's
- *           `context` and `endpoint[mcp]` keys. See ERC8048OnchainMetadata
- *           for who can write them.
+ *         - ERC-8048 onchain metadata, for agent records such as the
+ *           ERC-721T profile's `context` and `endpoint[mcp]` keys. See
+ *           ERC8048OnchainMetadata for who can write them.
  *
  *         tokenURI works as in ERC721SeaDrop, and marketplaces read the
  *         token's JSON from it as usual.
@@ -161,29 +156,7 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
         returns (bool)
     {
         return interfaceId == type(IERC8048Metadata).interfaceId
-            || interfaceId == type(IERC8048MetadataAuthority).interfaceId
             || super.supportsInterface(interfaceId);
-    }
-
-    /**
-     * @dev Clears a token's metadata authority when it is transferred or
-     *      burned.
-     */
-    function _beforeTokenTransfers(
-        address from,
-        address to,
-        uint256 startTokenId,
-        uint256 quantity
-    ) internal virtual override {
-        // Clear every token that moves. ERC721A 4.2 transfers and burns one
-        // token at a time, so this loop runs once today.
-        if (from != address(0)) {
-            for (uint256 i = 0; i < quantity; ++i) {
-                _clearMetadataAuthority(startTokenId + i);
-            }
-        }
-
-        super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
 
     /**
