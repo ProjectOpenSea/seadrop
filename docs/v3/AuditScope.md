@@ -23,7 +23,7 @@ The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freez
 
 | File                                      | nSLOC | What it does                                                                       |
 | ----------------------------------------- | ----: | ---------------------------------------------------------------------------------- |
-| `src/v3/SeaDropMinter.sol`                |   599 | Drop configuration, mint checks, payments and payouts for every v3 drop on a chain |
+| `src/v3/SeaDropMinter.sol`                |   593 | Drop configuration, mint checks, payments and payouts for every v3 drop on a chain |
 | `src/v3/ERC721SeaDropV3.sol`              |    78 | ERC-721 token (ERC721A) with max supply and a minter allowlist                     |
 | `src/v3/ERC1155SeaDropV3.sol`             |    76 | ERC-1155 token (OpenZeppelin) with per-id max supply                               |
 | `src/v3/SeaDropTokenV3Base.sol`           |    42 | Ownership, allowed minters, preapproved conduit and contract URI for both tokens   |
@@ -31,7 +31,7 @@ The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freez
 | `src/v3/interfaces/ISeaDropTokenV3.sol`   |     8 | The mint entry point tokens expose to the minter                                   |
 | `src/v3/interfaces/IDelegateRegistry.sol` |     9 | The delegate.xyz v2 call the minter makes                                          |
 
-That's about 795 nSLOC of logic and 210 of interfaces. nSLOC here counts lines that aren't blank or comments.
+That's about 789 nSLOC of logic and 210 of interfaces. nSLOC here counts lines that aren't blank or comments.
 
 #27 proposes two pieces the prototype doesn't have yet, and either may join the scope before the freeze:
 
@@ -57,7 +57,7 @@ Both paid paths then share `_mint`:
 
 1. Check the stage is active and the quantity is nonzero.
 2. For a signed stage, check the authorization. Its signer must be the stage's signer or a member of the stage's signer set, and it can be an EOA or an ERC-1271 contract. The authorization can override the wallet's price and limit, and a nonzero `sender` must be the caller.
-3. Count the quantity against the wallet's limit for the stage. A limit of 0 means unlimited, and then nothing is counted.
+3. Add the quantity to the eligible wallet's total for the token and id, which counts its mints through this minter from every stage. The stage's limit (`maxPerWallet`, or the authorization's `maxQuantity`) caps that total, as v1's `maxTotalMintableByWallet` caps the wallet's total minted. A limit of 0 means unlimited, but the mint still counts toward the total.
 4. Check the currency's policy again, in case the admin changed it after the stage was set.
 5. Check supply. A v1 token's total minted and max supply come from `getMintStats`. When the stage has a cap (`maxTokenSupplyForStage`), the token's total minted plus the quantity must not exceed it. A v3 token's total comes from `mintStats(id)`, read only when there's a cap, and a v1 token's from the same `getMintStats` call. A v3 token checks its own max supply when it mints.
 6. Collect the payment. ETH must match the total exactly. For ERC-20s, the minter checks the balance it actually received.
@@ -83,7 +83,7 @@ Both paid paths then share `_mint`:
 3. Payments and accounting. Check exact ETH, the ERC-20 balance check, fee and split arithmetic, and the rounding remainder that goes to the last recipient. Check the 100,000-gas ETH push, the gas-capped `pushERC20` self-call and its rollback, the credit fallback for both, and `withdraw`. The minter should never hold less of a currency than it has credited.
 4. Reentrancy. The paid paths make external calls: payers' ERC-20 tokens, ETH recipients, `onERC721Received` from ERC721A's `_safeMint`, `onERC1155Received` from OpenZeppelin's `_mint`, ERC-1271 signers, and the delegate registry. Check them against the minter's `nonReentrant` guard and its ordering, where the mint comes before the payout.
 5. Currency policy. A currency's allowed flag and minimum fee are checked again at mint. A new fee recipient applies only to stages set afterwards.
-6. Wallet limits and stage caps. Wallet limits count per token, id, stage and wallet. A limit of 0 means unlimited and nothing is counted, and owner mints don't count. A stage's `maxTokenSupplyForStage` keeps v1's meaning: the stage stops once the token's total minted (for ERC-1155, the id's) reaches it. The minter keeps no count of its own for it. It reads the total from the token before payment, through `mintStats(id)` for v3 tokens and `getMintStats` for v1 tokens, so mints from every stage, owner mints and mints by other allowed minters all count, and what an earlier stage leaves unused carries forward. The read is a view call made under the minter's `nonReentrant` guard. A cap of 0 means none, and a cap at or below the current total closes the stage. Owner mints aren't capped. ERC-721 tokens ignore ids, so `setStage` only accepts id 0 for them, v1 tokens included.
+6. Wallet limits and stage caps. Both keep v1's meaning, as levels of a running total rather than counts of one stage's mints. The minter counts each eligible wallet's mints per token and id (`mintedByWallet`), across every stage, and a stage's wallet limit caps that total, so what a wallet leaves unused in an earlier stage carries forward. Every paid mint writes the count, in limited and unlimited stages alike, so a later limited stage sees earlier mints. An authorization's `maxQuantity` replaces the stage's limit with a level of that total, as OpenSea's signer set `maxTotalMintableByWallet` in v1. A limit of 0 means unlimited. Owner mints don't count toward any wallet, and the count follows the eligible wallet, not the recipient. For v1 tokens the count starts at zero and doesn't include mints made through v1's SeaDrop, and for v3 tokens it doesn't include mints by other allowed minters. A stage's `maxTokenSupplyForStage` keeps v1's meaning: the stage stops once the token's total minted (for ERC-1155, the id's) reaches it. The minter keeps no count of its own for it. It reads the total from the token before payment, through `mintStats(id)` for v3 tokens and `getMintStats` for v1 tokens, so mints from every stage, owner mints and mints by other allowed minters all count, and what an earlier stage leaves unused carries forward. The read is a view call made under the minter's `nonReentrant` guard. A cap of 0 means none, and a cap at or below the current total closes the stage. Owner mints aren't capped. ERC-721 tokens ignore ids, so `setStage` only accepts id 0 for them, v1 tokens included.
 7. v1 compatibility. A live v1 `ERC721SeaDrop` token can allow the minter with `updateAllowedSeaDrop`. The minter then calls `mintSeaDrop(recipient, quantity)`, after checking supply with `getMintStats`. v1 tokens trust their allowed SeaDrop contracts to enforce limits and fees, so the minter must not open a path that v1 SeaDrop closed. ERC-165 detection decides between the v3 and v1 interfaces.
 8. Tokens. Check the minter allowlist, the max supply checks, the preapproved conduit and each holder's revocation of it, and the ownership transfer: renouncing cancels a pending transfer. ERC721A 4.2.2 keeps the transfer functions non-payable.
 9. Events. Indexers rely on `SeaDropMint` and the versioned configuration events to rebuild every drop's state. Owner mints emit the reserved stage index `OWNER_MINT_STAGE`, which `setStage` rejects.
@@ -96,7 +96,8 @@ Both paid paths then share `_mint`:
 - A mint's proceeds follow the recipient list as it stood before the payment was collected, even if a callback during the mint, from the token's receiver or a payee, changes the list.
 - The minter can't be a payout recipient or fee recipient, since nothing could withdraw what it paid itself.
 - An authorization has no nonce. It can be reused until it expires, within the wallet's limit, and without a limit it can be reused freely until then.
-- A wallet limit added to a live stage starts every wallet at 0. A stage cap is a level of the token's total minted, not a count of the stage's own mints, so a cap added to a live stage includes everything already minted, and one at or below the current total closes the stage.
+- A wallet limit is a level of the wallet's total minted through this minter, so a limit added to a live stage includes what the wallet already minted in every stage, and a limit at or below that total closes the stage to the wallet. The total doesn't include a v1 token's mints through v1's SeaDrop, so a v1 drop that moves to the minter starts every wallet at 0.
+- A stage cap is a level of the token's total minted, not a count of the stage's own mints, so a cap added to a live stage includes everything already minted, and one at or below the current total closes the stage.
 - Owner mints aren't capped by stages, but they raise the total that later stage caps compare against.
 - The stage cap is checked before payment. An ERC-20 transfer hook during payment can't reenter this minter, but it could mint through another minter the token allows and push the total past the stage cap. The token's own max supply still holds, and only admin-allowed currencies are exposed.
 - Any payer can use up a wallet's limit by paying for mints to that wallet.
@@ -108,8 +109,8 @@ Both paid paths then share `_mint`:
 
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
-- The prototype has 148 tests: 117 for the minter, 15 for the tokens, 9 for v1 compatibility and 7 gas snapshots. Two are fuzz tests (`testFuzz_payoutSplitsPayEverything` and `testFuzz_stageCapNeverExceeded`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
-- A public mint costs 141k to 165k gas, against 129k for v1 and 202k for v2. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 21,470 bytes, 3,106 under the EIP-170 limit.
+- The prototype has 155 tests: 124 for the minter, 15 for the tokens, 9 for v1 compatibility and 7 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
+- A public mint costs 141k to 165k gas, against 129k for v1 and 202k for v2. Every paid mint writes the wallet's count, even in a stage with no wallet limit. That costs about 23k on a wallet's first mint of a token and id, and about 5k on later ones. Skipping it in unlimited stages would save the write, but a later limited stage couldn't see those mints. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 21,431 bytes, 3,145 under the EIP-170 limit.
 
 ## Deployment
 
