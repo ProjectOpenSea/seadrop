@@ -5,38 +5,65 @@ import { SeaDropTokenV3Base } from "./SeaDropTokenV3Base.sol";
 
 import { ISeaDropTokenV3 } from "./interfaces/ISeaDropTokenV3.sol";
 
-import { ERC721A } from "ERC721A/ERC721A.sol";
+import { ERC721AUpgradeable } from "ERC721A-Upgradeable/ERC721AUpgradeable.sol";
 
 /**
  * @title  ERC721SeaDropV3
  * @notice A thin ERC-721 for SeaDropMinter: owner, allowed minters, max
  *         supply and metadata. Token ids start at 1.
+ *
+ *         It builds on ERC721A-Upgradeable 4.2.2, the same release as
+ *         ERC721A 4.2.2 with its state in one hashed slot
+ *         (`keccak256("ERC721A.contracts.storage.ERC721A")`) and an
+ *         initializer instead of a constructor. Its transfer functions
+ *         aren't payable. This contract's own state is in ERC-7201
+ *         namespaced storage.
  */
-contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
-    /// @notice The most tokens that can ever be minted.
-    uint256 public maxSupply;
+contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
+    /// @custom:storage-location erc7201:seadrop.v3.ERC721SeaDropV3
+    struct ERC721Storage {
+        uint256 maxSupply;
+        string baseURI;
+    }
 
-    string internal _tokenBaseURI;
+    /// @dev keccak256(abi.encode(uint256(keccak256(
+    ///      "seadrop.v3.ERC721SeaDropV3")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 internal constant ERC721_STORAGE_SLOT =
+        0xe88258efc68c2124d32107a295743c18ce3fcb3efcd888edc1efbbb996fd2f00;
 
     event MaxSupplyUpdated(uint256 maxSupply);
 
     error MaxSupplyBelowTotalMinted(uint256 maxSupply, uint256 totalMinted);
 
-    constructor(
-        string memory name,
-        string memory symbol,
+    /// @dev Deploys the implementation. See SeaDropTokenV3Base.
+    constructor(address conduit) SeaDropTokenV3Base(conduit) { }
+
+    /**
+     * @notice Initialize a clone. Only the factory can call this, once.
+     *
+     * @param initialOwner The token's owner.
+     * @param minter       The first allowed minter, the chain's
+     *                     SeaDropMinter.
+     * @param name_        The token's name.
+     * @param symbol_      The token's symbol.
+     */
+    function initialize(
+        address initialOwner,
         address minter,
-        address conduit
-    ) ERC721A(name, symbol) SeaDropTokenV3Base(minter, conduit) { }
+        string calldata name_,
+        string calldata symbol_
+    ) external initializerERC721A {
+        _initializeBase(initialOwner, minter);
+        __ERC721A_init_unchained(name_, symbol_);
+    }
 
     /// @inheritdoc ISeaDropTokenV3
     function mintSeaDrop(address to, uint256, uint256 quantity) external {
         _checkMinter();
 
+        uint256 max = _erc721Storage().maxSupply;
         uint256 total = _totalMinted() + quantity;
-        if (total > maxSupply) {
-            revert MintQuantityExceedsMaxSupply(total, maxSupply);
-        }
+        if (total > max) revert MintQuantityExceedsMaxSupply(total, max);
 
         _safeMint(to, quantity);
     }
@@ -46,14 +73,19 @@ contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
         if (newMaxSupply < _totalMinted()) {
             revert MaxSupplyBelowTotalMinted(newMaxSupply, _totalMinted());
         }
-        maxSupply = newMaxSupply;
+        _erc721Storage().maxSupply = newMaxSupply;
         emit MaxSupplyUpdated(newMaxSupply);
+    }
+
+    /// @notice The most tokens that can ever be minted.
+    function maxSupply() external view returns (uint256) {
+        return _erc721Storage().maxSupply;
     }
 
     /// @notice Set the base URI. Emits ERC-4906's BatchMetadataUpdate for
     ///         every token id, minted or not.
     function setBaseURI(string calldata newBaseURI) external onlyOwner {
-        _tokenBaseURI = newBaseURI;
+        _erc721Storage().baseURI = newBaseURI;
         emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
@@ -63,7 +95,7 @@ contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
         view
         returns (uint256 totalMinted, uint256 maxSupply_)
     {
-        return (_totalMinted(), maxSupply);
+        return (_totalMinted(), _erc721Storage().maxSupply);
     }
 
     /**
@@ -77,7 +109,7 @@ contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
         override
         returns (bool)
     {
-        if (_isConduit(operator)) return !_conduitRevoked[owner];
+        if (_isConduit(operator)) return !_conduitRevoked(owner);
         return super.isApprovedForAll(owner, operator);
     }
 
@@ -88,7 +120,7 @@ contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
         override
     {
         if (_isConduit(operator)) {
-            _conduitRevoked[msg.sender] = !approved;
+            _setConduitRevoked(msg.sender, !approved);
             emit ApprovalForAll(msg.sender, operator, approved);
             return;
         }
@@ -107,10 +139,16 @@ contract ERC721SeaDropV3 is ERC721A, SeaDropTokenV3Base {
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return _tokenBaseURI;
+        return _erc721Storage().baseURI;
     }
 
     function _startTokenId() internal pure override returns (uint256) {
         return 1;
+    }
+
+    function _erc721Storage() internal pure returns (ERC721Storage storage $) {
+        assembly {
+            $.slot := ERC721_STORAGE_SLOT
+        }
     }
 }

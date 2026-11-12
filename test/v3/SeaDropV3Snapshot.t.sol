@@ -11,6 +11,8 @@ import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
 
 import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
 
+import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
+
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
 
 /**
@@ -25,6 +27,7 @@ contract TestSeaDropV3Snapshot is Test {
     ERC721SeaDropV3 token721;
     ERC1155SeaDropV3 token1155;
     ERC721SeaDrop v1Token;
+    SeaDropTokenFactory factory;
 
     address creator = makeAddr("creator");
     address signer;
@@ -46,16 +49,14 @@ contract TestSeaDropV3Snapshot is Test {
             })
         );
 
-        token721 = new ERC721SeaDropV3(
-            "",
-            "",
-            address(minter),
-            address(0x1E0049783F008A0085193E00003D00cd54003c71)
+        // v3 tokens are the factory's clones, as deployed tokens will be.
+        factory = new SeaDropTokenFactory(
+            address(minter), 0x1E0049783F008A0085193E00003D00cd54003c71
         );
+        minter.setTokenFactory(address(factory), true);
+        token721 = ERC721SeaDropV3(factory.createERC721("", "", bytes32(0)));
         token721.setMaxSupply(1000);
-        token1155 = new ERC1155SeaDropV3(
-            address(minter), address(0x1E0049783F008A0085193E00003D00cd54003c71)
-        );
+        token1155 = ERC1155SeaDropV3(factory.createERC1155(bytes32(0)));
         token1155.setMaxSupply(1, 1000);
         address[] memory allowed = new address[](1);
         allowed[0] = address(minter);
@@ -145,6 +146,30 @@ contract TestSeaDropV3Snapshot is Test {
             keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash))
         );
         return abi.encodePacked(r, s, v);
+    }
+
+    /// @dev A clone of the ERC-721, initialized and registered.
+    function testDeployERC721Clone_snapshot() public {
+        factory.createERC721("Name", "SYMBOL", bytes32(uint256(1)));
+    }
+
+    /// @dev A clone of the ERC-1155, initialized and registered.
+    function testDeployERC1155Clone_snapshot() public {
+        factory.createERC1155(bytes32(uint256(1)));
+    }
+
+    /// @dev A full ERC-721 deployment, for comparison: the implementation's
+    ///      constructor and code deposit, without name, symbol, owner or
+    ///      minter.
+    function testDeployERC721Full_snapshot() public {
+        new ERC721SeaDropV3(address(0x1E0049783F008A0085193E00003D00cd54003c71));
+    }
+
+    /// @dev A full ERC-1155 deployment, for comparison.
+    function testDeployERC1155Full_snapshot() public {
+        new ERC1155SeaDropV3(
+            address(0x1E0049783F008A0085193E00003D00cd54003c71)
+        );
     }
 
     function testMintV3ERC721_snapshot() public {

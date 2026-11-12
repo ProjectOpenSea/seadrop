@@ -11,8 +11,11 @@ import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
 
 import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
 
+import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
+
 /**
- * @dev Deploys the minter and both v3 tokens with one public ETH stage,
+ * @dev Deploys the minter, the factory and both v3 tokens as the factory's
+ *      clones, owned by the test contract, with one public ETH stage,
  *      and signs authorizations and intents independently of the minter's
  *      own hashing.
  */
@@ -45,6 +48,7 @@ abstract contract SeaDropV3TestHelper is Test {
     );
 
     SeaDropMinter internal minter;
+    SeaDropTokenFactory internal factory;
     ERC721SeaDropV3 internal token721;
     ERC1155SeaDropV3 internal token1155;
 
@@ -73,9 +77,12 @@ abstract contract SeaDropV3TestHelper is Test {
             })
         );
 
-        token721 = new ERC721SeaDropV3("Test", "TEST", address(minter), CONDUIT);
+        factory = new SeaDropTokenFactory(address(minter), CONDUIT);
+        minter.setTokenFactory(address(factory), true);
+        token721 =
+            ERC721SeaDropV3(factory.createERC721("Test", "TEST", bytes32(0)));
         token721.setMaxSupply(MAX_SUPPLY);
-        token1155 = new ERC1155SeaDropV3(address(minter), CONDUIT);
+        token1155 = ERC1155SeaDropV3(factory.createERC1155(bytes32(0)));
         token1155.setMaxSupply(ID_1155, uint128(MAX_SUPPLY));
 
         _setSinglePayout(address(token721), creator);
