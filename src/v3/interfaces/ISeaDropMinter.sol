@@ -21,10 +21,16 @@ interface ISeaDropMinter {
      * @param feeRecipient Who receives the fee.
      * @param maxPerWallet The most an eligible wallet can mint in this
      *                     stage. 0 means no limit.
-     * @param maxPerStage  The most minted in this stage across all wallets.
-     *                     0 means no limit, and then nothing is counted, so
-     *                     a limit added to a live stage counts from when
-     *                     it's set. Owner mints don't count.
+     * @param maxTokenSupplyForStage The stage's cap on the total minted,
+     *                     as v1 defines it: the stage stops once the
+     *                     token's total minted (for ERC-1155, the id's)
+     *                     reaches it. It's a level of the total, not a
+     *                     count of this stage's mints, so what earlier
+     *                     stages leave unused carries forward. Mints from
+     *                     every stage and owner mints count toward the
+     *                     total, though owner mints aren't capped by it. A
+     *                     cap at or below the current total closes the
+     *                     stage. 0 means no cap.
      * @param signerSetId  A signer set the minter's admin manages. 0 means
      *                     none.
      * @param signer       The stage's own signer, an EOA or an ERC-1271
@@ -38,7 +44,7 @@ interface ISeaDropMinter {
         uint16 feeBps;
         address feeRecipient;
         uint32 maxPerWallet;
-        uint32 maxPerStage;
+        uint32 maxTokenSupplyForStage;
         uint32 signerSetId;
         address signer;
     }
@@ -229,7 +235,10 @@ interface ISeaDropMinter {
     error QuantityIsZero();
     error RecipientNotApproved(address wallet, address recipient);
     error MintQuantityExceedsWalletLimit(uint256 total, uint256 limit);
-    error MintQuantityExceedsStageLimit(uint256 total, uint256 limit);
+    error MintQuantityExceedsMaxTokenSupplyForStage(
+        uint256 total,
+        uint256 maxTokenSupplyForStage
+    );
     error MintQuantityExceedsMaxSupply(uint256 total, uint256 maxSupply);
     error CurrencyMismatch(address expected, address given);
     error TotalPriceExceedsMax(uint256 totalPrice, uint256 maxTotalPrice);
@@ -298,7 +307,9 @@ interface ISeaDropMinter {
     ) external payable;
 
     /// @notice Mint without payment, stages or wallet limits. Only the
-    ///         token's owner can call this.
+    ///         token's owner can call this. Owner mints still raise the
+    ///         total that stages' `maxTokenSupplyForStage` caps compare
+    ///         against.
     function ownerMint(
         address token,
         uint256 id,

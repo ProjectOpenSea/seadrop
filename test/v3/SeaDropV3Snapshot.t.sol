@@ -73,7 +73,7 @@ contract TestSeaDropV3Snapshot is Test {
             feeBps: 100,
             feeRecipient: address(5),
             maxPerWallet: 10,
-            maxPerStage: 0,
+            maxTokenSupplyForStage: 0,
             signerSetId: 0,
             signer: address(0)
         });
@@ -90,10 +90,10 @@ contract TestSeaDropV3Snapshot is Test {
         minter.setStage(address(token721), 0, 2, stage);
         stage.maxPerWallet = 10;
 
-        // The same stage with a stage limit, which adds the stage count.
-        stage.maxPerStage = 1000;
+        // The same stage with a supply cap, which reads the token's total.
+        stage.maxTokenSupplyForStage = 1000;
         minter.setStage(address(token721), 0, 3, stage);
-        stage.maxPerStage = 0;
+        stage.maxTokenSupplyForStage = 0;
 
         // A signed stage, with the signer in an admin-managed set.
         minter.setSignerSetMember(1, signer, true);

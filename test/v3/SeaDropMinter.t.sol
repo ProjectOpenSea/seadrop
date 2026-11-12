@@ -349,18 +349,35 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
     }
 
     // ---------------------------------------------------------------------
-    // Stage limits, across all wallets
+    // maxTokenSupplyForStage, a cap on the token's total minted
     // ---------------------------------------------------------------------
 
-    function _setStageLimit(uint32 maxPerStage) internal {
+    function _setStageCap(uint32 maxTokenSupplyForStage) internal {
+        _setStageCap(0, maxTokenSupplyForStage);
+    }
+
+    function _setStageCap(uint256 stageIndex, uint32 maxTokenSupplyForStage)
+        internal
+    {
         ISeaDropMinter.Stage memory stage = _publicStage();
-        stage.maxPerStage = maxPerStage;
-        minter.setStage(address(token721), 0, 0, stage);
+        stage.maxTokenSupplyForStage = maxTokenSupplyForStage;
+        minter.setStage(address(token721), 0, stageIndex, stage);
+    }
+
+    function _expectStageCapRevert(uint256 total, uint256 cap) internal {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsMaxTokenSupplyForStage
+                .selector,
+                total,
+                cap
+            )
+        );
     }
 
     function test_stage_fitsInThreeSlots() public {
         ISeaDropMinter.Stage memory stage = _publicStage();
-        stage.maxPerStage = type(uint32).max;
+        stage.maxTokenSupplyForStage = type(uint32).max;
         stage.signerSetId = type(uint32).max;
         stage.signer = signer;
 
@@ -381,26 +398,22 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         ISeaDropMinter.Stage memory stored =
             minter.getStage(address(token721), 0, 1);
         assertEq(stored.maxPerWallet, MAX_PER_WALLET);
-        assertEq(stored.maxPerStage, type(uint32).max);
+        assertEq(stored.maxTokenSupplyForStage, type(uint32).max);
         assertEq(stored.signerSetId, type(uint32).max);
         assertEq(stored.signer, signer);
     }
 
-    function test_revert_mint_stageLimitAcrossWallets() public {
-        _setStageLimit(4);
+    function test_revert_mint_stageCapAcrossWallets() public {
+        _setStageCap(4);
 
         vm.prank(alice);
         minter.mint{ value: 3 * PRICE }(
             _params(address(token721), 0, alice, alice, 3), _noAuth()
         );
 
-        // bob's two would make five of the stage's four.
+        // bob's two would take the total to five, over the cap of four.
         vm.prank(bob);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.MintQuantityExceedsStageLimit.selector, 5, 4
-            )
-        );
+        _expectStageCapRevert(5, 4);
         minter.mint{ value: 2 * PRICE }(
             _params(address(token721), 0, bob, bob, 2), _noAuth()
         );
@@ -409,25 +422,32 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         minter.mint{ value: PRICE }(
             _params(address(token721), 0, bob, bob, 1), _noAuth()
         );
-        assertEq(minter.mintedInStage(address(token721), 0, 0), 4);
+        assertEq(token721.totalSupply(), 4);
 
         vm.deal(carol, 1 ether);
         vm.prank(carol);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.MintQuantityExceedsStageLimit.selector, 5, 4
-            )
-        );
+        _expectStageCapRevert(5, 4);
         minter.mint{ value: PRICE }(
             _params(address(token721), 0, carol, carol, 1), _noAuth()
         );
     }
 
-    function test_mint_stageLimitIsPerStage() public {
-        _setStageLimit(2);
-        ISeaDropMinter.Stage memory stage1 = _publicStage();
-        stage1.maxPerStage = 2;
-        minter.setStage(address(token721), 0, 1, stage1);
+    function test_revert_mint_stageCapCheckedBeforePayment() public {
+        _setStageCap(1);
+
+        // The wrong payment would revert too, but the cap is checked first.
+        vm.prank(alice);
+        _expectStageCapRevert(2, 1);
+        minter.mint{ value: 1 wei }(
+            _params(address(token721), 0, alice, alice, 2), _noAuth()
+        );
+    }
+
+    function test_mint_stageCapCarriesForwardAcrossStages() public {
+        // As in v1 drops: a team stage capped at 3, then a public stage at
+        // 6. The team stage leaves one unused, which the next stage gets.
+        _setStageCap(0, 3);
+        _setStageCap(1, 6);
 
         vm.prank(alice);
         minter.mint{ value: 2 * PRICE }(
@@ -435,18 +455,34 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         );
 
         ISeaDropMinter.MintParams memory params =
-            _params(address(token721), 0, bob, bob, 2);
+            _params(address(token721), 0, bob, bob, 4);
         params.stageIndex = 1;
         vm.prank(bob);
-        minter.mint{ value: 2 * PRICE }(params, _noAuth());
+        minter.mint{ value: 4 * PRICE }(params, _noAuth());
+        assertEq(token721.totalSupply(), 6);
 
-        assertEq(minter.mintedInStage(address(token721), 0, 0), 2);
-        assertEq(minter.mintedInStage(address(token721), 0, 1), 2);
+        // Stage 1's mints count against stage 0's cap too, so both are
+        // now closed.
+        vm.prank(alice);
+        _expectStageCapRevert(7, 3);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+
+        params.quantity = 1;
+        params.maxTotalPrice = PRICE;
+        vm.prank(bob);
+        _expectStageCapRevert(7, 6);
+        minter.mint{ value: PRICE }(params, _noAuth());
     }
 
-    function test_mint_zeroStageLimitIsUnlimited() public {
-        _setStageLimit(0);
+    function test_mint_zeroStageCapIsUnlimited() public {
+        _setStageCap(0);
 
+        // An uncapped stage doesn't read the token's total.
+        vm.expectCall(
+            address(token721), abi.encodeCall(token721.mintStats, (0)), 0
+        );
         vm.prank(alice);
         minter.mint{ value: 5 * PRICE }(
             _params(address(token721), 0, alice, alice, 5), _noAuth()
@@ -457,88 +493,131 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         );
 
         assertEq(token721.totalSupply(), 10);
-        // An unlimited stage doesn't count, to save the storage write.
-        assertEq(minter.mintedInStage(address(token721), 0, 0), 0);
     }
 
-    function test_mint_stageLimitAddedToLiveStageCountsFromThen() public {
+    function test_revert_mint_stageCapAtOrBelowTotalClosesStage() public {
         vm.prank(alice);
         minter.mint{ value: 3 * PRICE }(
             _params(address(token721), 0, alice, alice, 3), _noAuth()
         );
-        assertEq(minter.mintedInStage(address(token721), 0, 0), 0);
 
-        // The three already minted don't count toward the new limit.
-        _setStageLimit(2);
+        // A cap added to a live stage includes what's already minted.
+        _setStageCap(5);
         vm.prank(bob);
         minter.mint{ value: 2 * PRICE }(
             _params(address(token721), 0, bob, bob, 2), _noAuth()
         );
-        assertEq(minter.mintedInStage(address(token721), 0, 0), 2);
-
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.MintQuantityExceedsStageLimit.selector, 3, 2
-            )
-        );
+        _expectStageCapRevert(6, 5);
         minter.mint{ value: PRICE }(
             _params(address(token721), 0, alice, alice, 1), _noAuth()
         );
+
+        // A cap below the current total closes the stage.
+        _setStageCap(2);
+        vm.prank(bob);
+        _expectStageCapRevert(6, 2);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, bob, bob, 1), _noAuth()
+        );
+        assertEq(token721.totalSupply(), 5);
     }
 
-    function test_ownerMint_doesNotCountTowardStageLimit() public {
-        _setStageLimit(2);
+    function test_ownerMint_notCappedButCountsTowardStageCap() public {
+        _setStageCap(12);
 
+        // Owner mints ignore stage caps.
         minter.ownerMint(address(token721), 0, carol, 10);
-        assertEq(minter.mintedInStage(address(token721), 0, 0), 0);
 
         vm.prank(alice);
         minter.mint{ value: 2 * PRICE }(
             _params(address(token721), 0, alice, alice, 2), _noAuth()
         );
-        assertEq(minter.mintedInStage(address(token721), 0, 0), 2);
+
+        // But they count toward the total the cap compares against.
+        vm.prank(bob);
+        _expectStageCapRevert(13, 12);
+        minter.mint{ value: PRICE }(
+            _params(address(token721), 0, bob, bob, 1), _noAuth()
+        );
+
+        minter.ownerMint(address(token721), 0, carol, 3);
+        assertEq(token721.totalSupply(), 15);
     }
 
-    function testFuzz_stageTotalNeverExceedsLimit(
-        uint32 limit,
+    function test_mint_stageCapIsPerId_ERC1155() public {
+        uint256 otherId = ID_1155 + 1;
+        token1155.setMaxSupply(otherId, uint128(MAX_SUPPLY));
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.maxTokenSupplyForStage = 3;
+        minter.setStage(address(token1155), ID_1155, 0, stage);
+        minter.setStage(address(token1155), otherId, 0, stage);
+
+        minter.ownerMint(address(token1155), otherId, carol, 2);
+        vm.prank(alice);
+        minter.mint{ value: 3 * PRICE }(
+            _params(address(token1155), ID_1155, alice, alice, 3), _noAuth()
+        );
+
+        // ID_1155 is at its cap; the other id's total is still 2.
+        vm.prank(bob);
+        _expectStageCapRevert(4, 3);
+        minter.mint{ value: PRICE }(
+            _params(address(token1155), ID_1155, bob, bob, 1), _noAuth()
+        );
+
+        vm.prank(bob);
+        minter.mint{ value: PRICE }(
+            _params(address(token1155), otherId, bob, bob, 1), _noAuth()
+        );
+        vm.prank(bob);
+        _expectStageCapRevert(4, 3);
+        minter.mint{ value: PRICE }(
+            _params(address(token1155), otherId, bob, bob, 1), _noAuth()
+        );
+
+        (uint256 minted,) = token1155.mintStats(ID_1155);
+        assertEq(minted, 3);
+        (minted,) = token1155.mintStats(otherId);
+        assertEq(minted, 3);
+    }
+
+    function testFuzz_stageCapNeverExceeded(
+        uint32 cap,
+        uint8 ownerMinted,
         uint8[] calldata quantities
     ) public {
-        limit = uint32(bound(limit, 1, 40));
+        cap = uint32(bound(cap, 1, 40));
+        uint256 expected = bound(ownerMinted, 0, 45);
         ISeaDropMinter.Stage memory stage = _publicStage();
         stage.maxPerWallet = 0;
-        stage.maxPerStage = limit;
+        stage.maxTokenSupplyForStage = cap;
         minter.setStage(address(token721), 0, 0, stage);
+
+        // Owner mints can go past the cap; stage mints then stay closed.
+        if (expected != 0) {
+            minter.ownerMint(address(token721), 0, carol, expected);
+        }
 
         address[3] memory wallets = [alice, bob, carol];
         vm.deal(carol, 100 ether);
 
-        uint256 expected = 0;
         uint256 count = quantities.length < 20 ? quantities.length : 20;
         for (uint256 i = 0; i < count; ++i) {
             uint256 quantity = bound(quantities[i], 1, 10);
             address wallet = wallets[i % 3];
-            if (expected + quantity > limit) {
-                vm.expectRevert(
-                    abi.encodeWithSelector(
-                        ISeaDropMinter.MintQuantityExceedsStageLimit.selector,
-                        expected + quantity,
-                        limit
-                    )
-                );
-            } else {
-                expected += quantity;
-            }
+            bool fits = expected + quantity <= cap;
+            if (!fits) _expectStageCapRevert(expected + quantity, cap);
             vm.prank(wallet);
             minter.mint{ value: quantity * PRICE }(
                 _params(address(token721), 0, wallet, wallet, quantity),
                 _noAuth()
             );
-
-            uint256 total = minter.mintedInStage(address(token721), 0, 0);
-            assertLe(total, limit);
-            assertEq(total, expected);
-            assertEq(token721.totalSupply(), total);
+            if (fits) {
+                expected += quantity;
+                assertLe(token721.totalSupply(), cap);
+            }
+            assertEq(token721.totalSupply(), expected);
         }
     }
 

@@ -112,6 +112,57 @@ contract SeaDropMinterV1CompatTest is SeaDropV3TestHelper {
         );
     }
 
+    function test_revert_v1Token_stageCapFromMintStats() public {
+        _allowMinter();
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.maxTokenSupplyForStage = 3;
+        minter.setStage(address(v1Token), 0, 0, stage);
+
+        // The owner mint counts toward the cap.
+        minter.ownerMint(address(v1Token), 0, carol, 1);
+
+        // The cap reuses the max supply check's getMintStats call.
+        vm.expectCall(
+            address(v1Token), abi.encodeCall(v1Token.getMintStats, (alice)), 1
+        );
+        vm.prank(alice);
+        minter.mint{ value: 2 * PRICE }(
+            _params(address(v1Token), 0, alice, alice, 2), _noAuth()
+        );
+
+        vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsMaxTokenSupplyForStage
+                .selector,
+                4,
+                3
+            )
+        );
+        minter.mint{ value: PRICE }(
+            _params(address(v1Token), 0, bob, bob, 1), _noAuth()
+        );
+        assertEq(v1Token.totalSupply(), 3);
+    }
+
+    function test_revert_v1Token_maxSupplyCheckedBeforeStageCap() public {
+        _allowMinter();
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.maxTokenSupplyForStage = 1;
+        minter.setStage(address(v1Token), 0, 0, stage);
+        v1Token.setMaxSupply(1);
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsMaxSupply.selector, 2, 1
+            )
+        );
+        minter.mint{ value: 2 * PRICE }(
+            _params(address(v1Token), 0, alice, alice, 2), _noAuth()
+        );
+    }
+
     function test_revert_v1Token_configIsOwnerOnly() public {
         vm.prank(alice);
         vm.expectRevert(

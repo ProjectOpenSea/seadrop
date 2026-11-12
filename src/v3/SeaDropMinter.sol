@@ -126,13 +126,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         )
     ) public mintedByWallet;
 
-    /// @notice How many were minted in each stage that has a stage limit,
-    ///         across all wallets.
-    mapping(
-        address token
-            => mapping(uint256 id => mapping(uint256 stageIndex => uint256))
-    ) public mintedInStage;
-
     /// @notice Which intent nonces each wallet used or cancelled.
     mapping(address wallet => mapping(uint256 nonce => bool used)) public
         intentNonceUsed;
@@ -342,7 +335,10 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     ) external nonReentrant onlyTokenOwner(token) {
         if (quantity == 0) revert QuantityIsZero();
 
-        _mintToken(token, id, recipient, quantity);
+        // Owner mints aren't capped by stages, but they raise the total
+        // that stages' caps compare against.
+        bool isV3 = _checkSupply(token, id, recipient, quantity, 0);
+        _mintToken(token, id, recipient, quantity, isV3);
 
         emit SeaDropMint(
             token,
@@ -423,7 +419,11 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     /**
      * @dev The mint path `mint` and `mintWithIntent` share, once the
      *      recipient is approved. Any caller can pay. A nonzero
-     *      authorization `sender` must be the caller.
+     *      authorization `sender` must be the caller. Every check runs
+     *      before payment: the stage window, the authorization, the
+     *      wallet limit, the currency policy, then the token's supply and
+     *      the stage's `maxTokenSupplyForStage`, which compares against
+     *      the token's total minted from every stage and owner mints.
      */
     function _mint(
         MintParams calldata params,
@@ -453,7 +453,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         }
 
         _countWalletMint(params, walletLimit);
-        _countStageMint(params, stage.maxPerStage);
 
         // The admin may have disabled the currency or raised its minimum
         // fee since the stage was set.
@@ -466,9 +465,22 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         PayoutRecipient[] memory recipients =
             _payoutSnapshot(params.token, stage, totalPrice);
 
-        _collectPayment(params, stage.currency, totalPrice);
+        {
+            // Check supply and the stage's cap before taking payment.
+            bool isV3 = _checkSupply(
+                params.token,
+                params.id,
+                params.recipient,
+                params.quantity,
+                stage.maxTokenSupplyForStage
+            );
 
-        _mintToken(params.token, params.id, params.recipient, params.quantity);
+            _collectPayment(params, stage.currency, totalPrice);
+
+            _mintToken(
+                params.token, params.id, params.recipient, params.quantity, isV3
+            );
+        }
 
         _payOut(stage, totalPrice, recipients);
 
@@ -556,25 +568,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     }
 
     /**
-     * @dev Count the mint against the stage's limit across all wallets. As
-     *      with wallet limits, a limit of 0 means no limit and nothing is
-     *      counted, so a limit added to a live stage counts from then.
-     */
-    function _countStageMint(MintParams calldata params, uint256 stageLimit)
-        internal
-    {
-        if (stageLimit == 0) return;
-
-        uint256 stageTotal =
-            mintedInStage[params.token][params.id][params.stageIndex]
-                + params.quantity;
-        if (stageTotal > stageLimit) {
-            revert MintQuantityExceedsStageLimit(stageTotal, stageLimit);
-        }
-        mintedInStage[params.token][params.id][params.stageIndex] = stageTotal;
-    }
-
-    /**
      * @dev Take the payment from the payer. ETH must match the total
      *      exactly; ERC-20s are pulled into the minter, then paid out.
      */
@@ -612,36 +605,78 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     }
 
     /**
-     * @dev Mint through ISeaDropTokenV3, or through v1's
-     *      INonFungibleSeaDropToken. A v3 token enforces its own max
+     * @dev Check a mint against the token's supply before any payment, and
+     *      return whether the token is v3. A v3 token enforces its own max
      *      supply. v1 SeaDrop checked supply itself through getMintStats,
      *      so v1 tokens get the same check here.
+     *
+     *      A nonzero `stageCap` is the stage's `maxTokenSupplyForStage`,
+     *      checked against the token's total minted (the id's, for an
+     *      ERC-1155). A v3 token's total is only read when there's a cap,
+     *      so uncapped mints cost nothing extra. A v1 token's total comes
+     *      from the getMintStats call its max supply check already makes.
+     *
+     *      The reads are view calls into the token, made through
+     *      staticcall, so they can't change state. Every mint entry point
+     *      is nonReentrant, so the token can't reenter the minter to mint
+     *      between this check and the mint.
+     */
+    function _checkSupply(
+        address token,
+        uint256 id,
+        address recipient,
+        uint256 quantity,
+        uint256 stageCap
+    ) internal view returns (bool isV3) {
+        uint256 minted;
+        if (_supportsInterface(token, type(ISeaDropTokenV3).interfaceId)) {
+            if (stageCap == 0) return true;
+            isV3 = true;
+            // forge-lint: disable-next-line(unused-return)
+            (minted,) = ISeaDropTokenV3(token).mintStats(id);
+        } else {
+            bytes4 v1InterfaceId = type(INonFungibleSeaDropToken).interfaceId;
+            if (!_supportsInterface(token, v1InterfaceId)) {
+                revert UnsupportedToken(token);
+            }
+
+            // getMintStats' first value counts the recipient's mints, not
+            // the eligible wallet's, so the minter keeps its own count
+            // instead.
+            INonFungibleSeaDropToken v1Token = INonFungibleSeaDropToken(token);
+            uint256 max;
+            // forge-lint: disable-next-line(unused-return)
+            (, minted, max) = v1Token.getMintStats(recipient);
+            if (minted + quantity > max) {
+                revert MintQuantityExceedsMaxSupply(minted + quantity, max);
+            }
+            if (stageCap == 0) return false;
+        }
+
+        if (minted + quantity > stageCap) {
+            revert MintQuantityExceedsMaxTokenSupplyForStage(
+                minted + quantity,
+                stageCap
+            );
+        }
+    }
+
+    /**
+     * @dev Mint through ISeaDropTokenV3, or through v1's
+     *      INonFungibleSeaDropToken, after `_checkSupply`.
      */
     function _mintToken(
         address token,
         uint256 id,
         address recipient,
-        uint256 quantity
+        uint256 quantity,
+        bool isV3
     ) internal {
-        if (_supportsInterface(token, type(ISeaDropTokenV3).interfaceId)) {
+        if (isV3) {
             ISeaDropTokenV3(token).mintSeaDrop(recipient, id, quantity);
-            return;
+        } else {
+            INonFungibleSeaDropToken(token).mintSeaDrop(recipient, quantity);
         }
-
-        bytes4 v1InterfaceId = type(INonFungibleSeaDropToken).interfaceId;
-        if (!_supportsInterface(token, v1InterfaceId)) {
-            revert UnsupportedToken(token);
-        }
-
-        INonFungibleSeaDropToken v1Token = INonFungibleSeaDropToken(token);
-        // getMintStats' first value counts the recipient's mints, not the
-        // eligible wallet's, so the minter keeps its own count instead.
-        // forge-lint: disable-next-line(unused-return)
-        (, uint256 minted, uint256 max) = v1Token.getMintStats(recipient);
-        if (minted + quantity > max) {
-            revert MintQuantityExceedsMaxSupply(minted + quantity, max);
-        }
-        v1Token.mintSeaDrop(recipient, quantity);
     }
 
     /**
