@@ -73,6 +73,7 @@ While the authority isn't blank, the owner writes only through it. A blank autho
 - Holders control their records for good. Set `holderCanWrite` and `authorityLocked`, with `0x000000000000000000000000000000000000dEaD` as the authority. Nobody can change the settings again, the owner can't write, and each holder writes their own token's records.
 - A policy contract decides. Set a policy contract as the authority with `holderCanWrite` false. Holders can't write past it, and every write goes through its rules. The owner can replace the policy.
 - A locked policy. Do the same and set `authorityLocked`. The owner can't replace the policy, and only the policy can hand the authority on.
+- Every record frozen. Set `authorityLocked` with `holderCanWrite` false and `0x000000000000000000000000000000000000dEaD` as the authority. Nobody can write any token's records or change the settings again, including for tokens that mint later.
 
 With `holderCanWrite`, a seller can change their token's records up to the moment of sale, so a buyer should check them after buying. In the other setups holders can't write, so the records a buyer sees are the ones the authority wrote.
 
@@ -80,13 +81,19 @@ With `holderCanWrite`, a seller can change their token's records up to the momen
 
 `src/lib/MetadataWriterPolicy.sol` is a small policy contract to set as the collection authority. The contract doesn't need it, and it shows what a policy can do. Its owner (the admin) can allow several writer addresses with `setWriter`, such as a hot wallet that runs a metadata job. A writer can write records and nothing else. A token's current holder can delegate their token's writes to one address with `setDelegate`, such as their agent's wallet. A delegation counts only while the holder who set it still holds the token, so it lapses on transfer. It counts again if the token comes back to that holder.
 
-Writers and delegates call the policy's `setMetadata` and `setMetadataBatch`, which check the caller and forward the write to the token. The admin can also call `lockMetadataKey` and `setCollectionAuthority` through the policy, for example to hand the authority to a new policy.
+Writers and delegates call the policy's `setMetadata` and `setMetadataBatch`, which check the caller and forward the write to the token. The admin can also call `setCollectionAuthority` through the policy, for example to hand the authority to a new policy.
 
-### Locked keys and batches
+### Freezing records
 
-`lockMetadataKey(key)` locks a key for every token, for good. After that nobody can write it, holders included, so it freezes every token's current value for that key. Only the collection authority can lock a key.
+The contract has no key locks. A lock on a key would also freeze it for tokens that haven't minted yet, so an artist who signed the first tokens and then locked `artist.signature` would leave every later token without a signature. Freezing is up to the collection authority instead, which can freeze per token.
 
-`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts. The collection authority can write every entry, so its batches fail only on a locked key.
+The reference policy shows one way. Its admin can mark a key write-once with `setWriteOnceKey(key, true)`. A write to a write-once key through the policy reverts with `WriteOnceValueSet` once that token has a non-empty value for the key, in `setMetadata` and `setMetadataBatch` alike, counting earlier entries in the same batch. An artist can sign tokens 1 and 2, and token 3 can still be signed once after it mints, but nobody can overwrite the signatures on tokens 1 and 2.
+
+The admin can unmark a key, and the owner can replace an unlocked policy. For a freeze that holds, set the policy as the authority with `holderCanWrite` false and `authorityLocked`, then renounce the policy's ownership. While the policy has an admin, that admin can still unmark keys. To freeze every record instead, lock the authority to `0x000000000000000000000000000000000000dEaD` as described above.
+
+### Batches
+
+`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts. The collection authority can write every entry.
 
 ### Events and keys
 
