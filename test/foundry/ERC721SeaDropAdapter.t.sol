@@ -13,9 +13,9 @@ import {
 } from "seadrop/interfaces/INonFungibleSeaDropToken.sol";
 
 import {
+    MintParams,
     PublicDrop,
-    TokenGatedDropStage,
-    TokenGatedMintParams
+    SignedMintValidationParams
 } from "seadrop/lib/SeaDropStructs.sol";
 
 import {
@@ -251,36 +251,102 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         assertEq(adapter.totalMinted(), 3);
     }
 
-    function testMintAdapterTokenGatedForExistingHolders() public {
+    function testMintAdapterSignedMint() public {
         ERC721SeaDropMintAdapter adapter = _newMintAdapter();
-
-        // Holders of the existing collection get a free mint per token.
-        TokenGatedDropStage memory stage = TokenGatedDropStage({
-            mintPrice: 0,
-            maxTotalMintableByWallet: 5,
-            startTime: uint48(block.timestamp),
-            endTime: uint48(block.timestamp + 1 days),
-            dropStageIndex: 1,
-            maxTokenSupplyForStage: 60,
-            feeBps: 0,
-            restrictFeeRecipients: false
-        });
-        adapter.updateTokenGatedDrop(address(seadrop), address(existing), stage);
-
-        existing.transferFrom(address(this), minter, 1);
-        uint256[] memory ids = new uint256[](1);
-        ids[0] = 1;
-
-        vm.prank(minter);
-        seadrop.mintAllowedTokenHolder(
-            address(adapter),
-            feeRecipient,
-            address(0),
-            TokenGatedMintParams(address(existing), ids)
+        (address signer, uint256 signerKey) = makeAddrAndKey("signer");
+        adapter.updateSignedMintValidationParams(
+            address(seadrop),
+            signer,
+            SignedMintValidationParams({
+                minMintPrice: 0,
+                maxMaxTotalMintableByWallet: 10,
+                minStartTime: 0,
+                maxEndTime: type(uint40).max,
+                maxMaxTokenSupplyForStage: 60,
+                minFeeBps: 0,
+                maxFeeBps: 1000
+            })
         );
 
+        MintParams memory params = MintParams({
+            mintPrice: PRICE,
+            maxTotalMintableByWallet: 5,
+            startTime: block.timestamp,
+            endTime: block.timestamp + 1 days,
+            dropStageIndex: 1,
+            maxTokenSupplyForStage: 60,
+            feeBps: 500,
+            restrictFeeRecipients: true
+        });
+        adapter.updateAllowedFeeRecipient(address(seadrop), feeRecipient, true);
+        bytes memory signature = _signMint(
+            signerKey, address(adapter), minter, feeRecipient, params, 1
+        );
+
+        vm.prank(minter);
+        seadrop.mintSigned{ value: PRICE * 2 }(
+            address(adapter), feeRecipient, address(0), 2, params, 1, signature
+        );
         assertEq(existing.balanceOf(minter), 2);
         assertEq(existing.ownerOf(11), minter);
+        assertEq(adapter.totalMinted(), 2);
+    }
+
+    /// @dev Sign a SeaDrop v1 signed mint, as OpenSea's signer would.
+    function _signMint(
+        uint256 key,
+        address nftContract,
+        address mintFor,
+        address fee,
+        MintParams memory p,
+        uint256 salt
+    ) internal view returns (bytes memory) {
+        bytes32 mintParamsHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
+                ),
+                p.mintPrice,
+                p.maxTotalMintableByWallet,
+                p.startTime,
+                p.endTime,
+                p.dropStageIndex,
+                p.maxTokenSupplyForStage,
+                p.feeBps,
+                p.restrictFeeRecipients
+            )
+        );
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256("SeaDrop"),
+                keccak256("1.0"),
+                block.chainid,
+                address(seadrop)
+            )
+        );
+        bytes32 digest = keccak256(
+            bytes.concat(
+                bytes2(0x1901),
+                domainSeparator,
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "SignedMint(address nftContract,address minter,address feeRecipient,MintParams mintParams,uint256 salt)MintParams(uint256 mintPrice,uint256 maxTotalMintableByWallet,uint256 startTime,uint256 endTime,uint256 dropStageIndex,uint256 maxTokenSupplyForStage,uint256 feeBps,bool restrictFeeRecipients)"
+                        ),
+                        nftContract,
+                        mintFor,
+                        fee,
+                        mintParamsHash,
+                        salt
+                    )
+                )
+            )
+        );
+        (uint8 v, bytes32 r, bytes32 sig) = vm.sign(key, digest);
+        return abi.encodePacked(r, sig, v);
     }
 
     function testDeployEmitsShimEvent() public {

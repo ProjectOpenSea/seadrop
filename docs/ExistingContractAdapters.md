@@ -53,7 +53,7 @@ For `ERC721SeaDropTransferAdapter`:
 
 3. Set the drop's supply with `setMaxSupply`. It caps this drop only, so for a drop of your next 60 tokens set it to 60. The transfer adapter also caps the drop at the tokens it holds. Marketplaces read the max supply you set, not that cap, so set it to the number of tokens you deposit, and lower it if you `withdraw` some.
 
-4. Configure the drop on the adapter as you would on an `ERC721SeaDrop` token, passing the SeaDrop address as `seaDropImpl`: `updateCreatorPayoutAddress`, `updatePublicDrop`, `updateAllowList`, `updateTokenGatedDrop`, `updateSignedMintValidationParams`, `updateAllowedFeeRecipient` and `updateDropURI`. A token-gated stage can name the target as `allowedNftToken`, giving existing holders a mint per token they hold. OpenSea's drop pages don't show token-gated stages, so for a drop on OpenSea use an allowlist stage for holders instead.
+4. Configure the drop on the adapter as you would on an `ERC721SeaDrop` token, passing the SeaDrop address as `seaDropImpl`: `updateCreatorPayoutAddress`, `updatePublicDrop`, `updateSignedMintValidationParams`, `updateAllowedFeeRecipient` and `updateDropURI`. OpenSea runs public stages through `mintPublic` and allowlist stages through signed mints (`mintSigned`).
 
 Minters call SeaDrop with the adapter's address as `nftContract`, for example `mintPublic(adapter, feeRecipient, address(0), quantity)`.
 
@@ -69,4 +69,4 @@ The adapter emits `SeaDropShimDeployed(target)` when it's deployed. OpenSea uses
 
 ## Ending the drop
 
-When the drop is over, revoke the adapter's minting rights on the target, or with the transfer adapter, `withdraw` any unsold tokens. Ending a stage only stops that stage: the public drop, each token-gated stage and each signed or allowlist stage keep their own time windows. Revoking the adapter's rights, or removing it from the target, stops every stage at once. You can also call `updateAllowedSeaDrop` on the adapter with an empty list.
+When the drop is over, revoke the adapter's minting rights on the target, or with the transfer adapter, `withdraw` any unsold tokens. Ending a stage only stops that stage: the public drop and each signed stage keep their own time windows. Revoking the adapter's rights, or removing it from the target, stops every stage at once. You can also call `updateAllowedSeaDrop` on the adapter with an empty list.
