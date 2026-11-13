@@ -27,7 +27,11 @@ interface IERC721Supply {
  *         included. It counts by the target's `totalSupply()` when the
  *         target has one, which a recipient that forwards tokens in
  *         `onERC721Received` doesn't change, and otherwise by the
- *         recipient's balance. A function whose second argument is a token
+ *         recipient's balance. On a target without `totalSupply()`, a
+ *         recipient that forwards or burns the token in that callback
+ *         shows no balance change, so its mint reverts with the payment
+ *         refunded. Such a recipient mints to another address instead.
+ *         A function whose second argument is a token
  *         id mints one token, so purchases of two or more revert with
  *         `UnexpectedMintCount`. A single-token purchase passes the check,
  *         so the deployer confirms the selector takes a quantity before

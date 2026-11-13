@@ -5,6 +5,7 @@ import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
 
 import {
     TestExistingERC721,
+    TestPreapprovedERC721,
     TestMinimalERC721,
     TestFallbackERC721,
     TestRoyaltyERC721,
@@ -647,8 +648,8 @@ contract SeaDropV3AdaptersTest is SeaDropV3TestHelper {
         adapter.renounceOwnership();
     }
 
-    /// @dev The adapter approves no operator, so the collection's conduit,
-    ///      or anyone else, can't move the tokens it holds.
+    /// @dev On a target without automatic approvals, the adapter approves
+    ///      no operator, so the conduit can't move the tokens it holds.
     function test_transferAdapter_grantsNoApproval() public {
         ERC721SeaDropV3TransferAdapter adapter = _newTransferAdapter(2);
         assertFalse(existing.isApprovedForAll(address(adapter), CONDUIT));
@@ -657,6 +658,33 @@ contract SeaDropV3AdaptersTest is SeaDropV3TestHelper {
         vm.prank(CONDUIT);
         vm.expectRevert();
         existing.transferFrom(address(adapter), CONDUIT, 11);
+    }
+
+    /// @dev On a target that preapproves a conduit for every holder, the
+    ///      adapter's inventory is approved too, like any holder's. Custody
+    ///      depends on the target's operators, as the docs say.
+    function test_transferAdapter_custodyFollowsTargetApprovals() public {
+        TestPreapprovedERC721 preapproved = new TestPreapprovedERC721(CONDUIT);
+        ERC721SeaDropV3TransferAdapter adapter = new ERC721SeaDropV3TransferAdapter(
+            address(preapproved), address(minter), address(this)
+        );
+        _configure(adapter, 60);
+        preapproved.mintTo(address(adapter), 2);
+        assertEq(adapter.queuedTokenCount(), 2);
+
+        assertTrue(preapproved.isApprovedForAll(address(adapter), CONDUIT));
+        vm.prank(CONDUIT);
+        preapproved.transferFrom(address(adapter), carol, 1);
+        assertEq(preapproved.ownerOf(1), carol);
+
+        // The queue still lists the moved token, so the next mint tries to
+        // deliver it and reverts until the owner withdraws past it.
+        assertTrue(adapter.isQueued(1));
+        vm.prank(alice);
+        vm.expectRevert();
+        minter.mint{ value: PRICE }(
+            _params(address(adapter), 0, alice, alice, 1), _noAuth()
+        );
     }
 
     /// @dev Lets the test contract receive tokens it mints for itself.

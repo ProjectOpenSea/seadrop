@@ -24,9 +24,15 @@ import {
  *
  *         The owner takes back unsold tokens with `withdraw`, and any target
  *         token that reached the adapter without being queued with
- *         `rescue`. The adapter approves no operator for its tokens, and
- *         can't sign or validate a marketplace order, so a target's
- *         preapproved conduit can't move them either.
+ *         `rescue`.
+ *
+ *         The adapter approves no operator for its tokens, but custody
+ *         still depends on the target. An operator the target approves for
+ *         every holder, such as a preapproved conduit, is approved for the
+ *         adapter's tokens too. With OpenSea's conduit, Seaport moves a
+ *         holder's tokens only for an order the holder signed or
+ *         validated, which the adapter can't do. Any other operator or
+ *         conduit channel the target trusts can move them.
  */
 contract ERC721SeaDropV3TransferAdapter is
     ERC721SeaDropV3Adapter,

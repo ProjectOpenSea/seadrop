@@ -55,6 +55,25 @@ contract TestExistingERC721 is ERC721A {
     }
 }
 
+/// @dev An existing ERC-721 that approves one conduit for every holder,
+///      as v1 SeaDrop tokens and many others do.
+contract TestPreapprovedERC721 is TestExistingERC721 {
+    address public immutable conduit;
+
+    constructor(address conduit_) {
+        conduit = conduit_;
+    }
+
+    function isApprovedForAll(address holder, address operator)
+        public
+        view
+        override
+        returns (bool)
+    {
+        return operator == conduit || super.isApprovedForAll(holder, operator);
+    }
+}
+
 /// @dev An existing ERC-721 without `totalSupply()`. Anyone can mint.
 contract TestMinimalERC721 is ERC721("Minimal", "MIN") {
     uint256 internal _nextId = 1;
