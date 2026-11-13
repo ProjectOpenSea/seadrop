@@ -16,6 +16,7 @@ It's v1's tree plus SeaDrop v3 under `src/v3`. v3 replaces v2's Seaport-based de
 - `src/v3/SeaDropMinter.sol` is the minter. It holds stages, signed authorizations and intents, recipient rules, payments and payouts for every v3 drop on a chain.
 - `src/v3/ERC721SeaDropV3.sol`, `src/v3/ERC1155SeaDropV3.sol` and `src/v3/SeaDropTokenV3Base.sol` are the tokens. They keep ownership, supply and metadata, and mint only for the minters they allow.
 - `src/v3/SeaDropTokenFactory.sol` deploys the tokens as EIP-1167 clones and registers them with the minter. Each chain gets one, deployed with that chain's minter and conduit.
+- `src/v3/adapters` has adapters that run a drop for an ERC-721 deployed without SeaDrop. They implement the v3 token interface, mint only at id 0 and count only their own drop. [docs/v3/ExistingContractAdapters.md](docs/v3/ExistingContractAdapters.md) explains them.
 - `src/v3/interfaces` has the minter's structs, events and errors, the token interface, and the delegate.xyz registry call.
 - `test/v3` has v3's Forge tests, with mocks and helpers in `test/v3/utils`.
 - Everything else is v1, as on the public `main`.

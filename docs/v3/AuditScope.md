@@ -21,20 +21,25 @@ We plan to let live v1 drops opt in to v3 only after the audit's findings are re
 
 The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freeze. Today's numbers come from the prototype on the `ryan/v3-research` branch.
 
-| File                                      | nSLOC | What it does                                                                                              |
-| ----------------------------------------- | ----: | --------------------------------------------------------------------------------------------------------- |
-| `src/v3/SeaDropMinter.sol`                |   608 | Drop configuration, mint checks, payments, payouts and token registration for every v3 drop on a chain    |
-| `src/v3/SeaDropTokenFactory.sol`          |    74 | Deploys both token implementations, then clones them at creator-salted addresses and registers each clone |
-| `src/v3/ERC721SeaDropV3.sol`              |    93 | ERC-721 token (ERC721A-Upgradeable) with max supply and an initializer for clones                         |
-| `src/v3/ERC1155SeaDropV3.sol`             |    95 | ERC-1155 token (OpenZeppelin) with per-id max supply and an initializer for clones                        |
-| `src/v3/SeaDropTokenV3Base.sol`           |    75 | Ownership, allowed minters, preapproved conduit, contract URI and initialization for both tokens          |
-| `src/v3/interfaces/ISeaDropMinter.sol`    |   207 | Structs, events, errors and entry points of the minter                                                    |
-| `src/v3/interfaces/ISeaDropTokenV3.sol`   |     8 | The mint entry point tokens expose to the minter                                                          |
-| `src/v3/interfaces/IDelegateRegistry.sol` |     9 | The delegate.xyz v2 call the minter makes                                                                 |
+| File                                                 | nSLOC | What it does                                                                                                           |
+| ---------------------------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/v3/SeaDropMinter.sol`                           |   608 | Drop configuration, mint checks, payments, payouts and token registration for every v3 drop on a chain                 |
+| `src/v3/SeaDropTokenFactory.sol`                     |    74 | Deploys both token implementations, then clones them at creator-salted addresses and registers each clone              |
+| `src/v3/ERC721SeaDropV3.sol`                         |    93 | ERC-721 token (ERC721A-Upgradeable) with max supply and an initializer for clones                                      |
+| `src/v3/ERC1155SeaDropV3.sol`                        |    95 | ERC-1155 token (OpenZeppelin) with per-id max supply and an initializer for clones                                     |
+| `src/v3/SeaDropTokenV3Base.sol`                      |    75 | Ownership, allowed minters, preapproved conduit, contract URI and initialization for both tokens                       |
+| `src/v3/adapters/ERC721SeaDropV3Adapter.sol`         |   114 | Base for adapters that run a drop for an existing ERC-721: allowed minters, this drop's supply and count, royalty read |
+| `src/v3/adapters/ERC721SeaDropV3MintAdapter.sol`     |    44 | Adapter that calls a mint function the existing contract granted it, and checks the count minted                       |
+| `src/v3/adapters/ERC721SeaDropV3TransferAdapter.sol` |    98 | Adapter that sells tokens its owner deposited, in arrival order                                                        |
+| `src/v3/interfaces/ISeaDropMinter.sol`               |   207 | Structs, events, errors and entry points of the minter                                                                 |
+| `src/v3/interfaces/ISeaDropTokenV3.sol`              |     8 | The mint entry point tokens expose to the minter                                                                       |
+| `src/v3/interfaces/IDelegateRegistry.sol`            |     9 | The delegate.xyz v2 call the minter makes                                                                              |
 
-That's about 945 nSLOC of logic and 224 of interfaces. nSLOC here counts lines that aren't blank or comments.
+That's about 1,201 nSLOC of logic and 224 of interfaces. nSLOC here counts lines that aren't blank or comments.
 
 The two pieces #27 proposed for clones are now in scope. `SeaDropTokenFactory` deploys v3 tokens as EIP-1167 clones and registers them with the minter, and the tokens keep their own state in ERC-7201 namespaced storage. "Token deployment" and "Storage layout" below describe them.
+
+The adapters in `src/v3/adapters` let an ERC-721 deployed without SeaDrop support run a v3 drop. They port the v1 adapters in public [seadrop#234](https://github.com/ProjectOpenSea/seadrop/pull/234) to the minter. "Adapters for existing contracts" below describes them.
 
 ## Out of scope
 
@@ -94,6 +99,26 @@ Not everything could move:
 
 To be plain about what namespacing buys: an EIP-1167 clone always runs the implementation it was deployed with, so no library update can shift a deployed clone's storage, namespaced or not. A new implementation means a new factory, and old clones keep the old code. Namespacing keeps this repo's own fields fixed across future implementations and independent of base contract order, and would let a later upgradeable variant reuse the layout.
 
+## Adapters for existing contracts
+
+An adapter is a small contract that the minter treats as the drop's token. It implements `ISeaDropTokenV3`, and it delivers each mint on an existing ERC-721 (the target). Stages, payout recipients, wallet counts and `SeaDropMint` events are keyed by the adapter's address. The tokens are ordinary tokens of the target, with its metadata and royalties.
+
+- `ERC721SeaDropV3MintAdapter` calls a `(address to, uint256 quantity)` mint function that the target's owner granted the adapter, chosen by selector at deployment. After the call it checks that exactly `quantity` tokens were minted, by the target's `totalSupply()` when the constructor finds one and by the recipient's balance otherwise, and reverts the whole mint otherwise, payment included.
+- `ERC721SeaDropV3TransferAdapter` queues target tokens its owner mints or `safeTransferFrom`s to it, and each mint transfers the next queued tokens in arrival order. The drop can sell at most the lower of the max supply and the tokens queued. The owner takes back unsold tokens with `withdraw`, and unqueued ones (sent without the receiver callback) with `rescue`.
+
+How they fit the minter:
+
+- The adapter's owner configures the drop on the minter directly (`setStage`, `setPayoutRecipients`, `ownerMint`), since the minter checks the token's `owner()`. The v1 adapters forwarded configuration to SeaDrop. These don't need to.
+- `mintStats` counts this drop's mints only, and `setMaxSupply` caps this drop only, so stage supply caps ignore tokens the target minted before. The minter counts wallet limits as for any token.
+- An adapter isn't an ERC-721, so the minter doesn't limit its stages to id 0. `mintSeaDrop` rejects any other id with `IdNotZero`, so a stage at another id can't mint and can't give a wallet a second wallet limit.
+- `mintSeaDrop` runs inside the minter's mint, after payment and before payout, under the minter's guard. The adapter has its own transient guard too, so a second allowed minter can't reenter it from a recipient's callback.
+- `royaltyInfo` reads the target's EIP-2981 with a raw `staticcall` and decodes only 64 bytes or more, so a target with a fallback returns no royalty instead of reverting.
+- The constructor emits `SeaDropShimDeployed(address indexed tokenContract)` naming the target. OpenSea confirms the target's owner set up the adapter; contact OpenSea to link the drop.
+
+Adapters are deployed standalone, not through `SeaDropTokenFactory`, and aren't registered with the minter. Registration tells indexers a token runs code OpenSea deployed with the chain's conduit. An adapter mints on a target whose code nobody vetted, so registering it would claim more than it means, and linking it to the target's collection already needs OpenSea to confirm the target's owner. Each adapter also has its own immutables (the target, and for the mint adapter its selector and how it counts), which a clone would have to move into storage behind an initializer. Adapters are rare enough that their deployment cost (about 1.25M gas for the mint adapter and 1.64M for the transfer adapter) doesn't matter.
+
+A mint through the mint adapter costs about 3.4k more gas than one through a v3 clone, and through the transfer adapter about 12k more, measured in the same test with warm accounts. Neither has a preapproved conduit. The transfer adapter approves no operator for the tokens it holds, and can't sign or validate a marketplace order, so a conduit the target preapproves can't move them either.
+
 ## Trust assumptions
 
 - The minter's admin (OpenSea, through `TwoStepOwnable`) chooses the allowed currencies, each currency's minimum fee and fee recipient, and the members of signer sets. The admin can't change a token's stages or payouts, and can't move credited balances.
@@ -106,6 +131,9 @@ To be plain about what namespacing buys: an EIP-1167 clone always runs the imple
 - A token's preapproved conduit can move any holder's tokens until that holder revokes it. OpenSea's conduit differs by chain (the canonical `0x1E00…3c71` on most chains, others on chains such as Gunzilla, Monad and Abstract), so each chain's factory is deployed with that chain's conduit. The factory deploys the implementations with it as an immutable, so every clone preapproves it, and a creator can't choose it or change it.
 - Whoever deploys a factory picks its conduit and minter, and the minter's admin decides which factories may register tokens. OpenSea deploys the factories and the admin allows only those. Nothing onchain ties a factory's conduit to OpenSea's, so the admin checks it before allowing a factory, and indexers trust a token's registration only as far as they trust the factories the admin allowed.
 - Anyone can deploy a factory, or clone an implementation directly. Neither gets a registered token: the first isn't an allowed factory, and the second can't be initialized.
+- Anyone can deploy an adapter naming any target. A mint adapter can only mint if the target's owner granted it the right, and a transfer adapter only sells tokens its owner deposited. OpenSea confirms the target's owner set up the adapter before showing the drop on the target's collection.
+- The target's mint function trusts the adapter as a minter. Granting it lets the adapter's owner mint the target's tokens, up to the adapter's max supply, through paid stages or `ownerMint` without payment. The target's owner grants the right only to an adapter whose owner they trust, normally themselves, and revokes it when the drop ends.
+- The adapter trusts the target. A target that mints the wrong count fails the mint adapter's check and reverts the mint. The target's own transfer rules, callbacks and royalty are outside the adapter's control.
 
 ## Where we want the most attention
 
@@ -118,7 +146,8 @@ To be plain about what namespacing buys: an EIP-1167 clone always runs the imple
 7. v1 compatibility. A live v1 `ERC721SeaDrop` token can allow the minter with `updateAllowedSeaDrop`. The minter then calls `mintSeaDrop(recipient, quantity)`, after checking supply with `getMintStats`. v1 tokens trust their allowed SeaDrop contracts to enforce limits and fees, so the minter must not open a path that v1 SeaDrop closed. ERC-165 detection decides between the v3 and v1 interfaces.
 8. Tokens. Check the minter allowlist, the max supply checks, the preapproved conduit and each holder's revocation of it, and the ownership transfer: renouncing cancels a pending transfer. ERC721A-Upgradeable 4.2.2 keeps the transfer functions non-payable.
 9. The factory and initialization. Check that only the factory can initialize a clone, only once, and that the implementations can't be initialized. Check that the conduit can't be chosen by a creator, that CREATE2 salts can't be squatted across creators, and that `registerToken` only records tokens from allowed factories. Check the namespaced slots against "Storage layout", and that no namespaced field overlaps ERC721A-Upgradeable's slot or the sequential ones.
-10. Events. Indexers rely on `SeaDropMint` and the versioned configuration events to rebuild every drop's state. Owner mints emit the reserved stage index `OWNER_MINT_STAGE`, which `setStage` rejects.
+10. Adapters. Check the mint adapter's count check (including recipients that forward or burn tokens in their callback, and targets without `totalSupply()`), the transfer adapter's queue, `withdraw` and `rescue`, the deposit rules in `onERC721Received` and the rejection of deposits during a transfer out, the id 0 rule, and that `mintStats` counts only the adapter's own mints. Check what an adapter's owner can do on a target that granted it minting rights.
+11. Events. Indexers rely on `SeaDropMint` and the versioned configuration events to rebuild every drop's state. Owner mints emit the reserved stage index `OWNER_MINT_STAGE`, which `setStage` rejects.
 
 ## Known and intended behavior
 
@@ -138,6 +167,9 @@ To be plain about what namespacing buys: an EIP-1167 clone always runs the imple
 - Registration doesn't gate minting. The minter mints for any token that allows it, registered or not.
 - A creator can't reuse a salt for the same token standard. The second `create` call reverts.
 - A clone made outside the factory stays uninitialized forever, with no owner.
+- An adapter's single-token purchase can't tell a quantity mint function from one that takes a token id, since both mint one token. Its deployer confirms the selector takes a quantity, for example from the target's verified source. Purchases of two or more catch it and revert.
+- A target mint that skips the receiver callback, or a plain `transferFrom` to the transfer adapter, isn't queued. The owner gets those tokens back with `rescue`.
+- Ending a stage stops only that stage. Revoking the adapter's minting rights on the target, or `setAllowedMinter(minter, false)` on the adapter, stops every stage at once.
 - Merkle and token-gated stages are left out. OpenSea doesn't use them, and the v1 contracts that ever set one account for at most 0.2% of mints in the 90 days to Nov 9.
 
 ## Event schema
@@ -180,12 +212,12 @@ Token events: a clone's initialization emits `OwnershipTransferred(address(0), o
 
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
-- The prototype has 189 tests: 124 for the minter, 15 for the tokens, 18 for the factory, clones and storage slots, 9 for v1 compatibility, 12 for the event schema and 11 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
-- A public mint through a clone costs 144k to 169k gas, against 129k for v1 and 202k for v2. About 2.85k of that is the clone's `DELEGATECALL` (see "Token deployment"). Every paid mint writes the wallet's count, even in a stage with no wallet limit. That costs about 23k on a wallet's first mint of a token and id, and about 5k on later ones. Skipping it in unlimited stages would save the write, but a later limited stage couldn't see those mints. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 22,242 bytes, 2,334 under the EIP-170 limit. The ERC-721 implementation is 11,065 bytes and the ERC-1155 11,258. The factory's runtime is 2,287 bytes, and its init code, which carries both implementations, is 26,159 bytes, 22,993 under EIP-3860's limit.
+- The prototype has 215 tests: 124 for the minter, 15 for the tokens, 18 for the factory, clones and storage slots, 26 for the adapters, 9 for v1 compatibility, 12 for the event schema and 11 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
+- A public mint through a clone costs 144k to 169k gas, against 129k for v1 and 202k for v2. About 2.85k of that is the clone's `DELEGATECALL` (see "Token deployment"). Every paid mint writes the wallet's count, even in a stage with no wallet limit. That costs about 23k on a wallet's first mint of a token and id, and about 5k on later ones. Skipping it in unlimited stages would save the write, but a later limited stage couldn't see those mints. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 22,242 bytes, 2,334 under the EIP-170 limit. The ERC-721 implementation is 11,065 bytes and the ERC-1155 11,258. The factory's runtime is 2,287 bytes, and its init code, which carries both implementations, is 26,159 bytes, 22,993 under EIP-3860's limit. The mint adapter's runtime is 5,099 bytes and the transfer adapter's 6,931.
 
 ## Deployment
 
-One minter and one token factory per chain, on every network OpenSea deploys SeaDrop to. The factory is deployed with the chain's minter and OpenSea conduit, and the minter's admin then allows it with `setTokenFactory`. We haven't settled whether every chain gets the same address, or who holds the admin role. We'd welcome your recommendations on both.
+One minter and one token factory per chain, on every network OpenSea deploys SeaDrop to. The factory is deployed with the chain's minter and OpenSea conduit, and the minter's admin then allows it with `setTokenFactory`. Adapters are deployed per drop by the creator, standalone. We haven't settled whether every chain gets the same address, or who holds the admin role. We'd welcome your recommendations on both.
 
 ## Questions for Spearbit
 
