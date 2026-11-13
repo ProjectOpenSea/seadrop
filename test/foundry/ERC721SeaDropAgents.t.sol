@@ -163,13 +163,13 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         );
     }
 
-    function _keyIsLocked(string memory key)
+    function _writeOnceValueSet(uint256 tokenId, string memory key)
         internal
         pure
         returns (bytes memory)
     {
         return abi.encodeWithSelector(
-            ERC8048OnchainMetadata.MetadataKeyIsLocked.selector, key
+            MetadataWriterPolicy.WriteOnceValueSet.selector, tokenId, key
         );
     }
 
@@ -399,10 +399,6 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(_writeUnauthorized(1));
         agents.setMetadata(1, "context", "x");
 
-        // The owner can't lock keys while the policy is the authority.
-        vm.expectRevert(ERC8048OnchainMetadata.NotCollectionAuthority.selector);
-        agents.lockMetadataKey("context");
-
         // The holder writes through the policy, under its rules.
         vm.prank(holder);
         city.setDelegate(1, holder);
@@ -524,11 +520,9 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         );
         agents.setCollectionAuthority(holder, true, true);
 
-        // The owner can't write or lock keys.
+        // The owner can't write.
         vm.expectRevert(_writeUnauthorized(1));
         agents.setMetadata(1, "context", "owner again");
-        vm.expectRevert(ERC8048OnchainMetadata.NotCollectionAuthority.selector);
-        agents.lockMetadataKey("context");
 
         // The holder writes, and after a sale the buyer does.
         vm.prank(holder);
@@ -669,49 +663,193 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         assertEq(agents.metadata(1, "context"), bytes("holder"));
     }
 
-    function testLockMetadataKey() public {
+    /// @dev Freezing every record: no holder writes, and a locked
+    ///      authority nobody controls.
+    function testFreezeEverything() public {
         agents.mint(holder, 1);
-        agents.setCollectionAuthority(address(0), true, false);
-        agents.setMetadata(1, "context", "lore");
+        agents.setMetadata(1, "context", "final");
+        agents.setMetadata(2, "context", "final before mint");
+        agents.setCollectionAuthority(DEAD, false, true);
+
+        // Nobody writes any token, minted or not.
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "x");
+        vm.prank(holder);
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "x");
+        vm.expectRevert(_writeUnauthorized(2));
+        agents.setMetadata(2, "context", "x");
+
+        // Nobody changes the settings back.
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
+        );
+        agents.setCollectionAuthority(address(0), false, false);
+        vm.prank(holder);
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
+        );
+        agents.setCollectionAuthority(address(0), false, false);
+
+        assertEq(agents.metadata(1, "context"), bytes("final"));
+        assertEq(agents.metadata(2, "context"), bytes("final before mint"));
+    }
+
+    /// @dev Prem's case: an artist signs the first tokens, and tokens
+    ///      minted later can still be signed once.
+    function testPolicyWriteOnceKey() public {
+        MetadataWriterPolicy policy = _deployPolicy();
+        agents.setCollectionAuthority(address(policy), false, false);
+        address artist = makeAddr("artist");
 
         vm.prank(stranger);
-        vm.expectRevert(ERC8048OnchainMetadata.NotCollectionAuthority.selector);
-        agents.lockMetadataKey("context");
-        vm.prank(holder);
-        vm.expectRevert(ERC8048OnchainMetadata.NotCollectionAuthority.selector);
-        agents.lockMetadataKey("context");
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        policy.setWriteOnceKey("artist.signature", true);
 
-        vm.expectEmit(true, false, false, true, address(agents));
-        emit ERC8048OnchainMetadata.MetadataKeyLocked("context", "context");
-        agents.lockMetadataKey("context");
-        assertTrue(agents.metadataKeyLocked("context"));
-        assertFalse(agents.metadataKeyLocked("endpoint[web]"));
+        vm.startPrank(policyAdmin);
+        policy.setWriter(artist, true);
+        vm.expectEmit(true, false, false, true, address(policy));
+        emit MetadataWriterPolicy.WriteOnceKeyUpdated(
+            "artist.signature",
+            "artist.signature",
+            true
+        );
+        policy.setWriteOnceKey("artist.signature", true);
+        vm.stopPrank();
+        assertTrue(policy.isWriteOnceKey("artist.signature"));
+        assertFalse(policy.isWriteOnceKey("context"));
 
-        vm.expectRevert(_keyIsLocked("context"));
-        agents.lockMetadataKey("context");
+        // The artist signs tokens 1 and 2.
+        agents.mint(holder, 2);
+        vm.startPrank(artist);
+        policy.setMetadata(1, "artist.signature", "sig1");
+        policy.setMetadata(2, "artist.signature", "sig2");
 
-        // Nobody writes a locked key, for any token, minted or not.
-        vm.expectRevert(_keyIsLocked("context"));
-        agents.setMetadata(1, "context", "new lore");
-        vm.expectRevert(_keyIsLocked("context"));
-        agents.setMetadata(50, "context", "new lore");
+        // Nobody overwrites them, the artist included.
+        vm.expectRevert(_writeOnceValueSet(1, "artist.signature"));
+        policy.setMetadata(1, "artist.signature", "forged");
+        vm.expectRevert(_writeOnceValueSet(2, "artist.signature"));
+        policy.setMetadata(2, "artist.signature", "");
 
-        // Holders included.
-        vm.startPrank(holder);
-        vm.expectRevert(_keyIsLocked("context"));
-        agents.setMetadata(1, "context", "new lore");
-        agents.setMetadata(1, "endpoint[web]", "https://holder.example");
+        // Other keys stay writable.
+        policy.setMetadata(1, "context", "one");
+        policy.setMetadata(1, "context", "one, again");
         vm.stopPrank();
 
-        assertEq(agents.metadata(1, "context"), bytes("lore"));
+        // Not the holder's delegate, and not the owner past the policy.
+        vm.prank(holder);
+        policy.setDelegate(1, agentWallet);
+        vm.prank(agentWallet);
+        vm.expectRevert(_writeOnceValueSet(1, "artist.signature"));
+        policy.setMetadata(1, "artist.signature", "forged");
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "artist.signature", "forged");
 
-        // A collection authority other than the owner locks keys.
-        agents.setCollectionAuthority(writer, false, false);
-        vm.expectRevert(ERC8048OnchainMetadata.NotCollectionAuthority.selector);
-        agents.lockMetadataKey("endpoint[web]");
+        // Token 3 mints later and can still be signed, once. An empty
+        // write leaves it unsigned.
+        agents.mint(otherHolder, 1);
+        vm.startPrank(artist);
+        policy.setMetadata(3, "artist.signature", "");
+        policy.setMetadata(3, "artist.signature", "sig3");
+        vm.expectRevert(_writeOnceValueSet(3, "artist.signature"));
+        policy.setMetadata(3, "artist.signature", "sig3, again");
+        vm.stopPrank();
+
+        assertEq(agents.metadata(1, "artist.signature"), bytes("sig1"));
+        assertEq(agents.metadata(2, "artist.signature"), bytes("sig2"));
+        assertEq(agents.metadata(3, "artist.signature"), bytes("sig3"));
+
+        // The admin can unmark the key, so a lasting freeze locks the
+        // authority to the policy and renounces the policy.
+        agents.setCollectionAuthority(address(policy), false, true);
+        vm.prank(policyAdmin);
+        policy.renounceOwnership();
+        vm.prank(policyAdmin);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        policy.setWriteOnceKey("artist.signature", false);
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
+        );
+        agents.setCollectionAuthority(address(0), false, false);
+        vm.prank(artist);
+        vm.expectRevert(_writeOnceValueSet(1, "artist.signature"));
+        policy.setMetadata(1, "artist.signature", "forged");
+    }
+
+    function testPolicyWriteOnceKeyUnmarked() public {
+        MetadataWriterPolicy policy = _deployPolicy();
+        agents.setCollectionAuthority(address(policy), false, false);
+        vm.startPrank(policyAdmin);
+        policy.setWriter(writer, true);
+        policy.setWriteOnceKey("artist.signature", true);
+        vm.stopPrank();
+
         vm.prank(writer);
-        agents.lockMetadataKey("endpoint[web]");
-        assertTrue(agents.metadataKeyLocked("endpoint[web]"));
+        policy.setMetadata(1, "artist.signature", "sig1");
+
+        // While the admin can act, it can unmark the key.
+        vm.prank(policyAdmin);
+        policy.setWriteOnceKey("artist.signature", false);
+        assertFalse(policy.isWriteOnceKey("artist.signature"));
+        vm.prank(writer);
+        policy.setMetadata(1, "artist.signature", "sig1, fixed");
+        assertEq(agents.metadata(1, "artist.signature"), bytes("sig1, fixed"));
+    }
+
+    function testPolicyWriteOnceKeyBatch() public {
+        MetadataWriterPolicy policy = _deployPolicy();
+        agents.setCollectionAuthority(address(policy), false, false);
+        vm.startPrank(policyAdmin);
+        policy.setWriter(writer, true);
+        policy.setWriteOnceKey("artist.signature", true);
+        vm.stopPrank();
+        agents.mint(holder, 2);
+
+        uint256[] memory tokenIds = new uint256[](2);
+        string[] memory keys = new string[](2);
+        bytes[] memory values = new bytes[](2);
+        (tokenIds[0], keys[0], values[0]) = (1, "artist.signature", "sig1");
+        (tokenIds[1], keys[1], values[1]) = (2, "artist.signature", "sig2");
+
+        vm.startPrank(writer);
+        policy.setMetadataBatch(tokenIds, keys, values);
+        assertEq(agents.metadata(1, "artist.signature"), bytes("sig1"));
+        assertEq(agents.metadata(2, "artist.signature"), bytes("sig2"));
+
+        // A batch can't overwrite a signature on the token.
+        (tokenIds[0], keys[0], values[0]) = (1, "context", "one");
+        (tokenIds[1], keys[1], values[1]) = (1, "artist.signature", "forged");
+        vm.expectRevert(_writeOnceValueSet(1, "artist.signature"));
+        policy.setMetadataBatch(tokenIds, keys, values);
+
+        // Nor sign a token twice within the batch.
+        (tokenIds[0], keys[0], values[0]) = (3, "artist.signature", "sig3");
+        (tokenIds[1], keys[1], values[1]) = (3, "artist.signature", "forged");
+        vm.expectRevert(_writeOnceValueSet(3, "artist.signature"));
+        policy.setMetadataBatch(tokenIds, keys, values);
+        assertEq(agents.metadata(3, "artist.signature").length, 0);
+
+        // Earlier entries count only for the same token and key, with a
+        // value.
+        uint256[] memory ids = new uint256[](4);
+        string[] memory ks = new string[](4);
+        bytes[] memory vs = new bytes[](4);
+        (ids[0], ks[0], vs[0]) = (3, "artist.signature", "");
+        (ids[1], ks[1], vs[1]) = (4, "artist.signature", "sig4");
+        (ids[2], ks[2], vs[2]) = (3, "context", "three");
+        (ids[3], ks[3], vs[3]) = (3, "artist.signature", "sig3");
+        policy.setMetadataBatch(ids, ks, vs);
+        assertEq(agents.metadata(3, "artist.signature"), bytes("sig3"));
+        assertEq(agents.metadata(4, "artist.signature"), bytes("sig4"));
+
+        // The policy checks lengths before it reads entries.
+        string[] memory shortKeys = new string[](1);
+        vm.expectRevert(MetadataWriterPolicy.BatchLengthMismatch.selector);
+        policy.setMetadataBatch(tokenIds, shortKeys, values);
+        bytes[] memory shortValues = new bytes[](1);
+        vm.expectRevert(MetadataWriterPolicy.BatchLengthMismatch.selector);
+        policy.setMetadataBatch(tokenIds, keys, shortValues);
+        vm.stopPrank();
     }
 
     function testPolicyWriters() public {
@@ -751,10 +889,12 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.startPrank(writer);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
         agents.setBaseURI("ipfs://other/");
-        vm.expectRevert(ERC8048OnchainMetadata.NotCollectionAuthority.selector);
-        agents.lockMetadataKey("context");
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
+        );
+        agents.setCollectionAuthority(writer, false, false);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
-        policy.lockMetadataKey("context");
+        policy.setWriteOnceKey("context", true);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
         policy.setWriter(stranger, true);
         vm.stopPrank();
@@ -763,11 +903,6 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.prank(stranger);
         vm.expectRevert(_policyWriteUnauthorized(7));
         policy.setMetadata(7, "context", "x");
-
-        // The policy's admin locks keys through it.
-        vm.prank(policyAdmin);
-        policy.lockMetadataKey("context");
-        assertTrue(agents.metadataKeyLocked("context"));
 
         vm.prank(policyAdmin);
         policy.setWriter(writer, false);

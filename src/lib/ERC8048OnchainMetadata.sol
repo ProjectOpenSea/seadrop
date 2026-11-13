@@ -27,8 +27,12 @@ import { IERC8048Metadata } from "../interfaces/IERC8048Metadata.sol";
  *         admin controlling everything. Tokens don't have to exist yet, so
  *         the authority can write metadata before a mint.
  *
- *         The collection authority can lock a key for good. After that,
- *         nobody can write that key for any token.
+ *         The module has no key locks. A collection authority that is a
+ *         policy contract can freeze records per token, for example with a
+ *         write-once rule, and a collection that wants every record frozen
+ *         can lock the authority to an address nobody controls, such as
+ *         0x000000000000000000000000000000000000dEaD, with `holderCanWrite`
+ *         false.
  *
  *         Each write emits `MetadataSet` and calls `_emitMetadataUpdate`
  *         once per token, where the token contract emits ERC-4906
@@ -57,9 +61,6 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
     /// @dev The collection authority and its settings.
     CollectionAuthority private _collectionAuthority;
 
-    /// @dev The locked keys, by the hash of the key.
-    mapping(bytes32 => bool) private _lockedMetadataKeys;
-
     /// @notice Emitted when the collection authority or its settings
     ///         change. `authority` is the zero address when blank.
     event CollectionAuthorityUpdated(
@@ -68,14 +69,8 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
         bool authorityLocked
     );
 
-    /// @notice Emitted when the collection authority locks `key` for good.
-    event MetadataKeyLocked(string indexed indexedKey, string key);
-
     /// @notice Revert when the caller can't write `tokenId`'s metadata.
     error MetadataWriteUnauthorized(uint256 tokenId);
-
-    /// @notice Revert when the caller is not the collection authority.
-    error NotCollectionAuthority();
 
     /// @notice Revert when the caller is neither the admin nor the
     ///         collection authority.
@@ -87,9 +82,6 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
 
     /// @notice Revert when locking a blank collection authority.
     error CannotLockBlankAuthority();
-
-    /// @notice Revert when writing or locking a key that is locked.
-    error MetadataKeyIsLocked(string key);
 
     /// @notice Revert when a batch's arrays differ in length.
     error MetadataBatchLengthMismatch();
@@ -126,17 +118,6 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
             settings.holderCanWrite,
             settings.authorityLocked
         );
-    }
-
-    /**
-     * @notice Returns whether `key` is locked for good.
-     */
-    function metadataKeyLocked(string calldata key)
-        external
-        view
-        returns (bool)
-    {
-        return _lockedMetadataKeys[keccak256(bytes(key))];
     }
 
     /**
@@ -229,24 +210,6 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
     }
 
     /**
-     * @notice Lock `key` for every token, for good. Only the collection
-     *         authority can call this.
-     *
-     * @param key The key.
-     */
-    function lockMetadataKey(string calldata key) external {
-        if (!_isCollectionAuthority(msg.sender)) {
-            revert NotCollectionAuthority();
-        }
-
-        bytes32 keyHash = keccak256(bytes(key));
-        if (_lockedMetadataKeys[keyHash]) revert MetadataKeyIsLocked(key);
-
-        _lockedMetadataKeys[keyHash] = true;
-        emit MetadataKeyLocked(key, key);
-    }
-
-    /**
      * @dev Returns whether `account` is the collection authority, which is
      *      the admin while the authority is blank.
      */
@@ -262,7 +225,7 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
 
     /**
      * @dev Store `value` for `key` on `tokenId` after checking the caller
-     *      and the lock, and emit `MetadataSet`.
+     *      and emit `MetadataSet`.
      */
     function _setMetadata(
         uint256 tokenId,
@@ -273,10 +236,6 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
             if (!_isHolderWriter(tokenId, msg.sender)) {
                 revert MetadataWriteUnauthorized(tokenId);
             }
-        }
-
-        if (_lockedMetadataKeys[keccak256(bytes(key))]) {
-            revert MetadataKeyIsLocked(key);
         }
 
         _metadata[tokenId][key] = value;
