@@ -65,7 +65,7 @@ The adapter doesn't change the target's metadata or royalties. `setBaseURI` and 
 
 ## On OpenSea
 
-The adapter emits `SeaDropShimDeployed(target)` when it's deployed. OpenSea reads it to show the drop on the target's collection rather than on a new collection for the adapter. OpenSea links it automatically only when it can confirm the target trusts the adapter (today, a Manifold Creator Core contract with the adapter registered as an extension). For any other contract, contact OpenSea to link the drop to your collection.
+The adapter emits `SeaDropShimDeployed(target)` when it's deployed. OpenSea uses it to show the drop on the target's collection rather than on a new collection for the adapter. Since anyone can deploy an adapter naming any contract, OpenSea first confirms that the target's owner set it up. Contact OpenSea to link the drop to your collection.
 
 ## Ending the drop
 
