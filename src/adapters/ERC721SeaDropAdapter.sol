@@ -399,12 +399,14 @@ abstract contract ERC721SeaDropAdapter is
         override
         returns (address receiver, uint256 royaltyAmount)
     {
-        try IERC2981(target).royaltyInfo(tokenId, salePrice) returns (
-            address targetReceiver, uint256 targetAmount
-        ) {
-            return (targetReceiver, targetAmount);
-        } catch {
-            return (address(0), 0);
+        // A low-level call, so a target without EIP-2981 returns no royalty
+        // even when its fallback succeeds with empty or short returndata.
+        (bool success, bytes memory returnData) = target.staticcall(
+            abi.encodeCall(IERC2981.royaltyInfo, (tokenId, salePrice))
+        );
+        if (success && returnData.length >= 64) {
+            (receiver, royaltyAmount) =
+                abi.decode(returnData, (address, uint256));
         }
     }
 

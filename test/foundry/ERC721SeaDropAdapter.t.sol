@@ -34,6 +34,8 @@ import { TestExistingERC721 } from "seadrop/test/TestExistingERC721.sol";
 
 import { TestMinimalERC721 } from "seadrop/test/TestMinimalERC721.sol";
 
+import { TestFallbackERC721 } from "seadrop/test/TestFallbackERC721.sol";
+
 import {
     TestForwardingReceiver
 } from "seadrop/test/TestForwardingReceiver.sol";
@@ -369,6 +371,23 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         );
         adapter.setMaxSupply(2 ** 64);
         assertEq(adapter.maxSupply(), 60);
+    }
+
+    function testRoyaltyGettersWithFallbackTarget() public {
+        // The fallback answers royaltyInfo with empty returndata, which the
+        // adapter treats as no royalty instead of reverting.
+        TestFallbackERC721 target = new TestFallbackERC721();
+        ERC721SeaDropMintAdapter adapter = new ERC721SeaDropMintAdapter(
+            address(target),
+            TestMinimalERC721.mintTo.selector,
+            _allowedSeaDrop()
+        );
+        (address receiver, uint256 amount) = adapter.royaltyInfo(1, 1 ether);
+        assertEq(receiver, address(0));
+        assertEq(amount, 0);
+        assertEq(adapter.royaltyAddress(), address(0));
+        assertEq(adapter.royaltyBasisPoints(), 0);
+        assertFalse(adapter.countsBySupply());
     }
 
     function testSupportsInterface() public {
