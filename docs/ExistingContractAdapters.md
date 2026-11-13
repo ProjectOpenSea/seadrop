@@ -51,9 +51,9 @@ For `ERC721SeaDropTransferAdapter`:
    - Mint adapter: grant the adapter's address minting rights on the target.
    - Transfer adapter: mint the drop's tokens to the adapter from the owner wallet, or send ones you hold with `safeTransferFrom`. Tokens minted without the receiver callback or sent with plain `transferFrom` aren't queued. Check `queuedTokenCount`, and get unqueued tokens back with `rescue`.
 
-3. Set the drop's supply with `setMaxSupply`. It caps this drop only, so for a drop of your next 60 tokens set it to 60. The transfer adapter also caps the drop at the tokens it holds.
+3. Set the drop's supply with `setMaxSupply`. It caps this drop only, so for a drop of your next 60 tokens set it to 60. The transfer adapter also caps the drop at the tokens it holds. Marketplaces read the max supply you set, not that cap, so set it to the number of tokens you deposit, and lower it if you `withdraw` some.
 
-4. Configure the drop on the adapter as you would on an `ERC721SeaDrop` token, passing the SeaDrop address as `seaDropImpl`: `updateCreatorPayoutAddress`, `updatePublicDrop`, `updateAllowList`, `updateTokenGatedDrop`, `updateSignedMintValidationParams`, `updateAllowedFeeRecipient` and `updateDropURI`. A token-gated stage can name the target as `allowedNftToken`, giving existing holders a mint per token they hold.
+4. Configure the drop on the adapter as you would on an `ERC721SeaDrop` token, passing the SeaDrop address as `seaDropImpl`: `updateCreatorPayoutAddress`, `updatePublicDrop`, `updateAllowList`, `updateTokenGatedDrop`, `updateSignedMintValidationParams`, `updateAllowedFeeRecipient` and `updateDropURI`. A token-gated stage can name the target as `allowedNftToken`, giving existing holders a mint per token they hold. OpenSea's drop pages don't show token-gated stages, so for a drop on OpenSea use an allowlist stage for holders instead.
 
 Minters call SeaDrop with the adapter's address as `nftContract`, for example `mintPublic(adapter, feeRecipient, address(0), quantity)`.
 
