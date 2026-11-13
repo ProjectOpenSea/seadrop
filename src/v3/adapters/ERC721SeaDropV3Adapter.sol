@@ -176,7 +176,7 @@ abstract contract ERC721SeaDropV3Adapter is TwoStepOwnable, ISeaDropTokenV3 {
 
     /// @notice Renouncing also cancels a pending transfer, so a pending
     ///         owner can't claim the adapter afterwards.
-    function renounceOwnership() public override onlyOwner {
+    function renounceOwnership() public virtual override onlyOwner {
         cancelOwnershipTransfer();
         super.renounceOwnership();
     }

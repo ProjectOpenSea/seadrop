@@ -617,6 +617,36 @@ contract SeaDropV3AdaptersTest is SeaDropV3TestHelper {
         assertEq(adapter.queuedTokenCount(), 1);
     }
 
+    /// @dev Renouncing would leave held tokens with no way out, so it
+    ///      waits until the adapter holds none, queued or not.
+    function test_transferAdapter_renounceNeedsNoTokens() public {
+        ERC721SeaDropV3TransferAdapter adapter = _newTransferAdapter(2);
+        existing.transferFrom(address(this), address(adapter), 1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropV3TransferAdapter.StillHoldsTokens.selector, 3
+            )
+        );
+        adapter.renounceOwnership();
+
+        adapter.withdraw(carol, 2);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropV3TransferAdapter.StillHoldsTokens.selector, 1
+            )
+        );
+        adapter.renounceOwnership();
+
+        adapter.rescue(1, carol);
+        adapter.renounceOwnership();
+        assertEq(adapter.owner(), address(0));
+
+        vm.prank(carol);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        adapter.renounceOwnership();
+    }
+
     /// @dev The adapter approves no operator, so the collection's conduit,
     ///      or anyone else, can't move the tokens it holds.
     function test_transferAdapter_grantsNoApproval() public {

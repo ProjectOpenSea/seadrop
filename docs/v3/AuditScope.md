@@ -30,12 +30,12 @@ The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freez
 | `src/v3/SeaDropTokenV3Base.sol`                      |    75 | Ownership, allowed minters, preapproved conduit, contract URI and initialization for both tokens                       |
 | `src/v3/adapters/ERC721SeaDropV3Adapter.sol`         |   114 | Base for adapters that run a drop for an existing ERC-721: allowed minters, this drop's supply and count, royalty read |
 | `src/v3/adapters/ERC721SeaDropV3MintAdapter.sol`     |    44 | Adapter that calls a mint function the existing contract granted it, and checks the count minted                       |
-| `src/v3/adapters/ERC721SeaDropV3TransferAdapter.sol` |    98 | Adapter that sells tokens its owner deposited, in arrival order                                                        |
+| `src/v3/adapters/ERC721SeaDropV3TransferAdapter.sol` |   104 | Adapter that sells tokens its owner deposited, in arrival order                                                        |
 | `src/v3/interfaces/ISeaDropMinter.sol`               |   207 | Structs, events, errors and entry points of the minter                                                                 |
 | `src/v3/interfaces/ISeaDropTokenV3.sol`              |     8 | The mint entry point tokens expose to the minter                                                                       |
 | `src/v3/interfaces/IDelegateRegistry.sol`            |     9 | The delegate.xyz v2 call the minter makes                                                                              |
 
-That's about 1,201 nSLOC of logic and 224 of interfaces. nSLOC here counts lines that aren't blank or comments.
+That's about 1,207 nSLOC of logic and 224 of interfaces. nSLOC here counts lines that aren't blank or comments.
 
 The two pieces #27 proposed for clones are now in scope. `SeaDropTokenFactory` deploys v3 tokens as EIP-1167 clones and registers them with the minter, and the tokens keep their own state in ERC-7201 namespaced storage. "Token deployment" and "Storage layout" below describe them.
 
@@ -169,6 +169,7 @@ A mint through the mint adapter costs about 3.4k more gas than one through a v3 
 - A clone made outside the factory stays uninitialized forever, with no owner.
 - An adapter's single-token purchase can't tell a quantity mint function from one that takes a token id, since both mint one token. Its deployer confirms the selector takes a quantity, for example from the target's verified source. Purchases of two or more catch it and revert.
 - A target mint that skips the receiver callback, or a plain `transferFrom` to the transfer adapter, isn't queued. The owner gets those tokens back with `rescue`.
+- The transfer adapter's owner can't renounce ownership while the adapter holds any of the target's tokens, queued or not, since only the owner can get them out.
 - Ending a stage stops only that stage. Revoking the adapter's minting rights on the target, or `setAllowedMinter(minter, false)` on the adapter, stops every stage at once.
 - Merkle and token-gated stages are left out. OpenSea doesn't use them, and the v1 contracts that ever set one account for at most 0.2% of mints in the 90 days to Nov 9.
 
@@ -212,7 +213,7 @@ Token events: a clone's initialization emits `OwnershipTransferred(address(0), o
 
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
-- The prototype has 215 tests: 124 for the minter, 15 for the tokens, 18 for the factory, clones and storage slots, 26 for the adapters, 9 for v1 compatibility, 12 for the event schema and 11 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
+- The prototype has 216 tests: 124 for the minter, 15 for the tokens, 18 for the factory, clones and storage slots, 27 for the adapters, 9 for v1 compatibility, 12 for the event schema and 11 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
 - A public mint through a clone costs 144k to 169k gas, against 129k for v1 and 202k for v2. About 2.85k of that is the clone's `DELEGATECALL` (see "Token deployment"). Every paid mint writes the wallet's count, even in a stage with no wallet limit. That costs about 23k on a wallet's first mint of a token and id, and about 5k on later ones. Skipping it in unlimited stages would save the write, but a later limited stage couldn't see those mints. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 22,242 bytes, 2,334 under the EIP-170 limit. The ERC-721 implementation is 11,065 bytes and the ERC-1155 11,258. The factory's runtime is 2,287 bytes, and its init code, which carries both implementations, is 26,159 bytes, 22,993 under EIP-3860's limit. The mint adapter's runtime is 5,099 bytes and the transfer adapter's 6,931.
 
 ## Deployment

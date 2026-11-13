@@ -48,6 +48,7 @@ contract ERC721SeaDropV3TransferAdapter is
     error DepositDuringTransfer();
     error NotEnoughQueuedTokens(uint256 requested, uint256 available);
     error TokenIsQueued(uint256 tokenId);
+    error StillHoldsTokens(uint256 balance);
 
     /**
      * @param targetContract The existing ERC-721 contract to sell tokens of.
@@ -133,6 +134,18 @@ contract ERC721SeaDropV3TransferAdapter is
     {
         if (isQueued[tokenId]) revert TokenIsQueued(tokenId);
         IERC721(target).safeTransferFrom(address(this), to, tokenId);
+    }
+
+    /**
+     * @notice Renounce ownership, which also cancels a pending transfer.
+     *         Only `withdraw` and `rescue` get tokens out other than a
+     *         mint, and only the owner can call them, so this reverts
+     *         while the adapter holds any of the target's tokens.
+     */
+    function renounceOwnership() public override {
+        uint256 balance = IERC721(target).balanceOf(address(this));
+        if (balance != 0) revert StillHoldsTokens(balance);
+        super.renounceOwnership();
     }
 
     function supportsInterface(bytes4 interfaceId)
