@@ -23,11 +23,11 @@ For `ERC721SeaDropMintAdapter`:
 - A way to let the adapter's address call it, such as `grantRole(MINTER_ROLE, adapter)` or `setMinter(adapter, true)`.
 - Room in the target's own max supply for the drop.
 
-After each call the adapter checks that the minter's balance on the target rose by exactly `quantity`. A function whose second argument is a token ID (OpenZeppelin's `safeMint(address,uint256)`) mints one token where the drop asked for several, so the mint reverts with `UnexpectedMintCount` instead. A target with another mint signature, such as `mint(address)` or a batch airdrop, needs its own subclass of `ERC721SeaDropAdapter` that implements `_deliver`.
+After each call the adapter checks that exactly `quantity` tokens were minted. It counts by the target's `totalSupply()` when there is one, and by the minter's balance otherwise. A function whose second argument is a token ID (OpenZeppelin's `safeMint(address,uint256)`) mints one token where the drop asked for several, so those purchases revert with `UnexpectedMintCount`. A single-token purchase passes the check, so confirm the function takes a quantity before you deploy, for example by reading the verified source. A target with another mint signature, such as `mint(address)` or a batch airdrop, needs its own subclass of `ERC721SeaDropAdapter` that implements `_deliver`.
 
 For `ERC721SeaDropTransferAdapter`:
 
-- The owner can mint to, or `safeTransferFrom` to, the adapter. The adapter queues only tokens that arrive from the adapter's owner, either as the operator or the sender.
+- The owner can mint to, or `safeTransferFrom` to, the adapter. The adapter queues a token only when the target calls its `onERC721Received`, and only for tokens that arrive from the adapter's owner, either as the operator or the sender. If the target's owner mint uses a plain `_mint`, which skips that callback, mint to the owner's wallet first and then `safeTransferFrom` each token to the adapter.
 - Transfers out of the adapter are allowed. If the target restricts transfers (for example an ERC721-C transfer validator), allow the adapter as a sender.
 
 ## Deploy and configure
@@ -49,7 +49,7 @@ For `ERC721SeaDropTransferAdapter`:
 
 2. Give the adapter something to deliver:
    - Mint adapter: grant the adapter's address minting rights on the target.
-   - Transfer adapter: mint the drop's tokens to the adapter from the owner wallet, or send ones you hold with `safeTransferFrom`. Tokens sent with plain `transferFrom` aren't queued; get them back with `rescue`.
+   - Transfer adapter: mint the drop's tokens to the adapter from the owner wallet, or send ones you hold with `safeTransferFrom`. Tokens minted without the receiver callback or sent with plain `transferFrom` aren't queued. Check `queuedTokenCount`, and get unqueued tokens back with `rescue`.
 
 3. Set the drop's supply with `setMaxSupply`. It caps this drop only, so for a drop of your next 60 tokens set it to 60. The transfer adapter also caps the drop at the tokens it holds.
 
@@ -69,4 +69,4 @@ The adapter emits `SeaDropShimDeployed(target)` when it's deployed. OpenSea uses
 
 ## Ending the drop
 
-When the drop is over, revoke the adapter's minting rights on the target, or with the transfer adapter, `withdraw` any unsold tokens. Setting the public drop's end time in the past also stops new mints.
+When the drop is over, revoke the adapter's minting rights on the target, or with the transfer adapter, `withdraw` any unsold tokens. Ending a stage only stops that stage: the public drop, each token-gated stage and each signed or allowlist stage keep their own time windows. Revoking the adapter's rights, or removing it from the target, stops every stage at once. You can also call `updateAllowedSeaDrop` on the adapter with an empty list.

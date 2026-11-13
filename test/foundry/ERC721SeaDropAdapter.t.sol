@@ -32,6 +32,12 @@ import {
 
 import { TestExistingERC721 } from "seadrop/test/TestExistingERC721.sol";
 
+import { TestMinimalERC721 } from "seadrop/test/TestMinimalERC721.sol";
+
+import {
+    TestForwardingReceiver
+} from "seadrop/test/TestForwardingReceiver.sol";
+
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 import {
@@ -209,6 +215,38 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         seadrop.mintPublic{ value: PRICE * 2 }(
             address(adapter), feeRecipient, address(0), 2
         );
+    }
+
+    function testMintAdapterCountsBySupply() public {
+        ERC721SeaDropMintAdapter adapter = _newMintAdapter();
+        assertTrue(adapter.countsBySupply());
+
+        // A recipient that forwards tokens in its callback keeps none, but
+        // the target's supply still shows the full mint.
+        address vault = makeAddr("vault");
+        TestForwardingReceiver wallet = new TestForwardingReceiver(vault);
+        vm.deal(address(wallet), 1 ether);
+        vm.prank(address(wallet));
+        seadrop.mintPublic{ value: PRICE * 2 }(
+            address(adapter), feeRecipient, address(0), 2
+        );
+        assertEq(existing.balanceOf(address(wallet)), 0);
+        assertEq(existing.balanceOf(vault), 2);
+    }
+
+    function testMintAdapterCountsByBalanceWithoutSupply() public {
+        TestMinimalERC721 minimal = new TestMinimalERC721();
+        ERC721SeaDropMintAdapter adapter = new ERC721SeaDropMintAdapter(
+            address(minimal),
+            TestMinimalERC721.mintTo.selector,
+            _allowedSeaDrop()
+        );
+        assertFalse(adapter.countsBySupply());
+        _configure(adapter, 60);
+
+        _mintPublic(address(adapter), 3);
+        assertEq(minimal.balanceOf(minter), 3);
+        assertEq(adapter.totalMinted(), 3);
     }
 
     function testMintAdapterTokenGatedForExistingHolders() public {

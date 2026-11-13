@@ -5,6 +5,11 @@ import { ERC721SeaDropAdapter } from "./ERC721SeaDropAdapter.sol";
 
 import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
 
+/// @dev The `totalSupply()` getter most ERC-721 contracts have.
+interface IERC721Supply {
+    function totalSupply() external view returns (uint256);
+}
+
 /**
  * @title  ERC721SeaDropMintAdapter
  * @author OpenSea
@@ -19,11 +24,16 @@ import { IERC721 } from "openzeppelin-contracts/token/ERC721/IERC721.sol";
  *         selector to the constructor, then grant the adapter's address the
  *         right to call it on the target.
  *
- *         After each call the adapter checks that the minter's balance on
- *         the target rose by exactly `quantity`, so a function whose second
- *         argument is a token ID, or one that mints elsewhere, reverts
- *         instead of minting the wrong tokens. A target with a different
- *         mint signature needs its own subclass of `ERC721SeaDropAdapter`.
+ *         After each call the adapter checks that exactly `quantity` tokens
+ *         were minted. It counts them by the target's `totalSupply()` when
+ *         the target has one, which a recipient that forwards tokens in
+ *         `onERC721Received` doesn't change, and otherwise by the minter's
+ *         balance. A function whose second argument is a token ID mints one
+ *         token, so purchases of two or more revert with
+ *         `UnexpectedMintCount`. A single-token purchase passes the check,
+ *         so the deployer must confirm the selector takes a quantity
+ *         before deploying. A target with a different mint signature needs
+ *         its own subclass of `ERC721SeaDropAdapter`.
  */
 contract ERC721SeaDropMintAdapter is ERC721SeaDropAdapter {
     /// @notice Revert when the target minted a different number of tokens
@@ -33,6 +43,11 @@ contract ERC721SeaDropMintAdapter is ERC721SeaDropAdapter {
     /// @notice The selector of the target's
     ///         `(address to, uint256 quantity)` mint function.
     bytes4 public immutable mintSelector;
+
+    /// @notice Whether mints are counted by the target's `totalSupply()`
+    ///         rather than the minter's balance. Set at deployment by
+    ///         probing the target.
+    bool public immutable countsBySupply;
 
     /**
      * @notice Deploy the adapter. The deployer becomes the owner.
@@ -47,14 +62,27 @@ contract ERC721SeaDropMintAdapter is ERC721SeaDropAdapter {
         address[] memory allowedSeaDrop
     ) ERC721SeaDropAdapter(targetContract, allowedSeaDrop) {
         mintSelector = targetMintSelector;
+
+        (bool success, bytes memory returnData) =
+            targetContract.staticcall(abi.encodeWithSignature("totalSupply()"));
+        countsBySupply = success && returnData.length == 32;
+    }
+
+    /// @dev The target's total supply, or `minter`'s balance if the target
+    ///      has no `totalSupply()`.
+    function _mintCounter(address minter) internal view returns (uint256) {
+        if (countsBySupply) {
+            return IERC721Supply(target).totalSupply();
+        }
+        return IERC721(target).balanceOf(minter);
     }
 
     /**
-     * @dev Call the target's mint function and check the minter received
-     *      exactly `quantity` tokens. Bubbles up the target's revert.
+     * @dev Call the target's mint function and check it minted exactly
+     *      `quantity` tokens. Bubbles up the target's revert.
      */
     function _deliver(address minter, uint256 quantity) internal override {
-        uint256 balanceBefore = IERC721(target).balanceOf(minter);
+        uint256 countBefore = _mintCounter(minter);
 
         (bool success, bytes memory returnData) =
             target.call(abi.encodeWithSelector(mintSelector, minter, quantity));
@@ -64,11 +92,11 @@ contract ERC721SeaDropMintAdapter is ERC721SeaDropAdapter {
             }
         }
 
-        uint256 balanceAfter = IERC721(target).balanceOf(minter);
-        if (balanceAfter != balanceBefore + quantity) {
+        uint256 countAfter = _mintCounter(minter);
+        if (countAfter != countBefore + quantity) {
             revert UnexpectedMintCount(
                 quantity,
-                balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0
+                countAfter > countBefore ? countAfter - countBefore : 0
             );
         }
     }
