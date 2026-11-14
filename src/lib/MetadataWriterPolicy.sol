@@ -25,6 +25,7 @@ interface IERC8048OnchainMetadataToken {
     function setCollectionAuthority(
         address authority,
         bool holderCanWrite,
+        bool ownerCannotWrite,
         bool authorityLocked
     ) external;
 
@@ -35,7 +36,7 @@ interface IERC8048OnchainMetadataToken {
  * @title  MetadataWriterPolicy
  * @author Ryan Ghods (ralxz.eth)
  * @notice A reference policy to set as an ERC8048OnchainMetadata token's
- *         collection authority. It is an example; the token doesn't need
+ *         metadata authority. It is an example; the token doesn't need
  *         it. Writes go through this contract, which forwards them to the
  *         token when:
  *
@@ -51,13 +52,13 @@ interface IERC8048OnchainMetadataToken {
  *         reverts when the token already has a non-empty value for it, so
  *         each token's value can be set once and never changed, while
  *         tokens minted later can still be written. The admin can unmark
- *         the key, so for a lasting freeze, lock the collection authority
- *         to this policy and renounce or hand off its ownership. Set it
- *         as the authority with `holderCanWrite` false, since holders
- *         writing the token directly skip this policy's rules.
+ *         the key, so for a lasting freeze, lock the token's authority to
+ *         this policy and renounce or hand off its ownership. While this
+ *         policy is the authority, it is the token's only writer, so
+ *         nobody writes past these rules.
  *
- *         The admin can also change the token's collection authority
- *         through this contract.
+ *         The admin can also change the token's authority through this
+ *         contract.
  */
 contract MetadataWriterPolicy is TwoStepOwnable {
     /// @dev A token's delegate and the holder who set it.
@@ -239,15 +240,19 @@ contract MetadataWriterPolicy is TwoStepOwnable {
     }
 
     /**
-     * @notice Set the token's collection authority, for example to hand it
-     *         to a new policy. Only the admin can call this.
+     * @notice Set the token's authority and its settings, for example to
+     *         hand the authority to a new policy. Only the admin can call
+     *         this.
      */
     function setCollectionAuthority(
         address authority,
         bool holderCanWrite,
+        bool ownerCannotWrite,
         bool authorityLocked
     ) external onlyOwner {
-        token.setCollectionAuthority(authority, holderCanWrite, authorityLocked);
+        token.setCollectionAuthority(
+            authority, holderCanWrite, ownerCannotWrite, authorityLocked
+        );
     }
 
     /**

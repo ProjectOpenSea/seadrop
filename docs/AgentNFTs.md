@@ -3,7 +3,7 @@
 `ERC721SeaDropAgents` (in `src/extensions`) is `ERC721SeaDrop` for collections whose tokens are AI agents. It adds two things:
 
 - Agent registration. The owner registers an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent for each token before it mints, through an [ERC-8217](https://eips.ethereum.org/EIPS/eip-8217) adapter. Whoever holds the token controls its agent.
-- Onchain metadata under [ERC-8048](https://eips.ethereum.org/EIPS/eip-8048): string keys with bytes values, stored per token. One collection authority decides who can write them. The ERC-8048 code lives in `src/lib/ERC8048OnchainMetadata.sol`, so other token contracts can reuse it, including ones that already implement ERC-4906.
+- Onchain metadata under [ERC-8048](https://eips.ethereum.org/EIPS/eip-8048): string keys with bytes values, stored per token, with ERC-8048's Metadata Authority extension deciding who can write them. The ERC-8048 code lives in `src/lib/ERC8048OnchainMetadata.sol`, so other token contracts can reuse it, including ones that already implement ERC-4906.
 
 Minting, drop configuration and `tokenURI` work as in `ERC721SeaDrop`.
 
@@ -56,44 +56,44 @@ Anyone can read a token's records with `metadata(tokenId, key)`.
 
 ### Who can write
 
-The contract has one collection authority and two settings, which `collectionAuthority()` returns:
+The contract implements [ERC-8048](https://github.com/ethereum/ERCs/blob/master/ERCS/erc-8048.md)'s optional Metadata Authority extension (interface id `0x04f90b41`). `tokenMetadataAuthority()` returns the one address that can write every token's records, or the zero address when none is set.
 
-- The collection authority can write any token's records, including before the token mints. When the authority is blank (the zero address), the owner is the authority. The authority can be an account or a policy contract that applies its own rules.
-- With `holderCanWrite`, a token's current holder can also write that token's records. The contract checks `ownerOf` at write time, so after a transfer the new holder can write right away and the old holder can't. Nobody has to claim anything. ERC-721 operators can't write for the holder.
-- With `authorityLocked`, the owner can no longer change the authority or the settings. The current authority still can, so a locked policy contract can hand itself to a new one. A blank authority can't be locked.
+- While the authority is set, it is the only writer, for every token, including before a token mints. It can be an account or a policy contract that applies its own rules. The owner and holders write only through it.
+- While the authority is blank, three settings decide who writes. `collectionAuthoritySettings()` returns them.
+  - The owner writes any token's records, unless `ownerCannotWrite` is on.
+  - With `holderCanWrite`, a token's current holder also writes that token's records. The contract checks `ownerOf` at write time, so after a transfer the new holder can write right away and the old holder can't. ERC-721 operators can't write for the holder.
+  - With `authorityLocked`, nobody can change the settings or set an authority again, the owner included.
+- A set authority can also be locked. Then the owner can't replace it, and only the authority can hand itself on, including to a locked blank state.
 
-`setCollectionAuthority(authority, holderCanWrite, authorityLocked)` sets all three and emits `CollectionAuthorityUpdated`. The owner can call it until the authority is locked, and the current authority can always call it. Both settings start false, so a new collection starts with the owner controlling everything.
-
-While the authority isn't blank, the owner writes only through it. A blank authority follows ownership, so a new owner takes over writing when the contract changes owners.
+`setCollectionAuthority(authority, holderCanWrite, ownerCannotWrite, authorityLocked)` sets the authority and all three settings. The owner can call it until the settings are locked, and a set authority can always call it. It emits `TokenMetadataAuthoritySet(authority)` when the authority changes and `CollectionAuthoritySettingsUpdated` every time. The settings all start false, so a new collection starts with the owner as the only writer. A blank authority follows ownership, so a new owner takes over writing when the contract changes owners.
 
 ### Common setups
 
-- Owner only. Leave the authority blank and both settings false, the default. Only the owner writes, and holders can't.
-- Holders write their own records, and the owner can change the rules. Leave the authority blank and set `holderCanWrite`. Each holder writes their own token's records, the owner can still write any token, and the owner can turn holder writes off later.
-- Holders control their records for good. Set `holderCanWrite` and `authorityLocked`, with `0x000000000000000000000000000000000000dEaD` as the authority. Nobody can change the settings again, the owner can't write, and each holder writes their own token's records.
-- A policy contract decides. Set a policy contract as the authority with `holderCanWrite` false. Holders can't write past it, and every write goes through its rules. The owner can replace the policy.
-- A locked policy. Do the same and set `authorityLocked`. The owner can't replace the policy, and only the policy can hand the authority on.
-- Every record frozen. Set `authorityLocked` with `holderCanWrite` false and `0x000000000000000000000000000000000000dEaD` as the authority. Nobody can write any token's records or change the settings again, including for tokens that mint later.
+- Owner only. Leave the authority blank and the settings false, the default. The owner writes and can change the settings.
+- Owner and holders. Leave the authority blank and set `holderCanWrite`. The owner writes any token, each holder writes their own, and the owner can change the settings.
+- Locked blank. Leave the authority blank and set `authorityLocked`. The other two settings decide who writes for good: the owner and holders, the owner only, holders only (with `ownerCannotWrite`), or nobody (with `ownerCannotWrite` and without `holderCanWrite`), which freezes every record, including for tokens that mint later. Nobody can change the settings or add a policy.
+- A policy. Set a policy contract as the authority. Only the policy writes, and the owner can replace it.
+- A locked policy. Do the same and set `authorityLocked`. Only the policy writes, the owner can't replace it, and only the policy can hand the authority on.
 
-With `holderCanWrite`, a seller can change their token's records up to the moment of sale, so a buyer should check them after buying. In the other setups holders can't write, so the records a buyer sees are the ones the authority wrote.
+When holders can write, a seller can change their token's records up to the moment of sale, so a buyer should check them after buying. In the other setups holders write only through a policy's rules, if at all.
 
 ### Reference policy
 
-`src/lib/MetadataWriterPolicy.sol` is a small policy contract to set as the collection authority. The contract doesn't need it, and it shows what a policy can do. Its owner (the admin) can allow several writer addresses with `setWriter`, such as a hot wallet that runs a metadata job. A writer can write records and nothing else. A token's current holder can delegate their token's writes to one address with `setDelegate`, such as their agent's wallet. A delegation counts only while the holder who set it still holds the token, so it lapses on transfer. It counts again if the token comes back to that holder.
+`src/lib/MetadataWriterPolicy.sol` is a small policy contract to set as the metadata authority. The contract doesn't need it, and it shows what a policy can do. Its owner (the admin) can allow several writer addresses with `setWriter`, such as a hot wallet that runs a metadata job. A writer can write records and nothing else. A token's current holder can delegate their token's writes to one address with `setDelegate`, such as their agent's wallet. A delegation counts only while the holder who set it still holds the token, so it lapses on transfer. It counts again if the token comes back to that holder.
 
 Writers and delegates call the policy's `setMetadata` and `setMetadataBatch`, which check the caller and forward the write to the token. The admin can also call `setCollectionAuthority` through the policy, for example to hand the authority to a new policy.
 
 ### Freezing records
 
-The contract has no key locks. A lock on a key would also freeze it for tokens that haven't minted yet, so an artist who signed the first tokens and then locked `artist.signature` would leave every later token without a signature. Freezing is up to the collection authority instead, which can freeze per token.
+The contract has no key locks. A lock on a key would also freeze it for tokens that haven't minted yet, so an artist who signed the first tokens and then locked `artist.signature` would leave every later token without a signature. Freezing is up to a policy set as the authority instead, which can freeze per token.
 
 The reference policy shows one way. Its admin can mark a key write-once with `setWriteOnceKey(key, true)`. A write to a write-once key through the policy reverts with `WriteOnceValueSet` once that token has a non-empty value for the key, in `setMetadata` and `setMetadataBatch` alike, counting earlier entries in the same batch. An artist can sign tokens 1 and 2, and token 3 can still be signed once after it mints, but nobody can overwrite the signatures on tokens 1 and 2.
 
-The admin can unmark a key, and the owner can replace an unlocked policy. For a freeze that holds, set the policy as the authority with `holderCanWrite` false and `authorityLocked`, then renounce the policy's ownership. While the policy has an admin, that admin can still unmark keys. To freeze every record instead, lock the authority to `0x000000000000000000000000000000000000dEaD` as described above.
+The admin can unmark a key, and the owner can replace an unlocked policy. For a freeze that holds, set the policy as the authority with `authorityLocked`, then renounce the policy's ownership. While the policy has an admin, that admin can still unmark keys. To freeze every record instead, lock a blank authority with `ownerCannotWrite` on and `holderCanWrite` off, as described above.
 
 ### Batches
 
-`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts. The collection authority can write every entry.
+`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts. A set authority, or the owner while the authority is blank, can write every entry.
 
 ### Events and keys
 

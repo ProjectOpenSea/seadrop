@@ -9,6 +9,10 @@ import { IAgentAdapter } from "../interfaces/IAgentAdapter.sol";
 
 import { IERC8048Metadata } from "../interfaces/IERC8048Metadata.sol";
 
+import {
+    IERC8048TokenMetadataAuthority
+} from "../interfaces/IERC8048TokenMetadataAuthority.sol";
+
 /**
  * @title  ERC721SeaDropAgents
  * @author Ryan Ghods (ralxz.eth)
@@ -19,7 +23,8 @@ import { IERC8048Metadata } from "../interfaces/IERC8048Metadata.sol";
  *           every token is minted with its agent. Whoever holds the token
  *           controls the agent.
  *         - ERC-8048 onchain metadata, for agent records such as the
- *           ERC-721T profile's `context` and `endpoint[mcp]` keys. See
+ *           ERC-721T profile's `context` and `endpoint[mcp]` keys, with
+ *           ERC-8048's Metadata Authority extension. See
  *           ERC8048OnchainMetadata for who can write them.
  *
  *         tokenURI works as in ERC721SeaDrop, and marketplaces read the
@@ -156,6 +161,7 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
         returns (bool)
     {
         return interfaceId == type(IERC8048Metadata).interfaceId
+            || interfaceId == type(IERC8048TokenMetadataAuthority).interfaceId
             || super.supportsInterface(interfaceId);
     }
 

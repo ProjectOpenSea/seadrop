@@ -3,36 +3,44 @@ pragma solidity 0.8.38;
 
 import { IERC8048Metadata } from "../interfaces/IERC8048Metadata.sol";
 
+import {
+    IERC8048TokenMetadataAuthority
+} from "../interfaces/IERC8048TokenMetadataAuthority.sol";
+
 /**
  * @title  ERC8048OnchainMetadata
  * @author Ryan Ghods (ralxz.eth)
  * @notice Onchain metadata for ERC-721 tokens under ERC-8048: string keys
- *         with bytes values, stored per token.
+ *         with bytes values, stored per token, with ERC-8048's optional
+ *         Metadata Authority extension.
  *
- *         One collection authority decides who writes, with two settings:
- *         - The collection authority can write any token's metadata. While
- *           it is blank (the zero address), the metadata admin (the owner)
- *           is the authority. The authority can be a policy contract that
- *           applies its own rules, such as MetadataWriterPolicy.
- *         - With `holderCanWrite`, a token's current holder can also write
- *           that token's metadata. The check reads the holder at write
- *           time, so a new holder can write right after a transfer and the
- *           old holder can't.
+ *         The token metadata authority and three settings decide who
+ *         writes:
+ *         - While `tokenMetadataAuthority()` is set, it is the only address
+ *           that can write, for every token, as ERC-8048 requires. It can
+ *           be an account or a policy contract that applies its own rules,
+ *           such as MetadataWriterPolicy. The settings below don't apply.
+ *         - While the authority is blank (the zero address), the metadata
+ *           admin (the owner) can write any token's metadata, unless
+ *           `ownerCannotWrite` is on.
+ *         - While the authority is blank and `holderCanWrite` is on, a
+ *           token's current holder can also write that token's metadata.
+ *           The check reads the holder at write time, so a new holder can
+ *           write right after a transfer and the old holder can't.
  *         - With `authorityLocked`, the admin can no longer change the
- *           settings. The current authority still can, so a locked policy
- *           contract can hand itself on. A blank authority can't be
- *           locked.
+ *           authority or the settings. A nonzero authority still can, so a
+ *           locked policy contract can hand itself on. A locked blank
+ *           authority fixes the settings for good: nobody can change them
+ *           or set a policy later.
  *
- *         Both settings start false, so a new collection starts with the
- *         admin controlling everything. Tokens don't have to exist yet, so
- *         the authority can write metadata before a mint.
+ *         The settings all start false, so a new collection starts with
+ *         the admin as the only writer. Tokens don't have to exist yet, so
+ *         the admin or the authority can write metadata before a mint.
  *
- *         The module has no key locks. A collection authority that is a
- *         policy contract can freeze records per token, for example with a
- *         write-once rule, and a collection that wants every record frozen
- *         can lock the authority to an address nobody controls, such as
- *         0x000000000000000000000000000000000000dEaD, with `holderCanWrite`
- *         false.
+ *         The module has no key locks. A policy contract can freeze
+ *         records per token, for example with a write-once rule. To freeze
+ *         every record, lock a blank authority with `ownerCannotWrite` on
+ *         and `holderCanWrite` off.
  *
  *         Each write emits `MetadataSet` and calls `_emitMetadataUpdate`
  *         once per token, where the token contract emits ERC-4906
@@ -45,43 +53,45 @@ import { IERC8048Metadata } from "../interfaces/IERC8048Metadata.sol";
  *         The token contract that inherits this must decide who the admin
  *         is in `_isMetadataAdmin`, name a token's holder in
  *         `_metadataHolderOf`, emit ERC-4906 in `_emitMetadataUpdate`, and
- *         return true from `supportsInterface` for IERC8048Metadata.
+ *         return true from `supportsInterface` for IERC8048Metadata and
+ *         IERC8048TokenMetadataAuthority.
  */
-abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
-    /// @dev The collection authority and its two settings, in one slot.
+abstract contract ERC8048OnchainMetadata is
+    IERC8048Metadata,
+    IERC8048TokenMetadataAuthority
+{
+    /// @dev The authority and its three settings, in one slot.
     struct CollectionAuthority {
         address authority;
         bool holderCanWrite;
+        bool ownerCannotWrite;
         bool authorityLocked;
     }
 
     /// @dev Each token's values, by key.
     mapping(uint256 => mapping(string => bytes)) private _metadata;
 
-    /// @dev The collection authority and its settings.
+    /// @dev The authority and its settings.
     CollectionAuthority private _collectionAuthority;
 
-    /// @notice Emitted when the collection authority or its settings
-    ///         change. `authority` is the zero address when blank.
-    event CollectionAuthorityUpdated(
-        address indexed authority,
+    /// @notice Emitted when the settings are set, with the values they
+    ///         now hold.
+    event CollectionAuthoritySettingsUpdated(
         bool holderCanWrite,
+        bool ownerCannotWrite,
         bool authorityLocked
     );
 
     /// @notice Revert when the caller can't write `tokenId`'s metadata.
     error MetadataWriteUnauthorized(uint256 tokenId);
 
-    /// @notice Revert when the caller is neither the admin nor the
-    ///         collection authority.
+    /// @notice Revert when the caller is neither the admin nor a nonzero
+    ///         authority.
     error CollectionAuthorityUnauthorized();
 
-    /// @notice Revert when the admin changes the settings after the
-    ///         authority was locked.
+    /// @notice Revert when the admin changes the settings after they were
+    ///         locked.
     error CollectionAuthorityIsLocked();
-
-    /// @notice Revert when locking a blank collection authority.
-    error CannotLockBlankAuthority();
 
     /// @notice Revert when a batch's arrays differ in length.
     error MetadataBatchLengthMismatch();
@@ -99,23 +109,36 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
     }
 
     /**
-     * @notice Returns the collection authority and its settings.
-     *
-     * @return authority       The authority, or the zero address when blank,
-     *                         which means the admin.
-     * @return holderCanWrite  Whether a token's holder can write its
-     *                         metadata.
-     * @return authorityLocked Whether the admin can no longer change these.
+     * @notice Returns the metadata authority for every token, or the zero
+     *         address when none is set and the settings decide who writes.
      */
-    function collectionAuthority()
+    function tokenMetadataAuthority() external view returns (address) {
+        return _collectionAuthority.authority;
+    }
+
+    /**
+     * @notice Returns the settings that apply while the authority is
+     *         blank, and whether they are locked.
+     *
+     * @return holderCanWrite   Whether a token's holder can write its
+     *                          metadata.
+     * @return ownerCannotWrite Whether the admin is shut out of writing.
+     * @return authorityLocked  Whether only a nonzero authority can change
+     *                          the authority or the settings.
+     */
+    function collectionAuthoritySettings()
         external
         view
-        returns (address authority, bool holderCanWrite, bool authorityLocked)
+        returns (
+            bool holderCanWrite,
+            bool ownerCannotWrite,
+            bool authorityLocked
+        )
     {
         CollectionAuthority memory settings = _collectionAuthority;
         return (
-            settings.authority,
             settings.holderCanWrite,
+            settings.ownerCannotWrite,
             settings.authorityLocked
         );
     }
@@ -171,56 +194,63 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
     }
 
     /**
-     * @notice Set the collection authority and its settings. The admin can
-     *         call this until the authority is locked. The current
-     *         authority can always call it.
+     * @notice Set the authority and its settings. A nonzero authority can
+     *         always call this. The admin can call it until the settings
+     *         are locked, including while it writes as the blank
+     *         authority. Emits `TokenMetadataAuthoritySet` when the
+     *         authority changes.
      *
-     * @param authority       The new authority, or the zero address for
-     *                        the admin.
-     * @param holderCanWrite  Whether a token's holder can write its
-     *                        metadata.
-     * @param authorityLocked Whether to stop the admin from changing these
-     *                        again.
+     * @param authority        The new authority, or the zero address to
+     *                         let the settings decide who writes.
+     * @param holderCanWrite   Whether a token's holder can write its
+     *                         metadata while the authority is blank.
+     * @param ownerCannotWrite Whether to shut the admin out of writing
+     *                         while the authority is blank.
+     * @param authorityLocked  Whether to stop the admin from changing
+     *                         these again. With a blank authority, nobody
+     *                         can change them again.
      */
     function setCollectionAuthority(
         address authority,
         bool holderCanWrite,
+        bool ownerCannotWrite,
         bool authorityLocked
     ) external {
-        if (!_isCollectionAuthority(msg.sender)) {
+        CollectionAuthority memory current = _collectionAuthority;
+        if (current.authority == address(0) || msg.sender != current.authority)
+        {
             if (!_isMetadataAdmin(msg.sender)) {
                 revert CollectionAuthorityUnauthorized();
             }
-            if (_collectionAuthority.authorityLocked) {
+            if (current.authorityLocked) {
                 revert CollectionAuthorityIsLocked();
             }
         }
 
-        if (authorityLocked && authority == address(0)) {
-            revert CannotLockBlankAuthority();
+        _collectionAuthority = CollectionAuthority(
+            authority, holderCanWrite, ownerCannotWrite, authorityLocked
+        );
+        if (authority != current.authority) {
+            emit TokenMetadataAuthoritySet(authority);
         }
-
-        _collectionAuthority =
-            CollectionAuthority(authority, holderCanWrite, authorityLocked);
-        emit CollectionAuthorityUpdated(
-            authority,
+        emit CollectionAuthoritySettingsUpdated(
             holderCanWrite,
+            ownerCannotWrite,
             authorityLocked
         );
     }
 
     /**
-     * @dev Returns whether `account` is the collection authority, which is
-     *      the admin while the authority is blank.
+     * @dev Returns whether `account` can write any token: the authority
+     *      while one is set, otherwise the admin unless `ownerCannotWrite`
+     *      is on.
      */
-    function _isCollectionAuthority(address account)
-        internal
-        view
-        returns (bool)
-    {
-        address authority = _collectionAuthority.authority;
-        if (authority == address(0)) return _isMetadataAdmin(account);
-        return account == authority;
+    function _isCollectionWriter(address account) internal view returns (bool) {
+        CollectionAuthority memory settings = _collectionAuthority;
+        if (settings.authority != address(0)) {
+            return account == settings.authority;
+        }
+        return !settings.ownerCannotWrite && _isMetadataAdmin(account);
     }
 
     /**
@@ -232,7 +262,7 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
         string calldata key,
         bytes calldata value
     ) internal {
-        if (!_isCollectionAuthority(msg.sender)) {
+        if (!_isCollectionWriter(msg.sender)) {
             if (!_isHolderWriter(tokenId, msg.sender)) {
                 revert MetadataWriteUnauthorized(tokenId);
             }
@@ -243,15 +273,19 @@ abstract contract ERC8048OnchainMetadata is IERC8048Metadata {
     }
 
     /**
-     * @dev Returns whether holders can write and `account` holds `tokenId`
-     *      now. A token that doesn't exist has no holder.
+     * @dev Returns whether the authority is blank, holders can write, and
+     *      `account` holds `tokenId` now. A token that doesn't exist has no
+     *      holder.
      */
     function _isHolderWriter(uint256 tokenId, address account)
         internal
         view
         returns (bool)
     {
-        if (!_collectionAuthority.holderCanWrite) return false;
+        CollectionAuthority memory settings = _collectionAuthority;
+        if (settings.authority != address(0) || !settings.holderCanWrite) {
+            return false;
+        }
 
         address holder = _metadataHolderOf(tokenId);
         return holder != address(0) && account == holder;

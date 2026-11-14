@@ -13,6 +13,10 @@ import { ERC8048OnchainMetadata } from "seadrop/lib/ERC8048OnchainMetadata.sol";
 
 import { IERC8048Metadata } from "seadrop/interfaces/IERC8048Metadata.sol";
 
+import {
+    IERC8048TokenMetadataAuthority
+} from "seadrop/interfaces/IERC8048TokenMetadataAuthority.sol";
+
 import { MetadataWriterPolicy } from "seadrop/lib/MetadataWriterPolicy.sol";
 
 import { MockAgentAdapter } from "seadrop/test/MockAgentAdapter.sol";
@@ -106,10 +110,10 @@ contract ERC721SeaDropAgentsTest is TestHelper {
     bytes32 constant METADATA_SET =
         keccak256("MetadataSet(uint256,string,string,bytes)");
     bytes32 constant METADATA_UPDATE = keccak256("MetadataUpdate(uint256)");
-    bytes32 constant COLLECTION_AUTHORITY_UPDATED =
-        keccak256("CollectionAuthorityUpdated(address,bool,bool)");
-
-    address constant DEAD = 0x000000000000000000000000000000000000dEaD;
+    bytes32 constant AUTHORITY_SET =
+        keccak256("TokenMetadataAuthoritySet(address)");
+    bytes32 constant SETTINGS_UPDATED =
+        keccak256("CollectionAuthoritySettingsUpdated(bool,bool,bool)");
 
     MockAgentAdapter adapter;
     ERC721SeaDropAgentsWithMint agents;
@@ -176,11 +180,14 @@ contract ERC721SeaDropAgentsTest is TestHelper {
     function _assertCollectionAuthority(
         address authority,
         bool holderCanWrite,
+        bool ownerCannotWrite,
         bool authorityLocked
     ) internal view {
-        (address a, bool canWrite, bool locked) = agents.collectionAuthority();
-        assertEq(a, authority);
+        assertEq(agents.tokenMetadataAuthority(), authority);
+        (bool canWrite, bool ownerOut, bool locked) =
+            agents.collectionAuthoritySettings();
         assertEq(canWrite, holderCanWrite);
+        assertEq(ownerOut, ownerCannotWrite);
         assertEq(locked, authorityLocked);
     }
 
@@ -202,8 +209,12 @@ contract ERC721SeaDropAgentsTest is TestHelper {
     function testSupportsInterface() public view {
         assertTrue(agents.supportsInterface(0xdf670be1));
         assertEq(type(IERC8048Metadata).interfaceId, bytes4(0xdf670be1));
-        // Not ERC-8048's Metadata Authority extension, since no token has
-        // its own authority.
+        // ERC-8048's Metadata Authority extension, collection-wide.
+        assertTrue(agents.supportsInterface(0x04f90b41));
+        assertEq(
+            type(IERC8048TokenMetadataAuthority).interfaceId, bytes4(0x04f90b41)
+        );
+        // Not the earlier per-token authority draft.
         assertFalse(agents.supportsInterface(0xf9cb127d));
         // ERC-4906, ERC-721 and ERC-165 still answer.
         assertTrue(agents.supportsInterface(0x49064906));
@@ -246,10 +257,10 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         assertEq(agents.metadata(1, "context").length, 0);
     }
 
-    /// @dev Case 2: a blank authority with both settings false. Only the
+    /// @dev State 1: a blank authority with the settings false. Only the
     ///      owner writes.
     function testOwnerOnlyByDefault() public {
-        _assertCollectionAuthority(address(0), false, false);
+        _assertCollectionAuthority(address(0), false, false, false);
         agents.mint(holder, 1);
 
         vm.prank(stranger);
@@ -281,13 +292,13 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        agents.setCollectionAuthority(stranger, true, false);
+        agents.setCollectionAuthority(stranger, true, false, false);
 
         vm.prank(holder);
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        agents.setCollectionAuthority(address(0), true, false);
+        agents.setCollectionAuthority(address(0), true, false, false);
 
         vm.prank(holder);
         agents.setApprovalForAll(stranger, true);
@@ -295,62 +306,186 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        agents.setCollectionAuthority(address(0), true, false);
+        agents.setCollectionAuthority(address(0), true, false, false);
 
-        // The owner sets all three at once, with an event.
+        // The owner sets the authority and settings at once, with events.
         vm.expectEmit(true, false, false, true, address(agents));
-        emit ERC8048OnchainMetadata.CollectionAuthorityUpdated(
-            writer,
+        emit IERC8048TokenMetadataAuthority.TokenMetadataAuthoritySet(writer);
+        vm.expectEmit(false, false, false, true, address(agents));
+        emit ERC8048OnchainMetadata.CollectionAuthoritySettingsUpdated(
             true,
+            false,
             false
         );
-        agents.setCollectionAuthority(writer, true, false);
-        _assertCollectionAuthority(writer, true, false);
+        agents.setCollectionAuthority(writer, true, false, false);
+        _assertCollectionAuthority(writer, true, false, false);
 
         // The authority can change them too.
         vm.prank(writer);
-        agents.setCollectionAuthority(agentWallet, false, false);
-        _assertCollectionAuthority(agentWallet, false, false);
+        agents.setCollectionAuthority(agentWallet, false, false, false);
+        _assertCollectionAuthority(agentWallet, false, false, false);
 
         // A former authority can't.
         vm.prank(writer);
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        agents.setCollectionAuthority(writer, false, false);
+        agents.setCollectionAuthority(writer, false, false, false);
 
         // The owner can return it to blank.
-        agents.setCollectionAuthority(address(0), false, false);
-        _assertCollectionAuthority(address(0), false, false);
+        agents.setCollectionAuthority(address(0), false, false, false);
+        _assertCollectionAuthority(address(0), false, false, false);
     }
 
-    function testCannotLockBlankAuthority() public {
-        vm.expectRevert(
-            ERC8048OnchainMetadata.CannotLockBlankAuthority.selector
-        );
-        agents.setCollectionAuthority(address(0), false, true);
+    function testAuthoritySetEmitsOnlyOnChange() public {
+        // Settings alone leave the authority blank, so no authority event.
+        vm.recordLogs();
+        agents.setCollectionAuthority(address(0), true, false, false);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(_count(logs, AUTHORITY_SET), 0);
+        assertEq(_count(logs, SETTINGS_UPDATED), 1);
 
-        vm.expectRevert(
-            ERC8048OnchainMetadata.CannotLockBlankAuthority.selector
-        );
-        agents.setCollectionAuthority(address(0), true, true);
+        // Setting, keeping, and clearing an authority.
+        vm.recordLogs();
+        agents.setCollectionAuthority(writer, false, false, false);
+        assertEq(_count(vm.getRecordedLogs(), AUTHORITY_SET), 1);
+        vm.recordLogs();
+        agents.setCollectionAuthority(writer, true, false, false);
+        assertEq(_count(vm.getRecordedLogs(), AUTHORITY_SET), 0);
+        vm.expectEmit(true, false, false, true, address(agents));
+        emit IERC8048TokenMetadataAuthority.TokenMetadataAuthoritySet(address(
+                0
+            ));
+        agents.setCollectionAuthority(address(0), false, false, false);
+    }
 
-        // Nor can a locked authority hand itself to blank.
-        agents.setCollectionAuthority(writer, false, true);
+    /// @dev State 3: a locked blank authority with holders on. The owner
+    ///      and holders write for good, and nobody adds a policy.
+    function testLockedBlankOwnerAndHolders() public {
+        agents.mint(holder, 1);
+        vm.expectEmit(false, false, false, true, address(agents));
+        emit ERC8048OnchainMetadata.CollectionAuthoritySettingsUpdated(
+            true,
+            false,
+            true
+        );
+        agents.setCollectionAuthority(address(0), true, false, true);
+        _assertCollectionAuthority(address(0), true, false, true);
+
+        agents.setMetadata(1, "context", "owner");
+        vm.prank(holder);
+        agents.setMetadata(1, "context", "holder");
+
+        // The owner writes as the blank authority but can't change locked
+        // settings or set a policy.
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
+        );
+        agents.setCollectionAuthority(address(0), false, false, false);
+        MetadataWriterPolicy policy = _deployPolicy();
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
+        );
+        agents.setCollectionAuthority(address(policy), false, false, true);
+        vm.prank(holder);
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
+        );
+        agents.setCollectionAuthority(holder, false, false, false);
+    }
+
+    /// @dev State 3: a locked blank authority with the owner shut out and
+    ///      holders on. Holders control their records for good.
+    function testLockedBlankHoldersOnly() public {
+        agents.mint(holder, 1);
+        agents.setMetadata(1, "context", "owner lore");
+        agents.setCollectionAuthority(address(0), true, true, true);
+        _assertCollectionAuthority(address(0), true, true, true);
+
+        // Nobody changes the settings again.
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
+        );
+        agents.setCollectionAuthority(address(0), false, false, false);
+        vm.prank(holder);
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
+        );
+        agents.setCollectionAuthority(holder, true, true, true);
+
+        // The owner can't write.
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "owner again");
+
+        // The holder writes, and after a sale the buyer does.
+        vm.prank(holder);
+        agents.setMetadata(1, "context", "holder lore");
+        vm.prank(holder);
+        agents.transferFrom(holder, otherHolder, 1);
+        vm.prank(otherHolder);
+        agents.setMetadata(1, "context", "buyer lore");
+        assertEq(agents.metadata(1, "context"), bytes("buyer lore"));
+        vm.prank(holder);
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "seller lore");
+
+        // A new owner can't take it back either.
+        agents.transferOwnership(stranger);
+        vm.prank(stranger);
+        agents.acceptOwnership();
+        vm.prank(stranger);
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "new owner");
+        vm.prank(stranger);
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
+        );
+        agents.setCollectionAuthority(address(0), false, false, false);
+    }
+
+    function testOwnerCannotWriteUnlocked() public {
+        agents.mint(holder, 1);
+        agents.setCollectionAuthority(address(0), false, true, false);
+
+        // Shut out of writing, nobody else writes either.
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "x");
+        vm.prank(holder);
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "x");
+
+        // The owner still changes the settings while they aren't locked.
+        agents.setCollectionAuthority(address(0), false, false, false);
+        agents.setMetadata(1, "context", "back");
+        assertEq(agents.metadata(1, "context"), bytes("back"));
+    }
+
+    function testLockedAuthorityCanClearToLockedBlank() public {
+        agents.setCollectionAuthority(writer, false, false, true);
+
+        // The authority hands the collection to a locked blank state that
+        // holders write.
+        agents.mint(holder, 1);
+        vm.prank(writer);
+        agents.setCollectionAuthority(address(0), true, true, true);
+        _assertCollectionAuthority(address(0), true, true, true);
+
+        // The former authority and the owner are both out for good.
         vm.prank(writer);
         vm.expectRevert(
-            ERC8048OnchainMetadata.CannotLockBlankAuthority.selector
+            ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        agents.setCollectionAuthority(address(0), false, true);
-
-        // It can unlock while it clears itself.
-        vm.prank(writer);
-        agents.setCollectionAuthority(address(0), false, false);
-        _assertCollectionAuthority(address(0), false, false);
+        agents.setCollectionAuthority(writer, false, false, false);
+        vm.expectRevert(
+            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
+        );
+        agents.setCollectionAuthority(writer, false, false, false);
+        vm.prank(holder);
+        agents.setMetadata(1, "context", "holder");
     }
 
     function testWritesBeforeMint() public {
-        agents.setCollectionAuthority(address(0), true, false);
+        agents.setCollectionAuthority(address(0), true, false, false);
 
         // The authority writes a token that isn't minted.
         agents.setMetadata(5, "context", "lore");
@@ -366,7 +501,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
         // A policy authority writes before mint too.
         MetadataWriterPolicy policy = _deployPolicy();
-        agents.setCollectionAuthority(address(policy), false, false);
+        agents.setCollectionAuthority(address(policy), false, false, false);
         vm.prank(policyAdmin);
         policy.setWriter(writer, true);
         vm.prank(writer);
@@ -384,15 +519,16 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         assertEq(policy.delegateOf(6), address(0));
     }
 
-    /// @dev Case 1: a city and its homeowners. A policy contract is the
+    /// @dev State 4: a city and its homeowners. A policy contract is the
     ///      authority, holders write only under its rules, and the owner
     ///      can replace it.
     function testPolicyAuthority() public {
         agents.mint(holder, 1);
         MetadataWriterPolicy city = _deployPolicy();
-        agents.setCollectionAuthority(address(city), false, false);
+        agents.setCollectionAuthority(address(city), false, false, false);
 
         // Neither the holder nor the owner writes past the policy.
+        _assertCollectionAuthority(address(city), false, false, false);
         vm.prank(holder);
         vm.expectRevert(_writeUnauthorized(1));
         agents.setMetadata(1, "context", "x");
@@ -408,19 +544,43 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
         // The owner replaces the policy, and the old one can't write.
         MetadataWriterPolicy newCity = _deployPolicy();
-        agents.setCollectionAuthority(address(newCity), false, false);
-        _assertCollectionAuthority(address(newCity), false, false);
+        agents.setCollectionAuthority(address(newCity), false, false, false);
+        _assertCollectionAuthority(address(newCity), false, false, false);
         vm.prank(holder);
         vm.expectRevert(_writeUnauthorized(1));
         city.setMetadata(1, "context", "old city");
     }
 
-    /// @dev Case 3: holders write their own tokens, and the owner can
+    /// @dev While an authority is set, it is the only writer, whatever
+    ///      the settings say.
+    function testAuthorityIsOnlyWriter() public {
+        agents.mint(holder, 1);
+        agents.setCollectionAuthority(writer, true, false, false);
+
+        vm.prank(holder);
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "holder");
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "owner");
+        vm.prank(writer);
+        agents.setMetadata(1, "context", "authority");
+
+        // Cleared, the same settings let the holder and owner write again.
+        agents.setCollectionAuthority(address(0), true, false, false);
+        vm.prank(holder);
+        agents.setMetadata(1, "context", "holder");
+        agents.setMetadata(1, "context", "owner");
+        vm.prank(writer);
+        vm.expectRevert(_writeUnauthorized(1));
+        agents.setMetadata(1, "context", "former authority");
+    }
+
+    /// @dev State 2: holders write their own tokens, and the owner can
     ///      change the rules. Transfers need no claim.
     function testHoldersWrite() public {
         agents.mint(holder, 1);
         agents.mint(otherHolder, 1);
-        agents.setCollectionAuthority(address(0), true, false);
+        agents.setCollectionAuthority(address(0), true, false, false);
 
         vm.prank(holder);
         agents.setMetadata(1, "endpoint[mcp]", "mcp://seller");
@@ -444,8 +604,10 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.recordLogs();
         vm.prank(holder);
         agents.transferFrom(holder, otherHolder, 1);
-        assertEq(_count(vm.getRecordedLogs(), COLLECTION_AUTHORITY_UPDATED), 0);
-        _assertCollectionAuthority(address(0), true, false);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(_count(logs, AUTHORITY_SET), 0);
+        assertEq(_count(logs, SETTINGS_UPDATED), 0);
+        _assertCollectionAuthority(address(0), true, false, false);
 
         // The records stay with the token.
         assertEq(agents.metadata(1, "endpoint[mcp]"), bytes("mcp://seller"));
@@ -458,7 +620,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         agents.setMetadata(1, "endpoint[mcp]", "mcp://seller");
 
         // The owner changes the rules back.
-        agents.setCollectionAuthority(address(0), false, false);
+        agents.setCollectionAuthority(address(0), false, false, false);
         vm.prank(otherHolder);
         vm.expectRevert(_writeUnauthorized(1));
         agents.setMetadata(1, "endpoint[mcp]", "mcp://buyer");
@@ -467,7 +629,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
     function testHolderWriteFollowsOnlyTheMovedToken() public {
         // One batch mint of two tokens.
         agents.mint(holder, 2);
-        agents.setCollectionAuthority(address(0), true, false);
+        agents.setCollectionAuthority(address(0), true, false, false);
 
         vm.prank(holder);
         agents.safeTransferFrom(holder, otherHolder, 2);
@@ -484,7 +646,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
     function testBurnedTokenHasNoHolder() public {
         agents.mint(holder, 1);
-        agents.setCollectionAuthority(address(0), true, false);
+        agents.setCollectionAuthority(address(0), true, false, false);
 
         vm.prank(holder);
         agents.burn(1);
@@ -501,95 +663,50 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         assertEq(agents.metadata(1, "context"), bytes("retired"));
     }
 
-    /// @dev Case 4: holders control their metadata for good. The
-    ///      authority is a burn address and locked.
-    function testHoldersControlForGood() public {
-        agents.mint(holder, 1);
-        agents.setMetadata(1, "context", "owner lore");
-        agents.setCollectionAuthority(DEAD, true, true);
-        _assertCollectionAuthority(DEAD, true, true);
-
-        // Nobody changes the settings again.
-        vm.expectRevert(
-            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
-        );
-        agents.setCollectionAuthority(address(0), false, false);
-        vm.prank(holder);
-        vm.expectRevert(
-            ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
-        );
-        agents.setCollectionAuthority(holder, true, true);
-
-        // The owner can't write.
-        vm.expectRevert(_writeUnauthorized(1));
-        agents.setMetadata(1, "context", "owner again");
-
-        // The holder writes, and after a sale the buyer does.
-        vm.prank(holder);
-        agents.setMetadata(1, "context", "holder lore");
-        vm.prank(holder);
-        agents.transferFrom(holder, otherHolder, 1);
-        vm.prank(otherHolder);
-        agents.setMetadata(1, "context", "buyer lore");
-        assertEq(agents.metadata(1, "context"), bytes("buyer lore"));
-
-        // A new owner can't take it back either.
-        agents.transferOwnership(stranger);
-        vm.prank(stranger);
-        agents.acceptOwnership();
-        vm.prank(stranger);
-        vm.expectRevert(
-            ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
-        );
-        agents.setCollectionAuthority(address(0), false, false);
-    }
-
-    /// @dev Case 5: a locked policy. The owner can't replace it, and only
+    /// @dev State 5: a locked policy. The owner can't replace it, and only
     ///      the policy can hand the authority on.
     function testLockedPolicy() public {
         agents.mint(holder, 1);
         MetadataWriterPolicy policy = _deployPolicy();
-        agents.setCollectionAuthority(address(policy), false, true);
+        agents.setCollectionAuthority(address(policy), false, false, true);
 
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
         );
-        agents.setCollectionAuthority(address(0), false, false);
+        agents.setCollectionAuthority(address(0), false, false, false);
         vm.expectRevert(_writeUnauthorized(1));
         agents.setMetadata(1, "context", "x");
 
         // The policy's admin, not the token owner, hands it on.
         MetadataWriterPolicy next = _deployPolicy();
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
-        policy.setCollectionAuthority(address(next), false, true);
+        policy.setCollectionAuthority(address(next), false, false, true);
 
         vm.expectEmit(true, false, false, true, address(agents));
-        emit ERC8048OnchainMetadata.CollectionAuthorityUpdated(
-            address(next),
-            false,
-            true
-        );
+        emit IERC8048TokenMetadataAuthority.TokenMetadataAuthoritySet(address(
+                next
+            ));
         vm.prank(policyAdmin);
-        policy.setCollectionAuthority(address(next), false, true);
-        _assertCollectionAuthority(address(next), false, true);
+        policy.setCollectionAuthority(address(next), false, false, true);
+        _assertCollectionAuthority(address(next), false, false, true);
 
         // The old policy is out, and the owner is still locked out.
         vm.prank(policyAdmin);
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        policy.setCollectionAuthority(address(policy), false, true);
+        policy.setCollectionAuthority(address(policy), false, false, true);
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
         );
-        agents.setCollectionAuthority(address(policy), false, false);
+        agents.setCollectionAuthority(address(policy), false, false, false);
     }
 
     function testOwnerAsLockedAuthority() public {
         // An owner named as the locked authority is the authority, so it
         // still changes the settings, until ownership moves.
-        agents.setCollectionAuthority(address(this), false, true);
-        agents.setCollectionAuthority(address(this), true, true);
+        agents.setCollectionAuthority(address(this), false, false, true);
+        agents.setCollectionAuthority(address(this), true, false, true);
         agents.setMetadata(1, "context", "x");
 
         agents.transferOwnership(otherHolder);
@@ -599,7 +716,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
         );
-        agents.setCollectionAuthority(otherHolder, true, true);
+        agents.setCollectionAuthority(otherHolder, true, false, true);
         agents.setMetadata(1, "context", "former owner, still authority");
     }
 
@@ -647,7 +764,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         agents.setMetadataBatch(tokenIds, keys, shortValues);
 
         // A holder batches their own tokens.
-        agents.setCollectionAuthority(address(0), true, false);
+        agents.setCollectionAuthority(address(0), true, false, false);
         values[0] = "holder";
         vm.prank(holder);
         agents.setMetadataBatch(tokenIds, keys, values);
@@ -663,13 +780,13 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         assertEq(agents.metadata(1, "context"), bytes("holder"));
     }
 
-    /// @dev Freezing every record: no holder writes, and a locked
-    ///      authority nobody controls.
+    /// @dev State 3 with nobody writing: a locked blank authority with
+    ///      the owner shut out and holders off freezes every record.
     function testFreezeEverything() public {
         agents.mint(holder, 1);
         agents.setMetadata(1, "context", "final");
         agents.setMetadata(2, "context", "final before mint");
-        agents.setCollectionAuthority(DEAD, false, true);
+        agents.setCollectionAuthority(address(0), false, true, true);
 
         // Nobody writes any token, minted or not.
         vm.expectRevert(_writeUnauthorized(1));
@@ -684,12 +801,12 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
         );
-        agents.setCollectionAuthority(address(0), false, false);
+        agents.setCollectionAuthority(address(0), false, false, false);
         vm.prank(holder);
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        agents.setCollectionAuthority(address(0), false, false);
+        agents.setCollectionAuthority(address(0), false, false, false);
 
         assertEq(agents.metadata(1, "context"), bytes("final"));
         assertEq(agents.metadata(2, "context"), bytes("final before mint"));
@@ -699,7 +816,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
     ///      minted later can still be signed once.
     function testPolicyWriteOnceKey() public {
         MetadataWriterPolicy policy = _deployPolicy();
-        agents.setCollectionAuthority(address(policy), false, false);
+        agents.setCollectionAuthority(address(policy), false, false, false);
         address artist = makeAddr("artist");
 
         vm.prank(stranger);
@@ -761,7 +878,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
         // The admin can unmark the key, so a lasting freeze locks the
         // authority to the policy and renounces the policy.
-        agents.setCollectionAuthority(address(policy), false, true);
+        agents.setCollectionAuthority(address(policy), false, false, true);
         vm.prank(policyAdmin);
         policy.renounceOwnership();
         vm.prank(policyAdmin);
@@ -770,7 +887,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityIsLocked.selector
         );
-        agents.setCollectionAuthority(address(0), false, false);
+        agents.setCollectionAuthority(address(0), false, false, false);
         vm.prank(artist);
         vm.expectRevert(_writeOnceValueSet(1, "artist.signature"));
         policy.setMetadata(1, "artist.signature", "forged");
@@ -778,7 +895,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
     function testPolicyWriteOnceKeyUnmarked() public {
         MetadataWriterPolicy policy = _deployPolicy();
-        agents.setCollectionAuthority(address(policy), false, false);
+        agents.setCollectionAuthority(address(policy), false, false, false);
         vm.startPrank(policyAdmin);
         policy.setWriter(writer, true);
         policy.setWriteOnceKey("artist.signature", true);
@@ -798,7 +915,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
     function testPolicyWriteOnceKeyBatch() public {
         MetadataWriterPolicy policy = _deployPolicy();
-        agents.setCollectionAuthority(address(policy), false, false);
+        agents.setCollectionAuthority(address(policy), false, false, false);
         vm.startPrank(policyAdmin);
         policy.setWriter(writer, true);
         policy.setWriteOnceKey("artist.signature", true);
@@ -855,7 +972,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
     function testPolicyWriters() public {
         MetadataWriterPolicy policy = _deployPolicy();
         assertEq(address(policy.token()), address(agents));
-        agents.setCollectionAuthority(address(policy), false, false);
+        agents.setCollectionAuthority(address(policy), false, false, false);
 
         vm.prank(stranger);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
@@ -892,7 +1009,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(
             ERC8048OnchainMetadata.CollectionAuthorityUnauthorized.selector
         );
-        agents.setCollectionAuthority(writer, false, false);
+        agents.setCollectionAuthority(writer, false, false, false);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
         policy.setWriteOnceKey("context", true);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
@@ -914,7 +1031,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
     function testPolicyHolderDelegate() public {
         MetadataWriterPolicy policy = _deployPolicy();
-        agents.setCollectionAuthority(address(policy), false, false);
+        agents.setCollectionAuthority(address(policy), false, false, false);
         agents.mint(holder, 2);
 
         // Only the token's holder delegates, not an operator or the
@@ -1001,7 +1118,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
 
     function testPolicyRenounceCancelsPendingOwner() public {
         MetadataWriterPolicy policy = _deployPolicy();
-        agents.setCollectionAuthority(address(policy), false, true);
+        agents.setCollectionAuthority(address(policy), false, false, true);
 
         vm.startPrank(policyAdmin);
         policy.transferOwnership(stranger);
@@ -1018,7 +1135,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         policy.setWriter(stranger, true);
         vm.prank(stranger);
         vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
-        policy.setCollectionAuthority(stranger, false, false);
+        policy.setCollectionAuthority(stranger, false, false, false);
     }
 
     function testReusableNextToOpenZeppelinERC4906() public {
@@ -1035,7 +1152,7 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         vm.expectRevert(_writeUnauthorized(7));
         reuse.setMetadata(7, "context", "bye");
 
-        reuse.setCollectionAuthority(address(0), true, false);
+        reuse.setCollectionAuthority(address(0), true, false, false);
         vm.prank(holder);
         reuse.setMetadata(7, "context", "bye");
         assertEq(reuse.metadata(7, "context"), bytes("bye"));
