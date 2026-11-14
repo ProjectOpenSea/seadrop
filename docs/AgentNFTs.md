@@ -38,7 +38,7 @@ function registerAgents(
 `registerAgents` registers one agent per token id from `firstTokenId` to `lastTokenId`. Each agent's URI is `prefix`, then the token id, then `suffix`, for example `https://example.com/agents/` and `.json`. `agentOf(tokenId)` returns the agent id.
 
 - Only the owner can call it.
-- It only works for tokens that are not minted yet. The adapter lets a token contract register a token only while the token has no owner. Set the max supply first, since the range can't go past it.
+- It only works for tokens that are not minted yet. The adapter lets a token contract register a token only while the token has no owner. Set the max supply first, since the range can't go past the last token id that can mint.
 - Tokens already registered are skipped, so overlapping ranges, or a range sent again after earlier transactions registered part of it, don't register a token twice. The adapter itself doesn't stop a token from being registered twice.
 - Each registration mints an identity in the ERC-8004 registry. That costs about 200,000 gas per token, or about 240,000 once the agent URI is longer than 31 bytes. Ethereum and Base cap a transaction at 16,777,216 gas (EIP-7825), so register about 60 tokens per transaction, fewer with long URIs.
 - Nobody can change an agent URI before its token mints, the owner included, and sending the range again skips it. Check the prefix and suffix before you register, and use URIs whose content you control.

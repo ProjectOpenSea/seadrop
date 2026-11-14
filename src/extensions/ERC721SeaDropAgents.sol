@@ -127,9 +127,11 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
         address adapter = _AGENT_ADAPTER;
         if (adapter == address(0)) revert AgentAdapterNotSet();
 
+        // The max supply caps how many tokens mint, so the last token that
+        // can mint is the start id plus the max supply, less one.
         if (
             firstTokenId < _nextTokenId() || lastTokenId < firstTokenId
-                || lastTokenId > maxSupply()
+                || lastTokenId - _startTokenId() >= maxSupply()
         ) {
             revert InvalidAgentTokenIdRange(firstTokenId, lastTokenId);
         }

@@ -39,6 +39,17 @@ contract ERC721SeaDropAgentsWithMint is ERC721SeaDropAgents {
     }
 }
 
+/// @dev Token ids start at 10 instead of 1.
+contract ERC721SeaDropAgentsStartAtTen is ERC721SeaDropAgentsWithMint {
+    constructor(address[] memory allowedSeaDrop, address adapter)
+        ERC721SeaDropAgentsWithMint(allowedSeaDrop, adapter)
+    { }
+
+    function _startTokenId() internal pure override returns (uint256) {
+        return 10;
+    }
+}
+
 /// @dev The parts of the deployed ERC-8217 adapter the fork test reads.
 interface IAgentAdapterView {
     struct Binding {
@@ -1224,6 +1235,30 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         agents.registerAgents(3, 3, "", "");
         agents.registerAgents(100, 100, "", "");
         assertEq(adapter.registrations(), 2);
+    }
+
+    function testRegisterAgentsRangeFollowsStartTokenId() public {
+        address[] memory allowedSeaDrop = new address[](1);
+        allowedSeaDrop[0] = address(seadrop);
+        ERC721SeaDropAgentsStartAtTen tens =
+            new ERC721SeaDropAgentsStartAtTen(allowedSeaDrop, address(adapter));
+        tens.setMaxSupply(100);
+
+        // Ids 10 through 109 can mint, so 109 registers and 110 doesn't.
+        tens.registerAgents(10, 10, "", "");
+        tens.registerAgents(109, 109, "", "");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropAgents.InvalidAgentTokenIdRange.selector, 109, 110
+            )
+        );
+        tens.registerAgents(109, 110, "", "");
+
+        // Minting the full supply reaches 109.
+        tens.mint(holder, 100);
+        assertEq(tens.ownerOf(109), holder);
+        (bool registered,) = tens.agentOf(109);
+        assertTrue(registered);
     }
 
     function testRegisterAgentsOnlyOwner() public {
