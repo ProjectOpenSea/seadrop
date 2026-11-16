@@ -313,7 +313,8 @@ abstract contract ERC721SeaDropAdapter is
      *
      * @param newMaxSupply The new max supply.
      */
-    function setMaxSupply(uint256 newMaxSupply) external override onlyOwner {
+    function setMaxSupply(uint256 newMaxSupply) external override {
+        _onlyOwnerOrSelf();
         if (newMaxSupply > 2 ** 64 - 1) {
             revert CannotExceedMaxSupplyOfUint64(newMaxSupply);
         }
@@ -337,11 +338,8 @@ abstract contract ERC721SeaDropAdapter is
      *
      * @param newContractURI The new contract URI.
      */
-    function setContractURI(string calldata newContractURI)
-        external
-        override
-        onlyOwner
-    {
+    function setContractURI(string calldata newContractURI) external override {
+        _onlyOwnerOrSelf();
         _contractURI = newContractURI;
         emit ContractURIUpdated(newContractURI);
         emit ContractURIUpdated();
@@ -357,11 +355,8 @@ abstract contract ERC721SeaDropAdapter is
      *
      * @param newProvenanceHash The new provenance hash.
      */
-    function setProvenanceHash(bytes32 newProvenanceHash)
-        external
-        override
-        onlyOwner
-    {
+    function setProvenanceHash(bytes32 newProvenanceHash) external override {
+        _onlyOwnerOrSelf();
         if (_totalMinted != 0) {
             revert ProvenanceHashCannotBeSetAfterMintStarted();
         }
@@ -433,5 +428,146 @@ abstract contract ERC721SeaDropAdapter is
             || interfaceId == type(ISeaDropTokenContractMetadata).interfaceId
             || interfaceId == type(IERC2981).interfaceId
             || interfaceId == type(IERC165).interfaceId;
+    }
+
+    /**
+     * @notice Apply Studio's SeaDrop V1 drop configuration in one transaction.
+     *         A nonempty baseURI is ignored because token metadata belongs to
+     *         the target contract, not this adapter.
+     */
+    function multiConfigure(MultiConfigureStruct calldata config)
+        external
+        onlyOwner
+    {
+        // Revert if the paired arrays differ in length, including when one
+        // of them is empty, so no token gated or signer config is dropped.
+        if (
+            config.tokenGatedAllowedNftTokens.length
+                != config.tokenGatedDropStages.length
+        ) {
+            revert TokenGatedMismatch();
+        }
+        if (config.signers.length != config.signedMintValidationParams.length) {
+            revert SignersMismatch();
+        }
+
+        if (config.maxSupply > 0) {
+            this.setMaxSupply(config.maxSupply);
+        }
+        // Token metadata stays on the target. Studio may include a pre-reveal
+        // base URI in its publish payload; it must not change target metadata.
+        if (bytes(config.contractURI).length != 0) {
+            this.setContractURI(config.contractURI);
+        }
+        if (config.publicDrop.startTime != 0 || config.publicDrop.endTime != 0)
+        {
+            this.updatePublicDrop(config.seaDropImpl, config.publicDrop);
+        }
+        if (bytes(config.dropURI).length != 0) {
+            this.updateDropURI(config.seaDropImpl, config.dropURI);
+        }
+        if (config.allowListData.merkleRoot != bytes32(0)) {
+            this.updateAllowList(config.seaDropImpl, config.allowListData);
+        }
+        if (config.creatorPayoutAddress != address(0)) {
+            this.updateCreatorPayoutAddress(
+                config.seaDropImpl, config.creatorPayoutAddress
+            );
+        }
+        if (config.provenanceHash != bytes32(0)) {
+            this.setProvenanceHash(config.provenanceHash);
+        }
+        if (config.allowedFeeRecipients.length > 0) {
+            for (uint256 i = 0; i < config.allowedFeeRecipients.length;) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl, config.allowedFeeRecipients[i], true
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedFeeRecipients.length > 0) {
+            for (uint256 i = 0; i < config.disallowedFeeRecipients.length;) {
+                this.updateAllowedFeeRecipient(
+                    config.seaDropImpl, config.disallowedFeeRecipients[i], false
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.allowedPayers.length > 0) {
+            for (uint256 i = 0; i < config.allowedPayers.length;) {
+                this.updatePayer(
+                    config.seaDropImpl, config.allowedPayers[i], true
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedPayers.length > 0) {
+            for (uint256 i = 0; i < config.disallowedPayers.length;) {
+                this.updatePayer(
+                    config.seaDropImpl, config.disallowedPayers[i], false
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.tokenGatedDropStages.length > 0) {
+            for (uint256 i = 0; i < config.tokenGatedDropStages.length;) {
+                this.updateTokenGatedDrop(
+                    config.seaDropImpl,
+                    config.tokenGatedAllowedNftTokens[i],
+                    config.tokenGatedDropStages[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedTokenGatedAllowedNftTokens.length > 0) {
+            for (
+                uint256 i = 0;
+                i < config.disallowedTokenGatedAllowedNftTokens.length;
+
+            ) {
+                TokenGatedDropStage memory emptyStage;
+                this.updateTokenGatedDrop(
+                    config.seaDropImpl,
+                    config.disallowedTokenGatedAllowedNftTokens[i],
+                    emptyStage
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.signedMintValidationParams.length > 0) {
+            for (uint256 i = 0; i < config.signedMintValidationParams.length;) {
+                this.updateSignedMintValidationParams(
+                    config.seaDropImpl,
+                    config.signers[i],
+                    config.signedMintValidationParams[i]
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
+        if (config.disallowedSigners.length > 0) {
+            for (uint256 i = 0; i < config.disallowedSigners.length;) {
+                SignedMintValidationParams memory emptyParams;
+                this.updateSignedMintValidationParams(
+                    config.seaDropImpl, config.disallowedSigners[i], emptyParams
+                );
+                unchecked {
+                    ++i;
+                }
+            }
+        }
     }
 }

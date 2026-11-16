@@ -21,6 +21,9 @@ import {
 import {
     ERC721SeaDropAdapter
 } from "seadrop/adapters/ERC721SeaDropAdapter.sol";
+import {
+    ERC721SeaDropStructsErrorsAndEvents
+} from "seadrop/lib/ERC721SeaDropStructsErrorsAndEvents.sol";
 
 import {
     ERC721SeaDropMintAdapter
@@ -115,6 +118,56 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         );
         _configure(adapter, 60);
         if (deposit != 0) existing.mintTo(address(adapter), deposit);
+    }
+
+    function testMultiConfigurePublishesStudioDrop() public {
+        ERC721SeaDropMintAdapter adapter = new ERC721SeaDropMintAdapter(
+            address(existing),
+            TestExistingERC721.mintTo.selector,
+            _allowedSeaDrop()
+        );
+        existing.setMinter(address(adapter), true);
+
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config;
+        config.seaDropImpl = address(seadrop);
+        config.maxSupply = 60;
+        config.publicDrop = _publicDrop();
+        config.creatorPayoutAddress = creator;
+        config.dropURI = "ipfs://drop";
+        config.baseURI = "ipfs://prereveal";
+        config.allowedFeeRecipients = new address[](1);
+        config.allowedFeeRecipients[0] = feeRecipient;
+
+        adapter.multiConfigure(config);
+
+        assertEq(adapter.maxSupply(), 60);
+        assertEq(adapter.baseURI(), "");
+        assertEq(seadrop.getCreatorPayoutAddress(address(adapter)), creator);
+        assertEq(seadrop.getPublicDrop(address(adapter)).mintPrice, PRICE);
+        _mintPublic(address(adapter), 1);
+        assertEq(existing.ownerOf(11), minter);
+    }
+
+    function testMultiConfigureOnlyOwnerAndAtomic() public {
+        ERC721SeaDropMintAdapter adapter = new ERC721SeaDropMintAdapter(
+            address(existing),
+            TestExistingERC721.mintTo.selector,
+            _allowedSeaDrop()
+        );
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config;
+        config.seaDropImpl = address(seadrop);
+        config.maxSupply = 60;
+        config.signers = new address[](1);
+
+        vm.prank(stranger);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        adapter.multiConfigure(config);
+
+        vm.expectRevert(
+            ERC721SeaDropStructsErrorsAndEvents.SignersMismatch.selector
+        );
+        adapter.multiConfigure(config);
+        assertEq(adapter.maxSupply(), 0);
     }
 
     // Mint adapter

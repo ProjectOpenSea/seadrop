@@ -53,13 +53,15 @@ For `ERC721SeaDropTransferAdapter`:
 
 3. Set the drop's supply with `setMaxSupply`. It caps this drop only, so for a drop of your next 60 tokens set it to 60. The transfer adapter also caps the drop at the tokens it holds. Marketplaces read the max supply you set, not that cap, so set it to the number of tokens you deposit, and lower it if you `withdraw` some.
 
-4. Configure the drop on the adapter as you would on an `ERC721SeaDrop` token, passing the SeaDrop address as `seaDropImpl`: `updateCreatorPayoutAddress`, `updatePublicDrop`, `updateSignedMintValidationParams`, `updateAllowedFeeRecipient` and `updateDropURI`. OpenSea runs public stages through `mintPublic` and allowlist stages through signed mints (`mintSigned`).
+4. Configure stages and payouts on the adapter in OpenSea Studio. Its `multiConfigure` function applies Studio's SeaDrop V1 publish transaction. You can also use the individual functions, passing the SeaDrop address as `seaDropImpl`: `updateCreatorPayoutAddress`, `updatePublicDrop`, `updateSignedMintValidationParams`, `updateAllowedFeeRecipient` and `updateDropURI`. OpenSea runs public stages through `mintPublic` and allowlist stages through signed mints (`mintSigned`).
+
+An adapter deployed from an earlier version without `multiConfigure` cannot use Studio's Publish changes button. The contract is not upgradeable. Deploy the updated adapter, grant the new address minting rights on the target and ask OpenSea to link the new address to the collection. Revoke the old adapter's minting rights after confirming the new setup. Do not assume that moving the collection link revokes onchain permissions.
 
 Minters call SeaDrop with the adapter's address as `nftContract`, for example `mintPublic(adapter, feeRecipient, address(0), quantity)`.
 
 ## What stays on the target
 
-The adapter doesn't change the target's metadata or royalties. `setBaseURI` and `setRoyaltyInfo` revert with `NotSupportedByAdapter`, `baseURI` returns an empty string, and the royalty getters read the target's EIP-2981 `royaltyInfo`, or return nothing if it has none. Update metadata and royalties on the target as you do today.
+The adapter doesn't change the target's metadata or royalties. `setBaseURI` and `setRoyaltyInfo` revert with `NotSupportedByAdapter`, `baseURI` returns an empty string, and the royalty getters read the target's EIP-2981 `royaltyInfo`, or return nothing if it has none. `multiConfigure` ignores its `baseURI` field, including a pre-reveal URI supplied by Studio. Update metadata and royalties on the target as you do today. The collection Overview page is edited separately in Studio.
 
 `getMintStats` and `totalMinted` count this drop's mints only, so wallet limits and the drop's supply ignore tokens the target minted before.
 
