@@ -55,7 +55,7 @@ For `ERC721SeaDropTransferAdapter`:
 
 4. Configure stages and payouts on the adapter in OpenSea Studio. Its `multiConfigure` function applies Studio's SeaDrop V1 publish transaction. You can also use the individual functions, passing the SeaDrop address as `seaDropImpl`: `updateCreatorPayoutAddress`, `updatePublicDrop`, `updateSignedMintValidationParams`, `updateAllowedFeeRecipient` and `updateDropURI`. OpenSea runs public stages through `mintPublic` and allowlist stages through signed mints (`mintSigned`).
 
-An adapter deployed from an earlier version without `multiConfigure` cannot use Studio's Publish changes button. The contract is not upgradeable. Deploy the updated adapter, grant the new address minting rights on the target and ask OpenSea to link the new address to the collection. Revoke the old adapter's minting rights after confirming the new setup. Do not assume that moving the collection link revokes onchain permissions.
+An adapter deployed from an earlier version without `multiConfigure` cannot use Studio's Publish changes button. The contract is not upgradeable. Deploy the updated adapter and ask OpenSea to link its address to the collection. For a mint adapter, grant the new address minting rights on the target and revoke the old address after checking the replacement. For a transfer adapter, move unsold tokens from the old adapter to the new one with `withdraw` and `safeTransferFrom`, or deposit new tokens, then verify `queuedTokenCount`. Disable the old adapter's SeaDrop access after checking the replacement. Moving the collection link does not revoke onchain permissions.
 
 Minters call SeaDrop with the adapter's address as `nftContract`, for example `mintPublic(adapter, feeRecipient, address(0), quantity)`.
 
