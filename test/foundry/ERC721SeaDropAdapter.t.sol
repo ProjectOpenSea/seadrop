@@ -48,6 +48,7 @@ import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 import {
     IERC721Receiver
 } from "openzeppelin-contracts/token/ERC721/IERC721Receiver.sol";
+import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
 
 contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
     SeaDrop seadrop;
@@ -509,6 +510,18 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         assertEq(amount, 0);
         assertEq(adapter.royaltyAddress(), address(0));
         assertEq(adapter.royaltyBasisPoints(), 0);
+
+        vm.mockCall(
+            address(existing),
+            abi.encodeWithSelector(IERC2981.royaltyInfo.selector, 1, 10_000),
+            abi.encode(creator, uint256(500))
+        );
+        (receiver, amount) = adapter.royaltyInfo(1, 10_000);
+        assertEq(receiver, creator);
+        assertEq(amount, 500);
+        assertEq(adapter.royaltyAddress(), creator);
+        assertEq(adapter.royaltyBasisPoints(), 500);
+        vm.clearMockedCalls();
 
         adapter.setContractURI("ipfs://drop");
         assertEq(adapter.contractURI(), "ipfs://drop");

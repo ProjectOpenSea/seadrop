@@ -13,7 +13,7 @@ Both adapters live in `src/adapters` and share `ERC721SeaDropAdapter`.
 | `ERC721SeaDropMintAdapter`     | The target lets its owner grant another address the right to mint (a minter role or allowlist) | Calls the target's `(address to, uint256 quantity)` mint function             |
 | `ERC721SeaDropTransferAdapter` | The target only lets its owner mint, but the owner can mint to any address                     | Transfers tokens the owner minted to the adapter beforehand, in arrival order |
 
-If the target can do neither (no way to mint to another address, and no tokens left to mint), neither adapter works, because nothing outside the contract can create new tokens.
+If the target cannot mint new tokens, the transfer adapter can still sell transferable tokens the owner already holds. If none are available, neither adapter can deliver a mint.
 
 ### What the target needs
 
