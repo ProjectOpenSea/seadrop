@@ -148,6 +148,56 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         assertEq(existing.ownerOf(11), minter);
     }
 
+    function testMultiConfigurePublishesSignedMint() public {
+        ERC721SeaDropMintAdapter adapter = new ERC721SeaDropMintAdapter(
+            address(existing),
+            TestExistingERC721.mintTo.selector,
+            _allowedSeaDrop()
+        );
+        existing.setMinter(address(adapter), true);
+        (address signer, uint256 signerKey) = makeAddrAndKey("studioSigner");
+
+        ERC721SeaDropStructsErrorsAndEvents.MultiConfigureStruct memory config;
+        config.seaDropImpl = address(seadrop);
+        config.maxSupply = 60;
+        config.creatorPayoutAddress = creator;
+        config.allowedFeeRecipients = new address[](1);
+        config.allowedFeeRecipients[0] = feeRecipient;
+        config.signers = new address[](1);
+        config.signers[0] = signer;
+        config.signedMintValidationParams = new SignedMintValidationParams[](1);
+        config.signedMintValidationParams[0] = SignedMintValidationParams({
+            minMintPrice: 0,
+            maxMaxTotalMintableByWallet: 10,
+            minStartTime: 0,
+            maxEndTime: type(uint40).max,
+            maxMaxTokenSupplyForStage: 60,
+            minFeeBps: 0,
+            maxFeeBps: 1000
+        });
+        adapter.multiConfigure(config);
+
+        MintParams memory params = MintParams({
+            mintPrice: PRICE,
+            maxTotalMintableByWallet: 5,
+            startTime: block.timestamp,
+            endTime: block.timestamp + 1 days,
+            dropStageIndex: 1,
+            maxTokenSupplyForStage: 60,
+            feeBps: 500,
+            restrictFeeRecipients: true
+        });
+        bytes memory signature = _signMint(
+            signerKey, address(adapter), minter, feeRecipient, params, 1
+        );
+        vm.prank(minter);
+        seadrop.mintSigned{ value: PRICE }(
+            address(adapter), feeRecipient, address(0), 1, params, 1, signature
+        );
+        assertEq(existing.ownerOf(11), minter);
+        assertEq(adapter.totalMinted(), 1);
+    }
+
     function testMultiConfigureOnlyOwnerAndAtomic() public {
         ERC721SeaDropMintAdapter adapter = new ERC721SeaDropMintAdapter(
             address(existing),
