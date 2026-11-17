@@ -179,6 +179,20 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         ++delivered[kind][recipient];
     }
 
+    function rejectOwnerSupply(uint256 kindSeed) public {
+        uint256 kind = kindSeed % 2;
+        uint256 quantity = SUPPLY - sold[kind] - ownerMinted[kind] + 1;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.MintQuantityExceedsMaxSupply.selector,
+                SUPPLY + 1,
+                SUPPLY
+            )
+        );
+        minter.ownerMint(_token(kind), _id(kind), actors[0], quantity);
+        ++rejectedCalls;
+    }
+
     function withdraw(uint256 kindSeed, bool fee, bool fail) public {
         uint256 kind = kindSeed % 2;
         uint256 amount =
@@ -441,11 +455,13 @@ contract SeaDropMinterInvariantTest is StdInvariant, Test {
         handler.rejectUnauthorized(1, 1);
         handler.rejectUnauthorized(0, 2);
         handler.rejectLimit(0, 0, true);
+        handler.rejectOwnerSupply(0);
+        handler.rejectOwnerSupply(1);
         handler.setCap(1, 1);
         handler.rejectLimit(1, 1, false);
         handler.setCap(1, 63);
 
-        bytes4[] memory selectors = new bytes4[](9);
+        bytes4[] memory selectors = new bytes4[](10);
         selectors[0] = handler.mint.selector;
         selectors[1] = handler.ownerMint.selector;
         selectors[2] = handler.setCap.selector;
@@ -455,6 +471,7 @@ contract SeaDropMinterInvariantTest is StdInvariant, Test {
         selectors[6] = handler.rejectLimit.selector;
         selectors[7] = handler.donate.selector;
         selectors[8] = handler.rejectPayment.selector;
+        selectors[9] = handler.rejectOwnerSupply.selector;
         targetSelector(FuzzSelector(address(handler), selectors));
         targetContract(address(handler));
     }
@@ -463,6 +480,6 @@ contract SeaDropMinterInvariantTest is StdInvariant, Test {
         handler.assertAccountingAndSupply();
         assertGe(handler.successfulMints(), 2);
         assertGe(handler.successfulWithdrawals(), 2);
-        assertGe(handler.rejectedCalls(), 10);
+        assertGe(handler.rejectedCalls(), 12);
     }
 }
