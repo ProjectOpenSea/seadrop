@@ -406,29 +406,33 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
                 collected[kind] + donated[kind],
                 held + paidCreator + paidFee + sink
             );
-            uint256 supply = sold[kind] + ownerMinted[kind];
-            assertLe(supply, stageCaps[kind]);
-            assertLe(supply, SUPPLY);
-            uint256 sumBalances;
-            for (uint256 i; i < ACTORS; ++i) {
-                address wallet = actors[i];
-                uint256 funding = kind == 0 ? 1000 ether : 1_000_000_000;
-                uint256 funds =
-                    kind == 0 ? wallet.balance : currency.balanceOf(wallet);
-                assertEq(funds, funding - spent[kind][wallet]);
-                assertEq(
-                    minter.mintedByWallet(_token(kind), _id(kind), wallet),
-                    walletMints[kind][wallet]
-                );
-                assertLe(walletMints[kind][wallet], WALLET_LIMIT);
-                uint256 balance = kind == 0
-                    ? token721.balanceOf(wallet)
-                    : token1155.balanceOf(wallet, ID_1155);
-                assertEq(balance, delivered[kind][wallet]);
-                sumBalances += balance;
-            }
-            assertEq(sumBalances, supply);
+            _assertSupply(kind);
         }
+    }
+
+    function _assertSupply(uint256 kind) internal view {
+        uint256 supply = sold[kind] + ownerMinted[kind];
+        assertLe(supply, stageCaps[kind]);
+        assertLe(supply, SUPPLY);
+        uint256 sumBalances;
+        for (uint256 i; i < ACTORS; ++i) {
+            address wallet = actors[i];
+            uint256 funding = kind == 0 ? 1000 ether : 1_000_000_000;
+            uint256 funds =
+                kind == 0 ? wallet.balance : currency.balanceOf(wallet);
+            assertEq(funds, funding - spent[kind][wallet]);
+            assertEq(
+                minter.mintedByWallet(_token(kind), _id(kind), wallet),
+                walletMints[kind][wallet]
+            );
+            assertLe(walletMints[kind][wallet], WALLET_LIMIT);
+            uint256 balance = kind == 0
+                ? token721.balanceOf(wallet)
+                : token1155.balanceOf(wallet, ID_1155);
+            assertEq(balance, delivered[kind][wallet]);
+            sumBalances += balance;
+        }
+        assertEq(sumBalances, supply);
     }
 }
 
