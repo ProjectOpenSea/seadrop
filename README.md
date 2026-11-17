@@ -42,6 +42,7 @@ The creator configures a drop by calling the token, for example `updatePublicDro
 - [SeaDrop Deployment](docs/SeaDropDeployment.md)
 - [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
 - [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
+- [Drops for an existing contract](docs/ExistingContractAdapters.md)
 - [Provenance Hash](docs/ProvenanceHash.md)
 - [Upgradeable Contracts](docs/UpgradeableContracts.md)
 
