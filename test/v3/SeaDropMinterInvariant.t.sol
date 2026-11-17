@@ -517,6 +517,11 @@ contract SeaDropMinterInvariantTest is StdInvariant, Test {
         selectors[7] = handler.donate.selector;
         selectors[8] = handler.rejectPayment.selector;
         selectors[9] = handler.rejectOwnerSupply.selector;
+        // Etched handlers need an explicit artifact association so Forge can
+        // generate typed calldata for the selected action functions.
+        string[] memory artifacts = new string[](1);
+        artifacts[0] = "SeaDropMinterInvariant.t.sol:SeaDropInvariantHandler";
+        targetInterface(FuzzInterface(address(handler), artifacts));
         targetSelector(FuzzSelector(address(handler), selectors));
         targetContract(address(handler));
     }
