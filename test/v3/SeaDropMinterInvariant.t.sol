@@ -468,7 +468,14 @@ contract SeaDropMinterInvariantTest is StdInvariant, Test {
     SeaDropInvariantHandler internal handler;
 
     function setUp() public {
-        handler = new SeaDropInvariantHandler();
+        // This test-only handler embeds the fixture's creation code. Install
+        // it without relaxing EIP-170 for the production contracts it deploys.
+        address handlerAddress = makeAddr("invariantHandler");
+        deployCodeTo(
+            "SeaDropMinterInvariant.t.sol:SeaDropInvariantHandler",
+            handlerAddress
+        );
+        handler = SeaDropInvariantHandler(handlerAddress);
         handler.setUp();
         // Exercise success, credit creation, failed withdrawal, withdrawal,
         // signature authorization and nonce rejection before every campaign.
