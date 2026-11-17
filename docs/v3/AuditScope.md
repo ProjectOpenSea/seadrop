@@ -35,11 +35,29 @@ The repository is `ProjectOpenSea/seadrop`, branch `v3`. The audit commit will b
 | `src/v3/interfaces/ISeaDropTokenV3.sol`              |     8 | The mint entry point tokens expose to the minter                                                                       |
 | `src/v3/interfaces/IDelegateRegistry.sol`            |     9 | The delegate.xyz v2 call the minter makes                                                                              |
 
-That's about 1,207 nSLOC of logic and 224 of interfaces. nSLOC here counts lines that aren't blank or comments.
+The table covers the minter, standard tokens, factory and drop adapters. The agent extension below is also in scope. Recompute the combined nSLOC at code freeze; nSLOC counts lines that aren't blank or comments.
 
-The two pieces #27 proposed for clones are now in scope. `SeaDropTokenFactory` deploys v3 tokens as EIP-1167 clones and registers them with the minter, and the tokens keep their own state in ERC-7201 namespaced storage. "Token deployment" and "Storage layout" below describe them.
+The two pieces proposed for clones are now in scope. `SeaDropTokenFactory` deploys v3 tokens as EIP-1167 clones and registers them with the minter, and the tokens keep their own state in ERC-7201 namespaced storage. "Token deployment" and "Storage layout" below describe them.
 
 The adapters in `src/v3/adapters` let an ERC-721 deployed without SeaDrop support run a v3 drop. They port the v1 adapters in public [seadrop#234](https://github.com/ProjectOpenSea/seadrop/pull/234) to the minter. "Adapters for existing contracts" below describes them.
+
+## Agent extension
+
+The standalone agent token and its metadata policy are also in scope:
+
+- `src/v3/extensions/ERC721SeaDropV3Agents.sol`: ERC-8004 registration through an ERC-8217 adapter, registration bounds and duplicate-registration tracking.
+- `src/v3/lib/ERC8048OnchainMetadata.sol`: collection-wide authority, holder and owner write permissions, permanent authority locks, batch writes and metadata events.
+- `src/v3/lib/MetadataWriterPolicy.sol`: additional writers, holder delegation, write-once values, authority handoff and cancellation of pending ownership on renunciation.
+- `src/v3/interfaces/IAgentAdapter.sol`, `IERC8048Metadata.sol` and `IERC8048TokenMetadataAuthority.sol`: the external adapter and metadata interfaces.
+
+Review the integration with the external ERC-8217 adapter, including its upgrade authority, registration callbacks and how agent control follows NFT ownership. The external adapter implementation is a dependency, not part of this repository's audit scope. Registration and locked metadata policies can be irreversible. Check batch authorization, write-once enforcement, transfer-dependent delegates, and the ability to hand off a locked authority. The agent token is standalone; the standard clone factory does not deploy it.
+
+The extension adds two ERC-7201 namespaces, covered by `testStorageSlots` in `test/v3/ERC721SeaDropV3Agents.t.sol`:
+
+- `seadrop.v3.ERC8048OnchainMetadata` at `0xfc7a356b7c4fc14ef0fb4888fa6feb6db813951f1163492fbc23ac5c95c77600` holds metadata values and collection authority settings.
+- `seadrop.v3.ERC721SeaDropV3Agents` at `0x81d23eda6b422c7dfc16f0a75c57549cf4ff057c8b7855458b38a2f38fc85900` holds token-to-agent registrations.
+
+See [Agent NFTs on v3](AgentNFTs.md) for deployment and authority behavior. Audit the final extension bytecode size and the frozen interface versions alongside the minter and tokens.
 
 ## Out of scope
 
@@ -177,7 +195,7 @@ A mint through the mint adapter costs about 3.4k more gas than one through a v3 
 
 ## Event schema
 
-Nothing indexes v3 yet, and no v3 contract has been deployed anywhere, so the schema below ships as version 1. #28 changed `Stage` (wallet limits and `maxTokenSupplyForStage` took v1's meanings, `signerSetId` became `uint32`) while `CONFIG_EVENT_VERSION` stayed 1. Bumping it now would describe a version 1 that no chain ever emitted. From the first deployment on, changing a config event's fields bumps `CONFIG_EVENT_VERSION` and is coordinated with os2-core's indexer. `test/v3/SeaDropV3EventSchema.t.sol` pins every signature below and the version, and emits each event to check which fields are topics and how the data is encoded.
+Nothing indexes v3 yet, and no v3 contract has been deployed anywhere, so the schema below ships as version 1. The original prototype changed `Stage` (wallet limits and `maxTokenSupplyForStage` took v1's meanings, `signerSetId` became `uint32`) while `CONFIG_EVENT_VERSION` stayed 1. Bumping it now would describe a version 1 that no chain ever emitted. From the first deployment on, changing a config event's fields bumps `CONFIG_EVENT_VERSION` and is coordinated with os2-core's indexer. `test/v3/SeaDropV3EventSchema.t.sol` pins every signature below and the version, and emits each event to check which fields are topics and how the data is encoded.
 
 The configuration events carry `version` first. `SeaDropMint` and the payment events don't: their topic0 changes with any field type, and their meanings aren't expected to change.
 
@@ -215,7 +233,7 @@ Token events: a clone's initialization emits `OwnershipTransferred(address(0), o
 
 - Foundry, with solc 0.8.38 targeting Cancun and 1,000,000 optimizer runs, without via-IR. Every network we deploy to supports Cancun's opcodes.
 - Build with `forge build`, and run the v3 tests with `forge test --match-path 'test/v3/*'`.
-- The prototype has 217 tests: 124 for the minter, 15 for the tokens, 18 for the factory, clones and storage slots, 28 for the adapters, 9 for v1 compatibility, 12 for the event schema and 11 gas snapshots. Three are fuzz tests (`testFuzz_payoutSplitsPayEverything`, `testFuzz_stageCapNeverExceeded` and `testFuzz_walletTotalNeverExceedsStageLimit`), and there are no invariant tests yet. Before the freeze we plan invariant tests for payment accounting, wallet limits and stage caps.
+- CI runs both v1 and v3 tests, including agent metadata, registration and storage-slot coverage and distinct payer/wallet/recipient event assertions. The migration's validated commit has 605 passing tests and two skipped fork tests across 43 suites. Refresh these counts at code freeze. There are no invariant tests yet; add payment-accounting, wallet-limit and stage-cap invariants before freeze.
 - A public mint through a clone costs 144k to 169k gas, against 129k for v1 and 202k for v2. About 2.85k of that is the clone's `DELEGATECALL` (see "Token deployment"). Every paid mint writes the wallet's count, even in a stage with no wallet limit. That costs about 23k on a wallet's first mint of a token and id, and about 5k on later ones. Skipping it in unlimited stages would save the write, but a later limited stage couldn't see those mints. A stage cap adds about 1.1k to every mint in the stage, for the view call that reads the token's total. It writes nothing, so the first mint costs the same as later ones. The minter's runtime bytecode is 22,242 bytes, 2,334 under the EIP-170 limit. The ERC-721 implementation is 11,065 bytes and the ERC-1155 11,258. The factory's runtime is 2,287 bytes, and its init code, which carries both implementations, is 26,159 bytes, 22,993 under EIP-3860's limit. The mint adapter's runtime is 5,099 bytes and the transfer adapter's 7,201.
 
 ## Deployment
