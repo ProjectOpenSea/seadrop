@@ -11,6 +11,14 @@
 
 SeaDrop is a contract for primary NFT drops on EVM chains.
 
+## Versions
+
+- [v1 (`main`)](https://github.com/ProjectOpenSea/seadrop/tree/main) powers ERC-721 drops.
+- [v2](https://github.com/ProjectOpenSea/seadrop/tree/v2) powers ERC-1155 self-minting for editions (open collections). It also supports existing staged drops and receives security fixes.
+- [v3](https://github.com/ProjectOpenSea/seadrop/tree/v3) is in development. It upgrades v1's drop architecture and lets existing v1 collections opt into the new minter. It adds ERC-20 mint payments, delegate-wallet and linked-wallet support, signed mint intents, clone factories, existing-contract adapters and agent NFT extensions. Self-service ERC-1155 edition drops are planned for a later rollout.
+
+See the [v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235) for scope and remaining work. v3 requires Security review and an external audit before deployment.
+
 ## Background
 
 SeaDrop runs primary NFT drops: public drops, allow lists, server-side signed mints and token-gated mints. A token contract configures its drop through `SeaDrop`, and minters mint through `SeaDrop`.
@@ -42,6 +50,7 @@ The creator configures a drop by calling the token, for example `updatePublicDro
 - [SeaDrop Deployment](docs/SeaDropDeployment.md)
 - [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
 - [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
+- [Agent NFTs](docs/AgentNFTs.md)
 - [Drops for an existing contract](docs/ExistingContractAdapters.md)
 - [Provenance Hash](docs/ProvenanceHash.md)
 - [Upgradeable Contracts](docs/UpgradeableContracts.md)
