@@ -254,6 +254,42 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
         );
     }
 
+    function test_emitted_SeaDropMintWithDistinctRoles() public {
+        ISeaDropMinter.MintIntent memory intent = ISeaDropMinter.MintIntent({
+            params: _params(address(token1155), ID_1155, alice, carol, 2),
+            nonce: 1,
+            expiry: vm.getBlockTimestamp() + 100
+        });
+        bytes memory signature = _sign(aliceKey, _intentDigest(intent));
+        vm.recordLogs();
+        vm.prank(bob);
+        minter.mintWithIntent{ value: 2 * PRICE }(intent, signature, _noAuth());
+
+        Vm.Log memory log = _onlyLog(
+            address(minter),
+            keccak256(
+                "SeaDropMint(address,uint256,uint256,address,address,address,"
+                "uint256,uint256,address,address,uint256)"
+            )
+        );
+        _assertTopics(
+            log, _topic(address(token1155)), bytes32(ID_1155), _topic(alice)
+        );
+        assertEq(
+            log.data,
+            abi.encode(
+                uint256(0), // stageIndex
+                bob, // payer
+                carol, // recipient
+                uint256(2), // quantity
+                PRICE, // unitPrice
+                address(0), // currency
+                feeRecipient,
+                FEE_BPS
+            )
+        );
+    }
+
     function test_emitted_PaymentCreditedAndWithdrawal() public {
         RevertingRecipient recipient = new RevertingRecipient();
         _setSinglePayout(address(token721), address(recipient));
