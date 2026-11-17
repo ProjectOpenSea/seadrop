@@ -130,6 +130,7 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
     function supportsInterface(bytes4 interfaceId)
         public
         view
+        virtual
         override
         returns (bool)
     {
