@@ -2,7 +2,9 @@
 pragma solidity 0.8.38;
 
 import { StdInvariant } from "forge-std/StdInvariant.sol";
-import { Test } from "forge-std/Test.sol";
+import { SeaDropMinter } from "seadrop/v3/SeaDropMinter.sol";
+import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
+import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
 import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
 import { RevertingRecipient, TestERC20 } from "./utils/Mocks.sol";
 import { ISeaDropMinter } from "seadrop/v3/interfaces/ISeaDropMinter.sol";
@@ -42,8 +44,21 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     uint256 public successfulWithdrawals;
     uint256 public rejectedCalls;
 
+    constructor(
+        SeaDropMinter minter_,
+        ERC721SeaDropV3 token721_,
+        ERC1155SeaDropV3 token1155_
+    ) {
+        minter = minter_;
+        token721 = token721_;
+        token1155 = token1155_;
+        (signer, signerKey) = makeAddrAndKey("signer");
+    }
+
     function setUp() public override {
-        super.setUp();
+        minter.acceptOwnership();
+        token721.acceptOwnership();
+        token1155.acceptOwnership();
         currency = new TestERC20();
         rejectingCreator = new RevertingRecipient();
         minter.setCurrency(
@@ -464,18 +479,15 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     }
 }
 
-contract SeaDropMinterInvariantTest is StdInvariant, Test {
+contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
     SeaDropInvariantHandler internal handler;
 
-    function setUp() public {
-        // This test-only handler embeds the fixture's creation code. Install
-        // it without relaxing EIP-170 for the production contracts it deploys.
-        address handlerAddress = makeAddr("invariantHandler");
-        deployCodeTo(
-            "SeaDropMinterInvariant.t.sol:SeaDropInvariantHandler",
-            handlerAddress
-        );
-        handler = SeaDropInvariantHandler(handlerAddress);
+    function setUp() public override {
+        super.setUp();
+        handler = new SeaDropInvariantHandler(minter, token721, token1155);
+        minter.transferOwnership(address(handler));
+        token721.transferOwnership(address(handler));
+        token1155.transferOwnership(address(handler));
         handler.setUp();
         // Exercise success, credit creation, failed withdrawal, withdrawal,
         // signature authorization and nonce rejection before every campaign.
@@ -517,11 +529,6 @@ contract SeaDropMinterInvariantTest is StdInvariant, Test {
         selectors[7] = handler.donate.selector;
         selectors[8] = handler.rejectPayment.selector;
         selectors[9] = handler.rejectOwnerSupply.selector;
-        // Etched handlers need an explicit artifact association so Forge can
-        // generate typed calldata for the selected action functions.
-        string[] memory artifacts = new string[](1);
-        artifacts[0] = "SeaDropMinterInvariant.t.sol:SeaDropInvariantHandler";
-        targetInterface(FuzzInterface(address(handler), artifacts));
         targetSelector(FuzzSelector(address(handler), selectors));
         targetContract(address(handler));
     }
