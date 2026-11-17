@@ -50,7 +50,7 @@ Use Foundry v1.9.0, the version CI pins (`FOUNDRY_VERSION` in `.github/workflows
 
 ## What the v3 branch is
 
-It's v1's tree plus SeaDrop v3 under `src/v3`. v3 replaces v2's Seaport-based design with one minter contract per chain and thin tokens. The design and its reasoning are in [the v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235), and the draft audit scope is [docs/v3/AuditScope.md](docs/v3/AuditScope.md).
+It's v1's tree plus SeaDrop v3 under `src/v3`. v3 extends v1's drop architecture with one minter contract per chain and thin tokens, with ERC-1155 edition drops planned for a later rollout. The design and its reasoning are in [the v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235), and the draft audit scope is [docs/v3/AuditScope.md](docs/v3/AuditScope.md).
 
 - `src/v3/SeaDropMinter.sol` is the minter. It holds stages, signed authorizations and intents, recipient rules, payments and payouts for every v3 drop on a chain.
 - `src/v3/ERC721SeaDropV3.sol`, `src/v3/ERC1155SeaDropV3.sol` and `src/v3/SeaDropTokenV3Base.sol` are the tokens. They keep ownership, supply and metadata, and mint only for the minters they allow.

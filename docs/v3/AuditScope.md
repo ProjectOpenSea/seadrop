@@ -1,6 +1,6 @@
 # SeaDrop v3 audit scope
 
-Draft for requesting an audit from Spearbit. SeaDrop is the contract set behind OpenSea drops. v3 replaces v2's Seaport-based design with a single minter contract per chain and thin token contracts. The design and its reasoning are in [seadrop-priv#27](https://github.com/ProjectOpenSea/seadrop-priv/issues/27), and the prototype is in [seadrop-priv#28](https://github.com/ProjectOpenSea/seadrop-priv/pull/28).
+Draft for requesting an audit from Spearbit. SeaDrop is the contract set behind OpenSea drops. v3 extends v1's minter architecture with a single minter contract per chain and thin token contracts. Scope and remaining work are in [the v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235), and the prototype is on the [v3 branch](https://github.com/ProjectOpenSea/seadrop/tree/v3).
 
 Contact: Ryan Ghods.
 
@@ -19,7 +19,7 @@ We plan to let live v1 drops opt in to v3 only after the audit's findings are re
 
 ## In scope
 
-The repository is `ProjectOpenSea/seadrop-priv`. The commit is set at code freeze. Today's numbers come from the prototype on the `ryan/v3-research` branch.
+The repository is `ProjectOpenSea/seadrop`, branch `v3`. The audit commit will be set at code freeze. The measurements below are historical prototype measurements; remeasure the frozen commit before audit.
 
 | File                                                 | nSLOC | What it does                                                                                                           |
 | ---------------------------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------------------- |
