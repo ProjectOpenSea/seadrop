@@ -1,0 +1,327 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.38;
+
+import { Test } from "forge-std/Test.sol";
+
+import { SeaDropMinter } from "seadrop/v3/SeaDropMinter.sol";
+
+import { ISeaDropMinter } from "seadrop/v3/interfaces/ISeaDropMinter.sol";
+
+import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
+
+import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
+
+import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
+
+import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
+
+/**
+ * @dev Gas for one paid mint with a fee recipient, set up the way
+ *      test/foundry/SeaDropSnapshot.t.sol measures v1's testMintPublic:
+ *      0.1 ETH, a 1% fee to address(5), the creator as sole payout
+ *      recipient, both funded, and the test contract minting one token to
+ *      itself.
+ */
+contract TestSeaDropV3Snapshot is Test {
+    SeaDropMinter minter;
+    ERC721SeaDropV3 token721;
+    ERC1155SeaDropV3 token1155;
+    ERC721SeaDrop v1Token;
+    SeaDropTokenFactory factory;
+
+    address creator = makeAddr("creator");
+    address signer;
+    uint256 signerKey;
+    bytes signature;
+    bytes linkedSignature;
+    address linkedWallet = makeAddr("linkedWallet");
+
+    function setUp() public {
+        (signer, signerKey) = makeAddrAndKey("signer");
+
+        minter = new SeaDropMinter(address(this));
+        minter.setCurrency(
+            address(0),
+            ISeaDropMinter.CurrencyConfig({
+                allowed: true,
+                minFeeBps: 100,
+                feeRecipient: address(5)
+            })
+        );
+
+        // v3 tokens are the factory's clones, as deployed tokens will be.
+        factory = new SeaDropTokenFactory(
+            address(minter), 0x1E0049783F008A0085193E00003D00cd54003c71
+        );
+        minter.setTokenFactory(address(factory), true);
+        token721 = ERC721SeaDropV3(factory.createERC721("", "", bytes32(0)));
+        token721.setMaxSupply(1000);
+        token1155 = ERC1155SeaDropV3(factory.createERC1155(bytes32(0)));
+        token1155.setMaxSupply(1, 1000);
+        address[] memory allowed = new address[](1);
+        allowed[0] = address(minter);
+        v1Token = new ERC721SeaDrop("", "", allowed);
+        v1Token.setMaxSupply(1000);
+
+        ISeaDropMinter.PayoutRecipient[] memory recipients =
+            new ISeaDropMinter.PayoutRecipient[](1);
+        recipients[0] = ISeaDropMinter.PayoutRecipient(creator, 10_000);
+        ISeaDropMinter.Stage memory stage = ISeaDropMinter.Stage({
+            price: 0.1 ether,
+            currency: address(0),
+            startTime: uint40(vm.getBlockTimestamp()),
+            endTime: uint40(vm.getBlockTimestamp()) + 100,
+            feeBps: 100,
+            feeRecipient: address(5),
+            maxPerWallet: 10,
+            maxTokenSupplyForStage: 0,
+            signerSetId: 0,
+            signer: address(0)
+        });
+
+        minter.setPayoutRecipients(address(token721), recipients);
+        minter.setPayoutRecipients(address(token1155), recipients);
+        minter.setPayoutRecipients(address(v1Token), recipients);
+        minter.setStage(address(token721), 0, 0, stage);
+        minter.setStage(address(token1155), 1, 0, stage);
+        minter.setStage(address(v1Token), 0, 0, stage);
+
+        // The same stage without a wallet limit, which still counts the mint.
+        stage.maxPerWallet = 0;
+        minter.setStage(address(token721), 0, 2, stage);
+        stage.maxPerWallet = 10;
+
+        // The same stage with a supply cap, which reads the token's total.
+        stage.maxTokenSupplyForStage = 1000;
+        minter.setStage(address(token721), 0, 3, stage);
+        stage.maxTokenSupplyForStage = 0;
+
+        // A signed stage, with the signer in an admin-managed set.
+        minter.setSignerSetMember(1, signer, true);
+        stage.signerSetId = 1;
+        minter.setStage(address(token721), 0, 1, stage);
+        signature = _signAuthorization(address(this), address(0));
+        linkedSignature = _signAuthorization(linkedWallet, address(this));
+
+        vm.deal(address(5), 1 << 128);
+        vm.deal(creator, 1 << 128);
+    }
+
+    function _signAuthorization(address wallet, address sender)
+        internal
+        view
+        returns (bytes memory)
+    {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                minter.MINT_AUTHORIZATION_TYPEHASH(),
+                address(token721),
+                uint256(0),
+                uint256(1),
+                wallet,
+                sender,
+                address(0),
+                uint256(5),
+                false,
+                uint256(0),
+                uint256(1010101)
+            )
+        );
+        (, string memory name, string memory version,,,,) =
+            minter.eip712Domain();
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,"
+                    "address verifyingContract)"
+                ),
+                keccak256(bytes(name)),
+                keccak256(bytes(version)),
+                block.chainid,
+                address(minter)
+            )
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            signerKey,
+            keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash))
+        );
+        return abi.encodePacked(r, s, v);
+    }
+
+    /// @dev A clone of the ERC-721, initialized and registered.
+    function testDeployERC721Clone_snapshot() public {
+        factory.createERC721("Name", "SYMBOL", bytes32(uint256(1)));
+    }
+
+    /// @dev A clone of the ERC-1155, initialized and registered.
+    function testDeployERC1155Clone_snapshot() public {
+        factory.createERC1155(bytes32(uint256(1)));
+    }
+
+    /// @dev A full ERC-721 deployment, for comparison: the implementation's
+    ///      constructor and code deposit, without name, symbol, owner or
+    ///      minter.
+    function testDeployERC721Full_snapshot() public {
+        new ERC721SeaDropV3(address(0x1E0049783F008A0085193E00003D00cd54003c71));
+    }
+
+    /// @dev A full ERC-1155 deployment, for comparison.
+    function testDeployERC1155Full_snapshot() public {
+        new ERC1155SeaDropV3(
+            address(0x1E0049783F008A0085193E00003D00cd54003c71)
+        );
+    }
+
+    function testMintV3ERC721_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token721),
+                id: 0,
+                stageIndex: 0,
+                wallet: address(this),
+                recipient: address(this),
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                address(0), address(0), address(0), 0, false, 0, 0, ""
+            )
+        );
+    }
+
+    function testMintV3ERC1155_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token1155),
+                id: 1,
+                stageIndex: 0,
+                wallet: address(this),
+                recipient: address(this),
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                address(0), address(0), address(0), 0, false, 0, 0, ""
+            )
+        );
+    }
+
+    function testMintV1TokenThroughV3_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(v1Token),
+                id: 0,
+                stageIndex: 0,
+                wallet: address(this),
+                recipient: address(this),
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                address(0), address(0), address(0), 0, false, 0, 0, ""
+            )
+        );
+    }
+
+    function testMintV3ERC721NoWalletLimit_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token721),
+                id: 0,
+                stageIndex: 2,
+                wallet: address(this),
+                recipient: address(this),
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                address(0), address(0), address(0), 0, false, 0, 0, ""
+            )
+        );
+    }
+
+    function testMintV3ERC721StageLimit_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token721),
+                id: 0,
+                stageIndex: 3,
+                wallet: address(this),
+                recipient: address(this),
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                address(0), address(0), address(0), 0, false, 0, 0, ""
+            )
+        );
+    }
+
+    function testMintV3ERC721Signed_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token721),
+                id: 0,
+                stageIndex: 1,
+                wallet: address(this),
+                recipient: address(this),
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                signer, address(0), address(0), 5, false, 0, 1010101, signature
+            )
+        );
+    }
+
+    /// @dev The test contract pays as the sender the signer linked to
+    ///      another wallet, which gets the token and the count.
+    function testMintV3ERC721SignedLinkedSender_snapshot() public {
+        minter.mint{ value: 0.1 ether }(
+            ISeaDropMinter.MintParams({
+                token: address(token721),
+                id: 0,
+                stageIndex: 1,
+                wallet: linkedWallet,
+                recipient: linkedWallet,
+                quantity: 1,
+                currency: address(0),
+                maxTotalPrice: 0.1 ether
+            }),
+            ISeaDropMinter.Authorization(
+                signer,
+                address(this),
+                address(0),
+                5,
+                false,
+                0,
+                1010101,
+                linkedSignature
+            )
+        );
+    }
+
+    function onERC721Received(address, address, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4)
+    {
+        return this.onERC721Received.selector;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) public pure returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+}
