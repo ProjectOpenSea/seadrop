@@ -42,6 +42,11 @@ ignored_warnings_from = ['script']
 additional_compiler_profiles = []
 compilation_restrictions = []
 
+[profile.default.invariant]
+runs = 128
+depth = 64
+fail_on_revert = true
+
 [profile.ir_inspect]
 test = 'src'
 
