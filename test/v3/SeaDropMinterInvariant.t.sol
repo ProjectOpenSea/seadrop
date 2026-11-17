@@ -97,47 +97,76 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         minter.setStage(_token(kind), _id(kind), 1, stage);
     }
 
-    function mint(
-        uint256 kindSeed,
-        uint256 actorSeed,
+    struct MintAction {
+        uint256 kindSeed;
+        uint256 actorSeed;
+        uint256 quantitySeed;
+        bool signedStage;
+        bool useIntent;
+        bool blockCreator;
+        bool blockFee;
+    }
+
+    function mint(MintAction memory action) public {
+        uint256 kind = action.kindSeed % 2;
+        uint256 actorIndex = action.actorSeed % ACTORS;
+        ISeaDropMinter.MintParams memory params = _mintParams(
+            kind, actorIndex, action.quantitySeed, action.useIntent
+        );
+        if (params.quantity == 0) return;
+        params.stageIndex = action.signedStage ? 1 : 0;
+        ISeaDropMinter.Authorization memory auth = _noAuth();
+        if (action.signedStage) {
+            auth = _authorize(params, signer, signerKey, 0, false, 0);
+        }
+        currency.setBlocked(address(rejectingCreator), action.blockCreator);
+        currency.setBlocked(feeRecipient, action.blockFee);
+        _executeMint(params, auth, actorIndex, action.useIntent);
+        _recordMint(
+            kind,
+            params,
+            actors[(actorIndex + 1) % ACTORS],
+            action.blockCreator,
+            action.blockFee
+        );
+    }
+
+    function _mintParams(
+        uint256 kind,
+        uint256 actorIndex,
         uint256 quantitySeed,
-        bool signedStage,
-        bool useIntent,
-        bool blockCreator,
-        bool blockFee
-    ) public {
-        uint256 kind = kindSeed % 2;
-        uint256 actorIndex = actorSeed % ACTORS;
+        bool useIntent
+    ) internal view returns (ISeaDropMinter.MintParams memory params) {
         address wallet = actors[actorIndex];
         uint256 room = stageCaps[kind] - sold[kind] - ownerMinted[kind];
         uint256 walletRoom = WALLET_LIMIT - walletMints[kind][wallet];
         if (room > walletRoom) room = walletRoom;
-        if (room == 0) return;
+        if (room == 0) return params;
         uint256 quantity = bound(quantitySeed, 1, room > 3 ? 3 : room);
-        address payer = actors[(actorIndex + 1) % ACTORS];
         address recipient =
             useIntent ? actors[(actorIndex + 2) % ACTORS] : wallet;
-        ISeaDropMinter.MintParams memory params =
-            _params(_token(kind), _id(kind), wallet, recipient, quantity);
+        params = _params(_token(kind), _id(kind), wallet, recipient, quantity);
         params.currency = _currency(kind);
         params.maxTotalPrice = _price(kind) * quantity;
-        params.stageIndex = signedStage ? 1 : 0;
-        ISeaDropMinter.Authorization memory auth = _noAuth();
-        if (signedStage) {
-            auth = _authorize(params, signer, signerKey, 0, false, 0);
-        }
-        currency.setBlocked(address(rejectingCreator), blockCreator);
-        currency.setBlocked(feeRecipient, blockFee);
-        uint256 value = kind == 0 ? params.maxTotalPrice : 0;
+    }
+
+    function _executeMint(
+        ISeaDropMinter.MintParams memory params,
+        ISeaDropMinter.Authorization memory auth,
+        uint256 actorIndex,
+        bool useIntent
+    ) internal {
+        address payer = actors[(actorIndex + 1) % ACTORS];
+        uint256 value = params.currency == address(0) ? params.maxTotalPrice : 0;
         if (useIntent) {
             ISeaDropMinter.MintIntent memory intent = ISeaDropMinter.MintIntent(
-                params, nextNonce[wallet]++, vm.getBlockTimestamp() + 100
+                params, nextNonce[params.wallet]++, vm.getBlockTimestamp() + 100
             );
             bytes memory signature =
                 _sign(actorIndex + 100, _intentDigest(intent));
             vm.prank(payer);
             minter.mintWithIntent{ value: value }(intent, signature, auth);
-            assertTrue(minter.intentNonceUsed(wallet, intent.nonce));
+            assertTrue(minter.intentNonceUsed(params.wallet, intent.nonce));
             lastIntent = intent;
             lastIntentSignature = signature;
             lastAuthorization = auth;
@@ -146,7 +175,6 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
             vm.prank(payer);
             minter.mint{ value: value }(params, auth);
         }
-        _recordMint(kind, params, payer, blockCreator, blockFee);
     }
 
     function _recordMint(
@@ -444,8 +472,14 @@ contract SeaDropMinterInvariantTest is StdInvariant, Test {
         handler.setUp();
         // Exercise success, credit creation, failed withdrawal, withdrawal,
         // signature authorization and nonce rejection before every campaign.
-        handler.mint(0, 0, 1, false, false, false, false);
-        handler.mint(1, 0, 1, true, true, true, true);
+        handler.mint(
+            SeaDropInvariantHandler.MintAction(
+                0, 0, 1, false, false, false, false
+            )
+        );
+        handler.mint(
+            SeaDropInvariantHandler.MintAction(1, 0, 1, true, true, true, true)
+        );
         handler.withdraw(0, false, true);
         handler.withdraw(1, false, true);
         handler.withdraw(0, false, false);
