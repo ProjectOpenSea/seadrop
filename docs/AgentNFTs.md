@@ -79,7 +79,7 @@ When holders can write, a seller can change their token's records up to the mome
 
 ### Reference policy
 
-`src/lib/MetadataWriterPolicy.sol` is a small policy contract to set as the metadata authority. The contract doesn't need it, and it shows what a policy can do. Its owner (the admin) can allow several writer addresses with `setWriter`, such as a hot wallet that runs a metadata job. A writer can write records and nothing else. A token's current holder can delegate their token's writes to one address with `setDelegate`, such as their agent's wallet. A delegation counts only while the holder who set it still holds the token, so it lapses on transfer. It counts again if the token comes back to that holder.
+`src/lib/MetadataWriterPolicy.sol` is a small policy contract to set as the metadata authority. The contract doesn't need it, and it shows what a policy can do. Its owner (the admin) can allow several writer addresses with `setWriter`, such as a hot wallet that runs a metadata job. A writer can write records and nothing else. A token's current holder can delegate their token's writes to one address with `setDelegate`, such as their agent's wallet. A delegation applies only while the holder who set it still holds the token. It stops applying on transfer and applies again if the token comes back to that holder. The current holder can clear it with `setDelegate(tokenId, address(0))`.
 
 Writers and delegates call the policy's `setMetadata` and `setMetadataBatch`, which check the caller and forward the write to the token. The admin can also call `setCollectionAuthority` through the policy, for example to hand the authority to a new policy.
 
@@ -93,7 +93,7 @@ The admin can unmark a key, and the owner can replace an unlocked policy. For a 
 
 ### Batches
 
-`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts. A set authority, or the owner while the authority is blank, can write every entry.
+`setMetadataBatch` writes many records in one transaction. If the caller can't write any one entry, the whole batch reverts. A set authority can write every entry. With a blank authority, the owner can write every entry only while `ownerCannotWrite` is off. Holders can write entries only for tokens they currently hold, and only while `holderCanWrite` is on.
 
 ### Events and keys
 
@@ -116,6 +116,6 @@ Token id 0 is not special. Put collection-level data in the contract URI.
 
 - The NFT's page shows that the token is bound to an agent, from the adapter's `AgentBound` event.
 - The agent card shows on the agent's identity item in the ERC-8004 registry, read from the agent URI.
-- OpenSea doesn't read ERC-8048 records. Anything OpenSea should show, such as the name, image and traits, goes in the `tokenURI` JSON. Don't copy agent keys such as `context` or `endpoint[mcp]` into that JSON: ERC-8495, the draft standard for `tokenURI` JSON, asks for field names of lowercase letters, digits and underscores that won't collide with future extensions.
+- OpenSea does not automatically interpret arbitrary ERC-8048 agent records. The token's name, image and traits come from its `tokenURI` metadata. Explicit ERC-8493 `onchain:` URIs in that metadata, or returned by `tokenURI`, can resolve values stored through ERC-8048; see [Metadata storage](https://docs.opensea.io/docs/metadata-storage). Don't copy agent keys such as `context` or `endpoint[mcp]` into that JSON: ERC-8495, the draft standard for `tokenURI` JSON, asks for field names of lowercase letters, digits and underscores that won't collide with future extensions.
 - OpenSea refreshes a token's metadata when it sees an ERC-4906 event, and every record write to a minted token emits one.
 - Agents created with the adapter's `counterfactualRegister` are not indexed.
