@@ -34,11 +34,14 @@ contract SeaDropMintSignedTest is TestHelper {
 
     modifier validateFuzzInputsSigners(FuzzInputsSigners memory args) {
         vm.assume(args.numMints > 0 && args.numMints <= 10);
-        vm.assume(
-            args.feeRecipient.code.length == 0 && args.feeRecipient > address(9)
-        );
-        vm.assume(args.minter.code.length == 0 && args.minter > address(9));
-        vm.assume(args.minter != address(0) && args.payer != address(0));
+        vm.assume(args.minter != address(0) && args.feeRecipient != address(0));
+        vm.assume(args.payer != address(0));
+        vm.assume(args.feeRecipient.code.length == 0);
+        vm.assume(args.minter.code.length == 0);
+        // Precompiles reject plain ETH transfers. Under Cancun that includes
+        // the point-evaluation precompile at 0x0A, so skip all of 0x01-0xff.
+        assumeNotPrecompile(args.feeRecipient);
+        assumeNotPrecompile(args.minter);
         _;
     }
 
