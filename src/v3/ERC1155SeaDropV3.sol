@@ -10,7 +10,9 @@ import { ERC1155 } from "openzeppelin-contracts/token/ERC1155/ERC1155.sol";
 /**
  * @title  ERC1155SeaDropV3
  * @notice A thin ERC-1155 for SeaDropMinter: owner, allowed minters,
- *         per-id max supply and one URI for every id.
+ *         per-id max supply and one URI for every id. Token ids start at
+ *         1, as in SeaDrop's ERC-721s, so minting id 0 and setting its max
+ *         supply revert.
  *
  *         This contract's own state, the URI included, is in ERC-7201
  *         namespaced storage. OpenZeppelin 4.9's ERC1155 keeps balances and
@@ -38,6 +40,9 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
 
     error MaxSupplyBelowTotalMinted(uint256 maxSupply, uint256 totalMinted);
 
+    /// @notice Token ids start at 1.
+    error TokenIdIsZero();
+
     /// @dev Deploys the implementation. See SeaDropTokenV3Base.
     constructor(address conduit) ERC1155("") SeaDropTokenV3Base(conduit) { }
 
@@ -55,6 +60,7 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
     /// @inheritdoc ISeaDropTokenV3
     function mintSeaDrop(address to, uint256 id, uint256 quantity) external {
         _checkMinter();
+        if (id == 0) revert TokenIdIsZero();
 
         Supply storage supply = _erc1155Storage().supply[id];
         Supply memory current = supply;
@@ -69,7 +75,9 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
     }
 
     /// @notice Set an id's max supply. It can't go below what's minted.
+    ///         Ids start at 1.
     function setMaxSupply(uint256 id, uint128 newMaxSupply) external onlyOwner {
+        if (id == 0) revert TokenIdIsZero();
         Supply storage supply = _erc1155Storage().supply[id];
         uint256 totalMinted = supply.totalMinted;
         if (newMaxSupply < totalMinted) {

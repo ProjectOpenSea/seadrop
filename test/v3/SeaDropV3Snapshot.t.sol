@@ -11,6 +11,10 @@ import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
 
 import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
 
+import {
+    ERC1155SeaDropV3Standalone
+} from "seadrop/v3/ERC1155SeaDropV3Standalone.sol";
+
 import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
 
 import { ERC721SeaDrop } from "seadrop/ERC721SeaDrop.sol";
@@ -168,6 +172,16 @@ contract TestSeaDropV3Snapshot is Test {
     /// @dev A full ERC-1155 deployment, for comparison.
     function testDeployERC1155Full_snapshot() public {
         new ERC1155SeaDropV3(
+            address(0x1E0049783F008A0085193E00003D00cd54003c71)
+        );
+    }
+
+    /// @dev A standalone ERC-1155, with its owner, minter and URI.
+    function testDeployERC1155Standalone_snapshot() public {
+        new ERC1155SeaDropV3Standalone(
+            address(this),
+            address(minter),
+            "ipfs://{id}",
             address(0x1E0049783F008A0085193E00003D00cd54003c71)
         );
     }
