@@ -26,6 +26,7 @@ The repository is `ProjectOpenSea/seadrop`, branch `v3`. The audit commit will b
 | `src/v3/SeaDropMinter.sol`                           |   608 | Drop configuration, mint checks, payments, payouts and token registration for every v3 drop on a chain                 |
 | `src/v3/SeaDropTokenFactory.sol`                     |    74 | Deploys both token implementations, then clones them at creator-salted addresses and registers each clone              |
 | `src/v3/ERC721SeaDropV3.sol`                         |    93 | ERC-721 token (ERC721A-Upgradeable) with max supply and an initializer for clones                                      |
+| `src/v3/ERC721SeaDropV3Standalone.sol`               |    15 | Direct deployment of the ERC-721 token with owner, minter, name, symbol and conduit                                    |
 | `src/v3/ERC1155SeaDropV3.sol`                        |    98 | ERC-1155 token (OpenZeppelin) with per-id max supply, ids from 1, and an initializer for clones                        |
 | `src/v3/ERC1155SeaDropV3Standalone.sol`              |    19 | The ERC-1155 token deployed directly, with its owner, first minter, URI and conduit set in the constructor             |
 | `src/v3/SeaDropTokenV3Base.sol`                      |    75 | Ownership, allowed minters, preapproved conduit, contract URI and initialization for both tokens                       |
@@ -97,6 +98,8 @@ Each chain gets one `SeaDropTokenFactory`, deployed with that chain's minter and
 - A clone made from the implementation outside the factory can't be initialized by anyone, so it has no owner and can't mint.
 - The minter's admin allows factories with `setTokenFactory`. `registerToken` accepts only an allowed factory, once per token. A factory that isn't allowed can't create tokens, because registration reverts. Disallowing a factory stops new tokens and leaves the ones it registered registered.
 - Registration doesn't affect minting. It gives indexers a signal: `tokenFactoryOf(token)` names the factory that deployed a token. Tokens from elsewhere, like v1 tokens or a third party's contract, mint the same way without being registered.
+
+`ERC721SeaDropV3Standalone` takes `(address initialOwner, address minter, string name, string symbol, address conduit)`. Its constructor sets ownership, minter permissions and ERC721A metadata. Minting uses the same supply checks and sequential ids as a factory clone. Both standalone variants reject a zero owner or minter. Neither registers with the minter during deployment.
 
 `ERC1155SeaDropV3Standalone` is the ERC-1155 token deployed directly, for when the factory isn't available. Its constructor takes `(address initialOwner, address minter, string uri, address conduit)` and sets all four in the deployment, so there is no initialization to front-run, and `initialize` always reverts. Its runtime code is the clone implementation's, so it behaves the same, but `factory` returns its deployer and it isn't registered with the minter. Nothing onchain ties its conduit to OpenSea's, so OpenSea recognizes one by checking that its creation input is the reviewed creation code followed by the ABI-encoded constructor arguments, the conduit among them.
 

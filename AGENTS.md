@@ -67,7 +67,7 @@ It's v1's tree plus SeaDrop v3 under `src/v3`. v3 extends v1's drop architecture
 - OpenSea indexes drops from `SeaDropMint` and the versioned configuration events. Changing their fields is a schema change, so bump the version, update the event schema in `docs/v3/AuditScope.md` and `test/v3/SeaDropV3EventSchema.t.sol`, and coordinate.
 - Live v1 tokens mint through the minter after `updateAllowedSeaDrop`, via `mintSeaDrop(address,uint256)`. Keep that path working.
 - A token's preapproved conduit is fixed at deployment, because it can move every holder's tokens until they revoke it. OpenSea's conduit differs by chain, so the factory takes it and deploys the implementations with it as an immutable. A clone's creator never passes it.
-- Tokens are clones. Only the factory can initialize one, once, and the implementations can't be initialized. `ERC1155SeaDropV3Standalone` is the exception: it's deployed directly and set up in its constructor. Keep new token state in the ERC-7201 namespaces, and update the slot tests and `docs/v3/AuditScope.md` when a namespace changes.
+- Tokens are clones. Only the factory can initialize one, once, and the implementations can't be initialized. The standalone ERC-721 and ERC-1155 variants set up the token in their constructors. Keep new token state in the ERC-7201 namespaces, and update the slot tests and `docs/v3/AuditScope.md` when a namespace changes.
 - ERC-1155 token ids start at 1. Id 0 reverts with `TokenIdIsZero`.
 - Errors are plain, with one check per error.
 - The minter is about 2.3 KB under the EIP-170 limit. Run `./scripts/check_sizes.sh` after adding to it.

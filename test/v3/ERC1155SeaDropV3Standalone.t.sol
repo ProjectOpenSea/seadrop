@@ -113,7 +113,7 @@ contract ERC1155SeaDropV3StandaloneTest is SeaDropV3TestHelper {
     }
 
     function test_revert_deploy_minterIsZeroAddress() public {
-        vm.expectRevert(ERC1155SeaDropV3Standalone.MinterIsZeroAddress.selector);
+        vm.expectRevert(SeaDropTokenV3Base.MinterIsZeroAddress.selector);
         new ERC1155SeaDropV3Standalone(alice, address(0), URI, CONDUIT);
     }
 

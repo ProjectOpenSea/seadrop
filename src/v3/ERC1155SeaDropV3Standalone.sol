@@ -17,8 +17,6 @@ import { ERC1155SeaDropV3 } from "./ERC1155SeaDropV3.sol";
  *         deployed it.
  */
 contract ERC1155SeaDropV3Standalone is ERC1155SeaDropV3 {
-    error MinterIsZeroAddress();
-
     /**
      * @notice Deploy the token, ready to mint through SeaDropMinter.
      *
@@ -37,14 +35,7 @@ contract ERC1155SeaDropV3Standalone is ERC1155SeaDropV3 {
         string memory uri_,
         address conduit
     ) ERC1155SeaDropV3(conduit) {
-        if (initialOwner == address(0)) {
-            revert NewOwnerIsZeroAddress();
-        }
-        if (minter == address(0)) revert MinterIsZeroAddress();
-        // SeaDropTokenV3Base's constructor marked the token initialized
-        // and gave up ownership, as it does for a clone implementation.
-        _transferOwnership(initialOwner);
-        _setAllowedMinter(minter, true);
+        _initializeStandalone(initialOwner, minter);
         _erc1155Storage().uri = uri_;
     }
 }

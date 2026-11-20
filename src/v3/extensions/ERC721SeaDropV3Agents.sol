@@ -86,8 +86,7 @@ contract ERC721SeaDropV3Agents is ERC721SeaDropV3, ERC8048OnchainMetadata {
         // SeaDropTokenV3Base's constructor gave up ownership, as it does
         // for a clone implementation. This contract is the token, so the
         // deployer owns it.
-        _transferOwnership(msg.sender);
-        _setAllowedMinter(minter, true);
+        _setOwnerAndMinter(msg.sender, minter);
         __ERC721A_init_unchained(name_, symbol_);
     }
 
