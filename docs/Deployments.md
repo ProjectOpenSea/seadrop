@@ -4,11 +4,13 @@ These tables cover v1 and v2. Each contract below has the same address on every 
 
 ## What OpenSea uses
 
-OpenSea drops use SeaDrop v1. OpenSea deploys each drop as a clone of `ERC721SeaDropCloneable` through `ERC721SeaDropCloneFactory`, or as a standalone `ERC721SeaDrop`, and mints go through the shared `SeaDrop` contract.
+OpenSea uses SeaDrop v1 for new ERC-721 drops. OpenSea deploys each drop as a clone of `ERC721SeaDropCloneable` through `ERC721SeaDropCloneFactory`, or as a standalone `ERC721SeaDrop`, and mints go through the shared `SeaDrop` contract.
 
 SeaDrop v2 currently powers ERC-1155 open collections on OpenSea, which the collection owner mints. OpenSea deploys each one as a clone through `ERC1155SeaDropCloneFactory`, and the owner mints through the token's configurer. Earlier v2 ERC-1155 drops, whose public mints fill [Seaport 1.6](https://github.com/ProjectOpenSea/seaport) orders with the token as a contract offerer, are still live, but OpenSea no longer creates them.
 
 OpenSea doesn't create v2 ERC-721 tokens, upgradeable SeaDrop tokens, or standalone ERC-1155 tokens. It still indexes v2 ERC-721 tokens and the drops created by the legacy factories below.
+
+SeaDrop v3 is in development. The [version table](../README.md#versions) lists the planned OpenSea use cases.
 
 ## Contracts
 

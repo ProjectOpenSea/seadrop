@@ -1,5 +1,7 @@
 # SeaDrop v3
 
+SeaDrop v3 is in development. See the [version table](../../README.md#versions) for current OpenSea integrations and the planned v3 rollout.
+
 V3 uses one minter per chain for drop stages, wallet eligibility, payments and payouts. The ERC-721 or ERC-1155 collection keeps ownership, balances, metadata and supply limits. ERC-721 stages use id 0 and mint sequential tokens from 1. ERC-1155 stages use the edition id, starting at 1.
 
 | Use case                                      | Entry point                                                                                                                                                                                  |

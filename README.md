@@ -12,13 +12,13 @@ SeaDrop is a protocol for primary NFT drops on EVM chains.
 
 ## Versions
 
-All development targets `main`. Choose the generation that matches your collection:
+All development targets `main`. The table shows which version OpenSea uses for each collection type.
 
-| Version | Source and tests                                                                                                    | Use                                                                 |
-| ------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| v3      | [Guide](docs/v3), [contracts](src/v3), [tests](test/v3), [audit scope](docs/v3/AuditScope.md)                       | In development. Shared minter for ERC-721 and ERC-1155 collections. |
-| v2      | [Guide and project](versions/v2), [tests](versions/v2/test/foundry)                                                 | ERC-1155 open collections and existing Seaport-based drops.         |
-| v1      | [Guide](docs/SeaDropV1.md), [contracts](src/SeaDrop.sol), [tests](test/foundry), [deployments](docs/Deployments.md) | ERC-721 drops using the original SeaDrop minter.                    |
+| Version | Source and tests                                                                                                    | Use                                                                                          |
+| ------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| v3      | [Guide](docs/v3), [contracts](src/v3), [tests](test/v3), [audit scope](docs/v3/AuditScope.md)                       | In development. Planned for ERC-721 drops, ERC-1155 self-minting and ERC-1155 edition drops. |
+| v2      | [Guide and project](versions/v2), [tests](versions/v2/test/foundry)                                                 | Live on OpenSea for creator self-minting in ERC-1155 open collections.                       |
+| v1      | [Guide](docs/SeaDropV1.md), [contracts](src/SeaDrop.sol), [tests](test/foundry), [deployments](docs/Deployments.md) | Live on OpenSea for ERC-721 drops.                                                           |
 
 The root Foundry project builds v1 and v3. Run v2 commands from `versions/v2` to use its pinned dependencies and compiler settings. See the [v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235) for rollout and audit status.
 
