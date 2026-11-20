@@ -36,6 +36,19 @@ FOUNDRY_PROFILE=coverage forge coverage --report summary --report lcov --no-matc
 
 `forge test` also runs the upgradeable contracts' tests: `src/upgradeable` compiles with its deployable settings (via-IR, 1000 optimizer runs) in the same build. See [Upgradeable Contracts](UpgradeableContracts.md). Add `-vv` through `-vvvvv` for logs and traces.
 
+## SeaDrop v2
+
+Run these commands from the repository root after installing the same Foundry version. V2 has its own dependencies, remappings, gas snapshot and compiler profiles.
+
+```bash
+cd versions/v2
+./scripts/build_seaport.sh
+forge build
+forge test
+```
+
+The build script patches pragmas in the local Seaport checkout and builds its reference and optimized artifacts. Leave those dependency edits out of commits. Run `forge snapshot` or `forge coverage --ir-minimum` from the same directory. From the repository root, `scripts/check_sizes.sh versions/v2` checks v2 contract sizes, and `scripts/lint.sh check` checks both projects.
+
 ## Pull requests
 
 - All tests and lint checks pass, and coverage doesn't drop.

@@ -1,6 +1,7 @@
 [profile.default]
 src = 'src'
-test = 'test/foundry'
+# v1's tests are in test/foundry and the v3 prototype's in test/v3.
+test = 'test'
 out = 'out'
 libs = ['lib']
 solc_version = '0.8.38'
@@ -40,6 +41,11 @@ ignored_warnings_from = ['script']
 [profile.coverage]
 additional_compiler_profiles = []
 compilation_restrictions = []
+
+[profile.default.invariant]
+runs = 128
+depth = 64
+fail_on_revert = true
 
 [profile.ir_inspect]
 test = 'src'

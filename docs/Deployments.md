@@ -1,6 +1,6 @@
 # Deployments
 
-SeaDrop has two versions in this repository. v1 is on the [`main`](https://github.com/ProjectOpenSea/seadrop/tree/main) branch and v2 is on the [`v2`](https://github.com/ProjectOpenSea/seadrop/tree/v2) branch. Each contract below has the same address on every network it's deployed to.
+These tables cover v1 and v2. Each contract below has the same address on every network it's deployed to.
 
 ## What OpenSea uses
 

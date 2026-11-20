@@ -6,7 +6,7 @@
 # summary in GitHub Actions.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../${1:-.}"
 
 # forge exits nonzero when a contract is over a limit. Keep its output so
 # the report still prints, and fail after it.

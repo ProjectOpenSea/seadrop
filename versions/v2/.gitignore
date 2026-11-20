@@ -1,0 +1,13 @@
+.tools/
+.env
+
+# Foundry
+cache
+out
+reference-working
+broadcast
+lcov*.info
+
+.DS_Store
+.vscode
+__pycache__

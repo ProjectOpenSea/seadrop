@@ -7,6 +7,13 @@ pre-commit:
       exclude:
         - "lib/**"
         - "src/upgradeable/vendored/**"
+        - "versions/v2/**"
+      run: forge fmt {staged_files}
+      stage_fixed: true
+    - name: forge fmt v2
+      root: versions/v2/
+      glob: "*.sol"
+      exclude: "versions/v2/lib/**"
       run: forge fmt {staged_files}
       stage_fixed: true
     - name: biome

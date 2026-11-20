@@ -47,25 +47,8 @@ jobs:
           scripts/install-tools.sh
           echo "$PWD/.tools/bin" >> "$GITHUB_PATH"
 
-      - name: Check Solidity formatting
-        run: forge fmt --check
-
-      - name: Lint Solidity
-        run: forge lint --deny warnings
-
-      - name: Check formatting and lint with Biome
-        run: biome ci .
-
-      - name: Check TOML formatting
-        run: taplo fmt --check
-
-      - name: Lint shell scripts
-        run: |
-          shellcheck scripts/*.sh
-          shfmt -d scripts/*.sh
-
-      - name: Lint workflows
-        run: actionlint
+      - name: Lint both projects
+        run: scripts/lint.sh check
 
   forge-test:
     name: Run Forge Tests
@@ -80,11 +63,19 @@ jobs:
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
+      - uses: ./.github/actions/seaport-artifacts
+        with:
+          foundry-version: ${{ env.FOUNDRY_VERSION }}
+
       - name: Check contract sizes
-        run: ./scripts/check_sizes.sh
+        run: |
+          ./scripts/check_sizes.sh
+          scripts/check_sizes.sh versions/v2
 
       - name: Run tests
-        run: forge test -vvv
+        run: |
+          forge test -vvv
+          (cd versions/v2 && forge test -vvv)
         env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
 
@@ -101,12 +92,24 @@ jobs:
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
+      - uses: ./.github/actions/seaport-artifacts
+        with:
+          foundry-version: ${{ env.FOUNDRY_VERSION }}
+
       - name: Run coverage
         run: >-
           forge coverage --report summary --report lcov
           --no-match-coverage 'Shim|MaliciousRecipient|Deploy|Test|Snapshot'
         env:
           FOUNDRY_PROFILE: coverage
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+
+      - name: Run v2 coverage
+        working-directory: versions/v2
+        run: |
+          forge coverage --ir-minimum --report summary --report lcov --no-match-coverage 'test/|script/'
+          sed 's|^SF:|SF:versions/v2/|' lcov.info >> ../../lcov.info
+        env:
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
 
       - name: Submit coverage to Coveralls

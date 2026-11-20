@@ -1,0 +1,10 @@
+forge-std/=lib/forge-std/src/
+ERC721A/=lib/ERC721A/contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin-upgradeable/contracts/=lib/openzeppelin-contracts-upgradeable/contracts/
+@rari-capital/solmate/=lib/seaport/lib/solmate/
+murky/=lib/murky/src/
+create2-scripts/=lib/create2-helpers/script/
+seadrop/=src/
+seaport-types/=lib/seaport/lib/seaport-types/
+solady=lib/solady/
