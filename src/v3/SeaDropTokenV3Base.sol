@@ -114,6 +114,21 @@ abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
         BaseStorage storage $ = _baseStorage();
         if ($.initialized) revert AlreadyInitialized();
         $.initialized = true;
+        _setOwnerAndMinter(initialOwner, minter);
+    }
+
+    error MinterIsZeroAddress();
+
+    /// @dev Standalone constructors run after the base locks initialization.
+    function _initializeStandalone(address initialOwner, address minter)
+        internal
+    {
+        if (initialOwner == address(0)) revert NewOwnerIsZeroAddress();
+        if (minter == address(0)) revert MinterIsZeroAddress();
+        _setOwnerAndMinter(initialOwner, minter);
+    }
+
+    function _setOwnerAndMinter(address initialOwner, address minter) internal {
         _transferOwnership(initialOwner);
         _setAllowedMinter(minter, true);
     }
