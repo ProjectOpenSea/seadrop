@@ -77,12 +77,8 @@ abstract contract SeaDropV3TestHelper is Test {
             })
         );
 
-        factory = new SeaDropTokenFactory(address(minter), CONDUIT);
-        minter.setTokenFactory(address(factory), true);
-        token721 =
-            ERC721SeaDropV3(factory.createERC721("Test", "TEST", bytes32(0)));
+        _deployTokens(CONDUIT);
         token721.setMaxSupply(MAX_SUPPLY);
-        token1155 = ERC1155SeaDropV3(factory.createERC1155(bytes32(0)));
         token1155.setMaxSupply(ID_1155, uint128(MAX_SUPPLY));
 
         _setSinglePayout(address(token721), creator);
@@ -92,6 +88,14 @@ abstract contract SeaDropV3TestHelper is Test {
 
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
+    }
+
+    function _deployTokens(address conduit) internal virtual {
+        factory = new SeaDropTokenFactory(address(minter), conduit);
+        minter.setTokenFactory(address(factory), true);
+        token721 =
+            ERC721SeaDropV3(factory.createERC721("Test", "TEST", bytes32(0)));
+        token1155 = ERC1155SeaDropV3(factory.createERC1155(bytes32(0)));
     }
 
     function _publicStage()
