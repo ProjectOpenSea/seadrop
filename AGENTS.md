@@ -47,3 +47,32 @@ Use Foundry v1.9.0, the version CI pins (`FOUNDRY_VERSION` in `.github/workflows
 - Request a Copilot review on each pull request.
 - Write docs and descriptions in plain prose, with sentence-case headings and no em dashes.
 - Report security issues through [Bugcrowd](https://bugcrowd.com/engagements/opensea), not in a public issue or pull request.
+
+## What the v3 branch is
+
+It's v1's tree plus SeaDrop v3 under `src/v3`. v3 extends v1's drop architecture with one minter contract per chain and thin tokens, with ERC-1155 edition drops planned for a later rollout. The design and its reasoning are in [the v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235), and the draft audit scope is [docs/v3/AuditScope.md](docs/v3/AuditScope.md).
+
+- `src/v3/SeaDropMinter.sol` is the minter. It holds stages, signed authorizations and intents, recipient rules, payments and payouts for every v3 drop on a chain.
+- `src/v3/ERC721SeaDropV3.sol`, `src/v3/ERC1155SeaDropV3.sol` and `src/v3/SeaDropTokenV3Base.sol` are the tokens. They keep ownership, supply and metadata, and mint only for the minters they allow.
+- `src/v3/SeaDropTokenFactory.sol` deploys the tokens as EIP-1167 clones and registers them with the minter. Each chain gets one, deployed with that chain's minter and conduit.
+- `src/v3/adapters` has adapters that run a drop for an ERC-721 deployed without SeaDrop. They implement the v3 token interface, mint only at id 0 and count only their own drop. [docs/v3/ExistingContractAdapters.md](docs/v3/ExistingContractAdapters.md) explains them.
+- `src/v3/interfaces` has the minter's structs, events and errors, the token interface, and the delegate.xyz registry call.
+- `test/v3` has v3's Forge tests, with mocks and helpers in `test/v3/utils`.
+- The v1 implementation is retained from `main`.
+
+## Things to know about v3
+
+- Every mint separates the payer (`msg.sender`), the eligible wallet, whose signatures and wallet limits apply, and the recipient. Keep the three apart in new code.
+- A payout never reverts a mint. A failed push credits the recipient, who withdraws later. ERC-20 pushes run in a gas-capped call back into the minter (`pushERC20`), so a transfer that fails is rolled back before the credit.
+- OpenSea indexes drops from `SeaDropMint` and the versioned configuration events. Changing their fields is a schema change, so bump the version, update the event schema in `docs/v3/AuditScope.md` and `test/v3/SeaDropV3EventSchema.t.sol`, and coordinate.
+- Live v1 tokens mint through the minter after `updateAllowedSeaDrop`, via `mintSeaDrop(address,uint256)`. Keep that path working.
+- A token's preapproved conduit is fixed at deployment, because it can move every holder's tokens until they revoke it. OpenSea's conduit differs by chain, so the factory takes it and deploys the implementations with it as an immutable. A clone's creator never passes it.
+- Tokens are clones. Only the factory can initialize one, once, and the implementations can't be initialized. The standalone ERC-721 and ERC-1155 variants set up the token in their constructors. Keep new token state in the ERC-7201 namespaces, and update the slot tests and `docs/v3/AuditScope.md` when a namespace changes.
+- ERC-1155 token ids start at 1. Id 0 reverts with `TokenIdIsZero`.
+- Errors are plain, with one check per error.
+- The minter is about 2.3 KB under the EIP-170 limit. Run `./scripts/check_sizes.sh` after adding to it.
+- Compiler settings (solc 0.8.38 for Cancun, 1,000,000 optimizer runs, no metadata hash) change deployed bytecode, so don't change them in passing.
+- Biome formats Markdown and JSON. It aligns Markdown tables and wants a blank line before a list.
+
+
+v3 changes target `v3`. This development branch is unaudited and requires Security review and an external audit before deployment.
