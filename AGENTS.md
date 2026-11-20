@@ -2,13 +2,13 @@
 
 Guidance for coding agents and contributors working on this repository. The [README](README.md) explains SeaDrop, and [docs/Development.md](docs/Development.md) has the full setup.
 
-## What this branch is
+## Versions
 
-`main` is SeaDrop v1. `SeaDrop` is the minting contract, deployed once per chain (addresses in [docs/Deployments.md](docs/Deployments.md)), and the ERC-721 tokens mint through it. The `v2` branch is a separate design that adds ERC-1155. Its public drops mint through Seaport, while ERC-1155 open collections are minted by their owner through the token's configurer ([what OpenSea uses](docs/Deployments.md#what-opensea-uses)).
+All changes target `main`. The root project builds v1 and v3. `SeaDrop` is the minting contract, deployed once per chain (addresses in [docs/Deployments.md](docs/Deployments.md)), and the ERC-721 tokens mint through it. The [v2 project](versions/v2/AGENTS.md) is a separate design that adds ERC-1155. Its public drops mint through Seaport, while ERC-1155 open collections are minted by their owner through the token's configurer ([what OpenSea uses](docs/Deployments.md#what-opensea-uses)).
 
 Deployed non-upgradeable contracts are immutable, so a change only reaches contracts deployed after it. Be conservative with anything that changes bytecode. Upgradeable tokens can be upgraded in place, so their storage layout must stay compatible: see [the storage rules](docs/UpgradeableContracts.md#storage).
 
-## Layout
+## V1 layout
 
 - `src/SeaDrop.sol` is the minter, and `src/ERC721SeaDrop.sol` the token it mints.
 - `src/extensions` has token variants, such as `ERC721SeaDropLockable` and `ERC721SeaDropRandomOffset`.
@@ -48,9 +48,9 @@ Use Foundry v1.9.0, the version CI pins (`FOUNDRY_VERSION` in `.github/workflows
 - Write docs and descriptions in plain prose, with sentence-case headings and no em dashes.
 - Report security issues through [Bugcrowd](https://bugcrowd.com/engagements/opensea), not in a public issue or pull request.
 
-## What the v3 branch is
+## SeaDrop v3
 
-It's v1's tree plus SeaDrop v3 under `src/v3`. v3 extends v1's drop architecture with one minter contract per chain and thin tokens, with ERC-1155 edition drops planned for a later rollout. The design and its reasoning are in [the v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235), and the draft audit scope is [docs/v3/AuditScope.md](docs/v3/AuditScope.md).
+V3 extends v1's drop architecture with one minter contract per chain and thin tokens, with ERC-1155 edition drops planned for a later rollout. The design and its reasoning are in [the v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235), and the draft audit scope is [docs/v3/AuditScope.md](docs/v3/AuditScope.md).
 
 - `src/v3/SeaDropMinter.sol` is the minter. It holds stages, signed authorizations and intents, recipient rules, payments and payouts for every v3 drop on a chain.
 - `src/v3/ERC721SeaDropV3.sol`, `src/v3/ERC1155SeaDropV3.sol` and `src/v3/SeaDropTokenV3Base.sol` are the tokens. They keep ownership, supply and metadata, and mint only for the minters they allow.
@@ -75,4 +75,4 @@ It's v1's tree plus SeaDrop v3 under `src/v3`. v3 extends v1's drop architecture
 - Biome formats Markdown and JSON. It aligns Markdown tables and wants a blank line before a list.
 
 
-v3 changes target `v3`. This development branch is unaudited and requires Security review and an external audit before deployment.
+SeaDrop v3 is unaudited and requires Security review and an external audit before deployment.

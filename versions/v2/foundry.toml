@@ -1,0 +1,105 @@
+[profile.default]
+src = 'src'
+out = 'out'
+libs = ['lib']
+solc_version = '0.8.38'
+# Cancun runs on every network SeaDrop deploys to (PUSH0, MCOPY and TSTORE
+# probed with eth_call on 2026-11-07), and the tests' Seaport 1.6 artifacts
+# need it. Pin it so the target doesn't drift with the compiler's default.
+evm_version = 'cancun'
+auto_detect_remappings = false # remappings in remappings.txt
+optimizer_runs = 100_000
+ignored_error_codes = ['code-size', 'init-code-size']
+bytecode_hash = "none"
+fs_permissions = [
+    { access = "read", path = "./optimized-out" },
+    { access = "read", path = "./reference-out" },
+    { access = "read", path = "./lib/seaport/optimized-out" },
+    { access = "read", path = "./lib/seaport/reference-out" },
+]
+
+[profile.clone_factory_deployment]
+optimizer_runs = 99_999_999
+
+[profile.ir_inspect]
+test = 'src'
+
+[rpc_endpoints]
+mainnet = '${MAINNET_RPC_URL}'
+goerli = '${GOERLI_RPC_URL}'
+sepolia = '${SEPOLIA_RPC_URL}'
+polygon = '${POLYGON_RPC_URL}'
+polygon-mumbai = '${MUMBAI_RPC_URL}'
+optimism = '${OP_RPC_URL}'
+optimism-goerli = '${OP_GOERLI_RPC_URL}'
+arbitrum = '${ARB_RPC_URL}'
+arbitrum-nova = '${ARB_NOVA_RPC_URL}'
+arbitrum-goerli = '${ARB_GOERLI_RPC_URL}'
+arbitrum-sepolia = '${ARB_SEPOLIA_RPC_URL}'
+avalanche = '${AVAX_C_RPC_URL}'
+avalanche-fuji = '${AVAX_FUJI_RPC_URL}'
+gnosis = '${GNOSIS_RPC_URL}'
+chiado = '${CHIADO_RPC_URL}'
+bsc = '${BSC_RPC_URL}'
+bsc-testnet = '${BSC_TEST_RPC_URL}'
+klaytn = '${KLAYTN_RPC_URL}'
+baobab = '${BAOBAB_RPC_URL}'
+base = '${BASE_RPC_URL}'
+base-goerli = '${BASE_GOERLI_RPC_URL}'
+zora = '${ZORA_RPC_URL}'
+zora-test = '${ZORA_TEST_RPC_URL}'
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+goerli = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+polygon = { key = "${POLYGONSCAN_API_KEY}" }
+polygon-mumbai = { key = "${POLYGONSCAN_API_KEY}" }
+optimism = { key = "${OPSCAN_API_KEY}" }
+optimism-goerli = { key = "${OPSCAN_API_KEY}" }
+arbitrum = { key = "${ARBISCAN_API_KEY}" }
+arbitrum-nova = { key = "${ARBISCAN_API_KEY}" }
+arbitrum-goerli = { key = "${ARBISCAN_API_KEY}" }
+arbitrum-sepolia = { key = "${ARBISCAN_API_KEY}" }
+avalanche = { key = "${SNOWTRACE_API_KEY}" }
+avalanche-fuji = { key = "${SNOWTRACE_API_KEY}" }
+gnosis = { key = "${BLOCKSCOUT_API_KEY}" }
+chiado = { key = "${BLOCKSCOUT_API_KEY}" }
+bsc = { key = "${BSCSCAN_API_KEY}" }
+bsc-testnet = { key = "${BSCSCAN_API_KEY}" }
+base = { key = "${BASESCAN_API_KEY}" }
+base-goerli = { key = "${BASESCAN_API_KEY}" }
+zora = { key = "${BLOCKSCOUT_API_KEY}" }
+zora-test = { key = "${BLOCKSCOUT_API_KEY}" }
+
+[fmt]
+line_length = 80
+tab_width = 4
+bracket_spacing = true
+int_types = "preserve"
+number_underscore = "preserve"
+quote_style = "double"
+prefer_compact = "none"
+
+[lint]
+lint_on_build = false
+# Test mocks aren't shipped.
+ignore = ["src/test/**"]
+# These detectors only flag deliberate, audited patterns in the shipped
+# contracts (payouts to configured recipients, configurer loops, the contract
+# offerer's delegatecall to its implementation, events after Seaport calls,
+# the documented prevrandao offset). CI runs `forge lint --deny warnings`, so
+# every other rule still fails the build.
+exclude_lints = [
+    "arbitrary-send-eth",
+    "calls-loop",
+    "controlled-delegatecall",
+    "missing-zero-check",
+    "reentrancy-events",
+    "require-revert-in-loop",
+    "uninitialized-local",
+    "unsafe-typecast",
+    "weak-prng",
+]
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config

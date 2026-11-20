@@ -25,3 +25,27 @@
 [submodule "lib/create2-helpers"]
 	path = lib/create2-helpers
 	url = https://github.com/emo-eth/create2-helpers
+[submodule "versions/v2/lib/forge-std"]
+	path = versions/v2/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "versions/v2/lib/ERC721A"]
+	path = versions/v2/lib/ERC721A
+	url = https://github.com/chiru-labs/ERC721A
+[submodule "versions/v2/lib/murky"]
+	path = versions/v2/lib/murky
+	url = https://github.com/dmfxyz/murky
+[submodule "versions/v2/lib/openzeppelin-contracts"]
+	path = versions/v2/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "versions/v2/lib/openzeppelin-contracts-upgradeable"]
+	path = versions/v2/lib/openzeppelin-contracts-upgradeable
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
+[submodule "versions/v2/lib/create2-helpers"]
+	path = versions/v2/lib/create2-helpers
+	url = https://github.com/emo-eth/create2-helpers
+[submodule "versions/v2/lib/seaport"]
+	path = versions/v2/lib/seaport
+	url = https://github.com/ProjectOpenSea/seaport
+[submodule "versions/v2/lib/solady"]
+	path = versions/v2/lib/solady
+	url = https://github.com/Vectorized/solady

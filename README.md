@@ -1,6 +1,5 @@
 ![SeaDrop_GithubCover](img/seadrop-banner.png)
 
-[![Version][version-badge]][version-link]
 [![Test CI][ci-badge]][ci-link]
 [![Code Coverage][coverage-badge]][coverage-link]
 [![License][license-badge]][license-link]
@@ -9,89 +8,32 @@
 
 # SeaDrop
 
-SeaDrop is a contract for primary NFT drops on EVM chains.
+SeaDrop is a protocol for primary NFT drops on EVM chains.
 
 ## Versions
 
-- [v1 (`main`)](https://github.com/ProjectOpenSea/seadrop/tree/main) powers ERC-721 drops.
-- [v2](https://github.com/ProjectOpenSea/seadrop/tree/v2) powers ERC-1155 self-minting for editions (open collections). It also supports existing staged drops and receives security fixes.
-- [v3](https://github.com/ProjectOpenSea/seadrop/tree/v3) is in development. It upgrades v1's drop architecture and lets existing v1 collections opt into the new minter. It adds ERC-20 mint payments, delegate-wallet and linked-wallet support, signed mint intents, clone factories, existing-contract adapters and agent NFT extensions. Self-service ERC-1155 edition drops are planned for a later rollout.
+All development targets `main`. Choose the generation that matches your collection:
 
-See the [v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235) for scope and remaining work. v3 requires Security review and an external audit before deployment.
+| Version | Source and tests                                                                                                    | Use                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| v3      | [Guide](docs/v3), [contracts](src/v3), [tests](test/v3), [audit scope](docs/v3/AuditScope.md)                       | In development. Shared minter for ERC-721 and ERC-1155 collections. |
+| v2      | [Guide and project](versions/v2), [tests](versions/v2/test/foundry)                                                 | ERC-1155 open collections and existing Seaport-based drops.         |
+| v1      | [Guide](docs/SeaDropV1.md), [contracts](src/SeaDrop.sol), [tests](test/foundry), [deployments](docs/Deployments.md) | ERC-721 drops using the original SeaDrop minter.                    |
 
-## Background
-
-SeaDrop runs primary NFT drops: public drops, allow lists, server-side signed mints and token-gated mints. A token contract configures its drop through `SeaDrop`, and minters mint through `SeaDrop`.
-
-This branch is SeaDrop v1, which powers OpenSea's ERC-721 drops. [SeaDrop v2](https://github.com/ProjectOpenSea/seadrop/tree/v2) adds ERC-1155 tokens, ERC-20 payments and several public stages per token, and powers OpenSea's ERC-1155 open collections.
-
-## Deployments
-
-`SeaDrop` 1.0 is at [`0x00005EA00Ac477B1030CE78506496e8C2dE24bf5`](https://etherscan.io/address/0x00005EA00Ac477B1030CE78506496e8C2dE24bf5#code) on Ethereum and most networks OpenSea supports. [Deployments](docs/Deployments.md) lists every network, the clone factories and the legacy contracts, and [SeaDrop Deployment](docs/SeaDropDeployment.md) covers a new network.
-
-## Diagram
-
-```mermaid
-flowchart LR
-    creator([Creator]) -->|"drop settings"| token["ERC721SeaDrop<br/>token"]
-    token --> seadrop["SeaDrop"]
-    minter([Minter]) -->|"mint + payment"| seadrop
-    seadrop -->|"mintSeaDrop()"| token
-    seadrop -->|"fee"| fee["Fee recipient"]
-    seadrop -->|"payout"| payout["Creator payout<br/>address"]
-    seadrop -.->|"events"| indexer["Indexers"]
-```
-
-The creator configures a drop by calling the token, for example `updatePublicDrop()` or `multiConfigure()`, and the token forwards the settings to `SeaDrop`. A minter calls `SeaDrop` with the payment, through `mintPublic()`, `mintSigned()`, `mintAllowList()` or `mintAllowedTokenHolder()`. `SeaDrop` checks the stage, the wallet limit and the max supply, pays the fee recipient and the creator's payout address, and calls `mintSeaDrop()` on the token. Every mint names a fee recipient, which can't be the zero address. When a drop restricts fee recipients, it must be one the token allows. The fee itself can be zero.
-
-## Docs
-
-- [Deployments](docs/Deployments.md)
-- [SeaDrop Deployment](docs/SeaDropDeployment.md)
-- [SeaDrop Token Deployment](docs/SeaDropTokenDeployment.md)
-- [Bring Your Own Token Contract](docs/BringYourOwnTokenContract.md)
-- [Agent NFTs](docs/AgentNFTs.md)
-- [Drops for an existing contract](docs/ExistingContractAdapters.md)
-- [Provenance Hash](docs/ProvenanceHash.md)
-- [Upgradeable Contracts](docs/UpgradeableContracts.md)
+The root Foundry project builds v1 and v3. Run v2 commands from `versions/v2` to use its pinned dependencies and compiler settings. See the [v3 tracker](https://github.com/ProjectOpenSea/seadrop/issues/235) for rollout and audit status.
 
 ## Development
 
-```bash
-git clone --recurse-submodules https://github.com/ProjectOpenSea/seadrop && cd seadrop
-forge build
-forge test
-```
+Follow the [development guide](docs/Development.md) for setup, test commands, coverage and pull requests. For existing contracts, the [v1 and v2 deployment tables](docs/Deployments.md) list addresses by network.
 
-[Development](docs/Development.md) covers installing Foundry, coverage, gas snapshots, linting, size checks and what a pull request needs.
+## Security
 
-## Audits
-
-[Spearbit](https://spearbit.com/) audited SeaDrop. Read [the report](./assets/spearbit-seadrop-audit.pdf).
-
-## Contributing
-
-Contributions to SeaDrop are welcome by anyone interested in writing more tests, improving readability, optimizing for gas efficiency, or extending the protocol with new features.
-
-When making a pull request, ensure that:
-
-- All tests pass.
-- Code coverage remains at 100%.
-- All new code adheres to the style guide:
-  - All lint checks pass.
-  - Code is thoroughly commented with natspec where relevant.
-- If making a change to the contracts:
-  - Gas snapshots are provided and demonstrate an improvement (or an acceptable deficit given other improvements).
-  - Reference contracts are modified correspondingly if relevant.
-  - New Foundry tests are included for all new features or code paths.
-- A descriptive summary of the PR has been provided.
+The [Spearbit report](assets/spearbit-seadrop-audit.pdf) covers the earlier protocol. V3 has a separate [draft audit scope](docs/v3/AuditScope.md). Report vulnerabilities through [Bugcrowd](https://bugcrowd.com/engagements/opensea).
 
 ## License
 
 [MIT](LICENSE) Copyright 2022 Ozone Networks, Inc.
 
-[version-badge]: https://img.shields.io/badge/version-1.0.0-blue
-[version-link]: https://github.com/ProjectOpenSea/seadrop/releases
 [ci-badge]: https://github.com/ProjectOpenSea/seadrop/actions/workflows/test.yml/badge.svg
 [ci-link]: https://github.com/ProjectOpenSea/seadrop/actions/workflows/test.yml
 [coverage-badge]: https://coveralls.io/repos/github/ProjectOpenSea/seadrop/badge.svg?branch=main
