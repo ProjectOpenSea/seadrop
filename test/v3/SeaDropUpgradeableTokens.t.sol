@@ -68,6 +68,24 @@ contract SeaDropUpgradeableTokensTest is SeaDropTokensV3Test {
         assertEq(cap, MAX_SUPPLY);
     }
 
+    function test_tokenOwnershipChangesLeaveUpgradeAuthorityWithBroadcaster()
+        public
+    {
+        assertNotEq(address(this), DEFAULT_SENDER);
+        assertEq(token721.owner(), address(this));
+        assertEq(token1155.owner(), address(this));
+        assertEq(admin721.owner(), DEFAULT_SENDER);
+        assertEq(admin1155.owner(), DEFAULT_SENDER);
+        token721.transferOwnership(alice);
+        vm.prank(alice);
+        token721.acceptOwnership();
+        token1155.renounceOwnership();
+        assertEq(token721.owner(), alice);
+        assertEq(token1155.owner(), address(0));
+        assertEq(admin721.owner(), DEFAULT_SENDER);
+        assertEq(admin1155.owner(), DEFAULT_SENDER);
+    }
+
     function _upgrade(address token, ProxyAdmin admin, address implementation)
         private
     {
@@ -77,7 +95,9 @@ contract SeaDropUpgradeableTokensTest is SeaDropTokensV3Test {
         vm.prank(alice);
         vm.expectRevert("Ownable: caller is not the owner");
         admin.upgrade(proxy, implementation);
-        vm.prank(admin.owner());
+        vm.expectRevert("Ownable: caller is not the owner");
+        admin.upgrade(proxy, implementation); // Called by the token owner.
+        vm.prank(DEFAULT_SENDER);
         admin.upgrade(proxy, implementation);
         assertEq(admin.getProxyImplementation(proxy), implementation);
     }
