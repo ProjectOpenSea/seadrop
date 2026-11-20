@@ -11,8 +11,6 @@ import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
 
 import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
 
-import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
-
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 contract SeaDropTokensV3Test is SeaDropV3TestHelper {
@@ -214,20 +212,12 @@ contract SeaDropTokensV3Test is SeaDropV3TestHelper {
     }
 
     function test_noConduitPreapprovesNothing() public {
-        SeaDropTokenFactory noConduitFactory =
-            new SeaDropTokenFactory(address(minter), address(0));
-        minter.setTokenFactory(address(noConduitFactory), true);
-        ERC721SeaDropV3 token = ERC721SeaDropV3(
-            noConduitFactory.createERC721("Test", "TEST", bytes32(0))
-        );
-        assertEq(token.preapprovedConduit(), address(0));
-        assertFalse(token.isApprovedForAll(alice, address(0)));
-        assertFalse(token.isApprovedForAll(alice, CONDUIT));
-
-        ERC1155SeaDropV3 token1155NoConduit =
-            ERC1155SeaDropV3(noConduitFactory.createERC1155(bytes32(0)));
-        assertFalse(token1155NoConduit.isApprovedForAll(alice, address(0)));
-        assertFalse(token1155NoConduit.isApprovedForAll(alice, CONDUIT));
+        _deployTokens(address(0));
+        assertEq(token721.preapprovedConduit(), address(0));
+        assertFalse(token721.isApprovedForAll(alice, address(0)));
+        assertFalse(token721.isApprovedForAll(alice, CONDUIT));
+        assertFalse(token1155.isApprovedForAll(alice, address(0)));
+        assertFalse(token1155.isApprovedForAll(alice, CONDUIT));
     }
 
     function test_otherOperatorsUseTheStandardApproval() public {

@@ -107,6 +107,17 @@ ERC-1155 token ids start at 1, as in SeaDrop's ERC-721s, in the clone and the st
 
 Deploying a token costs 266k gas for the ERC-721 and 173k for the ERC-1155, including initialization and registration, against about 2.5M for a full deployment of either contract. Each mint through a clone costs about 2.85k more than through a full deployment: 2.6k for the first access to the implementation's address, and the rest for the `DELEGATECALL`.
 
+### Upgradeable token deployments
+
+[`DeployUpgradeableToken.s.sol`](../../script/v3/DeployUpgradeableToken.s.sol) deploys either standard behind an OpenZeppelin 4.9 transparent proxy. Both use the existing v3 token implementation. The minter address must already contain code. Use one of these Forge script signatures:
+
+- `deployERC721(address,address,address,string,string)` takes the initial token owner, minter, conduit, name and symbol.
+- `deployERC1155(address,address,address)` takes the initial token owner, minter and conduit.
+
+Use the returned proxy address for collection administration, minting and indexing. Each deployment has its own implementation and ProxyAdmin. The proxy calls the token initializer during construction. The implementation's immutable `factory` is its deployer. The minter does not register these proxies as factory clones.
+
+The broadcaster owns ProxyAdmin. Token ownership transfers and renunciation leave that upgrade authority in place. ProxyAdmin ownership can be transferred separately. Before upgrading, review the replacement implementation's storage layout and verify its immutable conduit against the current one. Changing that address changes which operator receives default approval for holders. Call `ProxyAdmin.upgrade(proxy, implementation)` from the ProxyAdmin owner for a compatible implementation that needs no migration. Implementation constructors run only on the implementation and do not update proxy state.
+
 ## Storage layout
 
 The tokens keep their own state in ERC-7201 namespaces. The tests read every field from these slots, so a layout change fails them.
@@ -123,7 +134,7 @@ Not everything could move:
 - OpenZeppelin 4.9's `ERC1155` keeps balances at slot 0 and operator approvals at slot 1. No 4.9 release namespaces them: 4.9's upgradeable variant uses gaps, and namespaced storage arrived in 5.0. Moving to 5.0 would add a second major version of OpenZeppelin as a dependency for two mappings. Its URI slot (2) stays empty, since `uri` reads the namespaced URI.
 - `TwoStepOwnable` from utility-contracts keeps the owner and pending owner in sequential slots: 0 and 1 in the ERC-721, 3 and 4 in the ERC-1155. Namespacing them means replacing an audited dependency with new ownership code in scope.
 
-To be plain about what namespacing buys: an EIP-1167 clone always runs the implementation it was deployed with, so no library update can shift a deployed clone's storage, namespaced or not. A new implementation means a new factory, and old clones keep the old code. Namespacing keeps this repo's own fields fixed across future implementations and independent of base contract order, and would let a later upgradeable variant reuse the layout.
+To be plain about what namespacing buys: an EIP-1167 clone always runs the implementation it was deployed with, so no library update can shift a deployed clone's storage, namespaced or not. A new implementation means a new factory, and old clones keep the old code. Namespacing keeps this repo's own fields fixed across future implementations and independent of base contract order, and lets the transparent proxy deployments use the same token implementations.
 
 ## Adapters for existing contracts
 
