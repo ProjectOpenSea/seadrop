@@ -47,6 +47,20 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
             keccak256("CurrencyUpdated(uint256,address,(bool,uint16,address))")
         );
         assertEq(
+            ISeaDropMinter.ERC20PayoutGasUpdated.selector,
+            keccak256("ERC20PayoutGasUpdated(uint256,uint256)")
+        );
+        assertEq(
+            ISeaDropMinter.DefaultERC20CurrencyUpdated.selector,
+            keccak256(
+                "DefaultERC20CurrencyUpdated(uint256,(bool,uint16,address))"
+            )
+        );
+        assertEq(
+            ISeaDropMinter.CurrencyOverrideCleared.selector,
+            keccak256("CurrencyOverrideCleared(uint256,address)")
+        );
+        assertEq(
             ISeaDropMinter.SignerSetUpdated.selector,
             keccak256("SignerSetUpdated(uint256,uint32,address,bool)")
         );

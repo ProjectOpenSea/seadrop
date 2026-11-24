@@ -75,7 +75,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     /// @notice The gas an ERC-20 payout push gets. A transfer that needs
     ///         more is rolled back and the recipient is credited instead.
-    uint256 public constant ERC20_PAYOUT_GAS = 100_000;
+    uint256 public erc20PayoutGas = 100_000;
 
     uint256 internal constant _BPS = 10_000;
 
@@ -229,6 +229,13 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (currency != address(0)) hasCurrencyOverride[currency] = true;
         _currencies[currency] = config;
         emit CurrencyUpdated(CONFIG_EVENT_VERSION, currency, config);
+    }
+
+    /// @inheritdoc ISeaDropMinter
+    function setERC20PayoutGas(uint256 gasLimit) external onlyOwner {
+        if (gasLimit == 0) revert PayoutGasIsZero();
+        erc20PayoutGas = gasLimit;
+        emit ERC20PayoutGasUpdated(CONFIG_EVENT_VERSION, gasLimit);
     }
 
     /// @inheritdoc ISeaDropMinter
@@ -847,7 +854,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         internal
         returns (bool)
     {
-        try this.pushERC20{ gas: ERC20_PAYOUT_GAS }(currency, to, amount) {
+        try this.pushERC20{ gas: erc20PayoutGas }(currency, to, amount) {
             return true;
         } catch {
             return false;

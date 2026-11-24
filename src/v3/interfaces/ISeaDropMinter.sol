@@ -179,7 +179,13 @@ interface ISeaDropMinter {
         CurrencyConfig config
     );
 
+    /// @notice The admin set the gas budget for each ERC-20 payout push.
+    event ERC20PayoutGasUpdated(uint256 version, uint256 gasLimit);
+
+    /// @notice The admin set the terms inherited by ERC-20s without an override.
     event DefaultERC20CurrencyUpdated(uint256 version, CurrencyConfig config);
+
+    /// @notice The admin cleared this currency's override.
     event CurrencyOverrideCleared(uint256 version, address indexed currency);
 
     /// @notice The admin added a signer to a signer set or removed one.
@@ -247,6 +253,7 @@ interface ISeaDropMinter {
     error StageEndsBeforeStart(uint256 startTime, uint256 endTime);
     error NativeCurrencyHasNoFallback();
     error InexactERC20Payout();
+    error PayoutGasIsZero();
     error CurrencyNotAllowed(address currency);
     error FeeBelowMinimum(uint256 feeBps, uint256 minFeeBps);
     error FeeRecipientNotRequired(address feeRecipient, address required);
@@ -316,10 +323,14 @@ interface ISeaDropMinter {
     function setCurrency(address currency, CurrencyConfig calldata config)
         external;
 
+    /// @notice Set a positive gas budget per ERC-20 payout push. Only the admin can call this.
+    function setERC20PayoutGas(uint256 gasLimit) external;
+
     /// @notice Set the terms inherited by ERC-20s without an override.
+    ///         Only the admin can call this.
     function setDefaultERC20Currency(CurrencyConfig calldata config) external;
 
-    /// @notice Restore the default terms for this ERC-20.
+    /// @notice Restore the default terms for this ERC-20. Only the admin can call this.
     function clearCurrencyOverride(address currency) external;
 
     /// @notice Add a signer to a signer set or remove one. Only the admin
