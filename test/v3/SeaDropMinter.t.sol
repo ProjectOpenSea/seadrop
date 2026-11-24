@@ -1682,6 +1682,109 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         params.maxTotalPrice = price * quantity;
     }
 
+    function test_defaultERC20PolicyAndOverrides() public {
+        TestERC20 currency = new TestERC20();
+        address asset = address(currency);
+        ISeaDropMinter.CurrencyConfig memory allowed =
+            ISeaDropMinter.CurrencyConfig(true, uint16(FEE_BPS), feeRecipient);
+        ISeaDropMinter.CurrencyConfig memory denied;
+        ISeaDropMinter.Stage memory stage = _publicStage();
+        stage.currency = asset;
+        stage.price = 10000;
+        assertFalse(minter.getCurrency(asset).allowed);
+        minter.setDefaultERC20Currency(allowed);
+        assertFalse(minter.getCurrency(alice).allowed);
+        minter.setStage(address(token721), 0, 0, stage);
+        ISeaDropMinter.MintParams memory params =
+            _erc20Params(currency, 1, stage.price);
+        currency.mint(alice, stage.price);
+        vm.prank(alice);
+        currency.approve(address(minter), stage.price);
+
+        minter.setCurrency(asset, denied);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.CurrencyNotAllowed.selector, asset
+            )
+        );
+        minter.mint(params, _noAuth());
+        minter.clearCurrencyOverride(asset);
+        allowed.minFeeBps++;
+        minter.setDefaultERC20Currency(allowed);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISeaDropMinter.FeeBelowMinimum.selector,
+                FEE_BPS,
+                allowed.minFeeBps
+            )
+        );
+        minter.mint(params, _noAuth());
+
+        allowed.minFeeBps--;
+        minter.setCurrency(asset, allowed);
+        minter.setDefaultERC20Currency(denied);
+        vm.prank(alice);
+        minter.mint(params, _noAuth());
+        assertEq(currency.balanceOf(feeRecipient), FEE_BPS);
+        minter.clearCurrencyOverride(asset);
+        assertFalse(minter.getCurrency(asset).allowed);
+        assertTrue(minter.getCurrency(address(0)).allowed);
+        minter.setCurrency(address(0), denied);
+        minter.setDefaultERC20Currency(allowed);
+        assertFalse(minter.getCurrency(address(0)).allowed);
+        vm.expectRevert(ISeaDropMinter.NativeCurrencyHasNoFallback.selector);
+        minter.clearCurrencyOverride(address(0));
+    }
+
+    function test_defaultCurrencyAdminAndValidation() public {
+        ISeaDropMinter.CurrencyConfig memory config;
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        minter.setDefaultERC20Currency(config);
+        vm.prank(alice);
+        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
+        minter.clearCurrencyOverride(alice);
+        config.minFeeBps = 1;
+        vm.expectRevert(ISeaDropMinter.FeeRecipientIsZeroAddress.selector);
+        minter.setDefaultERC20Currency(config);
+    }
+
+    function test_shortPayoutAndWithdrawalRollBack() public {
+        _checkInexactPayout(4);
+    }
+
+    function test_excessDebitPayoutAndWithdrawalRollBack() public {
+        _checkInexactPayout(5);
+    }
+
+    function _checkInexactPayout(uint8 mode) internal {
+        TestERC20 currency = new TestERC20();
+        _setERC20Stage(currency, 10000);
+        currency.mint(alice, 10000);
+        // Enough surplus for an extra sender charge to succeed inside the token.
+        currency.mint(address(minter), 1);
+        currency.setTransferMode(creator, mode);
+        vm.prank(alice);
+        currency.approve(address(minter), 10000);
+        vm.prank(alice);
+        minter.mint(_erc20Params(currency, 1, 10000), _noAuth());
+        uint256 proceeds = 10000 - FEE_BPS;
+        assertEq(currency.balanceOf(creator), 0);
+        assertEq(currency.balanceOf(feeRecipient), FEE_BPS);
+        assertEq(minter.credited(creator, address(currency)), proceeds);
+        vm.prank(creator);
+        vm.expectRevert(ISeaDropMinter.InexactERC20Payout.selector);
+        minter.withdraw(address(currency), creator);
+        assertEq(currency.balanceOf(address(minter)), proceeds + 1);
+        assertEq(currency.balanceOf(creator), 0);
+        assertEq(minter.credited(creator, address(currency)), proceeds);
+        vm.prank(creator);
+        minter.withdraw(address(currency), carol);
+        assertEq(currency.balanceOf(carol), proceeds);
+        assertEq(currency.balanceOf(address(minter)), 1);
+        assertEq(minter.credited(creator, address(currency)), 0);
+    }
+
     function test_mintERC20() public {
         TestERC20 usdc = new TestERC20();
         _setERC20Stage(usdc, 10e6);

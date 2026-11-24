@@ -179,6 +179,9 @@ interface ISeaDropMinter {
         CurrencyConfig config
     );
 
+    event DefaultERC20CurrencyUpdated(uint256 version, CurrencyConfig config);
+    event CurrencyOverrideCleared(uint256 version, address indexed currency);
+
     /// @notice The admin added a signer to a signer set or removed one.
     event SignerSetUpdated(
         uint256 version,
@@ -242,6 +245,8 @@ interface ISeaDropMinter {
     error FeeBpsTooHigh(uint256 feeBps);
     error FeeRecipientIsZeroAddress();
     error StageEndsBeforeStart(uint256 startTime, uint256 endTime);
+    error NativeCurrencyHasNoFallback();
+    error InexactERC20Payout();
     error CurrencyNotAllowed(address currency);
     error FeeBelowMinimum(uint256 feeBps, uint256 minFeeBps);
     error FeeRecipientNotRequired(address feeRecipient, address required);
@@ -310,6 +315,12 @@ interface ISeaDropMinter {
     /// @notice Set a currency's terms. Only the admin can call this.
     function setCurrency(address currency, CurrencyConfig calldata config)
         external;
+
+    /// @notice Set the terms inherited by ERC-20s without an override.
+    function setDefaultERC20Currency(CurrencyConfig calldata config) external;
+
+    /// @notice Restore the default terms for this ERC-20.
+    function clearCurrencyOverride(address currency) external;
 
     /// @notice Add a signer to a signer set or remove one. Only the admin
     ///         can call this.

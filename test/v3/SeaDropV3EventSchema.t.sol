@@ -148,6 +148,30 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
         );
     }
 
+    function test_emitted_defaultCurrencyAndClearOverride() public {
+        ISeaDropMinter.CurrencyConfig memory config =
+            ISeaDropMinter.CurrencyConfig(true, 250, carol);
+        vm.recordLogs();
+        minter.setDefaultERC20Currency(config);
+        Vm.Log memory log = _onlyLog(
+            address(minter),
+            keccak256(
+                "DefaultERC20CurrencyUpdated(uint256,(bool,uint16,address))"
+            )
+        );
+        assertEq(log.topics.length, 1);
+        assertEq(log.data, abi.encode(VERSION, true, uint256(250), carol));
+        minter.setCurrency(address(token721), config);
+        vm.recordLogs();
+        minter.clearCurrencyOverride(address(token721));
+        log = _onlyLog(
+            address(minter),
+            keccak256("CurrencyOverrideCleared(uint256,address)")
+        );
+        _assertTopics(log, _topic(address(token721)));
+        assertEq(log.data, abi.encode(VERSION));
+    }
+
     function test_emitted_CurrencyUpdated() public {
         address currency = makeAddr("currency");
         vm.recordLogs();

@@ -209,6 +209,8 @@ contract TestERC20 is ERC20("Test", "TST", 6) {
     uint8 public constant SHORT_RETURN = 1;
     uint8 public constant RETURNS_TWO = 2;
     uint8 public constant BURNS_GAS = 3;
+    uint8 public constant SHORT_PAYOUT = 4;
+    uint8 public constant EXTRA_DEBIT = 5;
 
     mapping(address account => bool) public blocked;
     mapping(address account => uint8 mode) public transferMode;
@@ -238,6 +240,8 @@ contract TestERC20 is ERC20("Test", "TST", 6) {
         require(!blocked[to], "blocked");
         bool moved = super.transfer(to, amount);
         uint8 mode = transferMode[to];
+        if (mode == SHORT_PAYOUT) _burn(to, 1);
+        if (mode == EXTRA_DEBIT) _burn(msg.sender, 1);
         if (mode == SHORT_RETURN) {
             assembly ("memory-safe") {
                 mstore(0, 1)
