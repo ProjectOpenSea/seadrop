@@ -75,7 +75,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     /// @notice The gas an ERC-20 payout push gets. A transfer that needs
     ///         more is rolled back and the recipient is credited instead.
-    uint256 public constant ERC20_PAYOUT_GAS = 100_000;
+    uint256 public erc20PayoutGas = 100_000;
 
     uint256 internal constant _BPS = 10_000;
 
@@ -109,6 +109,9 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     mapping(address token => PayoutRecipient[]) internal _payoutRecipients;
 
     mapping(address currency => CurrencyConfig) internal _currencies;
+
+    mapping(address currency => bool) public hasCurrencyOverride;
+    CurrencyConfig public defaultERC20Currency;
 
     /// @notice Signer set members, managed by the admin.
     mapping(uint32 signerSetId => mapping(address signer => bool)) public
@@ -222,17 +225,50 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         external
         onlyOwner
     {
-        if (config.minFeeBps > _BPS) revert FeeBpsTooHigh(config.minFeeBps);
+        _validateCurrencyConfig(config);
+        if (currency != address(0)) hasCurrencyOverride[currency] = true;
+        _currencies[currency] = config;
+        emit CurrencyUpdated(CONFIG_EVENT_VERSION, currency, config);
+    }
+
+    /// @inheritdoc ISeaDropMinter
+    function setERC20PayoutGas(uint256 gasLimit) external onlyOwner {
+        if (gasLimit == 0) revert PayoutGasIsZero();
+        erc20PayoutGas = gasLimit;
+        emit ERC20PayoutGasUpdated(CONFIG_EVENT_VERSION, gasLimit);
+    }
+
+    /// @inheritdoc ISeaDropMinter
+    function setDefaultERC20Currency(CurrencyConfig calldata config)
+        external
+        onlyOwner
+    {
+        _validateCurrencyConfig(config);
+        defaultERC20Currency = config;
+        emit DefaultERC20CurrencyUpdated(CONFIG_EVENT_VERSION, config);
+    }
+
+    /// @inheritdoc ISeaDropMinter
+    function clearCurrencyOverride(address currency) external onlyOwner {
+        if (currency == address(0)) revert NativeCurrencyHasNoFallback();
+        delete hasCurrencyOverride[currency];
+        delete _currencies[currency];
+        emit CurrencyOverrideCleared(CONFIG_EVENT_VERSION, currency);
+    }
+
+    function _validateCurrencyConfig(CurrencyConfig calldata config)
+        internal
+        view
+    {
+        if (config.minFeeBps > _BPS) {
+            revert FeeBpsTooHigh(config.minFeeBps);
+        }
         if (config.minFeeBps != 0 && config.feeRecipient == address(0)) {
             revert FeeRecipientIsZeroAddress();
         }
         if (config.feeRecipient == address(this)) {
             revert FeeRecipientIsMinter();
         }
-
-        _currencies[currency] = config;
-
-        emit CurrencyUpdated(CONFIG_EVENT_VERSION, currency, config);
     }
 
     /// @inheritdoc ISeaDropMinter
@@ -400,7 +436,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             (bool success,) = to.call{ value: amount }("");
             if (!success) revert WithdrawalFailed();
         } else {
-            IERC20(currency).safeTransfer(to, amount);
+            _transferExact(IERC20(currency), to, amount);
         }
 
         emit Withdrawal(msg.sender, currency, to, amount);
@@ -433,11 +469,15 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
 
     /// @inheritdoc ISeaDropMinter
     function getCurrency(address currency)
-        external
+        public
         view
-        returns (CurrencyConfig memory)
+        returns (CurrencyConfig memory config)
     {
-        return _currencies[currency];
+        if (currency == address(0)) return _currencies[currency];
+        if (currency.code.length == 0) return config;
+        return hasCurrencyOverride[currency]
+            ? _currencies[currency]
+            : defaultERC20Currency;
     }
 
     /**
@@ -789,7 +829,19 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
      */
     function pushERC20(address currency, address to, uint256 amount) external {
         if (msg.sender != address(this)) revert OnlyMinterItself(msg.sender);
-        IERC20(currency).safeTransfer(to, amount);
+        _transferExact(IERC20(currency), to, amount);
+    }
+
+    function _transferExact(IERC20 token, address to, uint256 amount) internal {
+        uint256 fromBefore = token.balanceOf(address(this));
+        uint256 toBefore = token.balanceOf(to);
+        token.safeTransfer(to, amount);
+        uint256 fromAfter = token.balanceOf(address(this));
+        uint256 toAfter = token.balanceOf(to);
+        if (
+            fromAfter > fromBefore || fromBefore - fromAfter != amount
+                || toAfter < toBefore || toAfter - toBefore != amount
+        ) revert InexactERC20Payout();
     }
 
     /**
@@ -802,7 +854,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         internal
         returns (bool)
     {
-        try this.pushERC20{ gas: ERC20_PAYOUT_GAS }(currency, to, amount) {
+        try this.pushERC20{ gas: erc20PayoutGas }(currency, to, amount) {
             return true;
         } catch {
             return false;
@@ -843,7 +895,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         view
         returns (CurrencyConfig memory config)
     {
-        config = _currencies[currency];
+        config = getCurrency(currency);
         if (!config.allowed) revert CurrencyNotAllowed(currency);
         if (feeBps < config.minFeeBps) {
             revert FeeBelowMinimum(feeBps, config.minFeeBps);

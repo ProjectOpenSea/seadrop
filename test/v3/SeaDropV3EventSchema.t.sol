@@ -47,6 +47,20 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
             keccak256("CurrencyUpdated(uint256,address,(bool,uint16,address))")
         );
         assertEq(
+            ISeaDropMinter.ERC20PayoutGasUpdated.selector,
+            keccak256("ERC20PayoutGasUpdated(uint256,uint256)")
+        );
+        assertEq(
+            ISeaDropMinter.DefaultERC20CurrencyUpdated.selector,
+            keccak256(
+                "DefaultERC20CurrencyUpdated(uint256,(bool,uint16,address))"
+            )
+        );
+        assertEq(
+            ISeaDropMinter.CurrencyOverrideCleared.selector,
+            keccak256("CurrencyOverrideCleared(uint256,address)")
+        );
+        assertEq(
             ISeaDropMinter.SignerSetUpdated.selector,
             keccak256("SignerSetUpdated(uint256,uint32,address,bool)")
         );
@@ -146,6 +160,30 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
             log.data,
             abi.encode(VERSION, uint256(64), uint256(1), carol, uint256(10_000))
         );
+    }
+
+    function test_emitted_defaultCurrencyAndClearOverride() public {
+        ISeaDropMinter.CurrencyConfig memory config =
+            ISeaDropMinter.CurrencyConfig(true, 250, carol);
+        vm.recordLogs();
+        minter.setDefaultERC20Currency(config);
+        Vm.Log memory log = _onlyLog(
+            address(minter),
+            keccak256(
+                "DefaultERC20CurrencyUpdated(uint256,(bool,uint16,address))"
+            )
+        );
+        assertEq(log.topics.length, 1);
+        assertEq(log.data, abi.encode(VERSION, true, uint256(250), carol));
+        minter.setCurrency(address(token721), config);
+        vm.recordLogs();
+        minter.clearCurrencyOverride(address(token721));
+        log = _onlyLog(
+            address(minter),
+            keccak256("CurrencyOverrideCleared(uint256,address)")
+        );
+        _assertTopics(log, _topic(address(token721)));
+        assertEq(log.data, abi.encode(VERSION));
     }
 
     function test_emitted_CurrencyUpdated() public {
