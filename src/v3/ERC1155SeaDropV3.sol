@@ -43,6 +43,8 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
     /// @notice Token ids start at 1.
     error TokenIdIsZero();
 
+    error QuantityIsZero();
+
     /// @dev Deploys the implementation. See SeaDropTokenV3Base.
     constructor(address conduit) ERC1155("") SeaDropTokenV3Base(conduit) { }
 
@@ -61,6 +63,7 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
     function mintSeaDrop(address to, uint256 id, uint256 quantity) external {
         _checkMinter();
         if (id == 0) revert TokenIdIsZero();
+        if (quantity == 0) revert QuantityIsZero();
 
         Supply storage supply = _erc1155Storage().supply[id];
         Supply memory current = supply;

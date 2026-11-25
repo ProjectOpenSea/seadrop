@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 
 import { SeaDropMinter } from "seadrop/v3/SeaDropMinter.sol";
 
+import { SeaDropTokenV3Base } from "seadrop/v3/SeaDropTokenV3Base.sol";
 import { ISeaDropTokenV3 } from "seadrop/v3/interfaces/ISeaDropTokenV3.sol";
 
 import { Vm } from "forge-std/Vm.sol";
@@ -25,7 +26,7 @@ import {
 
 import { MetadataWriterPolicy } from "seadrop/v3/lib/MetadataWriterPolicy.sol";
 
-import { MockAgentAdapter } from "seadrop/v3/test/MockAgentAdapter.sol";
+import { MockAgentAdapter } from "./utils/MockAgentAdapter.sol";
 
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
@@ -35,10 +36,54 @@ import {
     ERC721URIStorage
 } from "openzeppelin-contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
+contract ReentrantV3AgentAdapter {
+    bool internal _attempted;
+    bool public reentryReverted;
+    bytes4 public reentryRevertSelector;
+    uint256 public nextAgentId = 1;
+    uint256 public registrations;
+
+    function register(
+        uint8,
+        address boundAddress,
+        uint256 tokenId,
+        string calldata
+    ) external returns (uint256 agentId) {
+        if (!_attempted) {
+            _attempted = true;
+            try ERC721SeaDropV3Agents(boundAddress)
+                .registerAgents(tokenId, tokenId + 1, "", "") {
+                reentryReverted = false;
+            } catch (bytes memory reason) {
+                reentryReverted = true;
+                if (reason.length >= 4) {
+                    reentryRevertSelector = bytes4(reason);
+                }
+            }
+        }
+        agentId = nextAgentId++;
+        ++registrations;
+    }
+}
+
 contract ERC721SeaDropV3AgentsWithMint is ERC721SeaDropV3Agents {
     constructor(address minter, address adapter)
-        ERC721SeaDropV3Agents("Agents", "AGENT", minter, address(0), adapter)
+        ERC721SeaDropV3Agents(
+            "Agents", "AGENT", minter, address(0), adapter, msg.sender
+        )
     { }
+
+    function checkHeldRegistrationGuard(Vm cheats)
+        external
+        nonReentrantRegistration
+    {
+        address creator = owner();
+        cheats.expectRevert(
+            ERC721SeaDropV3Agents.RegistrationInProgress.selector
+        );
+        cheats.prank(creator);
+        this.registerAgents(1, 2, "", "");
+    }
 
     function mint(address to, uint256 quantity) public onlyOwner {
         _mint(to, quantity);
@@ -73,9 +118,14 @@ contract URIStorageWithOnchainMetadata is
     ERC721URIStorage,
     ERC8048OnchainMetadata
 {
-    address internal immutable _ADMIN = msg.sender;
+    address internal _admin = msg.sender;
+    uint256 internal _revokeAfterId = type(uint256).max;
 
     constructor() ERC721("Reuse", "REUSE") { }
+
+    function revokeAdminAfterUpdate(uint256 tokenId) external {
+        _revokeAfterId = tokenId;
+    }
 
     function mint(address to, uint256 tokenId) external {
         _mint(to, tokenId);
@@ -97,7 +147,7 @@ contract URIStorageWithOnchainMetadata is
         override
         returns (bool)
     {
-        return account == _ADMIN;
+        return account == _admin;
     }
 
     function _metadataHolderOf(uint256 tokenId)
@@ -110,6 +160,7 @@ contract URIStorageWithOnchainMetadata is
     }
 
     function _emitMetadataUpdate(uint256 tokenId) internal override {
+        if (tokenId == _revokeAfterId) _admin = address(0);
         if (_exists(tokenId)) {
             emit MetadataUpdate(tokenId);
         }
@@ -150,11 +201,18 @@ contract ERC721SeaDropV3AgentsTest is Test {
         return new ERC721SeaDropV3AgentsWithMint(minter, adapter_);
     }
 
+    function testPolicyConstructorChecksTokenAndAdmin() public {
+        vm.expectRevert(MetadataWriterPolicy.TokenIsZeroAddress.selector);
+        new MetadataWriterPolicy(address(0), policyAdmin);
+        vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
+        new MetadataWriterPolicy(address(agents), address(0));
+        assertEq(_deployPolicy().owner(), policyAdmin);
+    }
+
     /// @dev Deploys a MetadataWriterPolicy for `agents` that `policyAdmin`
     ///      runs.
     function _deployPolicy() internal returns (MetadataWriterPolicy policy) {
-        vm.prank(policyAdmin);
-        policy = new MetadataWriterPolicy(address(agents));
+        policy = new MetadataWriterPolicy(address(agents), policyAdmin);
     }
 
     function _writeUnauthorized(uint256 tokenId)
@@ -1148,6 +1206,31 @@ contract ERC721SeaDropV3AgentsTest is Test {
         policy.setCollectionAuthority(stranger, false, false, false);
     }
 
+    function testBatchRechecksWriterAfterUpdateHook() public {
+        URIStorageWithOnchainMetadata reuse =
+            new URIStorageWithOnchainMetadata();
+        reuse.revokeAdminAfterUpdate(2);
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = 1;
+        ids[1] = 2;
+        ids[2] = 1;
+        string[] memory keys = new string[](3);
+        bytes[] memory values = new bytes[](3);
+        values[0] = "first";
+        values[1] = "second";
+        values[2] = "third";
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC8048OnchainMetadata.MetadataWriteUnauthorized.selector, 1
+            )
+        );
+        reuse.setMetadataBatch(ids, keys, values);
+        assertEq(reuse.metadata(1, ""), bytes(""));
+        assertEq(reuse.metadata(2, ""), bytes(""));
+        reuse.setMetadata(1, "", "retry");
+        assertEq(reuse.metadata(1, ""), bytes("retry"));
+    }
+
     function testReusableNextToOpenZeppelinERC4906() public {
         URIStorageWithOnchainMetadata reuse =
             new URIStorageWithOnchainMetadata();
@@ -1201,6 +1284,34 @@ contract ERC721SeaDropV3AgentsTest is Test {
         (, uint256 agentOne) = agents.agentOf(1);
         assertTrue(adapter.isController(agentOne, holder));
         assertFalse(adapter.isController(agentOne, address(agents)));
+    }
+
+    function testRegistrationGuardAndRetry() public {
+        agents.checkHeldRegistrationGuard(vm);
+        assertEq(adapter.registrations(), 0);
+
+        bytes memory failure = abi.encodeWithSignature("AdapterUnavailable()");
+        vm.mockCallRevert(
+            address(adapter),
+            abi.encodeCall(
+                MockAgentAdapter.register, (0, address(agents), 2, "2")
+            ),
+            failure
+        );
+        vm.expectRevert(failure);
+        agents.registerAgents(1, 2, "", "");
+        assertEq(adapter.registrations(), 0);
+        (bool registered,) = agents.agentOf(1);
+        assertFalse(registered);
+
+        vm.clearMockedCalls();
+        agents.registerAgents(1, 2, "", "");
+        agents.registerAgents(2, 2, "", "");
+        assertEq(adapter.registrations(), 2);
+        (, uint256 first) = agents.agentOf(1);
+        (, uint256 second) = agents.agentOf(2);
+        assertEq(first, 1);
+        assertEq(second, 2);
     }
 
     function testRegisterAgentsRanges() public {
@@ -1315,10 +1426,59 @@ contract ERC721SeaDropV3AgentsDeploymentTest is Test {
     function setUp() public {
         minter = new SeaDropMinter(address(this));
         adapter = new MockAgentAdapter();
-        vm.prank(creator);
         agents = new ERC721SeaDropV3Agents(
-            "Agents", "AGENT", address(minter), conduit, address(adapter)
+            "Agents",
+            "AGENT",
+            address(minter),
+            conduit,
+            address(adapter),
+            creator
         );
+    }
+
+    function testConstructorRejectsZeroOwnerOrMinter() public {
+        vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
+        new ERC721SeaDropV3Agents(
+            "Agents",
+            "AGENT",
+            address(minter),
+            conduit,
+            address(adapter),
+            address(0)
+        );
+        vm.expectRevert(SeaDropTokenV3Base.MinterIsZeroAddress.selector);
+        new ERC721SeaDropV3Agents(
+            "Agents", "AGENT", address(0), conduit, address(adapter), creator
+        );
+    }
+
+    function testRegistrationCallbackReentryReverts() public {
+        ReentrantV3AgentAdapter reentrantAdapter = new ReentrantV3AgentAdapter();
+        // Make the adapter the owner so an owner-authorized callback runs
+        // directly during register() and hits the reentrancy guard.
+        ERC721SeaDropV3Agents token = new ERC721SeaDropV3Agents(
+            "Agents",
+            "AGENT",
+            address(minter),
+            conduit,
+            address(reentrantAdapter),
+            address(reentrantAdapter)
+        );
+        vm.startPrank(address(reentrantAdapter));
+        token.setMaxSupply(5);
+        token.registerAgents(1, 2, "", "");
+        vm.stopPrank();
+
+        assertTrue(reentrantAdapter.reentryReverted());
+        assertEq(
+            reentrantAdapter.reentryRevertSelector(),
+            ERC721SeaDropV3Agents.RegistrationInProgress.selector
+        );
+        assertEq(reentrantAdapter.registrations(), 2);
+        (, uint256 first) = token.agentOf(1);
+        (, uint256 second) = token.agentOf(2);
+        assertEq(first, 1);
+        assertEq(second, 2);
     }
 
     function testConstructorSetsTheToken() public view {

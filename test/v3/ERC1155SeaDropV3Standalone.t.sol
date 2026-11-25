@@ -217,6 +217,15 @@ contract ERC1155SeaDropV3StandaloneTest is SeaDropV3TestHelper {
         }
     }
 
+    function test_revert_zeroQuantityFromAllowedMinter() public {
+        ERC1155SeaDropV3[2] memory tokens = _tokens();
+        for (uint256 i; i < tokens.length; ++i) {
+            vm.prank(address(minter));
+            vm.expectRevert(ERC1155SeaDropV3.QuantityIsZero.selector);
+            tokens[i].mintSeaDrop(alice, 1, 0);
+        }
+    }
+
     function test_revert_mint_idZero_throughMinter() public {
         ERC1155SeaDropV3[2] memory tokens = _tokens();
         for (uint256 i; i < tokens.length; ++i) {

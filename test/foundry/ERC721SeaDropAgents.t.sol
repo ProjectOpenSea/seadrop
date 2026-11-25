@@ -29,10 +29,47 @@ import {
     ERC721URIStorage
 } from "openzeppelin-contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
+contract ReentrantV1AgentAdapter {
+    bool internal _attempted;
+    bool public reentryReverted;
+    bytes public reentryRevertData;
+    uint256 public nextAgentId = 1;
+    uint256 public registrations;
+
+    function register(
+        uint8,
+        address boundAddress,
+        uint256 tokenId,
+        string calldata
+    ) external returns (uint256 agentId) {
+        if (!_attempted) {
+            _attempted = true;
+            try ERC721SeaDropAgents(boundAddress)
+                .registerAgents(tokenId, tokenId + 1, "", "") {
+                reentryReverted = false;
+            } catch (bytes memory reason) {
+                reentryReverted = true;
+                reentryRevertData = reason;
+            }
+        }
+        agentId = nextAgentId++;
+        ++registrations;
+    }
+}
+
 contract ERC721SeaDropAgentsWithMint is ERC721SeaDropAgents {
     constructor(address[] memory allowedSeaDrop, address adapter)
-        ERC721SeaDropAgents("Agents", "AGENT", allowedSeaDrop, adapter)
+        ERC721SeaDropAgents(
+            "Agents", "AGENT", allowedSeaDrop, adapter, msg.sender
+        )
     { }
+
+    function checkHeldRegistrationGuard(Vm cheats) external nonReentrant {
+        address creator = owner();
+        cheats.expectRevert(bytes("REENTRANCY"));
+        cheats.prank(creator);
+        this.registerAgents(1, 2, "", "");
+    }
 
     function mint(address to, uint256 quantity) public onlyOwner {
         _mint(to, quantity);
@@ -74,9 +111,14 @@ contract URIStorageWithOnchainMetadata is
     ERC721URIStorage,
     ERC8048OnchainMetadata
 {
-    address internal immutable _ADMIN = msg.sender;
+    address internal _admin = msg.sender;
+    uint256 internal _revokeAfterId = type(uint256).max;
 
     constructor() ERC721("Reuse", "REUSE") { }
+
+    function revokeAdminAfterUpdate(uint256 tokenId) external {
+        _revokeAfterId = tokenId;
+    }
 
     function mint(address to, uint256 tokenId) external {
         _mint(to, tokenId);
@@ -98,7 +140,7 @@ contract URIStorageWithOnchainMetadata is
         override
         returns (bool)
     {
-        return account == _ADMIN;
+        return account == _admin;
     }
 
     function _metadataHolderOf(uint256 tokenId)
@@ -111,6 +153,7 @@ contract URIStorageWithOnchainMetadata is
     }
 
     function _emitMetadataUpdate(uint256 tokenId) internal override {
+        if (tokenId == _revokeAfterId) _admin = address(0);
         if (_exists(tokenId)) {
             emit MetadataUpdate(tokenId);
         }
@@ -151,11 +194,55 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         return new ERC721SeaDropAgentsWithMint(allowedSeaDrop, adapter_);
     }
 
+    function testConstructorRejectsZeroOwner() public {
+        address[] memory allowedSeaDrop = new address[](1);
+        allowedSeaDrop[0] = address(seadrop);
+        vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
+        new ERC721SeaDropAgents(
+            "Agents", "AGENT", allowedSeaDrop, address(adapter), address(0)
+        );
+    }
+
+    function testRegistrationCallbackReentryReverts() public {
+        address[] memory allowedSeaDrop = new address[](1);
+        allowedSeaDrop[0] = address(seadrop);
+        ReentrantV1AgentAdapter reentrantAdapter = new ReentrantV1AgentAdapter();
+        ERC721SeaDropAgents token = new ERC721SeaDropAgents(
+            "Agents",
+            "AGENT",
+            allowedSeaDrop,
+            address(reentrantAdapter),
+            address(reentrantAdapter)
+        );
+        vm.startPrank(address(reentrantAdapter));
+        token.setMaxSupply(5);
+        token.registerAgents(1, 2, "", "");
+        vm.stopPrank();
+
+        assertTrue(reentrantAdapter.reentryReverted());
+        assertEq(
+            reentrantAdapter.reentryRevertData(),
+            abi.encodeWithSignature("Error(string)", "REENTRANCY")
+        );
+        assertEq(reentrantAdapter.registrations(), 2);
+        (, uint256 first) = token.agentOf(1);
+        (, uint256 second) = token.agentOf(2);
+        assertEq(first, 1);
+        assertEq(second, 2);
+    }
+
+    function testPolicyConstructorChecksTokenAndAdmin() public {
+        vm.expectRevert(MetadataWriterPolicy.TokenIsZeroAddress.selector);
+        new MetadataWriterPolicy(address(0), policyAdmin);
+        vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
+        new MetadataWriterPolicy(address(agents), address(0));
+        assertEq(_deployPolicy().owner(), policyAdmin);
+    }
+
     /// @dev Deploys a MetadataWriterPolicy for `agents` that `policyAdmin`
     ///      runs.
     function _deployPolicy() internal returns (MetadataWriterPolicy policy) {
-        vm.prank(policyAdmin);
-        policy = new MetadataWriterPolicy(address(agents));
+        policy = new MetadataWriterPolicy(address(agents), policyAdmin);
     }
 
     function _writeUnauthorized(uint256 tokenId)
@@ -1149,6 +1236,31 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         policy.setCollectionAuthority(stranger, false, false, false);
     }
 
+    function testBatchRechecksWriterAfterUpdateHook() public {
+        URIStorageWithOnchainMetadata reuse =
+            new URIStorageWithOnchainMetadata();
+        reuse.revokeAdminAfterUpdate(2);
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = 1;
+        ids[1] = 2;
+        ids[2] = 1;
+        string[] memory keys = new string[](3);
+        bytes[] memory values = new bytes[](3);
+        values[0] = "first";
+        values[1] = "second";
+        values[2] = "third";
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC8048OnchainMetadata.MetadataWriteUnauthorized.selector, 1
+            )
+        );
+        reuse.setMetadataBatch(ids, keys, values);
+        assertEq(reuse.metadata(1, ""), bytes(""));
+        assertEq(reuse.metadata(2, ""), bytes(""));
+        reuse.setMetadata(1, "", "retry");
+        assertEq(reuse.metadata(1, ""), bytes("retry"));
+    }
+
     function testReusableNextToOpenZeppelinERC4906() public {
         URIStorageWithOnchainMetadata reuse =
             new URIStorageWithOnchainMetadata();
@@ -1202,6 +1314,34 @@ contract ERC721SeaDropAgentsTest is TestHelper {
         (, uint256 agentOne) = agents.agentOf(1);
         assertTrue(adapter.isController(agentOne, holder));
         assertFalse(adapter.isController(agentOne, address(agents)));
+    }
+
+    function testRegistrationGuardAndRetry() public {
+        agents.checkHeldRegistrationGuard(vm);
+        assertEq(adapter.registrations(), 0);
+
+        bytes memory failure = abi.encodeWithSignature("AdapterUnavailable()");
+        vm.mockCallRevert(
+            address(adapter),
+            abi.encodeCall(
+                MockAgentAdapter.register, (0, address(agents), 2, "2")
+            ),
+            failure
+        );
+        vm.expectRevert(failure);
+        agents.registerAgents(1, 2, "", "");
+        assertEq(adapter.registrations(), 0);
+        (bool registered,) = agents.agentOf(1);
+        assertFalse(registered);
+
+        vm.clearMockedCalls();
+        agents.registerAgents(1, 2, "", "");
+        agents.registerAgents(2, 2, "", "");
+        assertEq(adapter.registrations(), 2);
+        (, uint256 first) = agents.agentOf(1);
+        (, uint256 second) = agents.agentOf(2);
+        assertEq(first, 1);
+        assertEq(second, 2);
     }
 
     function testRegisterAgentsRanges() public {

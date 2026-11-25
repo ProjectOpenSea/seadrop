@@ -9,7 +9,7 @@ Minting, drop configuration and `tokenURI` work as in `ERC721SeaDrop`.
 
 ## Deploy
 
-The constructor takes the usual name, symbol and allowed SeaDrop addresses, plus the adapter to register agents through:
+The constructor takes the usual name, symbol and allowed SeaDrop addresses, followed by the registration adapter and the initial owner. Use the adapter for the deployment network.
 
 | Network         | ERC-8217 adapter                             |
 | --------------- | -------------------------------------------- |
@@ -119,3 +119,5 @@ Token id 0 is not special. Put collection-level data in the contract URI.
 - OpenSea does not automatically interpret arbitrary ERC-8048 agent records. The token's name, image and traits come from its `tokenURI` metadata. Explicit ERC-8493 `onchain:` URIs in that metadata, or returned by `tokenURI`, can resolve values stored through ERC-8048; see [Metadata storage](https://docs.opensea.io/docs/metadata-storage). Don't copy agent keys such as `context` or `endpoint[mcp]` into that JSON: ERC-8495, the draft standard for `tokenURI` JSON, asks for field names of lowercase letters, digits and underscores that won't collide with future extensions.
 - OpenSea refreshes a token's metadata when it sees an ERC-4906 event, and every record write to a minted token emits one.
 - Agents created with the adapter's `counterfactualRegister` are not indexed.
+
+The writer policy constructor takes the token address and the initial policy administrator.

@@ -40,6 +40,38 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     bytes internal lastIntentSignature;
     ISeaDropMinter.Authorization internal lastAuthorization;
     bool internal hasIntent;
+    bool internal defaultAllowed;
+    bool internal overrideAllowed = true;
+    bool internal hasOverride = true;
+    bool internal lowPayoutGas;
+
+    function _denied(uint256 kind) internal view returns (bool) {
+        return kind == 1 && !(hasOverride ? overrideAllowed : defaultAllowed);
+    }
+
+    function updatePolicy(uint8 mode, bool allowed) public {
+        ISeaDropMinter.CurrencyConfig memory config =
+            ISeaDropMinter.CurrencyConfig(
+                allowed, uint16(FEE_BPS), feeRecipient
+            );
+        if (mode % 3 == 0) {
+            defaultAllowed = allowed;
+            minter.setDefaultERC20Currency(config);
+        } else if (mode % 3 == 1) {
+            hasOverride = true;
+            overrideAllowed = allowed;
+            minter.setCurrency(address(currency), config);
+        } else {
+            hasOverride = false;
+            minter.clearCurrencyOverride(address(currency));
+        }
+        assertEq(minter.getCurrency(address(currency)).allowed, !_denied(1));
+    }
+
+    function updatePayoutGas(bool low) public {
+        lowPayoutGas = low;
+        minter.setERC20PayoutGas(low ? 1 : 150_000);
+    }
     uint256 public successfulMints;
     uint256 public successfulWithdrawals;
     uint256 public rejectedCalls;
@@ -67,8 +99,13 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         );
         token721.setMaxSupply(SUPPLY);
         token1155.setMaxSupply(ID_1155, uint128(SUPPLY));
-        _setSinglePayout(address(token721), address(rejectingCreator));
-        _setSinglePayout(address(token1155), address(rejectingCreator));
+        ISeaDropMinter.PayoutRecipient[] memory recipients =
+            new ISeaDropMinter.PayoutRecipient[](2);
+        recipients[0] = ISeaDropMinter.PayoutRecipient(feeRecipient, 3333);
+        recipients[1] =
+            ISeaDropMinter.PayoutRecipient(address(rejectingCreator), 6667);
+        minter.setPayoutRecipients(address(token721), recipients);
+        minter.setPayoutRecipients(address(token1155), recipients);
         for (uint256 i; i < ACTORS; ++i) {
             actors[i] = vm.addr(i + 100);
             vm.deal(actors[i], 1000 ether);
@@ -99,6 +136,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     /// @dev Change both stage caps without erasing the cumulative counts.
     function setCap(uint256 kindSeed, uint256 capSeed) public {
         uint256 kind = kindSeed % 2;
+        if (_denied(kind)) return;
         uint256 total = sold[kind] + ownerMinted[kind];
         uint256 cap = bound(capSeed, total == 0 ? 1 : total, SUPPLY);
         stageCaps[kind] = cap;
@@ -129,6 +167,18 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
             kind, actorIndex, action.quantitySeed, action.useIntent
         );
         if (params.quantity == 0) return;
+        if (_denied(kind)) {
+            params.recipient = params.wallet;
+            vm.prank(params.wallet);
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    ISeaDropMinter.CurrencyNotAllowed.selector,
+                    address(currency)
+                )
+            );
+            minter.mint(params, _noAuth());
+            return;
+        }
         params.stageIndex = action.signedStage ? 1 : 0;
         ISeaDropMinter.Authorization memory auth = _noAuth();
         if (action.signedStage) {
@@ -200,10 +250,13 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         bool blockFee
     ) internal {
         uint256 fee = params.maxTotalPrice * FEE_BPS / 10_000;
-        if (kind == 0 || blockCreator) {
-            expectedCreatorCredit[kind] += params.maxTotalPrice - fee;
+        uint256 split = (params.maxTotalPrice - fee) * 3333 / 10_000;
+        if (kind == 0 || blockCreator || lowPayoutGas) {
+            expectedCreatorCredit[kind] += params.maxTotalPrice - fee - split;
         }
-        if (kind == 1 && blockFee) expectedFeeCredit[kind] += fee;
+        if (kind == 1 && (blockFee || lowPayoutGas)) {
+            expectedFeeCredit[kind] += fee + split;
+        }
         collected[kind] += params.maxTotalPrice;
         spent[kind][payer] += params.maxTotalPrice;
         sold[kind] += params.quantity;
@@ -265,6 +318,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     /// @dev Rejected calls must leave all modeled balances and counts unchanged.
     function rejectUnauthorized(uint256 kindSeed, uint256 attackSeed) public {
         uint256 kind = kindSeed % 2;
+        if (_denied(kind)) return;
         address token = _token(kind);
         address wallet = actors[0];
         address attacker = actors[1];
@@ -330,6 +384,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         public
     {
         uint256 kind = kindSeed % 2;
+        if (_denied(kind)) return;
         address wallet = actors[actorSeed % ACTORS];
         uint256 quantity = walletLimit
             ? WALLET_LIMIT - walletMints[kind][wallet] + 1
@@ -386,6 +441,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     /// @dev An underpayment must not spend the earlier recipients' credits.
     function rejectPayment(uint256 kindSeed) public {
         uint256 kind = kindSeed % 2;
+        if (_denied(kind)) return;
         address wallet = actors[ACTORS - 1];
         if (
             walletMints[kind][wallet] == WALLET_LIMIT
@@ -518,7 +574,7 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         handler.rejectLimit(1, 1, false);
         handler.setCap(1, 63);
 
-        bytes4[] memory selectors = new bytes4[](10);
+        bytes4[] memory selectors = new bytes4[](12);
         selectors[0] = handler.mint.selector;
         selectors[1] = handler.ownerMint.selector;
         selectors[2] = handler.setCap.selector;
@@ -529,6 +585,8 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         selectors[7] = handler.donate.selector;
         selectors[8] = handler.rejectPayment.selector;
         selectors[9] = handler.rejectOwnerSupply.selector;
+        selectors[10] = handler.updatePolicy.selector;
+        selectors[11] = handler.updatePayoutGas.selector;
         targetSelector(FuzzSelector(address(handler), selectors));
         targetContract(address(handler));
     }

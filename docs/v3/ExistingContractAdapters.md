@@ -38,4 +38,8 @@ The adapter emits `SeaDropShimDeployed(target)` when it's deployed. OpenSea conf
 
 ## Ending the drop
 
-Ending a stage stops only that stage. To stop every stage at once, revoke the adapter's minting rights on the target, or call `setAllowedMinter(minter, false)` on the adapter. With the transfer adapter, `withdraw` any unsold tokens. Its owner can't renounce ownership while it still holds any of the target's tokens.
+Ending a stage stops only that stage. To stop every stage at once, revoke the adapter's minting rights on the target, or call `setAllowedMinter(minter, false)` on the adapter. With the transfer adapter, `withdraw` any unsold tokens.
+
+If the target moves or burns the first queued token, call `dequeueHead(expectedTokenId)` to remove that entry from sale. Repeat for each missing token as it reaches the head. If the adapter still holds a dequeued token, recover it with `rescue`.
+
+The owner can renounce ownership once the queue is empty and the adapter's target-token balance is zero.

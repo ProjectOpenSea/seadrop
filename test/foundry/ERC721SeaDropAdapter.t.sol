@@ -121,6 +121,18 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         if (deposit != 0) existing.mintTo(address(adapter), deposit);
     }
 
+    function testDirectMintRejectsZeroQuantity() public {
+        ERC721SeaDropMintAdapter mintAdapter = _newMintAdapter();
+        ERC721SeaDropTransferAdapter transferAdapter = _newTransferAdapter(1);
+        vm.startPrank(address(seadrop));
+        vm.expectRevert(MintQuantityCannotBeZero.selector);
+        mintAdapter.mintSeaDrop(minter, 0);
+        vm.expectRevert(MintQuantityCannotBeZero.selector);
+        transferAdapter.mintSeaDrop(minter, 0);
+        vm.stopPrank();
+        assertEq(transferAdapter.queuedTokenCount(), 1);
+    }
+
     function testMultiConfigurePublishesStudioDrop() public {
         ERC721SeaDropMintAdapter adapter = new ERC721SeaDropMintAdapter(
             address(existing),
@@ -626,6 +638,57 @@ contract ERC721SeaDropAdapterTest is Test, SeaDropErrorsAndEvents {
         seadrop.mintPublic{ value: PRICE }(
             address(adapter), feeRecipient, address(0), 1
         );
+    }
+
+    function testRenounceRequiresEmptyCustody() public {
+        ERC721SeaDropTransferAdapter adapter = _newTransferAdapter(1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropTransferAdapter.StillHoldsTokens.selector, 1
+            )
+        );
+        adapter.renounceOwnership();
+
+        // Simulate target moving the queued token out while still queued.
+        vm.prank(address(adapter));
+        existing.transferFrom(address(adapter), stranger, 11);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropTransferAdapter.QueueNotEmpty.selector, 1
+            )
+        );
+        adapter.renounceOwnership();
+
+        adapter.dequeueHead(11);
+        adapter.transferOwnership(stranger);
+        adapter.renounceOwnership();
+        assertEq(adapter.owner(), address(0));
+        vm.prank(stranger);
+        vm.expectRevert(TwoStepOwnable.NotNextOwner.selector);
+        adapter.acceptOwnership();
+
+        // After renouncing, a mint (from == address(0)) must be rejected.
+        vm.prank(address(existing));
+        vm.expectRevert(
+            ERC721SeaDropTransferAdapter.OnlyOwnerCanDeposit.selector
+        );
+        adapter.onERC721Received(stranger, address(0), 99, "");
+    }
+
+    function testTransferAdapterHeadRecovery() public {
+        ERC721SeaDropTransferAdapter adapter = _newTransferAdapter(2);
+        vm.prank(address(existing));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropTransferAdapter.TokenIsQueued.selector, 11
+            )
+        );
+        adapter.onERC721Received(address(this), address(this), 11, "");
+        adapter.dequeueHead(11);
+        _mintPublic(address(adapter), 1);
+        assertEq(existing.ownerOf(12), minter);
+        adapter.rescue(11, stranger);
+        assertEq(existing.ownerOf(11), stranger);
     }
 
     function testTransferAdapterMaxSupplyBelowQueue() public {

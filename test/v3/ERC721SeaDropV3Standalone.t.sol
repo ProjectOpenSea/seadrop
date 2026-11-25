@@ -31,6 +31,12 @@ contract ERC721SeaDropV3StandaloneTest is SeaDropV3TestHelper {
         token.initialize(bob, bob, "", "");
     }
 
+    function test_directMintRejectsNonzeroId() public {
+        vm.prank(address(minter));
+        vm.expectRevert(abi.encodeWithSignature("IdNotZero(uint256)", 7));
+        token721.mintSeaDrop(bob, 7, 1);
+    }
+
     function test_deployRejectsZeroOwnerOrMinter() public {
         vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
         new ERC721SeaDropV3Standalone(

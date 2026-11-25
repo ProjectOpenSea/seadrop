@@ -85,6 +85,19 @@ contract SeaDropMinterV1CompatTest is SeaDropV3TestHelper {
         assertEq(v1Token.ownerOf(1), carol);
     }
 
+    function test_ownerMintRequiresZeroIdForBothERC721Versions() public {
+        _allowMinter();
+        address[2] memory tokens = [address(v1Token), address(token721)];
+        for (uint256 i; i < tokens.length; ++i) {
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    ISeaDropMinter.ERC721StageIdNotZero.selector, 7
+                )
+            );
+            minter.ownerMint(tokens[i], 7, carol, 1);
+        }
+    }
+
     function test_v1Token_ownerMint() public {
         _allowMinter();
         minter.ownerMint(address(v1Token), 0, carol, 3);

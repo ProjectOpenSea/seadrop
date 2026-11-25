@@ -35,6 +35,8 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
 
     error MaxSupplyBelowTotalMinted(uint256 maxSupply, uint256 totalMinted);
 
+    error IdNotZero(uint256 id);
+
     /// @dev Deploys the implementation. See SeaDropTokenV3Base.
     constructor(address conduit) SeaDropTokenV3Base(conduit) { }
 
@@ -58,8 +60,9 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
     }
 
     /// @inheritdoc ISeaDropTokenV3
-    function mintSeaDrop(address to, uint256, uint256 quantity) external {
+    function mintSeaDrop(address to, uint256 id, uint256 quantity) external {
         _checkMinter();
+        if (id != 0) revert IdNotZero(id);
 
         uint256 max = _erc721Storage().maxSupply;
         uint256 total = _totalMinted() + quantity;

@@ -6,6 +6,8 @@ import {
     ISeaDropTokenContractMetadata
 } from "../interfaces/INonFungibleSeaDropToken.sol";
 
+import { SeaDropErrorsAndEvents } from "../lib/SeaDropErrorsAndEvents.sol";
+
 import { ISeaDrop } from "../interfaces/ISeaDrop.sol";
 
 import {
@@ -190,6 +192,9 @@ abstract contract ERC721SeaDropAdapter is
         nonReentrant
     {
         _onlyAllowedSeaDrop(msg.sender);
+        if (quantity == 0) {
+            revert SeaDropErrorsAndEvents.MintQuantityCannotBeZero();
+        }
 
         uint256 newTotal = _totalMinted + quantity;
         uint256 mintable = _mintableSupply();

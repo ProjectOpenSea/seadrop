@@ -304,7 +304,7 @@ interface ISeaDropMinter {
     error TokenAlreadyRegistered(address token, address factory);
 
     /// @notice Set a stage. Only the token's owner can call this. An
-    ///         ERC-721 token, which ignores ids, only has stages at id 0.
+    ///         ERC-721 token only has stages at id 0.
     function setStage(
         address token,
         uint256 id,
