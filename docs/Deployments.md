@@ -74,6 +74,21 @@ To deploy SeaDrop to a new network, see [SeaDrop Deployment](SeaDropDeployment.m
 
 ## Base mainnet v3 QA deployments
 
+### Minter and factory without wallet-signed intents
+
+These unaudited Base QA contracts (chain ID 8453) use [revision `f3e16a9`](https://github.com/ProjectOpenSea/seadrop/commit/f3e16a971e24208a2cc272301b8717e620591907). The [minter deployment](https://basescan.org/tx/0x68943bdff97a79dd685a30906db5d876ebf1fa4469a770853f2d8768bef7b7f6) was at block 62,266,709. The [factory deployment](https://basescan.org/tx/0x6e19ac6fd3c34e5fbe2a0064d0c9ca1b2bc029e2008681e99bf6654c6c061ae0) was at block 62,266,758 and created both token implementations. The minter owner at deployment was [the QA wallet](https://basescan.org/address/0xfBa662e1a8e91a350702cF3b87D0C2d2Fb4BA57F). The factory uses a zero conduit.
+
+| Contract              | Address                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `SeaDropMinter`       | [`0xDD674D7DA6391Cf3c26468DE035cE4A2AF4043ce`](https://basescan.org/address/0xDD674D7DA6391Cf3c26468DE035cE4A2AF4043ce#code) |
+| `SeaDropTokenFactory` | [`0xFcc806954E7e60DF3F089e5f71AfDE4750683431`](https://basescan.org/address/0xFcc806954E7e60DF3F089e5f71AfDE4750683431#code) |
+| `ERC721SeaDropV3`     | [`0x5e35464B5052dBcbd1e019d649e03c807f1Ba14e`](https://basescan.org/address/0x5e35464B5052dBcbd1e019d649e03c807f1Ba14e#code) |
+| `ERC1155SeaDropV3`    | [`0xeFc73a8845C8a019A7Fc51Ad36A267C366cC1C11`](https://basescan.org/address/0xeFc73a8845C8a019A7Fc51Ad36A267C366cC1C11#code) |
+
+Use `mint` for paid mints. Signed stages can bind the payer through `Authorization.sender`. For clone discovery, index `TokenCreated` events emitted by this factory. Both create calls were simulated successfully. The earlier addresses below use the previous ABI.
+
+### Earlier minter and standalone tokens
+
 These are unaudited test contracts on Base mainnet (chain ID 8453), deployed November 25, 2026 from [SeaDrop revision `c0ec779`](https://github.com/ProjectOpenSea/seadrop/commit/c0ec77941b4b4bae31dd3526388e046e17951fe4). BaseScan verified all three contracts with Solidity 0.8.38 and 1,000,000 optimizer runs.
 
 | Contract                     | Address and verified source                                                                                                  | Creation transaction and block                                                                           |
