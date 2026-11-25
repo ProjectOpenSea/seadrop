@@ -83,3 +83,13 @@ These are unaudited test contracts on Base mainnet (chain ID 8453), deployed Nov
 | `ERC1155SeaDropV3Standalone` | [`0x76E4d933A379C08555C0556Da76544535542450e`](https://basescan.org/address/0x76E4d933A379C08555C0556Da76544535542450e#code) | [62,235,145](https://basescan.org/tx/0xde7874bc453a1702d71f5916b2657d91a6c12a00a4f6981a7cd71080d863587a) |
 
 At deployment, [the QA wallet](https://basescan.org/address/0xfBa662e1a8e91a350702cF3b87D0C2d2Fb4BA57F) owned all three contracts. Both standalone tokens allowed the minter above and had a zero preapproved conduit. The ERC-721 supply cap and the ERC-1155 cap for edition 1 were zero. Neither token had a stage or payout recipients configured. The minter's native and default ERC-20 currency policies were disabled.
+
+### Clone factory
+
+The Base QA minter above [authorized the factory at block 62,260,260](https://basescan.org/tx/0x89a3915bab0e584b606f9fdf1292d94f4daea8fa2653183171dd72cee7a948f0). The factory uses a zero conduit and [deployed both implementations in its constructor at block 62,260,153](https://basescan.org/tx/0xdbf013d23de4b0e41e2a72091d31877d6b5e33928e0e83545962140d1343a0db). Use `createERC721` or `createERC1155` on the factory to create a collection.
+
+| QA contract                     | Base mainnet address                                                                                                         |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| SeaDropTokenFactory             | [`0x0c36fcd4fF64D62096653A39674558b3eb096D8C`](https://basescan.org/address/0x0c36fcd4fF64D62096653A39674558b3eb096D8C#code) |
+| ERC721SeaDropV3 implementation  | [`0x1C265a5B9FB58b88bb48467631FFFE5bd193a124`](https://basescan.org/address/0x1C265a5B9FB58b88bb48467631FFFE5bd193a124#code) |
+| ERC1155SeaDropV3 implementation | [`0x50D35d6e1f7414a7B86c76E26E6b391eA82e386d`](https://basescan.org/address/0x50D35d6e1f7414a7B86c76E26E6b391eA82e386d#code) |
