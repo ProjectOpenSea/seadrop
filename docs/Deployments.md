@@ -1,6 +1,6 @@
 # Deployments
 
-These tables cover v1 and v2. Each contract below has the same address on every network it's deployed to.
+The v1 and v2 tables list contracts with the same address on every network where they are deployed. The [v3 QA deployments](#base-mainnet-v3-qa-deployments) are specific to Base.
 
 ## What OpenSea uses
 
@@ -71,3 +71,15 @@ They are also deployed on Arbitrum Nova, Kaia, Arc and Elysium, which OpenSea do
 The network list comes from OpenSea's chain configuration as of November 2026. Every address in this document was checked for deployed code on each network listed.
 
 To deploy SeaDrop to a new network, see [SeaDrop Deployment](SeaDropDeployment.md).
+
+## Base mainnet v3 QA deployments
+
+These are unaudited test contracts on Base mainnet (chain ID 8453), deployed November 25, 2026 from [SeaDrop revision `c0ec779`](https://github.com/ProjectOpenSea/seadrop/commit/c0ec77941b4b4bae31dd3526388e046e17951fe4). BaseScan verified all three contracts with Solidity 0.8.38 and 1,000,000 optimizer runs.
+
+| Contract                     | Address and verified source                                                                                                  | Creation transaction and block                                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `SeaDropMinter`              | [`0xec2abcCB14614c895044BeE34a3E8e2Af026935A`](https://basescan.org/address/0xec2abcCB14614c895044BeE34a3E8e2Af026935A#code) | [62,235,112](https://basescan.org/tx/0xff17232b24531047b246fa3c628c9f96124241b0a9ba613ecbc7a0a8296e411a) |
+| `ERC721SeaDropV3Standalone`  | [`0xE3E254162985bA3BF10543192fB313b068219404`](https://basescan.org/address/0xE3E254162985bA3BF10543192fB313b068219404#code) | [62,235,118](https://basescan.org/tx/0x9a6c0913e36f7290b460c5d22f50e1ef774d1c19ceb2488922a47a5b44495e0b) |
+| `ERC1155SeaDropV3Standalone` | [`0x76E4d933A379C08555C0556Da76544535542450e`](https://basescan.org/address/0x76E4d933A379C08555C0556Da76544535542450e#code) | [62,235,145](https://basescan.org/tx/0xde7874bc453a1702d71f5916b2657d91a6c12a00a4f6981a7cd71080d863587a) |
+
+At deployment, [the QA wallet](https://basescan.org/address/0xfBa662e1a8e91a350702cF3b87D0C2d2Fb4BA57F) owned all three contracts. Both standalone tokens allowed the minter above and had a zero preapproved conduit. The ERC-721 supply cap and the ERC-1155 cap for edition 1 were zero. Neither token had a stage or payout recipients configured. The minter's native and default ERC-20 currency policies were disabled.
