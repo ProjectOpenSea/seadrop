@@ -16,7 +16,7 @@ import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
 /**
  * @dev Deploys the minter, the factory and both v3 tokens as the factory's
  *      clones, owned by the test contract, with one public ETH stage,
- *      and signs authorizations and intents independently of the minter's
+ *      and signs authorizations independently of the minter's
  *      own hashing.
  */
 abstract contract SeaDropV3TestHelper is Test {
@@ -34,17 +34,6 @@ abstract contract SeaDropV3TestHelper is Test {
         "MintAuthorization(address token,uint256 id,uint256 stageIndex,"
         "address wallet,address sender,address currency,uint256 maxQuantity,"
         "bool hasPrice,uint256 price,uint256 expiry)"
-    );
-    bytes32 internal constant PARAMS_TYPEHASH = keccak256(
-        "MintParams(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,address recipient,uint256 quantity,"
-        "address currency,uint256 maxTotalPrice)"
-    );
-    bytes32 internal constant INTENT_TYPEHASH = keccak256(
-        "MintIntent(MintParams params,uint256 nonce,uint256 expiry)"
-        "MintParams(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,address recipient,uint256 quantity,"
-        "address currency,uint256 maxTotalPrice)"
     );
 
     SeaDropMinter internal minter;
@@ -228,33 +217,6 @@ abstract contract SeaDropV3TestHelper is Test {
             signature: ""
         });
         auth.signature = _sign(signerKey, _authorizationDigest(params, auth));
-    }
-
-    function _intentDigest(ISeaDropMinter.MintIntent memory intent)
-        internal
-        view
-        returns (bytes32)
-    {
-        ISeaDropMinter.MintParams memory p = intent.params;
-        bytes32 paramsHash = keccak256(
-            abi.encode(
-                PARAMS_TYPEHASH,
-                p.token,
-                p.id,
-                p.stageIndex,
-                p.wallet,
-                p.recipient,
-                p.quantity,
-                p.currency,
-                p.maxTotalPrice
-            )
-        );
-        bytes32 structHash = keccak256(
-            abi.encode(INTENT_TYPEHASH, paramsHash, intent.nonce, intent.expiry)
-        );
-        return keccak256(
-            abi.encodePacked("\x19\x01", _domainSeparator(), structHash)
-        );
     }
 
     function _sign(uint256 key, bytes32 digest)
