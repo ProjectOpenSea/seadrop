@@ -12,7 +12,7 @@ interface ISeaDropTokenV3 {
      *         this. The token enforces its own max supply.
      *
      * @param to       The address that receives the tokens.
-     * @param id       The token id. ERC-721 tokens ignore it.
+     * @param id       The edition id for ERC-1155, or zero for ERC-721.
      * @param quantity The number of tokens to mint.
      */
     function mintSeaDrop(address to, uint256 id, uint256 quantity) external;

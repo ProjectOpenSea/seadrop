@@ -47,7 +47,13 @@ contract ERC721SeaDropV3TransferAdapter is
     /// @notice Whether a token is queued and not yet delivered.
     mapping(uint256 tokenId => bool queued) public isQueued;
 
+    event HeadDequeued(uint256 tokenId);
+
+    /// @notice Emit when a token is queued for the drop.
     event TokenQueued(uint256 tokenId);
+
+    error UnexpectedQueueHead(uint256 actualTokenId);
+    error QueueNotEmpty(uint256 queued);
 
     error OnlyTarget(address caller);
     error OnlyOwnerCanDeposit(address operator, address from);
@@ -81,15 +87,35 @@ contract ERC721SeaDropV3TransferAdapter is
         }
         if (_entered) revert DepositDuringTransfer();
         address owner_ = owner();
-        if (operator != owner_ && from != owner_) {
+        if (owner_ == address(0) || (operator != owner_ && from != owner_)) {
             revert OnlyOwnerCanDeposit(operator, from);
         }
 
+        if (isQueued[tokenId]) revert TokenIsQueued(tokenId);
         _queue.push(tokenId);
         isQueued[tokenId] = true;
         emit TokenQueued(tokenId);
 
         return IERC721Receiver.onERC721Received.selector;
+    }
+
+    /// @notice Remove the expected first token from sale without transferring
+    ///         it. If still held, the owner can recover it with rescue.
+    function dequeueHead(uint256 expectedTokenId)
+        external
+        nonReentrant
+        onlyOwner
+    {
+        if (queuedTokenCount() == 0) {
+            revert NotEnoughQueuedTokens(1, 0);
+        }
+        uint256 index = _nextIndex;
+        uint256 tokenId = _queue[index];
+        if (tokenId != expectedTokenId) revert UnexpectedQueueHead(tokenId);
+        delete _queue[index];
+        _nextIndex = index + 1;
+        isQueued[tokenId] = false;
+        emit HeadDequeued(tokenId);
     }
 
     /// @notice The number of queued tokens not yet delivered.
@@ -148,9 +174,11 @@ contract ERC721SeaDropV3TransferAdapter is
      *         mint, and only the owner can call them, so this reverts
      *         while the adapter holds any of the target's tokens.
      */
-    function renounceOwnership() public override {
+    function renounceOwnership() public override onlyOwner {
         uint256 balance = IERC721(target).balanceOf(address(this));
         if (balance != 0) revert StillHoldsTokens(balance);
+        uint256 queued = queuedTokenCount();
+        if (queued != 0) revert QueueNotEmpty(queued);
         super.renounceOwnership();
     }
 
@@ -177,6 +205,7 @@ contract ERC721SeaDropV3TransferAdapter is
 
         for (uint256 i; i < quantity; ++i) {
             uint256 tokenId = _queue[index + i];
+            delete _queue[index + i];
             isQueued[tokenId] = false;
             IERC721(target).safeTransferFrom(address(this), to, tokenId);
         }

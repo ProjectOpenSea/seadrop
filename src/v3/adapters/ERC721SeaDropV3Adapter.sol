@@ -72,6 +72,7 @@ abstract contract ERC721SeaDropV3Adapter is TwoStepOwnable, ISeaDropTokenV3 {
     error TargetHasNoCode(address target);
     error OnlyAllowedMinter(address caller);
     error IdNotZero(uint256 id);
+    error QuantityIsZero();
     error Reentrancy();
     error MaxSupplyBelowTotalMinted(uint256 maxSupply, uint256 totalMinted);
 
@@ -92,6 +93,7 @@ abstract contract ERC721SeaDropV3Adapter is TwoStepOwnable, ISeaDropTokenV3 {
             revert TargetHasNoCode(targetContract);
         }
         target = targetContract;
+        if (initialOwner == address(0)) revert NewOwnerIsZeroAddress();
         _transferOwnership(initialOwner);
         if (minter != address(0)) _setAllowedMinter(minter, true);
 
@@ -124,6 +126,7 @@ abstract contract ERC721SeaDropV3Adapter is TwoStepOwnable, ISeaDropTokenV3 {
             revert OnlyAllowedMinter(msg.sender);
         }
         if (id != 0) revert IdNotZero(id);
+        if (quantity == 0) revert QuantityIsZero();
 
         uint256 total = totalMinted + quantity;
         uint256 mintable = _mintableSupply();

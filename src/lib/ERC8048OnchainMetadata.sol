@@ -155,6 +155,7 @@ abstract contract ERC8048OnchainMetadata is
         string calldata key,
         bytes calldata value
     ) external {
+        _checkMetadataWriter(tokenId);
         _setMetadata(tokenId, key, value);
         _emitMetadataUpdate(tokenId);
     }
@@ -179,17 +180,15 @@ abstract contract ERC8048OnchainMetadata is
             revert MetadataBatchLengthMismatch();
         }
 
-        for (uint256 i = 0; i < length;) {
+        uint256 i = 0;
+        while (i < length) {
             uint256 tokenId = tokenIds[i];
-            _setMetadata(tokenId, keys[i], values[i]);
-
-            unchecked {
+            _checkMetadataWriter(tokenId);
+            do {
+                _setMetadata(tokenId, keys[i], values[i]);
                 ++i;
-            }
-
-            if (i == length || tokenIds[i] != tokenId) {
-                _emitMetadataUpdate(tokenId);
-            }
+            } while (i < length && tokenIds[i] == tokenId);
+            _emitMetadataUpdate(tokenId);
         }
     }
 
@@ -245,29 +244,31 @@ abstract contract ERC8048OnchainMetadata is
      *      while one is set, otherwise the admin unless `ownerCannotWrite`
      *      is on.
      */
-    function _isCollectionWriter(address account) internal view returns (bool) {
-        CollectionAuthority memory settings = _collectionAuthority;
+    function _isCollectionWriter(
+        CollectionAuthority memory settings,
+        address account
+    ) internal view returns (bool) {
         if (settings.authority != address(0)) {
             return account == settings.authority;
         }
         return !settings.ownerCannotWrite && _isMetadataAdmin(account);
     }
 
-    /**
-     * @dev Store `value` for `key` on `tokenId` after checking the caller
-     *      and emit `MetadataSet`.
-     */
+    function _checkMetadataWriter(uint256 tokenId) internal view {
+        CollectionAuthority memory settings = _collectionAuthority;
+        if (
+            !_isCollectionWriter(settings, msg.sender)
+                && !_isHolderWriter(settings, tokenId, msg.sender)
+        ) {
+            revert MetadataWriteUnauthorized(tokenId);
+        }
+    }
+
     function _setMetadata(
         uint256 tokenId,
         string calldata key,
         bytes calldata value
     ) internal {
-        if (!_isCollectionWriter(msg.sender)) {
-            if (!_isHolderWriter(tokenId, msg.sender)) {
-                revert MetadataWriteUnauthorized(tokenId);
-            }
-        }
-
         _metadata[tokenId][key] = value;
         emit MetadataSet(tokenId, key, key, value);
     }
@@ -277,12 +278,11 @@ abstract contract ERC8048OnchainMetadata is
      *      `account` holds `tokenId` now. A token that doesn't exist has no
      *      holder.
      */
-    function _isHolderWriter(uint256 tokenId, address account)
-        internal
-        view
-        returns (bool)
-    {
-        CollectionAuthority memory settings = _collectionAuthority;
+    function _isHolderWriter(
+        CollectionAuthority memory settings,
+        uint256 tokenId,
+        address account
+    ) internal view returns (bool) {
         if (settings.authority != address(0) || !settings.holderCanWrite) {
             return false;
         }

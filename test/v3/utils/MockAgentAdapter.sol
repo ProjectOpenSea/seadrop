@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.38;
 
-import { IAgentAdapter } from "../interfaces/IAgentAdapter.sol";
+import { IAgentAdapter } from "seadrop/v3/interfaces/IAgentAdapter.sol";
 
 interface IOwnerOf {
     function ownerOf(uint256 tokenId) external view returns (address);

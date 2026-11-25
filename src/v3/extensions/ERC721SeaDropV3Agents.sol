@@ -29,7 +29,7 @@ import {
  *
  *         Unlike the default v3 token, this is not a factory clone. A
  *         creator deploys it directly: the constructor sets the name,
- *         symbol, owner (the deployer) and first allowed minter, so the
+ *         symbol, owner (`initialOwner`) and first allowed minter, so the
  *         contract is ready to mint through SeaDropMinter. `initialize`
  *         always reverts.
  */
@@ -54,6 +54,17 @@ contract ERC721SeaDropV3Agents is ERC721SeaDropV3, ERC8048OnchainMetadata {
     /// @notice Emitted when a token's metadata changes (ERC-4906).
     event MetadataUpdate(uint256 _tokenId);
 
+    bool private transient _registering;
+
+    error RegistrationInProgress();
+
+    modifier nonReentrantRegistration() {
+        if (_registering) revert RegistrationInProgress();
+        _registering = true;
+        _;
+        _registering = false;
+    }
+
     /// @notice Revert when registering agents without an adapter.
     error AgentAdapterNotSet();
 
@@ -63,7 +74,7 @@ contract ERC721SeaDropV3Agents is ERC721SeaDropV3, ERC8048OnchainMetadata {
     error InvalidAgentTokenIdRange(uint256 firstTokenId, uint256 lastTokenId);
 
     /**
-     * @notice Deploy the token, owned by the deployer.
+     * @notice Deploy the token, owned by initialOwner.
      *
      * @param name_   The token's name.
      * @param symbol_ The token's symbol.
@@ -71,22 +82,21 @@ contract ERC721SeaDropV3Agents is ERC721SeaDropV3, ERC8048OnchainMetadata {
      * @param conduit The conduit every holder's tokens are approved for
      *                until the holder revokes it, or the zero address for
      *                none.
-     * @param adapter The ERC-8217 adapter to register agents through, or
-     *                the zero address on a chain without one. Registration
-     *                reverts without an adapter.
+     * @param adapter      The ERC-8217 adapter to register agents through, or
+     *                     the zero address on a chain without one. Registration
+     *                     reverts without an adapter.
+     * @param initialOwner The creator who administers the token.
      */
     constructor(
         string memory name_,
         string memory symbol_,
         address minter,
         address conduit,
-        address adapter
+        address adapter,
+        address initialOwner
     ) ERC721SeaDropV3(conduit) initializerERC721A {
         _AGENT_ADAPTER = adapter;
-        // SeaDropTokenV3Base's constructor gave up ownership, as it does
-        // for a clone implementation. This contract is the token, so the
-        // deployer owns it.
-        _setOwnerAndMinter(msg.sender, minter);
+        _initializeStandalone(initialOwner, minter);
         __ERC721A_init_unchained(name_, symbol_);
     }
 
@@ -143,7 +153,7 @@ contract ERC721SeaDropV3Agents is ERC721SeaDropV3, ERC8048OnchainMetadata {
         uint256 lastTokenId,
         string calldata prefix,
         string calldata suffix
-    ) external onlyOwner {
+    ) external nonReentrantRegistration onlyOwner {
         address adapter = _AGENT_ADAPTER;
         if (adapter == address(0)) revert AgentAdapterNotSet();
 

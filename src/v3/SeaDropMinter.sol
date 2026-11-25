@@ -155,6 +155,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     /// @param initialOwner The admin. Passed in so a CREATE2 deployer
     ///                     doesn't end up owning the minter.
     constructor(address initialOwner) EIP712("SeaDrop", "3") {
+        if (initialOwner == address(0)) revert NewOwnerIsZeroAddress();
         _transferOwnership(initialOwner);
     }
 
@@ -169,11 +170,9 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (stageIndex == OWNER_MINT_STAGE) {
             revert StageIndexReserved(stageIndex);
         }
-        // An ERC-721 token ignores ids, so stages and wallet limits at
+        // An ERC-721 has one supply, so stages and wallet limits at
         // other ids would give each wallet extra limits in one collection.
-        if (id != 0 && _supportsInterface(token, _ERC721_INTERFACE_ID)) {
-            revert ERC721StageIdNotZero(id);
-        }
+        _checkERC721Id(token, id);
         if (stage.endTime < stage.startTime) {
             revert StageEndsBeforeStart(stage.startTime, stage.endTime);
         }
@@ -395,6 +394,8 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     ) external nonReentrant onlyTokenOwner(token) {
         if (quantity == 0) revert QuantityIsZero();
 
+        _checkERC721Id(token, id);
+
         // Owner mints aren't capped by stages, but they raise the total
         // that stages' caps compare against.
         bool isV3 = _checkSupply(token, id, recipient, quantity, 0);
@@ -413,6 +414,12 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             address(0),
             0
         );
+    }
+
+    function _checkERC721Id(address token, uint256 id) private view {
+        if (id != 0 && _supportsInterface(token, _ERC721_INTERFACE_ID)) {
+            revert ERC721StageIdNotZero(id);
+        }
     }
 
     /// @inheritdoc ISeaDropMinter

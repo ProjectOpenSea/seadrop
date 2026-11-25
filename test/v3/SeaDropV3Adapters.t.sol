@@ -31,6 +31,7 @@ import {
     ERC721SeaDropV3TransferAdapter
 } from "seadrop/v3/adapters/ERC721SeaDropV3TransferAdapter.sol";
 
+import { SeaDropMinter } from "seadrop/v3/SeaDropMinter.sol";
 import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 import { IERC2981 } from "openzeppelin-contracts/interfaces/IERC2981.sol";
@@ -540,6 +541,81 @@ contract SeaDropV3AdaptersTest is SeaDropV3TestHelper {
         adapter.onERC721Received(address(this), address(this), 1, "");
     }
 
+    function test_zeroAdminRejectedAtDeployment() public {
+        vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
+        new ERC721SeaDropV3TransferAdapter(
+            address(existing), address(minter), address(0)
+        );
+        vm.expectRevert(TwoStepOwnable.NewOwnerIsZeroAddress.selector);
+        new SeaDropMinter(address(0));
+    }
+
+    function test_adapter_directMintRejectsZeroQuantity() public {
+        ERC721SeaDropV3TransferAdapter adapter = _newTransferAdapter(1);
+        vm.prank(address(minter));
+        vm.expectRevert(ERC721SeaDropV3Adapter.QuantityIsZero.selector);
+        adapter.mintSeaDrop(alice, 0, 0);
+    }
+
+    function test_transferAdapter_renounceRejectsMintsAndNonEmptyQueue()
+        public
+    {
+        ERC721SeaDropV3TransferAdapter adapter = _newTransferAdapter(1);
+        // Simulate the target moving/burning a queued token out of custody
+        // so balance is zero while the queue still has an entry.
+        vm.prank(address(adapter));
+        existing.transferFrom(address(adapter), creator, 11);
+        assertEq(existing.balanceOf(address(adapter)), 0);
+        assertEq(adapter.queuedTokenCount(), 1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropV3TransferAdapter.QueueNotEmpty.selector, 1
+            )
+        );
+        adapter.renounceOwnership();
+
+        adapter.dequeueHead(11);
+        adapter.renounceOwnership();
+        assertEq(adapter.owner(), address(0));
+
+        // After renouncing, a mint (from == address(0)) must still be rejected.
+        vm.prank(address(existing));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropV3TransferAdapter.OnlyOwnerCanDeposit.selector,
+                creator,
+                address(0)
+            )
+        );
+        adapter.onERC721Received(creator, address(0), 99, "");
+    }
+
+    function test_transferAdapter_rejectsDuplicateAndRecoversHead() public {
+        ERC721SeaDropV3TransferAdapter adapter = _newTransferAdapter(2);
+        vm.prank(address(existing));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropV3TransferAdapter.TokenIsQueued.selector, 11
+            )
+        );
+        adapter.onERC721Received(address(this), address(this), 11, "");
+        assertEq(adapter.queuedTokenCount(), 2);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC721SeaDropV3TransferAdapter.UnexpectedQueueHead.selector, 11
+            )
+        );
+        adapter.dequeueHead(12);
+        adapter.dequeueHead(11);
+        assertFalse(adapter.isQueued(11));
+        adapter.rescue(11, creator);
+        _mint(address(adapter), alice, 1);
+        assertEq(existing.ownerOf(12), alice);
+        assertEq(adapter.queuedTokenCount(), 0);
+    }
+
     /// @dev A mint without the receiver callback leaves the tokens
     ///      unqueued, so the drop can't sell them and rescue returns them.
     function test_transferAdapter_unsafeMintIsNotQueued() public {
@@ -687,6 +763,21 @@ contract SeaDropV3AdaptersTest is SeaDropV3TestHelper {
         );
     }
 
+    function test_transferAdapter_clearsDeliveredQueueSlots() public {
+        TransferAdapterQueueHarness adapter = new TransferAdapterQueueHarness(
+            address(existing), address(minter), address(this)
+        );
+        _configure(adapter, 60);
+        existing.mintTo(address(adapter), 2);
+        assertEq(adapter.queueAt(0), 11);
+        assertEq(adapter.queueAt(1), 12);
+
+        _mint(address(adapter), alice, 1);
+        assertEq(existing.ownerOf(11), alice);
+        assertEq(adapter.queueAt(0), 0);
+        assertEq(adapter.queueAt(1), 12);
+    }
+
     /// @dev Lets the test contract receive tokens it mints for itself.
     function onERC721Received(address, address, uint256, bytes calldata)
         external
@@ -694,5 +785,15 @@ contract SeaDropV3AdaptersTest is SeaDropV3TestHelper {
         returns (bytes4)
     {
         return IERC721Receiver.onERC721Received.selector;
+    }
+}
+
+contract TransferAdapterQueueHarness is ERC721SeaDropV3TransferAdapter {
+    constructor(address targetContract, address minter_, address initialOwner)
+        ERC721SeaDropV3TransferAdapter(targetContract, minter_, initialOwner)
+    { }
+
+    function queueAt(uint256 index) external view returns (uint256) {
+        return _queue[index];
     }
 }

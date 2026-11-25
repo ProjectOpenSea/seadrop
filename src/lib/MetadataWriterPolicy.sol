@@ -110,10 +110,16 @@ contract MetadataWriterPolicy is TwoStepOwnable {
     /// @notice Revert when a batch's arrays differ in length.
     error BatchLengthMismatch();
 
+    error TokenIsZeroAddress();
+
     /**
-     * @param token_ The token this policy writes to.
+     * @param token_       The token this policy writes to.
+     * @param initialOwner The policy administrator.
      */
-    constructor(address token_) {
+    constructor(address token_, address initialOwner) {
+        if (initialOwner == address(0)) revert NewOwnerIsZeroAddress();
+        if (token_ == address(0)) revert TokenIsZeroAddress();
+        _transferOwnership(initialOwner);
         token = IERC8048OnchainMetadataToken(token_);
     }
 
@@ -260,7 +266,7 @@ contract MetadataWriterPolicy is TwoStepOwnable {
      *         transfer, so the pending owner can't accept it and take back
      *         a policy that was renounced.
      */
-    function renounceOwnership() public virtual override {
+    function renounceOwnership() public virtual override onlyOwner {
         cancelOwnershipTransfer();
         super.renounceOwnership();
     }

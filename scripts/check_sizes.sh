@@ -11,7 +11,7 @@ cd "$(dirname "$0")/../${1:-.}"
 # forge exits nonzero when a contract is over a limit. Keep its output so
 # the report still prints, and fail after it.
 status=0
-sizes=$(forge build --sizes --skip test --skip script --json) || status=$?
+sizes=$(forge build src --sizes --json) || status=$?
 if ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$sizes"; then
     echo "forge build failed (exit $status)" >&2
     exit "$((status == 0 ? 1 : status))"

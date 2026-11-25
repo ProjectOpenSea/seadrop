@@ -60,13 +60,19 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
      * @param adapter        The ERC-8217 adapter to register agents
      *                       through, or the zero address on a chain without
      *                       one. Registration reverts without an adapter.
+     * @param initialOwner   The creator who administers the token.
      */
     constructor(
         string memory name,
         string memory symbol,
         address[] memory allowedSeaDrop,
-        address adapter
+        address adapter,
+        address initialOwner
     ) ERC721SeaDrop(name, symbol, allowedSeaDrop) {
+        if (initialOwner == address(0)) {
+            revert NewOwnerIsZeroAddress();
+        }
+        _transferOwnership(initialOwner);
         _AGENT_ADAPTER = adapter;
     }
 
@@ -123,7 +129,7 @@ contract ERC721SeaDropAgents is ERC721SeaDrop, ERC8048OnchainMetadata {
         uint256 lastTokenId,
         string calldata prefix,
         string calldata suffix
-    ) external onlyOwner {
+    ) external nonReentrant onlyOwner {
         address adapter = _AGENT_ADAPTER;
         if (adapter == address(0)) revert AgentAdapterNotSet();
 
