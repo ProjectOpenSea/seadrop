@@ -92,7 +92,6 @@ abstract contract SeaDropV3TestHelper is Test {
 
     function _deployTokens(address conduit) internal virtual {
         factory = new SeaDropTokenFactory(address(minter), conduit);
-        minter.setTokenFactory(address(factory), true);
         token721 =
             ERC721SeaDropV3(factory.createERC721("Test", "TEST", bytes32(0)));
         token1155 = ERC1155SeaDropV3(factory.createERC1155(bytes32(0)));

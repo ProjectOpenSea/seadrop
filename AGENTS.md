@@ -54,7 +54,7 @@ V3 extends v1's drop architecture with one minter contract per chain and thin to
 
 - `src/v3/SeaDropMinter.sol` is the minter. It holds stages, signed authorizations and intents, recipient rules, payments and payouts for every v3 drop on a chain.
 - `src/v3/ERC721SeaDropV3.sol`, `src/v3/ERC1155SeaDropV3.sol` and `src/v3/SeaDropTokenV3Base.sol` are the tokens. They keep ownership, supply and metadata, and mint only for the minters they allow.
-- `src/v3/SeaDropTokenFactory.sol` deploys the tokens as EIP-1167 clones and registers them with the minter. Each chain gets one, deployed with that chain's minter and conduit.
+- `src/v3/SeaDropTokenFactory.sol` deploys the tokens as EIP-1167 clones and emits `TokenCreated` for each clone. Each chain gets one, deployed with that chain's minter and conduit.
 - `src/v3/adapters` has adapters that run a drop for an ERC-721 deployed without SeaDrop. They implement the v3 token interface, mint only at id 0 and count only their own drop. [docs/v3/ExistingContractAdapters.md](docs/v3/ExistingContractAdapters.md) explains them.
 - `src/v3/interfaces` has the minter's structs, events and errors, the token interface, and the delegate.xyz registry call.
 - `test/v3` has v3's Forge tests, with mocks and helpers in `test/v3/utils`.
@@ -70,7 +70,7 @@ V3 extends v1's drop architecture with one minter contract per chain and thin to
 - Tokens are clones. Only the factory can initialize one, once, and the implementations can't be initialized. The standalone ERC-721 and ERC-1155 variants set up the token in their constructors. Keep new token state in the ERC-7201 namespaces, and update the slot tests and `docs/v3/AuditScope.md` when a namespace changes.
 - ERC-1155 token ids start at 1. Id 0 reverts with `TokenIdIsZero`.
 - Errors are plain, with one check per error.
-- The minter has less than 1 KB of runtime headroom under EIP-170. Run `./scripts/check_sizes.sh` after adding to it.
+- The minter has 1,437 bytes of runtime headroom under EIP-170. Run `./scripts/check_sizes.sh` after adding to it.
 - Compiler settings (solc 0.8.38 for Cancun, 1,000,000 optimizer runs, no metadata hash) change deployed bytecode, so don't change them in passing.
 - Biome formats Markdown and JSON. It aligns Markdown tables and wants a blank line before a list.
 

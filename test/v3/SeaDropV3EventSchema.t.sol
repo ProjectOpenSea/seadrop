@@ -65,14 +65,6 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
             keccak256("SignerSetUpdated(uint256,uint32,address,bool)")
         );
         assertEq(
-            ISeaDropMinter.TokenFactoryUpdated.selector,
-            keccak256("TokenFactoryUpdated(uint256,address,bool)")
-        );
-        assertEq(
-            ISeaDropMinter.TokenRegistered.selector,
-            keccak256("TokenRegistered(uint256,address,address)")
-        );
-        assertEq(
             ISeaDropMinter.SeaDropMint.selector,
             keccak256(
                 "SeaDropMint(address,uint256,uint256,address,address,address,"
@@ -218,33 +210,12 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
         assertEq(log.data, abi.encode(VERSION, true));
     }
 
-    function test_emitted_TokenFactoryUpdated() public {
-        address other = makeAddr("otherFactory");
-        vm.recordLogs();
-        minter.setTokenFactory(other, true);
-
-        Vm.Log memory log = _onlyLog(
-            address(minter),
-            keccak256("TokenFactoryUpdated(uint256,address,bool)")
-        );
-        _assertTopics(log, _topic(other));
-        assertEq(log.data, abi.encode(VERSION, true));
-    }
-
-    function test_emitted_TokenRegisteredAndTokenCreated() public {
+    function test_emitted_TokenCreated() public {
         bytes32 salt = bytes32(uint256(42));
         vm.recordLogs();
         vm.prank(alice);
         address token = factory.createERC1155(salt);
         Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        Vm.Log memory registered = _find(
-            logs,
-            address(minter),
-            keccak256("TokenRegistered(uint256,address,address)")
-        );
-        _assertTopics(registered, _topic(token), _topic(address(factory)));
-        assertEq(registered.data, abi.encode(VERSION));
 
         Vm.Log memory created = _find(
             logs,
