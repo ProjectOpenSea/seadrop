@@ -57,7 +57,6 @@ contract TestSeaDropV3Snapshot is Test {
         factory = new SeaDropTokenFactory(
             address(minter), 0x1E0049783F008A0085193E00003D00cd54003c71
         );
-        minter.setTokenFactory(address(factory), true);
         token721 = ERC721SeaDropV3(factory.createERC721("", "", bytes32(0)));
         token721.setMaxSupply(1000);
         token1155 = ERC1155SeaDropV3(factory.createERC1155(bytes32(0)));

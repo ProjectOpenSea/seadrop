@@ -125,12 +125,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             => mapping(uint256 id => mapping(address wallet => uint256))
     ) public mintedByWallet;
 
-    /// @notice Factories the admin allows to register tokens.
-    mapping(address factory => bool allowed) public tokenFactories;
-
-    /// @notice The factory that registered each token, or address(0).
-    mapping(address token => address factory) public tokenFactoryOf;
-
     /// @notice Which intent nonces each wallet used or cancelled.
     mapping(address wallet => mapping(uint256 nonce => bool used)) public
         intentNonceUsed;
@@ -286,28 +280,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             signer,
             allowed
         );
-    }
-
-    /// @inheritdoc ISeaDropMinter
-    function setTokenFactory(address factory, bool allowed) external onlyOwner {
-        // TokenFactoryUpdated below records the change; the lint misses it.
-        // forge-lint: disable-next-line(missing-events-access-control)
-        tokenFactories[factory] = allowed;
-
-        emit TokenFactoryUpdated(CONFIG_EVENT_VERSION, factory, allowed);
-    }
-
-    /// @inheritdoc ISeaDropMinter
-    function registerToken(address token) external {
-        if (!tokenFactories[msg.sender]) revert OnlyTokenFactory(msg.sender);
-        address registeredBy = tokenFactoryOf[token];
-        if (registeredBy != address(0)) {
-            revert TokenAlreadyRegistered(token, registeredBy);
-        }
-
-        tokenFactoryOf[token] = msg.sender;
-
-        emit TokenRegistered(CONFIG_EVENT_VERSION, token, msg.sender);
     }
 
     /**

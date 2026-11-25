@@ -15,7 +15,7 @@ new ERC721SeaDropV3Agents(name, symbol, seaDropMinter, conduit, adapter, initial
 
 The initial owner administers the token, and the chain's `SeaDropMinter` is its first allowed minter. `conduit` is the conduit every holder's tokens are approved for until the holder revokes it (OpenSea's conduit for the chain, or the zero address for none). `adapter` is the chain's ERC-8217 adapter, or the zero address on a chain without one, where `registerAgents` reverts. `initialize` always reverts, since the constructor already did its work.
 
-The minter mints a standalone token the same way it mints a clone. The minter's `tokenFactoryOf` stays zero for it, since no factory registered it.
+The minter mints a standalone token the same way it mints a clone.
 
 Set the max supply before registering. Registration covers only tokens not minted yet, up to the last token id that can mint, since the adapter lets a token contract register only tokens without an owner.
 

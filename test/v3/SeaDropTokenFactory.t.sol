@@ -3,8 +3,6 @@ pragma solidity 0.8.38;
 
 import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
 
-import { ISeaDropMinter } from "seadrop/v3/interfaces/ISeaDropMinter.sol";
-
 import { SeaDropTokenV3Base } from "seadrop/v3/SeaDropTokenV3Base.sol";
 
 import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
@@ -14,8 +12,6 @@ import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
 import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
 
 import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
-
-import { TwoStepOwnable } from "utility-contracts/TwoStepOwnable.sol";
 
 import {
     ConstructorInitializable
@@ -102,19 +98,13 @@ contract SeaDropTokenFactoryTest is SeaDropV3TestHelper {
     // Clone initialization
     // ---------------------------------------------------------------------
 
-    function test_createERC721_initializesAndRegisters() public {
+    function test_createERC721_initializesClone() public {
         address predicted = factory.predictERC721Address(alice, SALT);
 
         vm.expectEmit(predicted);
         emit OwnershipTransferred(address(0), alice);
         vm.expectEmit(predicted);
         emit AllowedMinterUpdated(address(minter), true);
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.TokenRegistered(
-            minter.CONFIG_EVENT_VERSION(),
-            predicted,
-            address(factory)
-        );
         vm.expectEmit(address(factory));
         emit TokenCreated(
             predicted,
@@ -136,7 +126,6 @@ contract SeaDropTokenFactoryTest is SeaDropV3TestHelper {
         assertTrue(clone.allowedMinters(address(minter)));
         assertEq(clone.totalSupply(), 0);
         assertEq(clone.maxSupply(), 0);
-        assertEq(minter.tokenFactoryOf(token), address(factory));
 
         // The clone mints through the minter, from token id 1.
         vm.prank(alice);
@@ -147,19 +136,13 @@ contract SeaDropTokenFactoryTest is SeaDropV3TestHelper {
         assertEq(clone.ownerOf(2), bob);
     }
 
-    function test_createERC1155_initializesAndRegisters() public {
+    function test_createERC1155_initializesClone() public {
         address predicted = factory.predictERC1155Address(alice, SALT);
 
         vm.expectEmit(predicted);
         emit OwnershipTransferred(address(0), alice);
         vm.expectEmit(predicted);
         emit AllowedMinterUpdated(address(minter), true);
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.TokenRegistered(
-            minter.CONFIG_EVENT_VERSION(),
-            predicted,
-            address(factory)
-        );
         vm.expectEmit(address(factory));
         emit TokenCreated(
             predicted,
@@ -177,7 +160,6 @@ contract SeaDropTokenFactoryTest is SeaDropV3TestHelper {
         assertEq(clone.preapprovedConduit(), CONDUIT);
         assertTrue(clone.allowedMinters(address(minter)));
         assertEq(clone.uri(1), "");
-        assertEq(minter.tokenFactoryOf(token), address(factory));
 
         vm.startPrank(alice);
         clone.setMaxSupply(3, 10);
@@ -237,7 +219,6 @@ contract SeaDropTokenFactoryTest is SeaDropV3TestHelper {
         vm.stopPrank();
 
         assertEq(ERC721SeaDropV3(rogue721).owner(), address(0));
-        assertEq(minter.tokenFactoryOf(rogue721), address(0));
     }
 
     // ---------------------------------------------------------------------
@@ -250,7 +231,6 @@ contract SeaDropTokenFactoryTest is SeaDropV3TestHelper {
         address otherConduit = makeAddr("otherConduit");
         SeaDropTokenFactory otherFactory =
             new SeaDropTokenFactory(address(minter), otherConduit);
-        minter.setTokenFactory(address(otherFactory), true);
 
         vm.startPrank(alice);
         ERC721SeaDropV3 a =
@@ -274,81 +254,6 @@ contract SeaDropTokenFactoryTest is SeaDropV3TestHelper {
                 .preapprovedConduit(),
             CONDUIT
         );
-    }
-
-    // ---------------------------------------------------------------------
-    // Registration
-    // ---------------------------------------------------------------------
-
-    function test_setTokenFactory() public {
-        address other = makeAddr("otherFactory");
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.TokenFactoryUpdated(
-            minter.CONFIG_EVENT_VERSION(),
-            other,
-            true
-        );
-        minter.setTokenFactory(other, true);
-        assertTrue(minter.tokenFactories(other));
-
-        minter.setTokenFactory(other, false);
-        assertFalse(minter.tokenFactories(other));
-    }
-
-    function test_revert_setTokenFactory_notAdmin() public {
-        vm.prank(alice);
-        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
-        minter.setTokenFactory(alice, true);
-    }
-
-    function test_revert_registerToken_notFactory() public {
-        vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.OnlyTokenFactory.selector, alice
-            )
-        );
-        minter.registerToken(alice);
-    }
-
-    function test_revert_registerToken_twice() public {
-        vm.prank(address(factory));
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.TokenAlreadyRegistered.selector,
-                address(token721),
-                address(factory)
-            )
-        );
-        minter.registerToken(address(token721));
-    }
-
-    /// @dev A factory the admin disallowed can't create tokens, and the
-    ///      tokens it registered stay registered and keep minting.
-    function test_disallowedFactoryCantCreate() public {
-        minter.setTokenFactory(address(factory), false);
-
-        vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.OnlyTokenFactory.selector, address(factory)
-            )
-        );
-        factory.createERC721("X", "X", SALT);
-        vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.OnlyTokenFactory.selector, address(factory)
-            )
-        );
-        factory.createERC1155(SALT);
-
-        assertEq(minter.tokenFactoryOf(address(token721)), address(factory));
-        vm.prank(alice);
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-        assertEq(token721.ownerOf(1), alice);
     }
 
     // ---------------------------------------------------------------------

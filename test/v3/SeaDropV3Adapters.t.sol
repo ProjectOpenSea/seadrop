@@ -338,7 +338,6 @@ contract SeaDropV3AdaptersTest is SeaDropV3TestHelper {
         assertEq(adapter.target(), address(existing));
         assertTrue(adapter.allowedMinters(address(minter)));
         // Adapters are standalone, not the factory's clones.
-        assertEq(minter.tokenFactoryOf(address(adapter)), address(0));
     }
 
     function test_revert_targetMustHaveCode() public {

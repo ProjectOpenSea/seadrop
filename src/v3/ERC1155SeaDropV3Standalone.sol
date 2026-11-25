@@ -12,9 +12,7 @@ import { ERC1155SeaDropV3 } from "./ERC1155SeaDropV3.sol";
  *         `initialize` always reverts.
  *
  *         It behaves like a clone in every other way, token ids starting
- *         at 1 included. `factory` returns the deployer, and the token
- *         isn't registered with the minter, since no allowed factory
- *         deployed it.
+ *         at 1 included. `factory` returns the deployer.
  */
 contract ERC1155SeaDropV3Standalone is ERC1155SeaDropV3 {
     /**

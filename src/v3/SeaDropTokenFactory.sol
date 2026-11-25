@@ -5,13 +5,11 @@ import { ERC721SeaDropV3 } from "./ERC721SeaDropV3.sol";
 
 import { ERC1155SeaDropV3 } from "./ERC1155SeaDropV3.sol";
 
-import { ISeaDropMinter } from "./interfaces/ISeaDropMinter.sol";
-
 import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 
 /**
  * @title  SeaDropTokenFactory
- * @notice Deploys v3 tokens as EIP-1167 clones and registers them with the
+ * @notice Deploys v3 tokens as EIP-1167 clones configured to mint through the
  *         chain's SeaDropMinter.
  *
  *         Each chain gets one factory, deployed with that chain's minter and
@@ -26,8 +24,7 @@ import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
  *         address a creator predicted.
  */
 contract SeaDropTokenFactory {
-    /// @notice The chain's SeaDropMinter. Every clone allows it and is
-    ///         registered with it.
+    /// @notice The chain's SeaDropMinter. Every clone allows it.
     address public immutable minter;
 
     /// @notice The conduit every clone preapproves, or address(0) for
@@ -41,7 +38,7 @@ contract SeaDropTokenFactory {
     address public immutable erc1155Implementation;
 
     /**
-     * @notice A token was deployed, initialized and registered.
+     * @notice A token was deployed and initialized.
      *
      * @param token          The clone.
      * @param implementation The implementation it delegates to, which
@@ -86,7 +83,7 @@ contract SeaDropTokenFactory {
             erc721Implementation, _cloneSalt(msg.sender, salt)
         );
         ERC721SeaDropV3(token).initialize(msg.sender, minter, name, symbol);
-        _register(token, erc721Implementation, salt);
+        emit TokenCreated(token, erc721Implementation, msg.sender, salt);
     }
 
     /**
@@ -99,7 +96,7 @@ contract SeaDropTokenFactory {
             erc1155Implementation, _cloneSalt(msg.sender, salt)
         );
         ERC1155SeaDropV3(token).initialize(msg.sender, minter);
-        _register(token, erc1155Implementation, salt);
+        emit TokenCreated(token, erc1155Implementation, msg.sender, salt);
     }
 
     /// @notice The address `createERC721` deploys to for `creator` and
@@ -124,13 +121,6 @@ contract SeaDropTokenFactory {
         return Clones.predictDeterministicAddress(
             erc1155Implementation, _cloneSalt(creator, salt)
         );
-    }
-
-    function _register(address token, address implementation, bytes32 salt)
-        internal
-    {
-        ISeaDropMinter(minter).registerToken(token);
-        emit TokenCreated(token, implementation, msg.sender, salt);
     }
 
     function _cloneSalt(address creator, bytes32 salt)
