@@ -88,19 +88,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         "bool hasPrice,uint256 price,uint256 expiry)"
     );
 
-    bytes32 public constant MINT_PARAMS_TYPEHASH = keccak256(
-        "MintParams(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,address recipient,uint256 quantity,"
-        "address currency,uint256 maxTotalPrice)"
-    );
-
-    bytes32 public constant MINT_INTENT_TYPEHASH = keccak256(
-        "MintIntent(MintParams params,uint256 nonce,uint256 expiry)"
-        "MintParams(address token,uint256 id,uint256 stageIndex,"
-        "address wallet,address recipient,uint256 quantity,"
-        "address currency,uint256 maxTotalPrice)"
-    );
-
     mapping(
         address token
             => mapping(uint256 id => mapping(uint256 stageIndex => Stage))
@@ -124,10 +111,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         address token
             => mapping(uint256 id => mapping(address wallet => uint256))
     ) public mintedByWallet;
-
-    /// @notice Which intent nonces each wallet used or cancelled.
-    mapping(address wallet => mapping(uint256 nonce => bool used)) public
-        intentNonceUsed;
 
     /// @notice Payments whose push failed, withdrawable by the account.
     mapping(address account => mapping(address currency => uint256 amount))
@@ -312,51 +295,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         _mint(params, authorization);
     }
 
-    /**
-     * @notice Mint a wallet's signed intent. Anyone can submit it and pay.
-     *         The signature is the wallet's consent to the payer and the
-     *         recipient.
-     *
-     * @param intent          The intent `intent.params.wallet` signed.
-     * @param intentSignature The wallet's EIP-712 signature, or its
-     *                        ERC-1271 signature if it's a contract.
-     * @param authorization   A signer's authorization for the wallet.
-     *                        Empty for public stages.
-     */
-    function mintWithIntent(
-        MintIntent calldata intent,
-        bytes calldata intentSignature,
-        Authorization calldata authorization
-    ) external payable nonReentrant {
-        MintParams calldata params = intent.params;
-
-        if (block.timestamp > intent.expiry) {
-            revert IntentExpired(intent.expiry);
-        }
-        if (intentNonceUsed[params.wallet][intent.nonce]) {
-            revert IntentNonceUsed(params.wallet, intent.nonce);
-        }
-
-        bytes32 digest = _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    MINT_INTENT_TYPEHASH,
-                    _hashMintParams(params),
-                    intent.nonce,
-                    intent.expiry
-                )
-            )
-        );
-        bool valid = SignatureChecker.isValidSignatureNow(
-            params.wallet, digest, intentSignature
-        );
-        if (!valid) revert InvalidSignature();
-
-        intentNonceUsed[params.wallet][intent.nonce] = true;
-
-        _mint(params, authorization);
-    }
-
     /// @inheritdoc ISeaDropMinter
     function ownerMint(
         address token,
@@ -392,13 +330,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (id != 0 && _supportsInterface(token, _ERC721_INTERFACE_ID)) {
             revert ERC721StageIdNotZero(id);
         }
-    }
-
-    /// @inheritdoc ISeaDropMinter
-    function cancelIntent(uint256 nonce) external {
-        intentNonceUsed[msg.sender][nonce] = true;
-
-        emit IntentCancelled(msg.sender, nonce);
     }
 
     /// @inheritdoc ISeaDropMinter
@@ -460,7 +391,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     }
 
     /**
-     * @dev The mint path `mint` and `mintWithIntent` share, once the
+     * @dev Process a paid mint once the
      *      recipient is approved. Any caller can pay. A nonzero
      *      authorization `sender` must be the caller. Every check runs
      *      before payment: the stage window, the authorization, the
@@ -928,26 +859,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
                 authorization.hasPrice,
                 authorization.price,
                 authorization.expiry
-            )
-        );
-    }
-
-    function _hashMintParams(MintParams calldata params)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encode(
-                MINT_PARAMS_TYPEHASH,
-                params.token,
-                params.id,
-                params.stageIndex,
-                params.wallet,
-                params.recipient,
-                params.quantity,
-                params.currency,
-                params.maxTotalPrice
             )
         );
     }

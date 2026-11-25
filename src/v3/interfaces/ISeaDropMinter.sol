@@ -146,16 +146,6 @@ interface ISeaDropMinter {
         bytes signature;
     }
 
-    /**
-     * @notice An eligible wallet's signed request to mint. Anyone can
-     *         submit it and pay. `params.wallet` signs it.
-     */
-    struct MintIntent {
-        MintParams params;
-        uint256 nonce;
-        uint256 expiry;
-    }
-
     /// @notice A stage was set. `version` is the event schema version.
     event StageUpdated(
         uint256 version,
@@ -230,9 +220,6 @@ interface ISeaDropMinter {
         uint256 amount
     );
 
-    /// @notice `wallet` cancelled an unused intent nonce.
-    event IntentCancelled(address indexed wallet, uint256 nonce);
-
     error OnlyTokenOwner(address token, address caller);
     error FeeBpsTooHigh(uint256 feeBps);
     error FeeRecipientIsZeroAddress();
@@ -276,8 +263,6 @@ interface ISeaDropMinter {
         address authorizedCurrency
     );
     error InvalidSignature();
-    error IntentExpired(uint256 expiry);
-    error IntentNonceUsed(address wallet, uint256 nonce);
     error NothingToWithdraw();
     error WithdrawalFailed();
     error Reentrancy();
@@ -331,13 +316,6 @@ interface ISeaDropMinter {
         Authorization calldata authorization
     ) external payable;
 
-    /// @notice Mint a wallet's signed intent, paid by the caller.
-    function mintWithIntent(
-        MintIntent calldata intent,
-        bytes calldata intentSignature,
-        Authorization calldata authorization
-    ) external payable;
-
     /// @notice Mint without payment, stages or wallet limits. Only the
     ///         token's owner can call this. Owner mints still raise the
     ///         total that stages' `maxTokenSupplyForStage` caps compare
@@ -348,9 +326,6 @@ interface ISeaDropMinter {
         address recipient,
         uint256 quantity
     ) external;
-
-    /// @notice Mark one of the caller's intent nonces used.
-    function cancelIntent(uint256 nonce) external;
 
     /// @notice Withdraw the caller's credited balance of `currency` to
     ///         `to`.

@@ -35,11 +35,6 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     uint256[2] internal withdrawn;
     mapping(uint256 => mapping(address => uint256)) internal walletMints;
     mapping(uint256 => mapping(address => uint256)) internal delivered;
-    mapping(address => uint256) internal nextNonce;
-    ISeaDropMinter.MintIntent internal lastIntent;
-    bytes internal lastIntentSignature;
-    ISeaDropMinter.Authorization internal lastAuthorization;
-    bool internal hasIntent;
     bool internal defaultAllowed;
     bool internal overrideAllowed = true;
     bool internal hasOverride = true;
@@ -155,7 +150,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         uint256 actorSeed;
         uint256 quantitySeed;
         bool signedStage;
-        bool useIntent;
+        bool redirect;
         bool blockCreator;
         bool blockFee;
     }
@@ -164,7 +159,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         uint256 kind = action.kindSeed % 2;
         uint256 actorIndex = action.actorSeed % ACTORS;
         ISeaDropMinter.MintParams memory params = _mintParams(
-            kind, actorIndex, action.quantitySeed, action.useIntent
+            kind, actorIndex, action.quantitySeed, action.redirect
         );
         if (params.quantity == 0) return;
         if (_denied(kind)) {
@@ -186,21 +181,19 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         }
         currency.setBlocked(address(rejectingCreator), action.blockCreator);
         currency.setBlocked(feeRecipient, action.blockFee);
-        _executeMint(params, auth, actorIndex, action.useIntent);
-        _recordMint(
-            kind,
-            params,
-            actors[(actorIndex + 1) % ACTORS],
-            action.blockCreator,
-            action.blockFee
-        );
+        address payer =
+            action.redirect ? params.wallet : actors[(actorIndex + 1) % ACTORS];
+        uint256 value = params.currency == address(0) ? params.maxTotalPrice : 0;
+        vm.prank(payer);
+        minter.mint{ value: value }(params, auth);
+        _recordMint(kind, params, payer, action.blockCreator, action.blockFee);
     }
 
     function _mintParams(
         uint256 kind,
         uint256 actorIndex,
         uint256 quantitySeed,
-        bool useIntent
+        bool redirect
     ) internal view returns (ISeaDropMinter.MintParams memory params) {
         address wallet = actors[actorIndex];
         uint256 room = stageCaps[kind] - sold[kind] - ownerMinted[kind];
@@ -209,37 +202,10 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         if (room == 0) return params;
         uint256 quantity = bound(quantitySeed, 1, room > 3 ? 3 : room);
         address recipient =
-            useIntent ? actors[(actorIndex + 2) % ACTORS] : wallet;
+            redirect ? actors[(actorIndex + 2) % ACTORS] : wallet;
         params = _params(_token(kind), _id(kind), wallet, recipient, quantity);
         params.currency = _currency(kind);
         params.maxTotalPrice = _price(kind) * quantity;
-    }
-
-    function _executeMint(
-        ISeaDropMinter.MintParams memory params,
-        ISeaDropMinter.Authorization memory auth,
-        uint256 actorIndex,
-        bool useIntent
-    ) internal {
-        address payer = actors[(actorIndex + 1) % ACTORS];
-        uint256 value = params.currency == address(0) ? params.maxTotalPrice : 0;
-        if (useIntent) {
-            ISeaDropMinter.MintIntent memory intent = ISeaDropMinter.MintIntent(
-                params, nextNonce[params.wallet]++, vm.getBlockTimestamp() + 100
-            );
-            bytes memory signature =
-                _sign(actorIndex + 100, _intentDigest(intent));
-            vm.prank(payer);
-            minter.mintWithIntent{ value: value }(intent, signature, auth);
-            assertTrue(minter.intentNonceUsed(params.wallet, intent.nonce));
-            lastIntent = intent;
-            lastIntentSignature = signature;
-            lastAuthorization = auth;
-            hasIntent = true;
-        } else {
-            vm.prank(payer);
-            minter.mint{ value: value }(params, auth);
-        }
     }
 
     function _recordMint(
@@ -355,26 +321,6 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
             );
             minter.ownerMint(token, _id(kind), attacker, 1);
         }
-        ++rejectedCalls;
-    }
-
-    function rejectReplay() public {
-        if (!hasIntent) return;
-        ISeaDropMinter.MintIntent memory intent = lastIntent;
-        uint256 value = intent.params.currency == address(0)
-            ? intent.params.maxTotalPrice
-            : 0;
-        vm.prank(actors[1]);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ISeaDropMinter.IntentNonceUsed.selector,
-                intent.params.wallet,
-                intent.nonce
-            )
-        );
-        minter.mintWithIntent{ value: value }(
-            intent, lastIntentSignature, lastAuthorization
-        );
         ++rejectedCalls;
     }
 
@@ -546,7 +492,7 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         token1155.transferOwnership(address(handler));
         handler.setUp();
         // Exercise success, credit creation, failed withdrawal, withdrawal,
-        // signature authorization and nonce rejection before every campaign.
+        // signed-stage authorization before every campaign.
         handler.mint(
             SeaDropInvariantHandler.MintAction(
                 0, 0, 1, false, false, false, false
@@ -563,7 +509,6 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         handler.rejectPayment(1);
         handler.donate(0, 17);
         handler.donate(1, 19);
-        handler.rejectReplay();
         handler.rejectUnauthorized(0, 0);
         handler.rejectUnauthorized(1, 1);
         handler.rejectUnauthorized(0, 2);
@@ -574,19 +519,18 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         handler.rejectLimit(1, 1, false);
         handler.setCap(1, 63);
 
-        bytes4[] memory selectors = new bytes4[](12);
+        bytes4[] memory selectors = new bytes4[](11);
         selectors[0] = handler.mint.selector;
         selectors[1] = handler.ownerMint.selector;
         selectors[2] = handler.setCap.selector;
         selectors[3] = handler.withdraw.selector;
         selectors[4] = handler.rejectUnauthorized.selector;
-        selectors[5] = handler.rejectReplay.selector;
-        selectors[6] = handler.rejectLimit.selector;
-        selectors[7] = handler.donate.selector;
-        selectors[8] = handler.rejectPayment.selector;
-        selectors[9] = handler.rejectOwnerSupply.selector;
-        selectors[10] = handler.updatePolicy.selector;
-        selectors[11] = handler.updatePayoutGas.selector;
+        selectors[5] = handler.rejectLimit.selector;
+        selectors[6] = handler.donate.selector;
+        selectors[7] = handler.rejectPayment.selector;
+        selectors[8] = handler.rejectOwnerSupply.selector;
+        selectors[9] = handler.updatePolicy.selector;
+        selectors[10] = handler.updatePayoutGas.selector;
         targetSelector(FuzzSelector(address(handler), selectors));
         targetContract(address(handler));
     }
@@ -595,6 +539,6 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         handler.assertAccountingAndSupply();
         assertGe(handler.successfulMints(), 2);
         assertGe(handler.successfulWithdrawals(), 2);
-        assertGe(handler.rejectedCalls(), 12);
+        assertGe(handler.rejectedCalls(), 11);
     }
 }

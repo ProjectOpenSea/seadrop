@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.38;
 
+import { MockDelegateRegistry } from "./utils/Mocks.sol";
+
 import { Vm } from "forge-std/Vm.sol";
 
 import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
@@ -78,10 +80,6 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
         assertEq(
             ISeaDropMinter.Withdrawal.selector,
             keccak256("Withdrawal(address,address,address,uint256)")
-        );
-        assertEq(
-            ISeaDropMinter.IntentCancelled.selector,
-            keccak256("IntentCancelled(address,uint256)")
         );
     }
 
@@ -264,15 +262,16 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
     }
 
     function test_emitted_SeaDropMintWithDistinctRoles() public {
-        ISeaDropMinter.MintIntent memory intent = ISeaDropMinter.MintIntent({
-            params: _params(address(token1155), ID_1155, alice, carol, 2),
-            nonce: 1,
-            expiry: vm.getBlockTimestamp() + 100
-        });
-        bytes memory signature = _sign(aliceKey, _intentDigest(intent));
+        address registry = minter.DELEGATE_REGISTRY();
+        vm.etch(registry, address(new MockDelegateRegistry()).code);
+        vm.prank(alice);
+        MockDelegateRegistry(registry)
+            .delegateContract(bob, address(token1155), "", true);
         vm.recordLogs();
         vm.prank(bob);
-        minter.mintWithIntent{ value: 2 * PRICE }(intent, signature, _noAuth());
+        minter.mint{ value: 2 * PRICE }(
+            _params(address(token1155), ID_1155, alice, carol, 2), _noAuth()
+        );
 
         Vm.Log memory log = _onlyLog(
             address(minter),
@@ -326,18 +325,6 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
             withdrawal, _topic(address(recipient)), _topic(address(0))
         );
         assertEq(withdrawal.data, abi.encode(carol, proceeds));
-    }
-
-    function test_emitted_IntentCancelled() public {
-        vm.recordLogs();
-        vm.prank(alice);
-        minter.cancelIntent(77);
-
-        Vm.Log memory log = _onlyLog(
-            address(minter), keccak256("IntentCancelled(address,uint256)")
-        );
-        _assertTopics(log, _topic(alice));
-        assertEq(log.data, abi.encode(uint256(77)));
     }
 
     // ---------------------------------------------------------------------
