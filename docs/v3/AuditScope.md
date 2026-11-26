@@ -232,9 +232,9 @@ Minter configuration events, with `version` = 1:
 
 Minter mint and payment events:
 
-| Event             | Fields, in order (indexed marked)                                                                                                                                                                                                                | When                                                                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `SeaDropMint`     | `address token` (indexed), `uint256 id` (indexed), `uint256 stageIndex`, `address payer`, `address wallet` (indexed), `address recipient`, `uint256 quantity`, `uint256 unitPrice`, `address currency`, `address feeRecipient`, `uint256 feeBps` | Every mint. Owner mints use stage index `OWNER_MINT_STAGE` (`type(uint256).max`), the owner as payer and wallet, and zero price and fee |
+| Event         | Fields, in order (indexed marked)                                                                                                                                                                                                                | When                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `SeaDropMint` | `address token` (indexed), `uint256 id` (indexed), `uint256 stageIndex`, `address payer`, `address wallet` (indexed), `address recipient`, `uint256 quantity`, `uint256 unitPrice`, `address currency`, `address feeRecipient`, `uint256 feeBps` | Every mint. Owner mints use stage index `OWNER_MINT_STAGE` (`type(uint256).max`), the owner as payer and wallet, and zero price and fee |
 
 Factory event:
 
