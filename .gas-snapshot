@@ -167,7 +167,7 @@ SeaDropMinterTest:testFuzz_stageCapNeverExceeded(uint32,uint8,uint8[]) (runs: 25
 SeaDropMinterTest:testFuzz_walletTotalNeverExceedsStageLimit(uint8[3],uint8[]) (runs: 256, μ: 1907869, ~: 1934251)
 SeaDropMinterTest:test_adminConfig_emitsVersionedEvents() (gas: 64764)
 SeaDropMinterTest:test_config_followsTokenOwnership() (gas: 249757)
-SeaDropMinterTest:test_contractPayoutReceivesFullGas() (gas: 381340)
+SeaDropMinterTest:test_contractPayoutReceivesFullGas() (gas: 381352)
 SeaDropMinterTest:test_defaultCurrencyAdminAndValidation() (gas: 85536)
 SeaDropMinterTest:test_defaultERC20PolicyAndOverrides() (gas: 2249018)
 SeaDropMinterTest:test_excessDebitPayoutRollsBackMint() (gas: 1837149)

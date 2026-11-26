@@ -1671,10 +1671,10 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         ContractPayoutRecipient recipient = new ContractPayoutRecipient();
         _setSinglePayout(address(token721), address(recipient));
         vm.prank(alice);
-        minter.mint{ value: PRICE }(
+        minter.mint{ value: PRICE, gas: 1_000_000 }(
             _params(address(token721), 0, alice, alice, 1), _noAuth()
         );
-        assertGt(recipient.gasAtEntry(), 100_000);
+        assertGt(recipient.gasAtEntry(), 500_000);
         assertEq(address(recipient).balance, PRICE - PRICE * FEE_BPS / 10_000);
         assertEq(address(minter).balance, 0);
     }
