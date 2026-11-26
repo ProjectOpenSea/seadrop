@@ -138,7 +138,7 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
 
         uint256 stageCount = config.stages.length;
         if (config.payoutRecipients.length != 0 || stageCount != 0) {
-            _beginConfigure(config.minter);
+            address previousMinter = _beginConfigure(config.minter);
             if (config.payoutRecipients.length != 0) {
                 ISeaDropMinter(config.minter)
                     .setPayoutRecipients(address(this), config.payoutRecipients);
@@ -151,7 +151,7 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
                         address(this), entry.id, entry.stageIndex, entry.stage
                     );
             }
-            _endConfigure();
+            _endConfigure(previousMinter);
         }
     }
 

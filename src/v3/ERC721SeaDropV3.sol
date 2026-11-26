@@ -128,7 +128,7 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
 
         uint256 stageCount = config.stages.length;
         if (config.payoutRecipients.length != 0 || stageCount != 0) {
-            _beginConfigure(config.minter);
+            address previousMinter = _beginConfigure(config.minter);
             if (config.payoutRecipients.length != 0) {
                 ISeaDropMinter(config.minter)
                     .setPayoutRecipients(address(this), config.payoutRecipients);
@@ -138,7 +138,7 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
                 ISeaDropMinter(config.minter)
                     .setStage(address(this), 0, entry.stageIndex, entry.stage);
             }
-            _endConfigure();
+            _endConfigure(previousMinter);
         }
     }
 

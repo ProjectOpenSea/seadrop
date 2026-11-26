@@ -158,15 +158,19 @@ abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
         emit ContractURIUpdated();
     }
 
-    function _beginConfigure(address minter) internal {
+    function _beginConfigure(address minter)
+        internal
+        returns (address previousMinter)
+    {
         if (!_baseStorage().allowedMinters[minter]) {
             revert OnlyAllowedMinter(minter);
         }
+        previousMinter = _configuringMinter;
         _configuringMinter = minter;
     }
 
-    function _endConfigure() internal {
-        _configuringMinter = address(0);
+    function _endConfigure(address previousMinter) internal {
+        _configuringMinter = previousMinter;
     }
 
     /// @dev Whether `operator` is the preapproved conduit.

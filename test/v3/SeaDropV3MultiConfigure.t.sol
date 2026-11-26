@@ -63,11 +63,58 @@ contract ReentrantMinterProbe {
     }
 }
 
+contract NestedConfigObserver {
+    OwnerObserver internal immutable observer = new OwnerObserver();
+
+    function setPayoutRecipients(
+        address token,
+        ISeaDropMinter.PayoutRecipient[] calldata
+    ) external {
+        SeaDropV3MultiConfigureTest(observer.readOwner(token))
+            .configureInnerBatch();
+    }
+
+    function setStage(
+        address token,
+        uint256,
+        uint256,
+        ISeaDropMinter.Stage calldata
+    ) external view {
+        require(TwoStepOwnable(token).owner() == token);
+    }
+
+    function readOwner(address token) external view returns (address) {
+        return TwoStepOwnable(token).owner();
+    }
+}
+
 contract SeaDropV3MultiConfigureTest is SeaDropV3TestHelper {
     event MaxSupplyUpdated(uint256 maxSupply);
     event MaxSupplyUpdated(uint256 indexed id, uint256 maxSupply);
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
     event ContractURIUpdated();
+
+    function test_nestedConfigurationRestoresEachMinterScope() public {
+        NestedConfigObserver outer = new NestedConfigObserver();
+        token721.setAllowedMinter(address(outer), true);
+        ERC721SeaDropV3.MultiConfigureStruct memory config;
+        config.minter = address(outer);
+        config.stages = new ERC721SeaDropV3.StageConfig[](1);
+        config.payoutRecipients = new ISeaDropMinter.PayoutRecipient[](1);
+        config.payoutRecipients[0] =
+            ISeaDropMinter.PayoutRecipient(creator, 10_000);
+        token721.multiConfigure(config);
+        assertEq(outer.readOwner(address(token721)), address(this));
+        assertEq(minter.getStage(address(token721), 0, 17).price, PRICE);
+    }
+
+    function configureInnerBatch() external {
+        ERC721SeaDropV3.MultiConfigureStruct memory config;
+        config.minter = address(minter);
+        config.stages = new ERC721SeaDropV3.StageConfig[](1);
+        config.stages[0] = ERC721SeaDropV3.StageConfig(17, _publicStage());
+        token721.multiConfigure(config);
+    }
 
     function test_ERC721_multiConfigure_allFieldsAndMint() public {
         ERC721SeaDropV3 fresh = ERC721SeaDropV3(
