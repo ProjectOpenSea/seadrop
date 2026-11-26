@@ -345,4 +345,30 @@ interface ISeaDropMinter {
         external
         view
         returns (CurrencyConfig memory);
+
+    /// @notice Return the stage, currency policy, wallet mint count, token
+    ///         supply stats and payout recipient count in one call.
+    function getCheckoutSnapshot(
+        address token,
+        uint256 id,
+        uint256 stageIndex,
+        address wallet
+    )
+        external
+        view
+        returns (
+            Stage memory stage,
+            CurrencyConfig memory currencyConfig,
+            uint256 walletMinted,
+            uint256 totalMinted,
+            uint256 maxSupply,
+            uint256 payoutRecipientCount
+        );
+
+    /// @notice Return `account`'s credited balances for each currency in
+    ///         `currencies`, in order.
+    function getCreditedBalances(address account, address[] calldata currencies)
+        external
+        view
+        returns (uint256[] memory);
 }

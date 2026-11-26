@@ -390,6 +390,46 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             : defaultERC20Currency;
     }
 
+    /// @inheritdoc ISeaDropMinter
+    function getCheckoutSnapshot(
+        address token,
+        uint256 id,
+        uint256 stageIndex,
+        address wallet
+    )
+        external
+        view
+        returns (
+            Stage memory stage,
+            CurrencyConfig memory currencyConfig,
+            uint256 walletMinted,
+            uint256 totalMinted,
+            uint256 maxSupply,
+            uint256 payoutRecipientCount
+        )
+    {
+        stage = _stages[token][id][stageIndex];
+        currencyConfig = getCurrency(stage.currency);
+        walletMinted = mintedByWallet[token][id][wallet];
+        (totalMinted, maxSupply) = _tokenMintStats(token, id, wallet);
+        payoutRecipientCount = _payoutRecipients[token].length;
+    }
+
+    /// @inheritdoc ISeaDropMinter
+    function getCreditedBalances(address account, address[] calldata currencies)
+        external
+        view
+        returns (uint256[] memory balances)
+    {
+        uint256 count = currencies.length;
+        balances = new uint256[](count);
+        mapping(address currency => uint256 amount) storage accountCredited =
+            credited[account];
+        for (uint256 i = 0; i < count; ++i) {
+            balances[i] = accountCredited[currencies[i]];
+        }
+    }
+
     /**
      * @dev Process a paid mint once the
      *      recipient is approved. Any caller can pay. A nonzero
@@ -634,6 +674,24 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
                 stageCap
             );
         }
+    }
+
+    function _tokenMintStats(address token, uint256 id, address account)
+        internal
+        view
+        returns (uint256 totalMinted, uint256 maxSupply)
+    {
+        if (_supportsInterface(token, type(ISeaDropTokenV3).interfaceId)) {
+            return ISeaDropTokenV3(token).mintStats(id);
+        }
+        if (!_supportsInterface(
+                token, type(INonFungibleSeaDropToken).interfaceId
+            )) {
+            revert UnsupportedToken(token);
+        }
+        INonFungibleSeaDropToken v1Token = INonFungibleSeaDropToken(token);
+        // forge-lint: disable-next-line(unused-return)
+        (, totalMinted, maxSupply) = v1Token.getMintStats(account);
     }
 
     /**
