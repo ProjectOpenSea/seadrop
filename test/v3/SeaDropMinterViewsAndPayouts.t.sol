@@ -1,17 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.38;
 
-import { Vm } from "forge-std/Vm.sol";
-
-import { console2 } from "forge-std/console2.sol";
-
 import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
 
-import {
-    NotASeaDropToken,
-    RevertingRecipient,
-    TestERC20
-} from "./utils/Mocks.sol";
+import { NotASeaDropToken } from "./utils/Mocks.sol";
 
 import { ISeaDropMinter } from "seadrop/v3/interfaces/ISeaDropMinter.sol";
 
@@ -117,23 +109,6 @@ contract MockFiatTokenV2 {
 }
 
 contract SeaDropMinterViewsAndPayoutsTest is SeaDropV3TestHelper {
-    TestERC20 internal usdc;
-    TestERC20 internal dai;
-
-    function setUp() public override {
-        super.setUp();
-        usdc = new TestERC20();
-        dai = new TestERC20();
-
-        ISeaDropMinter.CurrencyConfig memory cfg = ISeaDropMinter.CurrencyConfig({
-            allowed: true,
-            minFeeBps: uint16(FEE_BPS),
-            feeRecipient: feeRecipient
-        });
-        minter.setCurrency(address(usdc), cfg);
-        minter.setCurrency(address(dai), cfg);
-    }
-
     // -------------------------------------------------------------------------
     // getCheckoutSnapshot
     // -------------------------------------------------------------------------
@@ -303,124 +278,6 @@ contract SeaDropMinterViewsAndPayoutsTest is SeaDropV3TestHelper {
     }
 
     // -------------------------------------------------------------------------
-    // getCreditedBalances
-    // -------------------------------------------------------------------------
-
-    function test_getCreditedBalances_emptyAndMultiCurrency() public {
-        address[] memory empty = new address[](0);
-        assertEq(minter.getCreditedBalances(alice, empty).length, 0);
-
-        RevertingRecipient bad = new RevertingRecipient();
-        _setSinglePayout(address(token721), address(bad));
-
-        // Failed ETH payout credits `bad` for address(0).
-        vm.prank(alice);
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-        uint256 expectedEth = PRICE - (PRICE * FEE_BPS / 10_000);
-
-        // Failed USDC payout credits `bad` for address(usdc).
-        uint96 usdcPrice = 50e6;
-        ISeaDropMinter.Stage memory usdcStage = _publicStage();
-        usdcStage.currency = address(usdc);
-        usdcStage.price = usdcPrice;
-        minter.setStage(address(token721), 0, 1, usdcStage);
-
-        usdc.mint(alice, usdcPrice);
-        usdc.setBlocked(address(bad), true);
-        vm.startPrank(alice);
-        usdc.approve(address(minter), usdcPrice);
-        ISeaDropMinter.MintParams memory usdcParams =
-            _params(address(token721), 0, alice, alice, 1);
-        usdcParams.stageIndex = 1;
-        usdcParams.currency = address(usdc);
-        usdcParams.maxTotalPrice = usdcPrice;
-        minter.mint(usdcParams, _noAuth());
-        vm.stopPrank();
-        uint256 expectedUsdc =
-            uint256(usdcPrice) - (uint256(usdcPrice) * FEE_BPS / 10_000);
-
-        address[] memory currencies = new address[](3);
-        currencies[0] = address(0);
-        currencies[1] = address(usdc);
-        currencies[2] = address(dai);
-
-        uint256[] memory balances =
-            minter.getCreditedBalances(address(bad), currencies);
-        assertEq(balances.length, 3);
-        assertEq(balances[0], expectedEth);
-        assertEq(balances[1], expectedUsdc);
-        assertEq(balances[2], 0);
-
-        // Other accounts remain isolated at zero.
-        uint256[] memory aliceBalances =
-            minter.getCreditedBalances(alice, currencies);
-        assertEq(aliceBalances[0], 0);
-        assertEq(aliceBalances[1], 0);
-        assertEq(aliceBalances[2], 0);
-
-        // Withdrawing ETH zeroes only the ETH entry.
-        bad.withdrawFrom(minter, address(0), carol);
-        balances = minter.getCreditedBalances(address(bad), currencies);
-        assertEq(balances[0], 0);
-        assertEq(balances[1], expectedUsdc);
-        assertEq(balances[2], 0);
-    }
-
-    function testFuzz_getCreditedBalances(uint64 ethPrice, uint64 usdcPrice)
-        public
-    {
-        ethPrice = uint64(bound(ethPrice, 10_000, 10 ether));
-        usdcPrice = uint64(bound(usdcPrice, 10_000, 1_000_000e6));
-
-        RevertingRecipient bad = new RevertingRecipient();
-        _setSinglePayout(address(token721), address(bad));
-
-        ISeaDropMinter.Stage memory ethStage = _publicStage();
-        ethStage.price = ethPrice;
-        minter.setStage(address(token721), 0, 0, ethStage);
-
-        ISeaDropMinter.Stage memory usdcStage = _publicStage();
-        usdcStage.currency = address(usdc);
-        usdcStage.price = usdcPrice;
-        minter.setStage(address(token721), 0, 1, usdcStage);
-
-        usdc.mint(alice, usdcPrice);
-        usdc.setBlocked(address(bad), true);
-
-        vm.startPrank(alice);
-        ISeaDropMinter.MintParams memory p0 =
-            _params(address(token721), 0, alice, alice, 1);
-        p0.maxTotalPrice = ethPrice;
-        minter.mint{ value: ethPrice }(p0, _noAuth());
-
-        usdc.approve(address(minter), usdcPrice);
-        ISeaDropMinter.MintParams memory p1 =
-            _params(address(token721), 0, alice, alice, 1);
-        p1.stageIndex = 1;
-        p1.currency = address(usdc);
-        p1.maxTotalPrice = usdcPrice;
-        minter.mint(p1, _noAuth());
-        vm.stopPrank();
-
-        address[] memory currencies = new address[](2);
-        currencies[0] = address(0);
-        currencies[1] = address(usdc);
-        uint256[] memory balances =
-            minter.getCreditedBalances(address(bad), currencies);
-
-        assertEq(
-            balances[0],
-            uint256(ethPrice) - (uint256(ethPrice) * FEE_BPS / 10_000)
-        );
-        assertEq(
-            balances[1],
-            uint256(usdcPrice) - (uint256(usdcPrice) * FEE_BPS / 10_000)
-        );
-    }
-
-    // -------------------------------------------------------------------------
     // ERC1155SeaDropV3 id == 0 rejection lockdown
     // -------------------------------------------------------------------------
 
@@ -461,159 +318,10 @@ contract SeaDropMinterViewsAndPayoutsTest is SeaDropV3TestHelper {
     }
 
     // -------------------------------------------------------------------------
-    // PaymentCredited emitted strictly before SeaDropMint
-    // -------------------------------------------------------------------------
-
-    function test_eventOrder_PaymentCreditedStrictlyBeforeSeaDropMint_ETH()
-        public
-    {
-        RevertingRecipient badFee = new RevertingRecipient();
-        RevertingRecipient badCreator = new RevertingRecipient();
-
-        minter.setCurrency(
-            address(0),
-            ISeaDropMinter.CurrencyConfig({
-                allowed: true,
-                minFeeBps: uint16(FEE_BPS),
-                feeRecipient: address(badFee)
-            })
+    function test_proxyERC20PaysColdRecipients() public {
+        IERC20 proxyUsdc = IERC20(
+            address(new MinimalERC1967Proxy(address(new MockFiatTokenV2())))
         );
-        ISeaDropMinter.Stage memory s = _publicStage();
-        s.feeRecipient = address(badFee);
-        minter.setStage(address(token721), 0, 0, s);
-        _setSinglePayout(address(token721), address(badCreator));
-
-        vm.recordLogs();
-        vm.prank(alice);
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-
-        _assertPaymentCreditedStrictlyBeforeMint(vm.getRecordedLogs(), 2);
-    }
-
-    function test_eventOrder_PaymentCreditedStrictlyBeforeSeaDropMint_ERC20()
-        public
-    {
-        uint96 usdcPrice = 100e6;
-        usdc.mint(alice, usdcPrice);
-        usdc.setBlocked(feeRecipient, true);
-        usdc.setBlocked(creator, true);
-
-        ISeaDropMinter.Stage memory s = _publicStage();
-        s.currency = address(usdc);
-        s.price = usdcPrice;
-        minter.setStage(address(token721), 0, 1, s);
-
-        vm.startPrank(alice);
-        usdc.approve(address(minter), usdcPrice);
-        ISeaDropMinter.MintParams memory p =
-            _params(address(token721), 0, alice, alice, 1);
-        p.stageIndex = 1;
-        p.currency = address(usdc);
-        p.maxTotalPrice = usdcPrice;
-
-        vm.recordLogs();
-        minter.mint(p, _noAuth());
-        vm.stopPrank();
-
-        _assertPaymentCreditedStrictlyBeforeMint(vm.getRecordedLogs(), 2);
-    }
-
-    function _assertPaymentCreditedStrictlyBeforeMint(
-        Vm.Log[] memory logs,
-        uint256 expectedCreditedCount
-    ) internal view {
-        uint256 mintLogIndex = type(uint256).max;
-        uint256 creditedCount = 0;
-
-        for (uint256 i = 0; i < logs.length; ++i) {
-            if (logs[i].emitter != address(minter)) continue;
-            if (logs[i].topics[0] == ISeaDropMinter.SeaDropMint.selector) {
-                mintLogIndex = i;
-            }
-        }
-        assertTrue(mintLogIndex != type(uint256).max, "SeaDropMint not found");
-
-        for (uint256 i = 0; i < logs.length; ++i) {
-            if (logs[i].emitter != address(minter)) continue;
-            if (logs[i].topics[0] == ISeaDropMinter.PaymentCredited.selector) {
-                ++creditedCount;
-                assertLt(
-                    i,
-                    mintLogIndex,
-                    "PaymentCredited must emit strictly before SeaDropMint"
-                );
-            }
-        }
-        assertEq(creditedCount, expectedCreditedCount);
-    }
-
-    // -------------------------------------------------------------------------
-    // Benchmark: cold-recipient ERC-20 payout gas vs 100_000 default
-    // -------------------------------------------------------------------------
-
-    function test_benchmark_coldRecipientERC20PayoutGas() public {
-        uint256 defaultBudget = minter.erc20PayoutGas();
-        assertEq(defaultBudget, 100_000);
-
-        // 1. Plain ERC-20 (cold vs warm recipient)
-        address coldPlain = makeAddr("coldPlain");
-        address warmPlain = makeAddr("warmPlain");
-        usdc.mint(warmPlain, 1);
-        usdc.mint(address(minter), 200e6);
-
-        // Warm the token contract itself as happens in _collectPayment.
-        assertEq(usdc.balanceOf(address(minter)), 200e6);
-
-        uint256 gasBefore = gasleft();
-        vm.prank(address(minter));
-        minter.pushERC20(address(usdc), coldPlain, 100e6);
-        uint256 plainColdGas = gasBefore - gasleft();
-
-        gasBefore = gasleft();
-        vm.prank(address(minter));
-        minter.pushERC20(address(usdc), warmPlain, 100e6);
-        uint256 plainWarmGas = gasBefore - gasleft();
-
-        // 2. Proxy + USDC-like FiatTokenV2 (cold vs warm recipient)
-        MockFiatTokenV2 impl = new MockFiatTokenV2();
-        IERC20 proxyUsdc =
-            IERC20(address(new MinimalERC1967Proxy(address(impl))));
-        MockFiatTokenV2(address(proxyUsdc)).mint(address(minter), 200e6);
-
-        address coldProxy = makeAddr("coldProxy");
-        address warmProxy = makeAddr("warmProxy");
-        MockFiatTokenV2(address(proxyUsdc)).mint(warmProxy, 1);
-
-        // Warm proxy + implementation as _collectPayment does before _payOut.
-        assertEq(proxyUsdc.balanceOf(address(minter)), 200e6);
-
-        gasBefore = gasleft();
-        vm.prank(address(minter));
-        minter.pushERC20(address(proxyUsdc), coldProxy, 100e6);
-        uint256 proxyColdGas = gasBefore - gasleft();
-
-        gasBefore = gasleft();
-        vm.prank(address(minter));
-        minter.pushERC20(address(proxyUsdc), warmProxy, 100e6);
-        uint256 proxyWarmGas = gasBefore - gasleft();
-
-        console2.log("erc20PayoutGas default:", defaultBudget);
-        console2.log("plain ERC-20 cold recipient pushERC20 gas:", plainColdGas);
-        console2.log("plain ERC-20 warm recipient pushERC20 gas:", plainWarmGas);
-        console2.log(
-            "proxy USDC-like cold recipient pushERC20 gas:", proxyColdGas
-        );
-        console2.log(
-            "proxy USDC-like warm recipient pushERC20 gas:", proxyWarmGas
-        );
-
-        assertLt(plainColdGas, defaultBudget);
-        assertLt(proxyColdGas, defaultBudget);
-
-        // 3. End-to-end mint with proxy USDC-like token and two cold recipients
-        //    (cold feeRecipient + cold creator) under the 100_000 default.
         address coldFee = makeAddr("coldFee");
         address coldCreator = makeAddr("coldCreator");
         minter.setCurrency(
@@ -644,10 +352,8 @@ contract SeaDropMinterViewsAndPayoutsTest is SeaDropV3TestHelper {
         minter.mint(p, _noAuth());
         vm.stopPrank();
 
-        // Both cold recipients were paid directly without falling back to credit.
         assertEq(proxyUsdc.balanceOf(coldFee), 1e6);
         assertEq(proxyUsdc.balanceOf(coldCreator), 99e6);
-        assertEq(minter.credited(coldFee, address(proxyUsdc)), 0);
-        assertEq(minter.credited(coldCreator, address(proxyUsdc)), 0);
+        assertEq(proxyUsdc.balanceOf(address(minter)), 0);
     }
 }

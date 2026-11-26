@@ -63,14 +63,14 @@ V3 extends v1's drop architecture with one minter contract per chain and thin to
 ## Things to know about v3
 
 - Every mint separates the payer (`msg.sender`), the eligible wallet, whose signatures and wallet limits apply, and the recipient. Keep the three apart in new code.
-- A payout never reverts a mint. A failed push credits the recipient, who withdraws later. ERC-20 pushes run in a gas-capped call back into the minter (`pushERC20`), so a transfer that fails is rolled back before the credit.
+- Paid mints push every payout directly. A failed transfer reverts the entire mint. ERC-20 collection and payouts require exact balance changes.
 - OpenSea indexes drops from `SeaDropMint` and the versioned configuration events. Changing their fields is a schema change, so bump the version, update the event schema in `docs/v3/AuditScope.md` and `test/v3/SeaDropV3EventSchema.t.sol`, and coordinate.
 - Live v1 tokens mint through the minter after `updateAllowedSeaDrop`, via `mintSeaDrop(address,uint256)`. Keep that path working.
 - A token's preapproved conduit is fixed at deployment, because it can move every holder's tokens until they revoke it. OpenSea's conduit differs by chain, so the factory takes it and deploys the implementations with it as an immutable. A clone's creator never passes it.
 - Tokens are clones. Only the factory can initialize one, once, and the implementations can't be initialized. The standalone ERC-721 and ERC-1155 variants set up the token in their constructors. Keep new token state in the ERC-7201 namespaces, and update the slot tests and `docs/v3/AuditScope.md` when a namespace changes.
 - ERC-1155 token ids start at 1. Id 0 reverts with `TokenIdIsZero`.
 - Errors are plain, with one check per error.
-- The minter has 2,874 bytes of runtime headroom under EIP-170. Run `./scripts/check_sizes.sh` after adding to it.
+- The minter has 2,878 bytes of runtime headroom under EIP-170. Run `./scripts/check_sizes.sh` after adding to it.
 - Compiler settings (solc 0.8.38 for Cancun, 1,000,000 optimizer runs, no metadata hash) change deployed bytecode, so don't change them in passing.
 - Biome formats Markdown and JSON. It aligns Markdown tables and wants a blank line before a list.
 

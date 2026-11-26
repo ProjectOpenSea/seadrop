@@ -93,16 +93,18 @@ contract MockERC1271Wallet {
     }
 }
 
-/// @dev A payout recipient that rejects ETH but can withdraw elsewhere.
+/// @dev A payout recipient that rejects ETH.
 contract RevertingRecipient {
     receive() external payable {
         revert("no ETH");
     }
+}
 
-    function withdrawFrom(SeaDropMinter minter, address currency, address to)
-        external
-    {
-        minter.withdraw(currency, to);
+contract ContractPayoutRecipient {
+    uint256 public gasAtEntry;
+
+    receive() external payable {
+        gasAtEntry = gasleft();
     }
 }
 

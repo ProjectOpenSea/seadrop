@@ -5,6 +5,7 @@ import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
 
 import {
     GasBurningRecipient,
+    ContractPayoutRecipient,
     PayoutListChanger,
     MockDelegateRegistry,
     MockERC1271Wallet,
@@ -1550,43 +1551,11 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         minter.setDefaultERC20Currency(config);
     }
 
-    function test_adminAdjustsERC20PushGas() public {
-        assertEq(minter.erc20PayoutGas(), 100_000);
-        vm.prank(alice);
-        vm.expectRevert(TwoStepOwnable.OnlyOwner.selector);
-        minter.setERC20PayoutGas(1);
-        vm.expectRevert(ISeaDropMinter.PayoutGasIsZero.selector);
-        minter.setERC20PayoutGas(0);
-
-        TestERC20 currency = new TestERC20();
-        _setERC20Stage(currency, 10000);
-        currency.mint(alice, 20000);
-        vm.prank(alice);
-        currency.approve(address(minter), 20000);
-        ISeaDropMinter.MintParams memory params =
-            _erc20Params(currency, 1, 10000);
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.ERC20PayoutGasUpdated(1, 1);
-        minter.setERC20PayoutGas(1);
-        vm.prank(alice);
-        minter.mint(params, _noAuth());
-        assertEq(minter.credited(feeRecipient, address(currency)), FEE_BPS);
-        assertEq(minter.credited(creator, address(currency)), 10000 - FEE_BPS);
-        vm.prank(creator);
-        minter.withdraw(address(currency), creator);
-        minter.setERC20PayoutGas(200_000);
-        vm.prank(alice);
-        minter.mint(params, _noAuth());
-        assertEq(currency.balanceOf(feeRecipient), FEE_BPS);
-        assertEq(currency.balanceOf(creator), 2 * (10000 - FEE_BPS));
-        assertEq(minter.credited(creator, address(currency)), 0);
-    }
-
-    function test_shortPayoutAndWithdrawalRollBack() public {
+    function test_shortPayoutRollsBackMint() public {
         _checkInexactPayout(4);
     }
 
-    function test_excessDebitPayoutAndWithdrawalRollBack() public {
+    function test_excessDebitPayoutRollsBackMint() public {
         _checkInexactPayout(5);
     }
 
@@ -1600,22 +1569,13 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         vm.prank(alice);
         currency.approve(address(minter), 10000);
         vm.prank(alice);
-        minter.mint(_erc20Params(currency, 1, 10000), _noAuth());
-        uint256 proceeds = 10000 - FEE_BPS;
-        assertEq(currency.balanceOf(creator), 0);
-        assertEq(currency.balanceOf(feeRecipient), FEE_BPS);
-        assertEq(minter.credited(creator, address(currency)), proceeds);
-        vm.prank(creator);
         vm.expectRevert(ISeaDropMinter.InexactERC20Payout.selector);
-        minter.withdraw(address(currency), creator);
-        assertEq(currency.balanceOf(address(minter)), proceeds + 1);
-        assertEq(currency.balanceOf(creator), 0);
-        assertEq(minter.credited(creator, address(currency)), proceeds);
-        vm.prank(creator);
-        minter.withdraw(address(currency), carol);
-        assertEq(currency.balanceOf(carol), proceeds);
+        minter.mint(_erc20Params(currency, 1, 10000), _noAuth());
         assertEq(currency.balanceOf(address(minter)), 1);
-        assertEq(minter.credited(creator, address(currency)), 0);
+        assertEq(currency.balanceOf(alice), 10000);
+        assertEq(currency.balanceOf(feeRecipient), 0);
+        assertEq(currency.balanceOf(creator), 0);
+        assertEq(token721.balanceOf(alice), 0);
     }
 
     function test_mintERC20() public {
@@ -1665,139 +1625,58 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
         minter.mint(_erc20Params(usdc, 1, 10e6), _noAuth());
     }
 
-    function test_mintERC20_blockedRecipientCreditedThenWithdraws() public {
+    function testFuzz_failedERC20PayoutRevertsMint(uint8 seed) public {
+        uint8 mode = uint8(bound(seed, 0, 3));
         TestERC20 usdc = new TestERC20();
         _setERC20Stage(usdc, 10e6);
-        usdc.mint(alice, 100e6);
-        usdc.setBlocked(creator, true);
-        vm.prank(alice);
+        usdc.mint(alice, 10e6);
+        if (mode == 0) usdc.setBlocked(creator, true);
+        else usdc.setTransferMode(creator, mode);
+        vm.startPrank(alice);
         usdc.approve(address(minter), 10e6);
-
-        uint256 proceeds = 10e6 * (10_000 - FEE_BPS) / 10_000;
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.PaymentCredited(creator, address(usdc), proceeds);
-        vm.prank(alice);
-        minter.mint(_erc20Params(usdc, 1, 10e6), _noAuth());
-
-        assertEq(token721.ownerOf(1), alice);
-        assertEq(minter.credited(creator, address(usdc)), proceeds);
-        assertEq(usdc.balanceOf(address(minter)), proceeds);
-
-        vm.prank(creator);
-        vm.expectRevert(ISeaDropMinter.InexactERC20Payout.selector);
-        minter.withdraw(address(usdc), address(minter));
-        assertEq(minter.credited(creator, address(usdc)), proceeds);
-        assertEq(usdc.balanceOf(address(minter)), proceeds);
-
-        vm.prank(creator);
-        minter.withdraw(address(usdc), carol);
-        assertEq(usdc.balanceOf(carol), proceeds);
-        assertEq(minter.credited(creator, address(usdc)), 0);
-    }
-
-    function test_mintERC20_shortTransferReturnIsRolledBackAndCredited()
-        public
-    {
-        _assertBadERC20AnswerCredited(1);
-    }
-
-    function test_mintERC20_transferReturningTwoIsRolledBackAndCredited()
-        public
-    {
-        _assertBadERC20AnswerCredited(2);
-    }
-
-    function test_mintERC20_gasBurningTransferIsRolledBackAndCredited() public {
-        _assertBadERC20AnswerCredited(3);
-    }
-
-    /// @dev The creator's transfer moves the tokens, then answers with
-    ///      `mode`'s bad response. The minter rolls the transfer back and
-    ///      credits the creator, and the mint goes through.
-    function _assertBadERC20AnswerCredited(uint8 mode) internal {
-        TestERC20 usdc = new TestERC20();
-        _setERC20Stage(usdc, 10e6);
-        usdc.mint(alice, 100e6);
-        usdc.setTransferMode(creator, mode);
-        vm.prank(alice);
-        usdc.approve(address(minter), 10e6);
-
-        uint256 proceeds = 10e6 * (10_000 - FEE_BPS) / 10_000;
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.PaymentCredited(creator, address(usdc), proceeds);
-        vm.prank(alice);
+        vm.expectRevert();
         minter.mint{ gas: 1_000_000 }(_erc20Params(usdc, 1, 10e6), _noAuth());
-
-        assertEq(token721.ownerOf(1), alice);
+        vm.stopPrank();
+        assertEq(usdc.balanceOf(alice), 10e6);
+        assertEq(usdc.balanceOf(address(minter)), 0);
+        assertEq(usdc.balanceOf(feeRecipient), 0);
         assertEq(usdc.balanceOf(creator), 0);
-        assertEq(minter.credited(creator, address(usdc)), proceeds);
-        assertEq(usdc.balanceOf(address(minter)), proceeds);
+        assertEq(token721.balanceOf(alice), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 0);
     }
 
-    function test_revert_pushERC20_onlyMinterItself() public {
-        TestERC20 usdc = new TestERC20();
+    function testFuzz_failedNativePayoutRevertsMint(bool burnGas) public {
+        address recipient = burnGas
+            ? address(new GasBurningRecipient())
+            : address(new RevertingRecipient());
+        _setSinglePayout(address(token721), recipient);
+        uint256 beforeBalance = alice.balance;
+        vm.prank(alice);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ISeaDropMinter.OnlyMinterItself.selector, alice
+                ISeaDropMinter.NativePayoutFailed.selector, recipient
             )
         );
-        vm.prank(alice);
-        minter.pushERC20(address(usdc), alice, 1);
+        minter.mint{ value: PRICE, gas: 1_000_000 }(
+            _params(address(token721), 0, alice, alice, 1), _noAuth()
+        );
+        assertEq(alice.balance, beforeBalance);
+        assertEq(feeRecipient.balance, 0);
+        assertEq(address(minter).balance, 0);
+        assertEq(token721.balanceOf(alice), 0);
+        assertEq(minter.mintedByWallet(address(token721), 0, alice), 0);
     }
 
-    // ---------------------------------------------------------------------
-    // Failed ETH pushes and withdrawals
-    // ---------------------------------------------------------------------
-
-    function test_revertingRecipientCreditedThenWithdraws() public {
-        RevertingRecipient recipient = new RevertingRecipient();
+    function test_contractPayoutReceivesFullGas() public {
+        ContractPayoutRecipient recipient = new ContractPayoutRecipient();
         _setSinglePayout(address(token721), address(recipient));
-        uint256 proceeds = PRICE * (10_000 - FEE_BPS) / 10_000;
-
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.PaymentCredited(
-            address(recipient),
-            address(0),
-            proceeds
-        );
         vm.prank(alice);
         minter.mint{ value: PRICE }(
             _params(address(token721), 0, alice, alice, 1), _noAuth()
         );
-
-        assertEq(token721.ownerOf(1), alice);
-        assertEq(feeRecipient.balance, PRICE - proceeds);
-        assertEq(minter.credited(address(recipient), address(0)), proceeds);
-        assertEq(address(minter).balance, proceeds);
-
-        vm.expectEmit(address(minter));
-        emit ISeaDropMinter.Withdrawal(
-            address(recipient),
-            address(0),
-            carol,
-            proceeds
-        );
-        recipient.withdrawFrom(minter, address(0), carol);
-
-        assertEq(carol.balance, proceeds);
-        assertEq(minter.credited(address(recipient), address(0)), 0);
+        assertGt(recipient.gasAtEntry(), 100_000);
+        assertEq(address(recipient).balance, PRICE - PRICE * FEE_BPS / 10_000);
         assertEq(address(minter).balance, 0);
-    }
-
-    function test_gasBurningRecipientIsCredited() public {
-        GasBurningRecipient recipient = new GasBurningRecipient();
-        _setSinglePayout(address(token721), address(recipient));
-
-        vm.prank(alice);
-        minter.mint{ value: PRICE, gas: 1_000_000 }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-
-        assertEq(token721.ownerOf(1), alice);
-        assertEq(
-            minter.credited(address(recipient), address(0)),
-            PRICE * (10_000 - FEE_BPS) / 10_000
-        );
     }
 
     function test_payoutListChangedMidPayoutPaysTheSnapshot() public {
@@ -1941,24 +1820,6 @@ contract SeaDropMinterTest is SeaDropV3TestHelper {
                 feeRecipient: address(minter)
             })
         );
-    }
-
-    function test_revert_withdraw_nothingCredited() public {
-        vm.prank(alice);
-        vm.expectRevert(ISeaDropMinter.NothingToWithdraw.selector);
-        minter.withdraw(address(0), alice);
-    }
-
-    function test_revert_withdraw_toRejectingAddress() public {
-        RevertingRecipient recipient = new RevertingRecipient();
-        _setSinglePayout(address(token721), address(recipient));
-        vm.prank(alice);
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-
-        vm.expectRevert(ISeaDropMinter.WithdrawalFailed.selector);
-        recipient.withdrawFrom(minter, address(0), address(recipient));
     }
 
     // ---------------------------------------------------------------------

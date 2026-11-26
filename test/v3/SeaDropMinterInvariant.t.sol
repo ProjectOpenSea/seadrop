@@ -6,7 +6,7 @@ import { SeaDropMinter } from "seadrop/v3/SeaDropMinter.sol";
 import { ERC721SeaDropV3 } from "seadrop/v3/ERC721SeaDropV3.sol";
 import { ERC1155SeaDropV3 } from "seadrop/v3/ERC1155SeaDropV3.sol";
 import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
-import { RevertingRecipient, TestERC20 } from "./utils/Mocks.sol";
+import { TestERC20 } from "./utils/Mocks.sol";
 import { ISeaDropMinter } from "seadrop/v3/interfaces/ISeaDropMinter.sol";
 
 /**
@@ -21,24 +21,19 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     uint256 internal constant TOKEN_PRICE = 1_000_003;
 
     TestERC20 internal currency;
-    RevertingRecipient internal rejectingCreator;
-    address internal withdrawalSink = makeAddr("withdrawalSink");
     address[16] internal actors;
     uint256[2] internal sold;
     uint256[2] internal ownerMinted;
     uint256[2] internal stageCaps;
     uint256[2] internal collected;
+    uint256[2] internal creatorProceeds;
     uint256[2] internal donated;
     mapping(uint256 => mapping(address => uint256)) internal spent;
-    uint256[2] internal expectedCreatorCredit;
-    uint256[2] internal expectedFeeCredit;
-    uint256[2] internal withdrawn;
     mapping(uint256 => mapping(address => uint256)) internal walletMints;
     mapping(uint256 => mapping(address => uint256)) internal delivered;
     bool internal defaultAllowed;
     bool internal overrideAllowed = true;
     bool internal hasOverride = true;
-    bool internal lowPayoutGas;
 
     function _denied(uint256 kind) internal view returns (bool) {
         return kind == 1 && !(hasOverride ? overrideAllowed : defaultAllowed);
@@ -63,12 +58,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         assertEq(minter.getCurrency(address(currency)).allowed, !_denied(1));
     }
 
-    function updatePayoutGas(bool low) public {
-        lowPayoutGas = low;
-        minter.setERC20PayoutGas(low ? 1 : 150_000);
-    }
     uint256 public successfulMints;
-    uint256 public successfulWithdrawals;
     uint256 public rejectedCalls;
 
     constructor(
@@ -87,7 +77,6 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         token721.acceptOwnership();
         token1155.acceptOwnership();
         currency = new TestERC20();
-        rejectingCreator = new RevertingRecipient();
         minter.setCurrency(
             address(currency),
             ISeaDropMinter.CurrencyConfig(true, uint16(FEE_BPS), feeRecipient)
@@ -97,8 +86,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         ISeaDropMinter.PayoutRecipient[] memory recipients =
             new ISeaDropMinter.PayoutRecipient[](2);
         recipients[0] = ISeaDropMinter.PayoutRecipient(feeRecipient, 3333);
-        recipients[1] =
-            ISeaDropMinter.PayoutRecipient(address(rejectingCreator), 6667);
+        recipients[1] = ISeaDropMinter.PayoutRecipient(creator, 6667);
         minter.setPayoutRecipients(address(token721), recipients);
         minter.setPayoutRecipients(address(token1155), recipients);
         for (uint256 i; i < ACTORS; ++i) {
@@ -179,14 +167,20 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         if (action.signedStage) {
             auth = _authorize(params, signer, signerKey, 0, false, 0);
         }
-        currency.setBlocked(address(rejectingCreator), action.blockCreator);
+        currency.setBlocked(creator, action.blockCreator);
         currency.setBlocked(feeRecipient, action.blockFee);
         address payer =
             action.redirect ? params.wallet : actors[(actorIndex + 1) % ACTORS];
         uint256 value = params.currency == address(0) ? params.maxTotalPrice : 0;
         vm.prank(payer);
+        if (kind == 1 && (action.blockCreator || action.blockFee)) {
+            vm.expectRevert(bytes("blocked"));
+            minter.mint(params, auth);
+            ++rejectedCalls;
+            return;
+        }
         minter.mint{ value: value }(params, auth);
-        _recordMint(kind, params, payer, action.blockCreator, action.blockFee);
+        _recordMint(kind, params, payer);
     }
 
     function _mintParams(
@@ -211,18 +205,11 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
     function _recordMint(
         uint256 kind,
         ISeaDropMinter.MintParams memory params,
-        address payer,
-        bool blockCreator,
-        bool blockFee
+        address payer
     ) internal {
-        uint256 fee = params.maxTotalPrice * FEE_BPS / 10_000;
-        uint256 split = (params.maxTotalPrice - fee) * 3333 / 10_000;
-        if (kind == 0 || blockCreator || lowPayoutGas) {
-            expectedCreatorCredit[kind] += params.maxTotalPrice - fee - split;
-        }
-        if (kind == 1 && (blockFee || lowPayoutGas)) {
-            expectedFeeCredit[kind] += fee + split;
-        }
+        uint256 proceeds =
+            params.maxTotalPrice - params.maxTotalPrice * FEE_BPS / 10_000;
+        creatorProceeds[kind] += proceeds - proceeds * 3333 / 10_000;
         collected[kind] += params.maxTotalPrice;
         spent[kind][payer] += params.maxTotalPrice;
         sold[kind] += params.quantity;
@@ -253,32 +240,6 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         );
         minter.ownerMint(_token(kind), _id(kind), actors[0], quantity);
         ++rejectedCalls;
-    }
-
-    function withdraw(uint256 kindSeed, bool fee, bool fail) public {
-        uint256 kind = kindSeed % 2;
-        uint256 amount =
-            fee ? expectedFeeCredit[kind] : expectedCreatorCredit[kind];
-        if (amount == 0) return;
-        address account = fee ? feeRecipient : address(rejectingCreator);
-        address to = fail ? address(rejectingCreator) : withdrawalSink;
-        currency.setBlocked(to, fail);
-        vm.prank(account);
-        if (fail) {
-            if (kind == 0) {
-                vm.expectRevert(ISeaDropMinter.WithdrawalFailed.selector);
-            } else {
-                vm.expectRevert(bytes("blocked"));
-            }
-            minter.withdraw(_currency(kind), to);
-            ++rejectedCalls;
-        } else {
-            minter.withdraw(_currency(kind), to);
-            if (fee) expectedFeeCredit[kind] = 0;
-            else expectedCreatorCredit[kind] = 0;
-            withdrawn[kind] += amount;
-            ++successfulWithdrawals;
-        }
     }
 
     /// @dev Rejected calls must leave all modeled balances and counts unchanged.
@@ -384,7 +345,7 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
         donated[kind] += amount;
     }
 
-    /// @dev An underpayment must not spend the earlier recipients' credits.
+    /// @dev An underpayment must not spend the unsolicited surplus.
     function rejectPayment(uint256 kindSeed) public {
         uint256 kind = kindSeed % 2;
         if (_denied(kind)) return;
@@ -421,36 +382,17 @@ contract SeaDropInvariantHandler is SeaDropV3TestHelper {
 
     function assertAccountingAndSupply() external view {
         for (uint256 kind; kind < 2; ++kind) {
-            address asset = _currency(kind);
             uint256 held = kind == 0
                 ? address(minter).balance
                 : currency.balanceOf(address(minter));
-            uint256 paidCreator = kind == 0
-                ? address(rejectingCreator).balance
-                : currency.balanceOf(address(rejectingCreator));
+            uint256 paidCreator =
+                kind == 0 ? creator.balance : currency.balanceOf(creator);
             uint256 paidFee = kind == 0
                 ? feeRecipient.balance
                 : currency.balanceOf(feeRecipient);
-            uint256 sink = kind == 0
-                ? withdrawalSink.balance
-                : currency.balanceOf(withdrawalSink);
-            assertEq(
-                minter.credited(address(rejectingCreator), asset),
-                expectedCreatorCredit[kind]
-            );
-            assertEq(
-                minter.credited(feeRecipient, asset), expectedFeeCredit[kind]
-            );
-            assertEq(
-                held,
-                expectedCreatorCredit[kind] + expectedFeeCredit[kind]
-                    + donated[kind]
-            );
-            assertEq(sink, withdrawn[kind]);
-            assertEq(
-                collected[kind] + donated[kind],
-                held + paidCreator + paidFee + sink
-            );
+            assertEq(held, donated[kind]);
+            assertEq(paidCreator, creatorProceeds[kind]);
+            assertEq(paidFee, collected[kind] - creatorProceeds[kind]);
             _assertSupply(kind);
         }
     }
@@ -491,8 +433,7 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         token721.transferOwnership(address(handler));
         token1155.transferOwnership(address(handler));
         handler.setUp();
-        // Exercise success, credit creation, failed withdrawal, withdrawal,
-        // signed-stage authorization before every campaign.
+        // Seed successful native and signed ERC-20 mints and a rejected payout.
         handler.mint(
             SeaDropInvariantHandler.MintAction(
                 0, 0, 1, false, false, false, false
@@ -501,10 +442,11 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         handler.mint(
             SeaDropInvariantHandler.MintAction(1, 0, 1, true, true, true, true)
         );
-        handler.withdraw(0, false, true);
-        handler.withdraw(1, false, true);
-        handler.withdraw(0, false, false);
-        handler.withdraw(1, false, false);
+        handler.mint(
+            SeaDropInvariantHandler.MintAction(
+                1, 0, 1, true, true, false, false
+            )
+        );
         handler.rejectPayment(0);
         handler.rejectPayment(1);
         handler.donate(0, 17);
@@ -519,18 +461,16 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
         handler.rejectLimit(1, 1, false);
         handler.setCap(1, 63);
 
-        bytes4[] memory selectors = new bytes4[](11);
+        bytes4[] memory selectors = new bytes4[](9);
         selectors[0] = handler.mint.selector;
         selectors[1] = handler.ownerMint.selector;
         selectors[2] = handler.setCap.selector;
-        selectors[3] = handler.withdraw.selector;
-        selectors[4] = handler.rejectUnauthorized.selector;
-        selectors[5] = handler.rejectLimit.selector;
-        selectors[6] = handler.donate.selector;
-        selectors[7] = handler.rejectPayment.selector;
-        selectors[8] = handler.rejectOwnerSupply.selector;
-        selectors[9] = handler.updatePolicy.selector;
-        selectors[10] = handler.updatePayoutGas.selector;
+        selectors[3] = handler.rejectUnauthorized.selector;
+        selectors[4] = handler.rejectLimit.selector;
+        selectors[5] = handler.donate.selector;
+        selectors[6] = handler.rejectPayment.selector;
+        selectors[7] = handler.rejectOwnerSupply.selector;
+        selectors[8] = handler.updatePolicy.selector;
         targetSelector(FuzzSelector(address(handler), selectors));
         targetContract(address(handler));
     }
@@ -538,7 +478,6 @@ contract SeaDropMinterInvariantTest is StdInvariant, SeaDropV3TestHelper {
     function invariant_paymentsAndTokenAccounting() public view {
         handler.assertAccountingAndSupply();
         assertGe(handler.successfulMints(), 2);
-        assertGe(handler.successfulWithdrawals(), 2);
-        assertGe(handler.rejectedCalls(), 11);
+        assertGe(handler.rejectedCalls(), 10);
     }
 }
