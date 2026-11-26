@@ -7,8 +7,6 @@ import { Vm } from "forge-std/Vm.sol";
 
 import { SeaDropV3TestHelper } from "./utils/SeaDropV3TestHelper.sol";
 
-import { RevertingRecipient } from "./utils/Mocks.sol";
-
 import { ISeaDropMinter } from "seadrop/v3/interfaces/ISeaDropMinter.sol";
 
 import { SeaDropTokenFactory } from "seadrop/v3/SeaDropTokenFactory.sol";
@@ -49,10 +47,6 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
             keccak256("CurrencyUpdated(uint256,address,(bool,uint16,address))")
         );
         assertEq(
-            ISeaDropMinter.ERC20PayoutGasUpdated.selector,
-            keccak256("ERC20PayoutGasUpdated(uint256,uint256)")
-        );
-        assertEq(
             ISeaDropMinter.DefaultERC20CurrencyUpdated.selector,
             keccak256(
                 "DefaultERC20CurrencyUpdated(uint256,(bool,uint16,address))"
@@ -72,14 +66,6 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
                 "SeaDropMint(address,uint256,uint256,address,address,address,"
                 "uint256,uint256,address,address,uint256)"
             )
-        );
-        assertEq(
-            ISeaDropMinter.PaymentCredited.selector,
-            keccak256("PaymentCredited(address,address,uint256)")
-        );
-        assertEq(
-            ISeaDropMinter.Withdrawal.selector,
-            keccak256("Withdrawal(address,address,address,uint256)")
         );
     }
 
@@ -296,35 +282,6 @@ contract SeaDropV3EventSchemaTest is SeaDropV3TestHelper {
                 FEE_BPS
             )
         );
-    }
-
-    function test_emitted_PaymentCreditedAndWithdrawal() public {
-        RevertingRecipient recipient = new RevertingRecipient();
-        _setSinglePayout(address(token721), address(recipient));
-        uint256 proceeds = PRICE * (10_000 - FEE_BPS) / 10_000;
-
-        vm.recordLogs();
-        vm.prank(alice);
-        minter.mint{ value: PRICE }(
-            _params(address(token721), 0, alice, alice, 1), _noAuth()
-        );
-        Vm.Log memory credited = _onlyLog(
-            address(minter),
-            keccak256("PaymentCredited(address,address,uint256)")
-        );
-        _assertTopics(credited, _topic(address(recipient)), _topic(address(0)));
-        assertEq(credited.data, abi.encode(proceeds));
-
-        vm.recordLogs();
-        recipient.withdrawFrom(minter, address(0), carol);
-        Vm.Log memory withdrawal = _onlyLog(
-            address(minter),
-            keccak256("Withdrawal(address,address,address,uint256)")
-        );
-        _assertTopics(
-            withdrawal, _topic(address(recipient)), _topic(address(0))
-        );
-        assertEq(withdrawal.data, abi.encode(carol, proceeds));
     }
 
     // ---------------------------------------------------------------------

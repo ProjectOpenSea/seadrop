@@ -69,14 +69,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
     /// @notice The most payout recipients a token can have.
     uint256 public constant MAX_PAYOUT_RECIPIENTS = 10;
 
-    /// @notice The gas an ETH payout push gets. A recipient that needs
-    ///         more is credited instead.
-    uint256 public constant ETH_PAYOUT_GAS = 100_000;
-
-    /// @notice The gas an ERC-20 payout push gets. A transfer that needs
-    ///         more is rolled back and the recipient is credited instead.
-    uint256 public erc20PayoutGas = 100_000;
-
     uint256 internal constant _BPS = 10_000;
 
     /// @dev ERC-165 id of ERC-721.
@@ -111,10 +103,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         address token
             => mapping(uint256 id => mapping(address wallet => uint256))
     ) public mintedByWallet;
-
-    /// @notice Payments whose push failed, withdrawable by the account.
-    mapping(address account => mapping(address currency => uint256 amount))
-        public credited;
 
     bool private transient _entered;
 
@@ -182,8 +170,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             if (recipient.recipient == address(0)) {
                 revert PayoutRecipientIsZeroAddress();
             }
-            // ETH paid to the minter would be credited to an account no
-            // one can withdraw from, and an ERC-20 not credited at all
             if (recipient.recipient == address(this)) {
                 revert PayoutRecipientIsMinter();
             }
@@ -205,13 +191,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (currency != address(0)) hasCurrencyOverride[currency] = true;
         _currencies[currency] = config;
         emit CurrencyUpdated(CONFIG_EVENT_VERSION, currency, config);
-    }
-
-    /// @inheritdoc ISeaDropMinter
-    function setERC20PayoutGas(uint256 gasLimit) external onlyOwner {
-        if (gasLimit == 0) revert PayoutGasIsZero();
-        erc20PayoutGas = gasLimit;
-        emit ERC20PayoutGasUpdated(CONFIG_EVENT_VERSION, gasLimit);
     }
 
     /// @inheritdoc ISeaDropMinter
@@ -332,26 +311,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         }
     }
 
-    /// @inheritdoc ISeaDropMinter
-    function withdraw(address currency, address to) external nonReentrant {
-        uint256 amount = credited[msg.sender][currency];
-        if (amount == 0) revert NothingToWithdraw();
-
-        credited[msg.sender][currency] = 0;
-
-        if (currency == address(0)) {
-            // The balance is zeroed first, and the only write after this
-            // call is nonReentrant's unlock.
-            // forge-lint: disable-next-line(reentrancy-eth)
-            (bool success,) = to.call{ value: amount }("");
-            if (!success) revert WithdrawalFailed();
-        } else {
-            _transferExact(IERC20(currency), to, amount);
-        }
-
-        emit Withdrawal(msg.sender, currency, to, amount);
-    }
-
     /// @notice Renouncing also cancels a pending transfer, so a pending
     ///         owner can't claim the minter afterwards.
     function renounceOwnership() public override onlyOwner {
@@ -413,21 +372,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         walletMinted = mintedByWallet[token][id][wallet];
         (totalMinted, maxSupply) = _tokenMintStats(token, id, wallet);
         payoutRecipientCount = _payoutRecipients[token].length;
-    }
-
-    /// @inheritdoc ISeaDropMinter
-    function getCreditedBalances(address account, address[] calldata currencies)
-        external
-        view
-        returns (uint256[] memory balances)
-    {
-        uint256 count = currencies.length;
-        balances = new uint256[](count);
-        mapping(address currency => uint256 amount) storage accountCredited =
-            credited[account];
-        for (uint256 i = 0; i < count; ++i) {
-            balances[i] = accountCredited[currencies[i]];
-        }
     }
 
     /**
@@ -608,8 +552,7 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         if (msg.value != 0) revert IncorrectPayment(msg.value, 0);
         if (totalPrice == 0) return;
 
-        // Check what arrived, so a fee-on-transfer token can't pay out
-        // other accounts' credited balances.
+        // Reject short payments even when the minter already has a surplus.
         uint256 balanceBefore = IERC20(currency).balanceOf(address(this));
         IERC20(currency).safeTransferFrom(msg.sender, address(this), totalPrice);
         uint256 received =
@@ -759,45 +702,16 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
         _send(stage.currency, recipients[last].recipient, proceeds - paid);
     }
 
-    /**
-     * @dev Push a payment. If the push fails, credit the recipient so a
-     *      reverting recipient can't block minting.
-     */
     function _send(address currency, address to, uint256 amount) internal {
         if (amount == 0) return;
-
-        bool success = currency == address(0)
-            ? _trySendETH(to, amount)
-            : _tryTransferERC20(currency, to, amount);
-
-        if (!success) {
-            credited[to][currency] += amount;
-            emit PaymentCredited(to, currency, amount);
+        if (currency == address(0)) {
+            // Mint entry points hold the reentrancy guard throughout settlement.
+            // forge-lint: disable-next-line(reentrancy-eth)
+            (bool success,) = to.call{ value: amount }("");
+            if (!success) revert NativePayoutFailed(to);
+        } else {
+            _transferExact(IERC20(currency), to, amount);
         }
-    }
-
-    /**
-     * @dev Send ETH with capped gas and without copying return data, so a
-     *      recipient can't make the mint run out of gas.
-     */
-    function _trySendETH(address to, uint256 amount)
-        internal
-        returns (bool success)
-    {
-        assembly ("memory-safe") {
-            success := call(ETH_PAYOUT_GAS, to, amount, 0, 0, 0, 0)
-        }
-    }
-
-    /**
-     * @notice Transfer an ERC-20 payout. Only the minter itself calls this,
-     *         from `_tryTransferERC20`, so that a transfer the token
-     *         rejects, or answers with anything other than nothing or
-     *         `true`, reverts here and is rolled back.
-     */
-    function pushERC20(address currency, address to, uint256 amount) external {
-        if (msg.sender != address(this)) revert OnlyMinterItself(msg.sender);
-        _transferExact(IERC20(currency), to, amount);
     }
 
     function _transferExact(IERC20 token, address to, uint256 amount) internal {
@@ -810,23 +724,6 @@ contract SeaDropMinter is ISeaDropMinter, EIP712, TwoStepOwnable {
             fromAfter > fromBefore || fromBefore - fromAfter != amount
                 || toAfter < toBefore || toAfter - toBefore != amount
         ) revert InexactERC20Payout();
-    }
-
-    /**
-     * @dev Transfer an ERC-20 with capped gas, returning false instead of
-     *      reverting. The transfer runs in its own call, so one that fails
-     *      or runs out of gas is rolled back before the caller credits the
-     *      recipient, and its revert data isn't copied.
-     */
-    function _tryTransferERC20(address currency, address to, uint256 amount)
-        internal
-        returns (bool)
-    {
-        try this.pushERC20{ gas: erc20PayoutGas }(currency, to, amount) {
-            return true;
-        } catch {
-            return false;
-        }
     }
 
     /**

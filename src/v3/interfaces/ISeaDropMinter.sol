@@ -169,9 +169,6 @@ interface ISeaDropMinter {
         CurrencyConfig config
     );
 
-    /// @notice The admin set the gas budget for each ERC-20 payout push.
-    event ERC20PayoutGasUpdated(uint256 version, uint256 gasLimit);
-
     /// @notice The admin set the terms inherited by ERC-20s without an override.
     event DefaultERC20CurrencyUpdated(uint256 version, CurrencyConfig config);
 
@@ -205,28 +202,12 @@ interface ISeaDropMinter {
         uint256 feeBps
     );
 
-    /// @notice A payment push failed, so `account` can withdraw it later.
-    event PaymentCredited(
-        address indexed account,
-        address indexed currency,
-        uint256 amount
-    );
-
-    /// @notice `account` withdrew its credited balance to `to`.
-    event Withdrawal(
-        address indexed account,
-        address indexed currency,
-        address to,
-        uint256 amount
-    );
-
     error OnlyTokenOwner(address token, address caller);
     error FeeBpsTooHigh(uint256 feeBps);
     error FeeRecipientIsZeroAddress();
     error StageEndsBeforeStart(uint256 startTime, uint256 endTime);
     error NativeCurrencyHasNoFallback();
     error InexactERC20Payout();
-    error PayoutGasIsZero();
     error CurrencyNotAllowed(address currency);
     error FeeBelowMinimum(uint256 feeBps, uint256 minFeeBps);
     error FeeRecipientNotRequired(address feeRecipient, address required);
@@ -263,10 +244,8 @@ interface ISeaDropMinter {
         address authorizedCurrency
     );
     error InvalidSignature();
-    error NothingToWithdraw();
-    error WithdrawalFailed();
+    error NativePayoutFailed(address recipient);
     error Reentrancy();
-    error OnlyMinterItself(address caller);
     error ERC721StageIdNotZero(uint256 id);
     error StageIndexReserved(uint256 stageIndex);
     error PayoutRecipientIsMinter();
@@ -291,9 +270,6 @@ interface ISeaDropMinter {
     /// @notice Set a currency's terms. Only the admin can call this.
     function setCurrency(address currency, CurrencyConfig calldata config)
         external;
-
-    /// @notice Set a positive gas budget per ERC-20 payout push. Only the admin can call this.
-    function setERC20PayoutGas(uint256 gasLimit) external;
 
     /// @notice Set the terms inherited by ERC-20s without an override.
     ///         Only the admin can call this.
@@ -326,10 +302,6 @@ interface ISeaDropMinter {
         address recipient,
         uint256 quantity
     ) external;
-
-    /// @notice Withdraw the caller's credited balance of `currency` to
-    ///         `to`.
-    function withdraw(address currency, address to) external;
 
     function getStage(address token, uint256 id, uint256 stageIndex)
         external
@@ -364,11 +336,4 @@ interface ISeaDropMinter {
             uint256 maxSupply,
             uint256 payoutRecipientCount
         );
-
-    /// @notice Return `account`'s credited balances for each currency in
-    ///         `currencies`, in order.
-    function getCreditedBalances(address account, address[] calldata currencies)
-        external
-        view
-        returns (uint256[] memory);
 }
