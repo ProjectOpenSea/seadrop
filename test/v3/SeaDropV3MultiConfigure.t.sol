@@ -71,7 +71,7 @@ contract NestedConfigObserver {
         ISeaDropMinter.PayoutRecipient[] calldata
     ) external {
         SeaDropV3MultiConfigureTest(observer.readOwner(token))
-            .configureInnerBatch();
+            .configureInnerBatch(token);
     }
 
     function setStage(
@@ -108,7 +108,32 @@ contract SeaDropV3MultiConfigureTest is SeaDropV3TestHelper {
         assertEq(minter.getStage(address(token721), 0, 17).price, PRICE);
     }
 
-    function configureInnerBatch() external {
+    function test_ERC1155_nestedConfigurationRestoresEachMinterScope() public {
+        NestedConfigObserver outer = new NestedConfigObserver();
+        token1155.setAllowedMinter(address(outer), true);
+        ERC1155SeaDropV3.MultiConfigureStruct memory config;
+        config.minter = address(outer);
+        config.stages = new ERC1155SeaDropV3.StageConfig[](1);
+        config.stages[0].id = 7;
+        config.payoutRecipients = new ISeaDropMinter.PayoutRecipient[](1);
+        config.payoutRecipients[0] =
+            ISeaDropMinter.PayoutRecipient(creator, 10_000);
+        token1155.multiConfigure(config);
+        assertEq(outer.readOwner(address(token1155)), address(this));
+        assertEq(minter.getStage(address(token1155), 7, 17).price, PRICE);
+    }
+
+    function configureInnerBatch(address token) external {
+        if (token == address(token1155)) {
+            ERC1155SeaDropV3.MultiConfigureStruct memory editionConfig;
+            editionConfig.minter = address(minter);
+            editionConfig.stages = new ERC1155SeaDropV3.StageConfig[](1);
+            editionConfig.stages[0] =
+                ERC1155SeaDropV3.StageConfig(7, 17, _publicStage());
+            token1155.multiConfigure(editionConfig);
+            return;
+        }
+        assertEq(token, address(token721));
         ERC721SeaDropV3.MultiConfigureStruct memory config;
         config.minter = address(minter);
         config.stages = new ERC721SeaDropV3.StageConfig[](1);
