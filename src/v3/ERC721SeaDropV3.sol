@@ -3,6 +3,8 @@ pragma solidity 0.8.38;
 
 import { SeaDropTokenV3Base } from "./SeaDropTokenV3Base.sol";
 
+import { ISeaDropMinter } from "./interfaces/ISeaDropMinter.sol";
+
 import { ISeaDropTokenV3 } from "./interfaces/ISeaDropTokenV3.sol";
 
 import { ERC721AUpgradeable } from "ERC721A-Upgradeable/ERC721AUpgradeable.sol";
@@ -20,6 +22,20 @@ import { ERC721AUpgradeable } from "ERC721A-Upgradeable/ERC721AUpgradeable.sol";
  *         namespaced storage.
  */
 contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
+    struct StageConfig {
+        uint256 stageIndex;
+        ISeaDropMinter.Stage stage;
+    }
+
+    struct MultiConfigureStruct {
+        uint256 maxSupply;
+        string baseURI;
+        string contractURI;
+        address minter;
+        ISeaDropMinter.PayoutRecipient[] payoutRecipients;
+        StageConfig[] stages;
+    }
+
     /// @custom:storage-location erc7201:seadrop.v3.ERC721SeaDropV3
     struct ERC721Storage {
         uint256 maxSupply;
@@ -73,11 +89,7 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
 
     /// @notice Set the max supply. It can't go below what's minted.
     function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
-        if (newMaxSupply < _totalMinted()) {
-            revert MaxSupplyBelowTotalMinted(newMaxSupply, _totalMinted());
-        }
-        _erc721Storage().maxSupply = newMaxSupply;
-        emit MaxSupplyUpdated(newMaxSupply);
+        _setMaxSupply(newMaxSupply);
     }
 
     /// @notice The most tokens that can ever be minted.
@@ -88,8 +100,46 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
     /// @notice Set the base URI. Emits ERC-4906's BatchMetadataUpdate for
     ///         every token id, minted or not.
     function setBaseURI(string calldata newBaseURI) external onlyOwner {
-        _erc721Storage().baseURI = newBaseURI;
-        emit BatchMetadataUpdate(0, type(uint256).max);
+        _setBaseURI(newBaseURI);
+    }
+
+    /**
+     * @notice Configure token supply, metadata, payout recipients and minter
+     *         stages in one transaction.
+     *
+     *         Zero-value or empty fields are skipped. Use the individual
+     *         setters to reset `maxSupply` to 0 or clear a URI.
+     *
+     * @param config The configuration struct.
+     */
+    function multiConfigure(MultiConfigureStruct calldata config)
+        external
+        onlyOwner
+    {
+        if (config.maxSupply > 0) {
+            _setMaxSupply(config.maxSupply);
+        }
+        if (bytes(config.baseURI).length != 0) {
+            _setBaseURI(config.baseURI);
+        }
+        if (bytes(config.contractURI).length != 0) {
+            _setContractURI(config.contractURI);
+        }
+
+        uint256 stageCount = config.stages.length;
+        if (config.payoutRecipients.length != 0 || stageCount != 0) {
+            _beginConfigure(config.minter);
+            if (config.payoutRecipients.length != 0) {
+                ISeaDropMinter(config.minter)
+                    .setPayoutRecipients(address(this), config.payoutRecipients);
+            }
+            for (uint256 i = 0; i < stageCount; ++i) {
+                StageConfig calldata entry = config.stages[i];
+                ISeaDropMinter(config.minter)
+                    .setStage(address(this), 0, entry.stageIndex, entry.stage);
+            }
+            _endConfigure();
+        }
     }
 
     /// @inheritdoc ISeaDropTokenV3
@@ -140,6 +190,19 @@ contract ERC721SeaDropV3 is ERC721AUpgradeable, SeaDropTokenV3Base {
         return interfaceId == type(ISeaDropTokenV3).interfaceId
             || interfaceId == 0x49064906 // ERC-4906
             || super.supportsInterface(interfaceId);
+    }
+
+    function _setMaxSupply(uint256 newMaxSupply) internal {
+        if (newMaxSupply < _totalMinted()) {
+            revert MaxSupplyBelowTotalMinted(newMaxSupply, _totalMinted());
+        }
+        _erc721Storage().maxSupply = newMaxSupply;
+        emit MaxSupplyUpdated(newMaxSupply);
+    }
+
+    function _setBaseURI(string calldata newBaseURI) internal {
+        _erc721Storage().baseURI = newBaseURI;
+        emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
     function _baseURI() internal view override returns (string memory) {

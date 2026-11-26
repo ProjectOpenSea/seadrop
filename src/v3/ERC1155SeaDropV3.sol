@@ -3,6 +3,8 @@ pragma solidity 0.8.38;
 
 import { SeaDropTokenV3Base } from "./SeaDropTokenV3Base.sol";
 
+import { ISeaDropMinter } from "./interfaces/ISeaDropMinter.sol";
+
 import { ISeaDropTokenV3 } from "./interfaces/ISeaDropTokenV3.sol";
 
 import { ERC1155 } from "openzeppelin-contracts/token/ERC1155/ERC1155.sol";
@@ -20,6 +22,26 @@ import { ERC1155 } from "openzeppelin-contracts/token/ERC1155/ERC1155.sol";
  *         stays empty, since `uri` reads the namespaced URI instead.
  */
 contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
+    struct MaxSupplyConfig {
+        uint256 id;
+        uint128 maxSupply;
+    }
+
+    struct StageConfig {
+        uint256 id;
+        uint256 stageIndex;
+        ISeaDropMinter.Stage stage;
+    }
+
+    struct MultiConfigureStruct {
+        MaxSupplyConfig[] maxSupplies;
+        string uri;
+        string contractURI;
+        address minter;
+        ISeaDropMinter.PayoutRecipient[] payoutRecipients;
+        StageConfig[] stages;
+    }
+
     struct Supply {
         uint128 totalMinted;
         uint128 maxSupply;
@@ -80,21 +102,57 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
     /// @notice Set an id's max supply. It can't go below what's minted.
     ///         Ids start at 1.
     function setMaxSupply(uint256 id, uint128 newMaxSupply) external onlyOwner {
-        if (id == 0) revert TokenIdIsZero();
-        Supply storage supply = _erc1155Storage().supply[id];
-        uint256 totalMinted = supply.totalMinted;
-        if (newMaxSupply < totalMinted) {
-            revert MaxSupplyBelowTotalMinted(newMaxSupply, totalMinted);
-        }
-        supply.maxSupply = newMaxSupply;
-        emit MaxSupplyUpdated(id, newMaxSupply);
+        _setMaxSupply(id, newMaxSupply);
     }
 
     /// @notice Set the URI for every id. Emits ERC-4906's
     ///         BatchMetadataUpdate for every id, minted or not.
     function setURI(string calldata newURI) external onlyOwner {
-        _erc1155Storage().uri = newURI;
-        emit BatchMetadataUpdate(0, type(uint256).max);
+        _setTokenURI(newURI);
+    }
+
+    /**
+     * @notice Configure per-id max supplies, metadata URIs, payout recipients
+     *         and minter stages in one transaction.
+     *
+     *         Empty arrays and empty strings are skipped. Use `setURI("")` or
+     *         `setContractURI("")` to clear a URI.
+     *
+     * @param config The configuration struct.
+     */
+    function multiConfigure(MultiConfigureStruct calldata config)
+        external
+        onlyOwner
+    {
+        uint256 supplyCount = config.maxSupplies.length;
+        for (uint256 i = 0; i < supplyCount; ++i) {
+            MaxSupplyConfig calldata entry = config.maxSupplies[i];
+            _setMaxSupply(entry.id, entry.maxSupply);
+        }
+        if (bytes(config.uri).length != 0) {
+            _setTokenURI(config.uri);
+        }
+        if (bytes(config.contractURI).length != 0) {
+            _setContractURI(config.contractURI);
+        }
+
+        uint256 stageCount = config.stages.length;
+        if (config.payoutRecipients.length != 0 || stageCount != 0) {
+            _beginConfigure(config.minter);
+            if (config.payoutRecipients.length != 0) {
+                ISeaDropMinter(config.minter)
+                    .setPayoutRecipients(address(this), config.payoutRecipients);
+            }
+            for (uint256 i = 0; i < stageCount; ++i) {
+                StageConfig calldata entry = config.stages[i];
+                if (entry.id == 0) revert TokenIdIsZero();
+                ISeaDropMinter(config.minter)
+                    .setStage(
+                        address(this), entry.id, entry.stageIndex, entry.stage
+                    );
+            }
+            _endConfigure();
+        }
     }
 
     /// @notice The URI for every id, with `{id}` for clients to substitute.
@@ -151,6 +209,22 @@ contract ERC1155SeaDropV3 is ERC1155, SeaDropTokenV3Base {
         // BatchMetadataUpdate event without claiming the interface.
         return interfaceId == type(ISeaDropTokenV3).interfaceId
             || super.supportsInterface(interfaceId);
+    }
+
+    function _setMaxSupply(uint256 id, uint128 newMaxSupply) internal {
+        if (id == 0) revert TokenIdIsZero();
+        Supply storage supply = _erc1155Storage().supply[id];
+        uint256 totalMinted = supply.totalMinted;
+        if (newMaxSupply < totalMinted) {
+            revert MaxSupplyBelowTotalMinted(newMaxSupply, totalMinted);
+        }
+        supply.maxSupply = newMaxSupply;
+        emit MaxSupplyUpdated(id, newMaxSupply);
+    }
+
+    function _setTokenURI(string calldata newURI) internal {
+        _erc1155Storage().uri = newURI;
+        emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
     function _erc1155Storage()
