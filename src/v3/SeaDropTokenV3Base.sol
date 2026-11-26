@@ -48,6 +48,12 @@ abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
     /// @notice The factory, the only caller that can initialize a clone.
     address public immutable factory;
 
+    /// @dev The allowed minter currently being called by `multiConfigure`.
+    ///      While nonzero, `owner()` reports `address(this)` to that minter
+    ///      alone so `SeaDropMinter`'s `onlyTokenOwner` check passes with no
+    ///      changes to the minter.
+    address private transient _configuringMinter;
+
     event AllowedMinterUpdated(address indexed minter, bool allowed);
 
     /// @dev ERC-7572.
@@ -88,13 +94,22 @@ abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
 
     /// @notice Set the contract metadata URI.
     function setContractURI(string calldata newContractURI) external onlyOwner {
-        _baseStorage().contractURI = newContractURI;
-        emit ContractURIUpdated();
+        _setContractURI(newContractURI);
     }
 
     /// @notice The contract metadata URI, per ERC-7572.
     function contractURI() external view returns (string memory) {
         return _baseStorage().contractURI;
+    }
+
+    /// @inheritdoc TwoStepOwnable
+    function owner() public view virtual override returns (address) {
+        if (
+            _configuringMinter != address(0) && msg.sender == _configuringMinter
+        ) {
+            return address(this);
+        }
+        return super.owner();
     }
 
     /// @notice Renouncing also cancels a pending transfer, so a pending
@@ -136,6 +151,26 @@ abstract contract SeaDropTokenV3Base is TwoStepOwnable, ISeaDropTokenV3 {
     function _setAllowedMinter(address minter, bool allowed) internal {
         _baseStorage().allowedMinters[minter] = allowed;
         emit AllowedMinterUpdated(minter, allowed);
+    }
+
+    function _setContractURI(string calldata newContractURI) internal {
+        _baseStorage().contractURI = newContractURI;
+        emit ContractURIUpdated();
+    }
+
+    function _beginConfigure(address minter)
+        internal
+        returns (address previousMinter)
+    {
+        if (!_baseStorage().allowedMinters[minter]) {
+            revert OnlyAllowedMinter(minter);
+        }
+        previousMinter = _configuringMinter;
+        _configuringMinter = minter;
+    }
+
+    function _endConfigure(address previousMinter) internal {
+        _configuringMinter = previousMinter;
     }
 
     /// @dev Whether `operator` is the preapproved conduit.
